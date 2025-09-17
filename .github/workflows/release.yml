@@ -59,7 +59,7 @@ jobs:
         if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
         run: rustup target add aarch64-unknown-linux-musl
 
-      - uses: oxc-project/setup-node@beeabdfbd12652a18a61ff476a59b62518bc1c7b # v1.0.3
+      - uses: oxc-project/setup-node@376ec3eb2d5cad9c200e276b7e760cad6b646d05 # main
 
       - name: Build
         run: pnpm --filter=@voidzero-dev/vite-plus build --target ${{ matrix.target }} -x
@@ -84,7 +84,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: oxc-project/setup-node@beeabdfbd12652a18a61ff476a59b62518bc1c7b # v1.0.3
+      - uses: oxc-project/setup-node@376ec3eb2d5cad9c200e276b7e760cad6b646d05 # main
 
       - name: Bootstrap
         run: pnpm bootstrap-cli:ci
