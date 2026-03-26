@@ -30,8 +30,10 @@ Run tasks
 Usage: vp run [OPTIONS] [TASK_SPECIFIER] [ADDITIONAL_ARGS]...
 
 Arguments:
-  [TASK_SPECIFIER]      `packageName#taskName` or `taskName`. If omitted, lists all available tasks
-  [ADDITIONAL_ARGS]...  Additional arguments to pass to the tasks
+  [TASK_SPECIFIER] [ADDITIONAL_ARGS]...
+          Task to run, as `packageName#taskName` or just `taskName`.
+          Any arguments after the task name are forwarded to the task process.
+          Running `vp run` without a task name shows an interactive task selector.
 
 Options:
   -r, --recursive          Select all packages in the workspace

@@ -23,7 +23,9 @@ use vite_task::{
     Command, CommandHandler, ExitStatus, HandledCommand, ScriptCommand, Session, SessionConfig,
     config::{
         UserRunConfig,
-        user::{EnabledCacheConfig, UserCacheConfig},
+        user::{
+            AutoInput, EnabledCacheConfig, GlobWithBase, InputBase, UserCacheConfig, UserInputEntry,
+        },
     },
     loader::UserConfigLoader,
     plan_request::SyntheticPlanRequest,
@@ -329,7 +331,13 @@ impl SubcommandResolver {
                     cache_config: UserCacheConfig::with_config(EnabledCacheConfig {
                         env: Some(Box::new([Str::from("VITE_*")])),
                         untracked_env: None,
-                        input: None,
+                        input: Some(vec![
+                            UserInputEntry::Auto(AutoInput { auto: true }),
+                            UserInputEntry::GlobWithBase(GlobWithBase {
+                                pattern: Str::from("!node_modules/.vite-temp/**"),
+                                base: InputBase::Workspace,
+                            }),
+                        ]),
                     }),
                     envs: merge_resolved_envs_with_version(envs, resolved.envs),
                 })
@@ -381,7 +389,13 @@ impl SubcommandResolver {
                     cache_config: UserCacheConfig::with_config(EnabledCacheConfig {
                         env: None,
                         untracked_env: None,
-                        input: None,
+                        input: Some(vec![
+                            UserInputEntry::Auto(AutoInput { auto: true }),
+                            UserInputEntry::GlobWithBase(GlobWithBase {
+                                pattern: Str::from("!node_modules/.vite-temp/**"),
+                                base: InputBase::Workspace,
+                            }),
+                        ]),
                     }),
                     envs: merge_resolved_envs(envs, resolved.envs),
                 })
@@ -1534,7 +1548,7 @@ mod tests {
 
     use clap::Parser;
     use serde_json::json;
-    use vite_task::config::UserRunConfig;
+    use vite_task::{Command, config::UserRunConfig};
 
     use super::{
         CLIArgs, LintMessageKind, SynthesizableSubcommand, extract_unknown_argument,
@@ -1570,11 +1584,13 @@ mod tests {
     }
 
     #[test]
-    fn unknown_argument_detected_with_pass_as_value_hint() {
-        let error =
-            CLIArgs::try_parse_from(["vp", "run", "--yolo"]).expect_err("Expected parse error");
-        assert_eq!(extract_unknown_argument(&error).as_deref(), Some("--yolo"));
-        assert!(has_pass_as_value_suggestion(&error));
+    fn run_accepts_unknown_flags_as_task_args() {
+        // After trailing_var_arg change, unknown flags like --yolo are
+        // accepted as task arguments instead of producing a parse error.
+        let args = CLIArgs::try_parse_from(["vp", "run", "--yolo"]).unwrap();
+        let debug = vite_str::format!("{args:?}");
+        assert!(debug.contains("\"--yolo\""), "Expected --yolo in task args, got: {debug}",);
+        assert!(matches!(args, CLIArgs::ViteTask(Command::Run(_))));
     }
 
     #[test]
