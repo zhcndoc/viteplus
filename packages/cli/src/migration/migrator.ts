@@ -810,6 +810,10 @@ export function rewriteStandaloneProject(
     migratePnpmOverridesToWorkspaceYaml(projectPath, remainingPnpmOverrides);
   }
 
+  if (packageManager === PackageManager.yarn) {
+    rewriteYarnrcYml(projectPath);
+  }
+
   // Merge extracted staged config into vite.config.ts, then remove lint-staged from package.json
   if (extractedStagedConfig) {
     if (mergeStagedConfigToViteConfig(projectPath, extractedStagedConfig, silent, report)) {
@@ -1116,6 +1120,9 @@ function rewriteYarnrcYml(projectPath: string): void {
   }
 
   editYamlFile(yarnrcYmlPath, (doc) => {
+    if (!doc.has('nodeLinker')) {
+      doc.set('nodeLinker', 'node-modules');
+    }
     // catalog
     rewriteCatalog(doc);
   });
@@ -1193,8 +1200,8 @@ function rewriteBunCatalog(projectPath: string): void {
 
     // bun overrides support catalog: references
     const overrides: Record<string, string> = { ...pkg.overrides };
-    for (const key of Object.keys(VITE_PLUS_OVERRIDE_PACKAGES)) {
-      overrides[key] = 'catalog:';
+    for (const [key, value] of Object.entries(VITE_PLUS_OVERRIDE_PACKAGES)) {
+      overrides[key] = value.startsWith('file:') ? value : 'catalog:';
     }
     pkg.overrides = overrides;
 
