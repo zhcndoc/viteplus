@@ -1,18 +1,18 @@
-# Creating a Project
+# 创建项目
 
-`vp create` interactively scaffolds new Vite+ projects, monorepos, and apps inside existing workspaces.
+`vp create` 可以在现有的工作区中交互式地搭建新的 Vite+ 项目、单体仓库和应用。
 
-## Overview
+## 概述
 
-The `create` command is the fastest way to start with Vite+. It can be used in a few different ways:
+`create` 命令是开始使用 Vite+ 的最快方式。它可以通过以下几种方式使用：
 
-- Start a new Vite+ monorepo
-- Create a new standalone application or library
-- Add a new app or library inside an existing project
+- 启动一个新的 Vite+ 单体仓库
+- 创建一个新的独立应用程序或库
+- 在现有项目中添加新的应用程序或库
 
-This command can be used with built-in templates, community templates, or remote GitHub templates.
+此命令可以使用内置模板、社区模板或远程 GitHub 模板。
 
-## Usage
+## 用法
 
 ```bash
 vp create
@@ -20,69 +20,69 @@ vp create <template>
 vp create <template> -- <template-options>
 ```
 
-## Built-in Templates
+## 内置模板
 
-Vite+ ships with these built-in templates:
+Vite+ 提供以下内置模板：
 
-- `vite:monorepo` creates a new monorepo
-- `vite:application` creates a new application
-- `vite:library` creates a new library
-- `vite:generator` creates a new generator
+- `vite:monorepo` 创建一个新的单体仓库
+- `vite:application` 创建一个新的应用程序
+- `vite:library` 创建一个新的库
+- `vite:generator` 创建一个新的生成器
 
-## Template Sources
+## 模板来源
 
-`vp create` is not limited to the built-in templates.
+`vp create` 不仅限于内置模板。
 
-- Use shorthand templates like `vite`, `@tanstack/start`, `svelte`, `next-app`, `nuxt`, `react-router`, and `vue`
-- Use full package names like `create-vite` or `create-next-app`
-- Use local templates such as `./tools/create-ui-component` or `@acme/generator-*`
-- Use remote templates such as `github:user/repo` or `https://github.com/user/template-repo`
+- 使用简写模板，如 `vite`、`@tanstack/start`、`svelte`、`next-app`、`nuxt`、`react-router` 和 `vue`
+- 使用完整的包名，如 `create-vite` 或 `create-next-app`
+- 使用本地模板，如 `./tools/create-ui-component` 或 `@acme/generator-*`
+- 使用远程模板，如 `github:user/repo` 或 `https://github.com/user/template-repo`
 
-Run `vp create --list` to see the built-in templates and the common shorthand templates Vite+ recognizes.
+运行 `vp create --list` 可查看 Vite+ 识别的内置模板和常用简写模板。
 
-## Options
+## 选项
 
-- `--directory <dir>` writes the generated project into a specific target directory
-- `--agent <name>` creates agent instructions files during scaffolding
-- `--editor <name>` writes editor config files
-- `--hooks` enables pre-commit hook setup
-- `--no-hooks` skips hook setup
-- `--no-interactive` runs without prompts
-- `--verbose` shows detailed scaffolding output
-- `--list` prints the available built-in and popular templates
+- `--directory <dir>` 将生成的项目写入指定的目标目录
+- `--agent` 在搭建过程中创建代理指令文件
+- `--editor` 写入编辑器配置文件
+- `--hooks` 启用预提交钩子设置
+- `--no-hooks` 跳过钩子设置
+- `--no-interactive` 无提示运行
+- `--verbose` 显示详细的搭建输出
+- `--list` 打印可用的内置和流行模板
 
-## Template Options
+## 模板选项
 
-Arguments after `--` are passed directly to the selected template.
+`--` 后的参数会直接传递给选定的模板。
 
-This matters when the template itself accepts flags. For example, you can forward Vite template selection like this:
+当模板本身接受标志时，这一点很重要。例如，可以像这样转发 Vite 模板选择：
 
 ```bash
 vp create vite -- --template react-ts
 ```
 
-## Examples
+## 示例
 
 ```bash
-# Interactive mode
+# 交互模式
 vp create
 
-# Create a Vite+ monorepo, application, library, or generator
+# 创建 Vite+ 单体仓库、应用程序、库或生成器
 vp create vite:monorepo
 vp create vite:application
 vp create vite:library
 vp create vite:generator
 
-# Use shorthand community templates
+# 使用简写社区模板
 vp create vite
 vp create @tanstack/start
 vp create svelte
 
-# Use full package names
+# 使用完整的包名
 vp create create-vite
 vp create create-next-app
 
-# Use remote templates
+# 使用远程模板
 vp create github:user/repo
 vp create https://github.com/user/template-repo
 ```

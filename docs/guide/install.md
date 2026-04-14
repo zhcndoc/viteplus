@@ -1,32 +1,32 @@
-# Installing Dependencies
+# 安装依赖
 
-`vp install` installs dependencies using the current workspace's package manager.
+`vp install` 使用当前工作区的包管理器来安装依赖。
 
-## Overview
+## 概述
 
-Use Vite+ to manage dependencies across pnpm, npm, Yarn, and Bun. Instead of switching between `pnpm install`, `npm install`, `yarn install`, and `bun install`, you can keep using `vp install`, `vp add`, `vp remove`, and the rest of the Vite+ package-management commands.
+使用 Vite+ 来管理 pnpm、npm、Yarn 和 Bun 之间的依赖关系。无需在 `pnpm install`、`npm install`、`yarn install` 和 `bun install` 之间切换，你可以继续使用 `vp install`、`vp add`、`vp remove` 以及其余的 Vite+ 包管理命令。
 
-Vite+ detects the package manager from the workspace root in this order:
+Vite+ 按照以下顺序检测包管理器：
 
-1. `packageManager` in `package.json`
+1. `package.json` 中的 `packageManager`
 2. `pnpm-workspace.yaml`
 3. `pnpm-lock.yaml`
-4. `yarn.lock` or `.yarnrc.yml`
+4. `yarn.lock` 或 `.yarnrc.yml`
 5. `package-lock.json`
-6. `bun.lock` or `bun.lockb`
-7. `.pnpmfile.cjs` or `pnpmfile.cjs`
+6. `bun.lock` 或 `bun.lockb`
+7. `.pnpmfile.cjs` 或 `pnpmfile.cjs`
 8. `bunfig.toml`
 9. `yarn.config.cjs`
 
-If none of those files are present, `vp` falls back to `pnpm` by default. Vite+ automatically downloads the matching package manager and uses it for the command you ran.
+如果以上文件都不存在，Vite+ 默认回退到 `pnpm`。Vite+ 会自动下载匹配的包管理器并用于你运行的命令。
 
-## Usage
+## 用法
 
 ```bash
 vp install
 ```
 
-Common install flows:
+常见安装流程：
 
 ```bash
 vp install
@@ -36,61 +36,61 @@ vp install --filter web
 vp install -w
 ```
 
-`vp install` maps to the correct underlying install behavior for the detected package manager, including the right lockfile flags for pnpm, npm, Yarn, and Bun.
+`vp install` 会映射到检测到的包管理器的正确底层安装行为，包括适用于 pnpm、npm、Yarn 和 Bun 的正确锁文件标志。
 
-## Global Packages
+## 全局包
 
-Use the `-g` flag for installing, updating or removing globally installed packages:
+使用 `-g` 标志来安装、更新或移除全局安装的包：
 
-- `vp install -g <pkg>` installs a package globally
-- `vp uninstall -g <pkg>` removes a global package
-- `vp update -g [pkg]` updates one global package or all of them
-- `vp list -g [pkg]` lists global packages
+- `vp install -g <pkg>` 全局安装一个包
+- `vp uninstall -g <pkg>` 移除一个全局包
+- `vp update -g [pkg]` 更新一个全局包或所有全局包
+- `vp list -g [pkg]` 列出全局包
 
-## Managing Dependencies
+## 管理依赖
 
-Vite+ provides all the familiar package management commands:
+Vite+ 提供了所有熟悉的包管理命令：
 
-- `vp install` installs the current dependency graph for the project
-- `vp add <pkg>` adds packages to `dependencies`, use `-D` for `devDependencies`
-- `vp remove <pkg>` removes packages
-- `vp update` updates dependencies
-- `vp dedupe` reduces duplicate dependency entries where the package manager supports it
-- `vp outdated` shows available updates
-- `vp list` shows installed packages
-- `vp why <pkg>` explains why a package is present
-- `vp info <pkg>` shows registry metadata for a package
-- `vp link` and `vp unlink` manage local package links
-- `vp dlx <pkg>` runs a package binary without adding it to the project
-- `vp pm <command>` forwards a raw package-manager-specific command when you need behavior outside the normalized `vp` command set
+- `vp install` 安装项目的当前依赖图
+- `vp add <pkg>` 添加包到 `dependencies`，使用 `-D` 表示 `devDependencies`
+- `vp remove <pkg>` 移除包
+- `vp update` 更新依赖
+- `vp dedupe` 在包管理器支持的情况下减少重复的依赖项
+- `vp outdated` 显示可用的更新
+- `vp list` 显示已安装的包
+- `vp why <pkg>` 解释某个包存在的原因
+- `vp info <pkg>` 显示包的注册表元数据，如版本和 dist-tags
+- `vp link` 和 `vp unlink` 管理本地包链接
+- `vp dlx <pkg>` 运行包二进制文件而不将其添加到项目中
+- `vp pm <command>` 当你需要超出标准化 `vp` 命令集的规范行为时，直接转发到解析的包管理器
 
-### Command Guide
+### 命令指南
 
-#### Install
+#### 安装
 
-Use `vp install` when you want to install exactly what the current `package.json` and lockfile describe.
+当你想安装与当前 `package.json` 和锁文件完全一致的内容时，使用 `vp install`。
 
-- `vp install` is the standard install command
-- `vp install --frozen-lockfile` fails if the lockfile would need changes
-- `vp install --no-frozen-lockfile` allows lockfile updates explicitly
-- `vp install --lockfile-only` updates the lockfile without performing a full install
-- `vp install --prefer-offline` and `vp install --offline` prefer or require cached packages
-- `vp install --ignore-scripts` skips lifecycle scripts
-- `vp install --filter <pattern>` scopes install work in monorepos
-- `vp install -w` installs in the workspace root
+- `vp install` 是标准安装命令
+- `vp install --frozen-lockfile` 如果锁文件需要更改则失败
+- `vp install --no-frozen-lockfile` 允许显式更新锁文件
+- `vp install --lockfile-only` 不执行完整安装，仅更新锁文件
+- `vp install --prefer-offline` 和 `vp install --offline` 优先或强制使用缓存包
+- `vp install --ignore-scripts` 跳过生命周期脚本
+- `vp install --filter <pattern>` 在 monorepo 中限制安装范围
+- `vp install -w` 在工作区根目录安装
 
-#### Global Install
+#### 全局安装
 
-Use these commands when you want package-manager-managed tools available outside a single project.
+当你想让包管理器管理的工具在单个项目之外可用时，使用这些命令：
 
 - `vp install -g typescript`
 - `vp uninstall -g typescript`
 - `vp update -g`
 - `vp list -g`
 
-#### Add and Remove
+#### 添加和移除
 
-Use `vp add` and `vp remove` for day-to-day dependency edits instead of editing `package.json` by hand.
+使用 `vp add` 和 `vp remove` 进行日常的依赖编辑，而不是手动编辑 `package.json`。
 
 - `vp add react`
 - `vp add -D typescript vitest`
@@ -99,31 +99,31 @@ Use `vp add` and `vp remove` for day-to-day dependency edits instead of editing 
 - `vp remove react`
 - `vp remove --filter web react`
 
-#### Update, Dedupe, and Outdated
+#### 更新、压缩和查看过期
 
-Use these commands to maintain the dependency graph over time.
+使用这些命令来维护依赖图：
 
-- `vp update` refreshes packages to newer versions
-- `vp outdated` shows which packages have newer versions available
-- `vp dedupe` asks the package manager to collapse duplicates where possible
+- `vp update` 刷新包到更新版本
+- `vp outdated` 显示哪些包有可用的新版本
+- `vp dedupe` 请求包管理器在可能的情况下折叠重复项
 
-#### Inspect
+#### 检查
 
-Use these when you need to understand the current state of dependencies.
+当你需要了解依赖的当前状态时，使用这些命令：
 
-- `vp list` shows installed packages
-- `vp why react` explains why `react` is installed
-- `vp info react` shows registry metadata such as versions and dist-tags
+- `vp list` 显示已安装的包
+- `vp why react` 解释为什么安装了 `react`
+- `vp info react` 显示注册表元数据，如版本和 dist-tags
 
-#### Advanced
+#### 高级用法
 
-Use these when you need lower-level package-manager behavior.
+当你需要更低级别的包管理器行为时，使用这些命令：
 
-- `vp link` and `vp unlink` manage local development links
-- `vp dlx create-vite` runs a package binary without saving it as a dependency
-- `vp pm <command>` forwards directly to the resolved package manager
+- `vp link` 和 `vp unlink` 管理本地开发链接
+- `vp dlx create-vite` 运行包二进制文件而不将其保存为依赖
+- `vp pm <command>` 直接转发到解析的包管理器
 
-Examples:
+示例：
 
 ```bash
 vp pm config get registry

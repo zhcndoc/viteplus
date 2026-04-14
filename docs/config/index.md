@@ -1,6 +1,6 @@
-# Configuring Vite+
+# 配置 Vite+
 
-Vite+ keeps project configuration in one place: `vite.config.ts`, allowing you to consolidate many top-level configuration files in a single file. You can keep using your Vite configuration such as `server` or `build`, and add Vite+ blocks for the rest of your workflow:
+Vite+ 将项目配置集中在一个地方：`vite.config.ts`，允许你将多个顶层配置文件合并到一个文件中。你可以继续使用原有的 Vite 配置，如 `server` 或 `build`，并为其余工作流添加 Vite+ 模块：
 
 ```ts
 import { defineConfig } from 'vite-plus';
@@ -19,13 +19,13 @@ export default defineConfig({
 });
 ```
 
-## Vite+ Specific Configuration
+## Vite+ 专属配置
 
-Vite+ extends the basic Vite configuration with these additions:
+Vite+ 通过以下扩展增强了基础 Vite 配置：
 
-- [`lint`](/config/lint) for Oxlint
-- [`fmt`](/config/fmt) for Oxfmt
-- [`test`](/config/test) for Vitest
-- [`run`](/config/run) for Vite Task
-- [`pack`](/config/pack) for tsdown
-- [`staged`](/config/staged) for staged-file checks
+- [`lint`](/config/lint) 用于 Oxlint
+- [`fmt`](/config/fmt) 用于 Oxfmt
+- [`test`](/config/test) 用于 Vitest
+- [`run`](/config/run) 用于 Vite Task
+- [`pack`](/config/pack) 用于 tsdown
+- [`staged`](/config/staged) 用于 staged-file 检查

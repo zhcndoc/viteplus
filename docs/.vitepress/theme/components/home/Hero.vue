@@ -1,26 +1,32 @@
 <template>
-  <div class="wrapper flex flex-col justify-start items-center gap-6 pt-14 pb-6">
-    <div class="w-full sm:w-2xl flex flex-col justify-start items-center gap-10 px-5 sm:px-0">
+  <div
+    class="wrapper flex flex-col justify-start items-center gap-6 pt-14 pb-6"
+  >
+    <div
+      class="w-full sm:w-2xl flex flex-col justify-start items-center gap-10 px-5 sm:px-0"
+    >
       <div class="flex flex-col justify-start items-center gap-4">
-        <img src="/icon.svg" alt="Vite+ Logo" class="w-9" />
+        <img src="/icon.svg" alt="Vite+ 标志" class="w-9" />
         <h1 class="text-center text-primary text-balance shine-text">
-          <span class="inline-block">The Unified</span>
-          <span class="inline-block">Toolchain for the Web</span>
+          <span class="inline-block">Web 的统一</span>
+          <span class="inline-block">工具链</span>
         </h1>
         <p class="self-stretch text-center text-balance text-nickel">
-          Manage your runtime, package manager, and frontend stack with one tool.
+          用一个工具管理运行时、包管理器和前端技术栈。
         </p>
-        <p class="text-sm text-grey">Free and open source under the MIT license.</p>
+        <p class="text-sm text-grey">采用 MIT 许可证的免费开源项目。</p>
       </div>
       <div class="flex items-center gap-5">
-        <a href="/guide" target="_self" class="button button--primary"> Get started </a>
+        <a href="/guide" target="_self" class="button button--primary">
+          开始使用
+        </a>
         <a
           href="https://voidzero.dev/posts/announcing-vite-plus-alpha"
           target="_blank"
           rel="noopener noreferrer"
           class="button"
         >
-          Read the Announcement
+          阅读公告
         </a>
       </div>
     </div>

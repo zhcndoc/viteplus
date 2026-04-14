@@ -7,71 +7,71 @@ import { withMermaid } from 'vitepress-plugin-mermaid';
 
 const taskRunnerGuideItems = [
   {
-    text: 'Run',
+    text: '运行',
     link: '/guide/run',
   },
   {
-    text: 'Task Caching',
+    text: '任务缓存',
     link: '/guide/cache',
   },
   {
-    text: 'Running Binaries',
+    text: '运行二进制',
     link: '/guide/vpx',
   },
 ];
 
 const guideSidebar = [
   {
-    text: 'Introduction',
+    text: '入门',
     items: [
-      { text: 'Getting Started', link: '/guide/' },
-      { text: 'Creating a Project', link: '/guide/create' },
-      { text: 'Migrate to Vite+', link: '/guide/migrate' },
-      { text: 'Installing Dependencies', link: '/guide/install' },
-      { text: 'Environment', link: '/guide/env' },
-      { text: 'Why Vite+', link: '/guide/why' },
+      { text: '开始使用', link: '/guide/' },
+      { text: '创建项目', link: '/guide/create' },
+      { text: '迁移到 Vite+', link: '/guide/migrate' },
+      { text: '安装依赖', link: '/guide/install' },
+      { text: '环境', link: '/guide/env' },
+      { text: '为什么选择 Vite+', link: '/guide/why' },
     ],
   },
   {
-    text: 'Develop',
+    text: '开发',
     items: [
-      { text: 'Dev', link: '/guide/dev' },
+      { text: '开发', link: '/guide/dev' },
       {
-        text: 'Check',
+        text: '检查',
         link: '/guide/check',
         items: [
           { text: 'Lint', link: '/guide/lint' },
-          { text: 'Format', link: '/guide/fmt' },
+          { text: '格式化', link: '/guide/fmt' },
         ],
       },
-      { text: 'Test', link: '/guide/test' },
+      { text: '测试', link: '/guide/test' },
     ],
   },
   {
-    text: 'Execute',
+    text: '执行',
     items: taskRunnerGuideItems,
   },
   {
-    text: 'Build',
+    text: '构建',
     items: [
-      { text: 'Build', link: '/guide/build' },
-      { text: 'Pack', link: '/guide/pack' },
+      { text: '构建', link: '/guide/build' },
+      { text: '打包', link: '/guide/pack' },
     ],
   },
   {
-    text: 'Maintain',
+    text: '维护',
     items: [
-      { text: 'Upgrading Vite+', link: '/guide/upgrade' },
-      { text: 'Removing Vite+', link: '/guide/implode' },
+      { text: '升级 Vite+', link: '/guide/upgrade' },
+      { text: '移除 Vite+', link: '/guide/implode' },
     ],
   },
   {
-    text: 'Workflow',
+    text: '工作流',
     items: [
-      { text: 'IDE Integration', link: '/guide/ide-integration' },
+      { text: 'IDE 集成', link: '/guide/ide-integration' },
       { text: 'CI', link: '/guide/ci' },
-      { text: 'Commit Hooks', link: '/guide/commit-hooks' },
-      { text: 'Troubleshooting', link: '/guide/troubleshooting' },
+      { text: '提交钩子', link: '/guide/commit-hooks' },
+      { text: '故障排查', link: '/guide/troubleshooting' },
     ],
   },
 ];
@@ -79,9 +79,9 @@ const guideSidebar = [
 export default extendConfig(
   withMermaid(
     defineConfig({
-      title: 'Vite+',
-      titleTemplate: ':title | The Unified Toolchain for the Web',
-      description: 'The Unified Toolchain for the Web',
+      title: 'Vite+ 中文文档',
+      // titleTemplate: ':title - Vite+ 中文文档',
+      description: 'Web 的统一工具链，用一个工具管理运行时、包管理器和前端技术栈。',
       cleanUrls: true,
       head: [
         ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
@@ -95,18 +95,10 @@ export default extendConfig(
         ],
         ['meta', { name: 'theme-color', content: '#7474FB' }],
         ['meta', { property: 'og:type', content: 'website' }],
-        ['meta', { property: 'og:site_name', content: 'Vite+' }],
+        ['meta', { property: 'og:site_name', content: 'Vite+ 中文文档' }],
         ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
         ['meta', { name: 'twitter:site', content: '@voidzerodev' }],
-        [
-          'script',
-          {
-            src: 'https://cdn.usefathom.com/script.js',
-            'data-site': 'JFDLUWBH',
-            'data-spa': 'auto',
-            defer: '',
-          },
-        ],
+        ['script', { src: 'https://www.zhcndoc.com/js/common.js', defer: '' }],
       ],
       vite: {
         optimizeDeps: {
@@ -127,45 +119,50 @@ export default extendConfig(
         variant: 'viteplus' as VoidZeroThemeConfig['variant'],
         nav: [
           {
-            text: 'Guide',
+            text: '指南',
             link: '/guide/',
             activeMatch: '^/guide/',
           },
           {
-            text: 'Config',
+            text: '配置',
             link: '/config/',
             activeMatch: '^/config/',
           },
           {
-            text: 'Resources',
+            text: '资源',
             items: [
               { text: 'GitHub', link: 'https://github.com/voidzero-dev/vite-plus' },
-              { text: 'Releases', link: 'https://github.com/voidzero-dev/vite-plus/releases' },
+              { text: '版本发布', link: 'https://github.com/voidzero-dev/vite-plus/releases' },
               {
-                text: 'Announcement',
+                text: '公告',
                 link: 'https://voidzero.dev/posts/announcing-vite-plus-alpha',
               },
               {
-                text: 'Contributing',
+                text: '贡献指南',
                 link: 'https://github.com/voidzero-dev/vite-plus/blob/main/CONTRIBUTING.md',
               },
             ],
+          },
+          {
+            text: '简中文档',
+            link: 'https://www.zhcndoc.com',
+            target: '_blank',
           },
         ],
         sidebar: {
           '/guide/': guideSidebar,
           '/config/': [
             {
-              text: 'Configuration',
+              text: '配置',
               items: [
-                { text: 'Configuring Vite+', link: '/config/' },
-                { text: 'Run', link: '/config/run' },
-                { text: 'Format', link: '/config/fmt' },
+                { text: '配置 Vite+', link: '/config/' },
+                { text: '运行', link: '/config/run' },
+                { text: '格式化', link: '/config/fmt' },
                 { text: 'Lint', link: '/config/lint' },
-                { text: 'Test', link: '/config/test' },
-                { text: 'Build', link: '/config/build' },
-                { text: 'Pack', link: '/config/pack' },
-                { text: 'Staged', link: '/config/staged' },
+                { text: '测试', link: '/config/test' },
+                { text: '构建', link: '/config/build' },
+                { text: '打包', link: '/config/pack' },
+                { text: '暂存检查', link: '/config/staged' },
               ],
             },
           ],
@@ -186,27 +183,27 @@ export default extendConfig(
         footer: {
           copyright: `© ${new Date().getFullYear()} VoidZero Inc. and Vite+ contributors.`,
           nav: [
-             {
-              title: "Company",
+            {
+              title: '公司',
               items: [
-                { text: "VoidZero", link: "https://voidzero.dev" },
-                { text: "Vite", link: "https://vite.dev" },
-                { text: "Vitest", link: "https://vitest.dev" },
-                { text: "Rolldown", link: "https://rolldown.rs" },
-                { text: "Oxc", link: "https://oxc.rs" },
+                { text: 'VoidZero', link: 'https://voidzero.dev' },
+                { text: 'Vite', link: 'https://vite.dev' },
+                { text: 'Vitest', link: 'https://vitest.dev' },
+                { text: 'Rolldown', link: 'https://rolldown.rs' },
+                { text: 'Oxc', link: 'https://oxc.rs' },
               ],
             },
           ],
-            social: [
-              { icon: "github", link: "https://github.com/voidzero-dev/vite-plus" },
-              { icon: "x", link: "https://x.com/voidzerodev" },
-              { icon: "discord", link: "https://discord.gg/cC6TEVFKSx" },
-              { icon: "bluesky", link: "https://bsky.app/profile/voidzero.dev" },
-            ],
-        }
+          social: [
+            { icon: 'github', link: 'https://github.com/voidzero-dev/vite-plus' },
+            { icon: 'x', link: 'https://x.com/voidzerodev' },
+            { icon: 'discord', link: 'https://discord.gg/cC6TEVFKSx' },
+            { icon: 'bluesky', link: 'https://bsky.app/profile/voidzero.dev' },
+          ],
+        },
       },
       transformHead({ page, pageData }) {
-        const url = 'https://viteplus.dev/' + page.replace(/\.md$/, '').replace(/index$/, '');
+        const url = 'https://viteplus.zhcndoc.com/' + page.replace(/\.md$/, '').replace(/index$/, '');
 
         const canonicalUrlEntry: HeadConfig = [
           'link',
@@ -217,12 +214,12 @@ export default extendConfig(
         ];
 
         const ogInfo: HeadConfig[] = [
-          ['meta', { property: 'og:title', content: pageData.frontmatter.title ?? 'Vite+' }],
+          ['meta', { property: 'og:title', content: pageData.frontmatter.title ?? 'Vite+ 中文文档' }],
           [
             'meta',
             {
               property: 'og:image',
-              content: `https://viteplus.dev/${pageData.frontmatter.cover ?? 'og.jpg'}`,
+              content: `https://viteplus.zhcndoc.com/${pageData.frontmatter.cover ?? 'og.jpg'}`,
             },
           ],
           ['meta', { property: 'og:url', content: url }],
@@ -230,7 +227,7 @@ export default extendConfig(
             'meta',
             {
               property: 'og:description',
-              content: pageData.frontmatter.description ?? 'The Unified Toolchain for the Web',
+              content: pageData.frontmatter.description ?? 'Web 的统一工具链，用一个工具管理运行时、包管理器和前端技术栈。',
             },
           ],
         ];

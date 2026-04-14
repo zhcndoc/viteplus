@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import 'vue3-carousel/carousel.css';
-import { Carousel, Slide, Pagination, Navigation } from 'vue3-carousel';
+import "vue3-carousel/carousel.css";
+import { Carousel, Slide, Pagination, Navigation } from "vue3-carousel";
 
-import { testimonials } from '../../data/testimonials';
+import { testimonials } from "../../data/testimonials";
 
 const carouselConfig = {
-  itemsToShow: 'auto',
+  itemsToShow: "auto",
   wrapAround: true,
-  snapAlign: 'start',
+  snapAlign: "start",
 };
 </script>
 
@@ -19,18 +19,20 @@ const carouselConfig = {
       <div
         class="p-5 md:p-10 grow-0 md:grow flex flex-col gap-5 h-72 justify-center md:justify-start"
       >
-        <h3 class="text-pretty">Hear from our customers</h3>
+        <h3 class="text-pretty">听听我们的用户怎么说</h3>
         <p class="block md:hidden">
-          LLMs already know Vite. Leading prompt-to-app platforms including Bolt, Lovable and Replit
-          all default to building user applications using Vite.
+          LLM 已经认识 Vite。Bolt、Lovable 和 Replit 等领先的 prompt-to-app
+          平台，默认都 使用 Vite 构建用户应用。
         </p>
       </div>
       <div class="px-5 py-6 md:px-10 md:pt-7 md:pb-8 flex flex-col gap-4">
         <h3 class="text-4xl sm:text-5xl font-normal font-sans">500k+</h3>
-        <p>Stat label goes here</p>
+        <p>这里放统计说明</p>
       </div>
     </div>
-    <div class="col-span-1 md:col-span-2 bg-beige/50 border-t border-stroke md:border-t-0">
+    <div
+      class="col-span-1 md:col-span-2 bg-beige/50 border-t border-stroke md:border-t-0"
+    >
       <Carousel v-bind="carouselConfig" class="py-10 pb-20 sm:pb-10">
         <Slide v-for="(testimonial, index) in testimonials" :key="index">
           <div
@@ -55,7 +57,8 @@ const carouselConfig = {
                 class="size-12"
               />
               <p class="text-grey text-sm font-sans leading-tight">
-                {{ testimonial.name }}<br />{{ testimonial.title }} @ {{ testimonial.company }}
+                {{ testimonial.name }}<br />{{ testimonial.title }} @
+                {{ testimonial.company }}
               </p>
             </div>
           </div>

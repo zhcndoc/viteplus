@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { TabsList, TabsRoot, TabsTrigger } from 'reka-ui';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { TabsList, TabsRoot, TabsTrigger } from "reka-ui";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
-import { featureRunTranscripts } from '../../data/feature-run-transcripts';
-import TerminalTranscript from './TerminalTranscript.vue';
+import { featureRunTranscripts } from "../../data/feature-run-transcripts";
+import TerminalTranscript from "./TerminalTranscript.vue";
 
 const AUTO_ADVANCE_DELAY = 2400;
 
@@ -19,8 +19,9 @@ let mediaQuery: MediaQueryList | null = null;
 
 const activeTranscript = computed(
   () =>
-    featureRunTranscripts.find((transcript) => transcript.id === activeStep.value) ??
-    featureRunTranscripts[0],
+    featureRunTranscripts.find(
+      (transcript) => transcript.id === activeStep.value,
+    ) ?? featureRunTranscripts[0],
 );
 
 const clearAutoAdvance = () => {
@@ -68,17 +69,17 @@ const syncReducedMotionPreference = () => {
 };
 
 onMounted(() => {
-  if (typeof window !== 'undefined' && 'matchMedia' in window) {
-    mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (typeof window !== "undefined" && "matchMedia" in window) {
+    mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     syncReducedMotionPreference();
-    if ('addEventListener' in mediaQuery) {
-      mediaQuery.addEventListener('change', syncReducedMotionPreference);
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", syncReducedMotionPreference);
     } else {
       mediaQuery.addListener(syncReducedMotionPreference);
     }
   }
 
-  if (!sectionRef.value || typeof IntersectionObserver === 'undefined') {
+  if (!sectionRef.value || typeof IntersectionObserver === "undefined") {
     hasEnteredViewport.value = true;
     return;
   }
@@ -94,7 +95,7 @@ onMounted(() => {
     },
     {
       threshold: 0.35,
-      rootMargin: '0px',
+      rootMargin: "0px",
     },
   );
 
@@ -107,8 +108,8 @@ onUnmounted(() => {
   if (!mediaQuery) {
     return;
   }
-  if ('removeEventListener' in mediaQuery) {
-    mediaQuery.removeEventListener('change', syncReducedMotionPreference);
+  if ("removeEventListener" in mediaQuery) {
+    mediaQuery.removeEventListener("change", syncReducedMotionPreference);
   } else {
     mediaQuery.removeListener(syncReducedMotionPreference);
   }
@@ -130,7 +131,7 @@ onUnmounted(() => {
         />
       </div>
       <TabsList
-        aria-label="Vite Task cache examples"
+        aria-label="Vite Task 缓存示例"
         class="run-step-picker flex items-center p-1 rounded-md border border-white/10 bg-[#111]"
       >
         <TabsTrigger

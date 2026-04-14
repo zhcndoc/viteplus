@@ -2,7 +2,7 @@
 home: true
 layout: home
 theme: light
-titleTemplate: The Unified Toolchain for the Web
+titleTemplate: Web 的统一工具链
 ---
 
 <script setup>

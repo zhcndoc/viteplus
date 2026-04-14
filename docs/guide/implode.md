@@ -1,22 +1,22 @@
-# Removing Vite+
+# 移除 Vite+
 
-Use `vp implode` to remove `vp` and all related Vite+ data from your machine.
+使用 `vp implode` 从您的机器中移除 `vp` 和所有相关的 Vite+ 数据。
 
-## Overview
+## 概述
 
-`vp implode` is the cleanup command for removing a Vite+ installation and its managed data. Use it if you no longer want Vite+ to manage your runtime, package manager, and related local tooling state.
+`vp implode` 是用于清理并移除 Vite+ 安装及其管理数据的命令。如果您不再希望 Vite+ 管理您的运行时、包管理器及相关本地工具状态，请使用此命令。
 
 ::: info
-If you decide Vite+ is not for you, please [share your feedback with us](https://discord.gg/cAnsqHh5PX).
+如果您觉得 Vite+ 不适合您，请 [与我们分享您的反馈](https://discord.gg/cAnsqHh5PX)。
 :::
 
-## Usage
+## 用法
 
 ```bash
 vp implode
 ```
 
-Skip the confirmation prompt with:
+使用以下命令跳过确认提示：
 
 ```bash
 vp implode --yes

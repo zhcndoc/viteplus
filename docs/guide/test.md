@@ -1,12 +1,12 @@
-# Test
+# 测试
 
-`vp test` runs tests with [Vitest](https://vitest.dev).
+`vp test` 使用 [Vitest](https://vitest.dev) 运行测试。
 
-## Overview
+## 概述
 
-`vp test` is built on [Vitest](https://vitest.dev/), so you get a Vite-native test runner that reuses your Vite config and plugins, supports Jest-style expectations, snapshots, and coverage, and handles modern ESM, TypeScript, and JSX projects cleanly.
+`vp test` 基于 [Vitest](https://vitest.dev/) 构建，因此你获得了一个 Vite 原生的测试运行器，可以复用你的 Vite 配置和插件，支持 Jest 风格的断言、快照和覆盖率，并且能干净地处理现代 ESM、TypeScript 和 JSX 项目。
 
-## Usage
+## 用法
 
 ```bash
 vp test
@@ -15,12 +15,12 @@ vp test run --coverage
 ```
 
 ::: info
-Unlike Vitest on its own, `vp test` does not stay in watch mode by default. Use `vp test` when you want a normal test run, and use `vp test watch` when you want to jump into watch mode.
+与单独的 Vitest 不同，`vp test` 默认不会保持在监视模式。当你想要一次正常的测试运行时使用 `vp test`，想要进入监视模式时使用 `vp test watch`。
 :::
 
-## Configuration
+## 配置
 
-Put test configuration directly in the `test` block in `vite.config.ts` so all your configuration stays in one place. We do not recommend using `vitest.config.ts` with Vite+.
+将测试配置直接放在 `vite.config.ts` 中的 `test` 块内，这样所有配置都集中在一处。我们不建议在 Vite+ 中使用 `vitest.config.ts`。
 
 ```ts
 import { defineConfig } from 'vite-plus';
@@ -32,4 +32,4 @@ export default defineConfig({
 });
 ```
 
-For the full Vitest configuration reference, see the [Vitest config docs](https://vitest.dev/config/).
+如需完整的 Vitest 配置参考，请参阅 [Vitest 配置文档](https://vitest.dev/config/)。

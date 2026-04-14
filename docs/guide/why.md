@@ -1,39 +1,39 @@
-# Why Vite+?
+# 为什么要使用 Vite+？
 
-Working in the JavaScript ecosystem today, developers need a runtime such as Node.js, a package manager like pnpm, a dev server, a linter, a formatter, a test runner, a bundler, a task runner, and a growing number of config files.
+在今天的 JavaScript 生态系统中，开发人员需要一个运行时（如 Node.js）、一个包管理器（如 pnpm）、一个开发服务器、一个 linter、一个格式化工具、一个测试运行器、一个打包器、一个任务运行器，以及越来越多的配置文件。
 
-Vite showed that frontend tooling could become dramatically faster by rethinking the architecture instead of accepting the status quo. Vite+ applies that same idea to the rest of the local development workflow, and unifies them all into a single package that speeds up and simplifies development.
+Vite 表明，前端工具链可以通过重新思考架构而不是接受现状来变得显著更快。Vite+ 将同样的理念应用于本地开发工作流的其他部分，并将它们统一到一个包中，以加快并简化开发。
 
-## The Problem Vite+ is Solving
+## Vite+ 解决的问题
 
-The JavaScript tooling ecosystem has seen its fair share of fragmentation and churn. Web apps keep getting larger, and as a result tooling performance, complexity, and inconsistencies have become real bottlenecks as projects grow.
+JavaScript 工具链生态系统经历了相当程度的分化和波动。Web 应用程序不断变得更大，因此工具链的性能、复杂性和不一致性已成为项目增长的真实瓶颈。
 
-These bottlenecks are amplified in organizations with multiple teams, each using a different tooling stack. Dependency management, build infrastructure, and code quality become fragmented responsibilities, handled team by team and often not owned as a priority by anyone. As a result, dependencies drift out of sync, builds get slower, and code quality declines. Fixing those problems later requires significantly more effort, slows everyone down, and pulls teams away from shipping product.
+这些瓶颈在拥有多个团队、每个团队使用不同工具栈的组织中被放大。依赖项管理、构建基础设施和代码质量成为分散的责任，由各个团队分别处理，且通常无人将其作为优先事项。结果导致依赖项不同步，构建速度变慢，代码质量下降。事后修复这些问题需要付出更多努力，拖慢所有人的进度，并使团队无法专注于交付产品。
 
-## What's Included in Vite+
+## Vite+ 包含的内容
 
-Vite+ brings the tools needed for modern web development together into a single, integrated toolchain. Instead of assembling and maintaining a custom toolchain, Vite+ provides a consistent entry point that manages the runtime, dependencies, development server, code quality checks, testing, and builds in one place.
+Vite+ 将现代 Web 开发所需的工具整合到一个统一的工具链中。无需组装和维护自定义工具链，Vite+ 提供了一致的入口点，统一管理运行时、依赖项、开发服务器、代码质量检查、测试和构建。
 
-- **[Vite](https://vite.dev/)** and **[Rolldown](https://rolldown.rs/)** for development and application builds
-- **[Vitest](https://vitest.dev/)** for testing
-- **[Oxlint](https://oxc.rs/docs/guide/usage/linter.html)** and **[Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html)** for linting and formatting
-- **[tsdown](https://tsdown.dev/)** for library builds or standalone executables
-- **[Vite Task](https://github.com/voidzero-dev/vite-task)** for task orchestration
+- **[Vite](https://vite.dev/)** 和 **[Rolldown](https://rolldown.rs/)** 用于开发和应用程序构建  
+- **[Vitest](https://vitest.dev/)** 用于测试  
+- **[Oxlint](https://oxc.rs/docs/guide/usage/linter.html)** 和 **[Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html)** 用于代码检查和格式化  
+- **[tsdown](https://tsdown.dev/)** 用于库构建或独立可执行文件  
+- **[Vite Task](https://github.com/voidzero-dev/vite-task)** 用于任务编排  
 
-In practice, this means developers interact with one consistent workflow: `vp dev`, `vp check`, `vp test`, and `vp build`.
+实际上，这意味着开发人员只需与一个一致的工作流程交互：`vp dev`、`vp check`、`vp test` 和 `vp build`。
 
-This unified toolchain reduces configuration overhead, improves performance, and makes it easier for teams to maintain consistent tooling across projects.
+这种统一的工具链减少了配置开销，提升了性能，并使团队更容易在项目之间保持一致的工具设置。
 
-## Fast and Scalable by Default
+## 默认情况下快速且可扩展
 
-Vite+ is built on top of modern tooling such as Vite, Rolldown, Oxc, Vitest, and Vite Task to keep your projects fast and scalable as your codebase grows. By using Rust, we can speed up common tasks by [10× or sometimes even by 100×](https://voidzero.dev/posts/announcing-vite-plus-alpha#performance-scale). However, many Rust-based toolchains are incompatible with existing tools, or aren't extensible using JavaScript.
+Vite+ 构建在 Vite、Rolldown、Oxc、Vitest 和 Vite Task 等现代工具之上，确保随着代码库增长，你的项目依然保持快速和可扩展。通过使用 Rust，我们可以将常见任务的速度提升 [10 倍甚至 100 倍](https://voidzero.dev/posts/announcing-vite-plus-alpha#performance-scale)。然而，许多基于 Rust 的工具链与现有工具不兼容，或无法使用 JavaScript 扩展。
 
-Vite+ bridges Rust to JavaScript via [NAPI-RS](https://napi.rs/) which allows it to provide a familiar, easy-to-configure, and extensible interface in JavaScript with a great ecosystem-compatible developer experience.
+Vite+ 通过 [NAPI-RS](https://napi.rs/) 将 Rust 与 JavaScript 连接起来，使其能够在 JavaScript 环境中提供熟悉、易于配置且可扩展的接口，并拥有良好的生态系统兼容的开发者体验。
 
-Unifying the toolchain has performance benefits beyond just using faster tools on their own. For example, many developers set up their linter with "type aware" tools, requiring a full-typecheck to be run during the linting stage. With `vp check` you can format, lint, and type-check your code all in a single pass, speeding up static checks by 2× compared to running type-aware lint rules and type-checks separately.
+统一工具链带来的性能优势不仅仅在于单独使用更快的工具。例如，许多开发人员会为 linter 设置“类型感知”工具，这要求在 linting 阶段运行完整的类型检查。使用 `vp check`，你可以在一次通过中完成格式化、lint 检查和类型检查，相比分别运行类型感知 lint 规则和类型检查，静态检查速度可提升 2 倍。
 
-## Fully Open Source
+## 完全开源
 
-Vite+ is fully open source and not a new framework or locked-down platform. Vite+ integrates with the existing Vite ecosystem and the frameworks built on top of it, including React, Vue, Svelte, and others. It can use pnpm, npm, yarn, or Bun as package manager, and manages the Node.js runtime for you.
+Vite+ 完全开源，并非新的框架或封闭平台。Vite+ 与现有的 Vite 生态系统以及在其之上构建的框架（包括 React、Vue、Svelte 等）集成。它可以使用 pnpm、npm、yarn 或 Bun 作为包管理器，并为你管理 Node.js 运行时。
 
-We always welcome contributions from the community. See our [Contributing Guidelines](https://github.com/voidzero-dev/vite-plus/blob/main/CONTRIBUTING.md) to get involved.
+我们始终欢迎社区的贡献。请查看我们的 [贡献指南](https://github.com/voidzero-dev/vite-plus/blob/main/CONTRIBUTING.md) 参与其中。

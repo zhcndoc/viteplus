@@ -1,0 +1,7 @@
+{
+  "app_dir": "/",
+  "build_command": "cd docs && pnpm run build",
+  "ignore_dockerfile": true,
+  "install_command": "cd docs && npm install -g pnpm && pnpm install",
+  "output_dir": "docs/.vitepress/dist"
+}

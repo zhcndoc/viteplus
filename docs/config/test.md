@@ -1,8 +1,8 @@
-# Test Config
+# 测试配置
 
-`vp test` reads Vitest settings from the `test` block in `vite.config.ts`. See [Vitest's configuration](https://vitest.dev/config/) for details.
+`vp test` 从 `vite.config.ts` 中的 `test` 块读取 Vitest 设置。详见 [Vitest 的配置](https://vitest.dev/config/)。
 
-## Example
+## 示例
 
 ```ts
 import { defineConfig } from 'vite-plus';

@@ -1,14 +1,14 @@
-# Format
+# 格式
 
-`vp fmt` formats code with Oxfmt.
+`vp fmt` 使用 Oxfmt 格式化代码。
 
-## Overview
+## 概述
 
-`vp fmt` is built on [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), the Oxc formatter. Oxfmt has full Prettier compatibility and is designed as a fast drop-in replacement for Prettier.
+`vp fmt` 基于 [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 构建，Oxfmt 是 Oxc 的格式化工具。Oxfmt 完全兼容 Prettier，并设计为快速且可直接替代 Prettier。
 
-Use `vp fmt` to format your project, and `vp check` to format, lint and type-check all at once.
+使用 `vp fmt` 来格式化你的项目，使用 `vp check` 可以一次性完成格式化、 lint 和类型检查。
 
-## Usage
+## 用法
 
 ```bash
 vp fmt
@@ -16,11 +16,11 @@ vp fmt --check
 vp fmt . --write
 ```
 
-## Configuration
+## 配置
 
-Put formatting configuration directly in the `fmt` block in `vite.config.ts` so all your configuration stays in one place. We do not recommend using `.oxfmtrc.json` with Vite+.
+将格式化配置直接放在 `vite.config.ts` 中的 `fmt` 块，这样所有配置都保持在一个地方。我们不建议在 Vite+ 中使用 `.oxfmtrc.json`。
 
-For editors, point the formatter config path at `./vite.config.ts` so format-on-save uses the same `fmt` block:
+对于编辑器，将格式化配置路径指向 `./vite.config.ts`，这样保存时格式化会使用相同的 `fmt` 块：
 
 ```json
 {
@@ -28,7 +28,7 @@ For editors, point the formatter config path at `./vite.config.ts` so format-on-
 }
 ```
 
-For the upstream formatter behavior and configuration reference, see the [Oxfmt docs](https://oxc.rs/docs/guide/usage/formatter.html).
+关于上游格式化程序的行为和配置参考，请参阅 [Oxfmt 文档](https://oxc.rs/docs/guide/usage/formatter.html)。
 
 ```ts
 import { defineConfig } from 'vite-plus';

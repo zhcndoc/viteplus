@@ -1,10 +1,10 @@
-# Getting Started
+# 入门指南
 
-Vite+ is the unified toolchain and entry point for web development. It manages your runtime, package manager, and frontend toolchain in one place by combining [Vite](https://vite.dev/), [Vitest](https://vitest.dev/), [Oxlint](https://oxc.rs/docs/guide/usage/linter.html), [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), [Rolldown](https://rolldown.rs/), [tsdown](https://tsdown.dev/), and [Vite Task](https://github.com/voidzero-dev/vite-task).
+Vite+ 是统一的网络开发工具链和入口点。它通过结合 [Vite](https://vite.dev/)、[Vitest](https://vitest.dev/)、[Oxlint](https://oxc.rs/docs/guide/usage/linter.html)、[Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html)、[Rolldown](https://rolldown.rs/)、[tsdown](https://tsdown.dev/) 和 [Vite Task](https://github.com/voidzero-dev/vite-task)，在一个地方管理你的运行时、包管理器和前端工具链。
 
-Vite+ ships in two parts: `vp`, the global command-line tool, and `vite-plus`, the local package installed in each project. If you already have a Vite project, use [`vp migrate`](/guide/migrate) to migrate it to Vite+, or paste our [migration prompt](/guide/migrate#migration-prompt) into your coding agent.
+Vite+ 分为两部分：`vp`（全局命令行工具）和 `vite-plus`（安装在每个项目中的本地包）。如果你已经有一个 Vite 项目，请使用 [`vp migrate`](/guide/migrate) 将其迁移到 Vite+，或者将我们的 [迁移提示](/guide/migrate#migration-prompt) 粘贴到你的编码工具中。
 
-## Install `vp`
+## 安装 `vp`
 
 ### macOS / Linux
 
@@ -18,111 +18,111 @@ curl -fsSL https://vite.plus | bash
 irm https://vite.plus/ps1 | iex
 ```
 
-Alternatively, download and run [`vp-setup.exe`](https://viteplus.dev/vp-setup).
+或者，下载并运行 [`vp-setup.exe`](https://viteplus.zhcndoc.com/vp-setup)。
 
-::: tip SmartScreen warning
-The `vp-setup.exe` is not yet code-signed. Your browser may show a warning when downloading. Click **"..."** → **"Keep"** → **"Keep anyway"** to proceed. If Windows Defender SmartScreen blocks the file when you run it, click **"More info"** → **"Run anyway"**.
+::: tip SmartScreen 警告
+`vp-setup.exe` 尚未进行代码签名。下载时浏览器可能会显示警告。点击 **“…”** → **“保留”** → **“无论如何保留”** 继续。如果 Windows Defender SmartScreen 在你运行文件时阻止它，请点击 **“更多信息”** → **“仍要运行”**。
 :::
 
-After installation, open a new shell and run:
+安装完成后，打开一个新的终端并运行：
 
 ```bash
 vp help
 ```
 
 ::: info
-Vite+ will manage your global Node.js runtime and package manager. If you'd like to opt out of this behavior, run `vp env off`. If you realize Vite+ is not for you, type `vp implode`, but please [share your feedback with us](https://discord.gg/cAnsqHh5PX).
+Vite+ 将管理你的全局 Node.js 运行时和包管理器。如果你希望选择退出此行为，请运行 `vp env off`。如果你发现 Vite+ 不适合你，输入 `vp implode`，但请 [与我们分享反馈](https://discord.gg/cAnsqHh5PX)。
 :::
 
-::: details Using a minor platform (CPU architecture, OS) ?
+::: details 使用小型平台（CPU 架构、操作系统）？
 
-Prebuilt binaries are distributed for the following platforms (grouped by [Node.js v24 platform support tier](https://github.com/nodejs/node/blob/v24.x/BUILDING.md#platform-list)):
+预构建的二进制文件会分发到以下平台（按 [Node.js v24 平台支持层级](https://github.com/nodejs/node/blob/v24.x/BUILDING.md#platform-list) 分组）：
 
-- Tier 1
+- 第 1 层级
   - Linux x64 glibc (`x86_64-unknown-linux-gnu`)
   - Linux arm64 glibc (`aarch64-unknown-linux-gnu`)
   - Windows x64 (`x86_64-pc-windows-msvc`)
   - macOS x64 (`x86_64-apple-darwin`)
   - macOS arm64 (`aarch64-apple-darwin`)
-- Tier 2
+- 第 2 层级
   - Windows arm64 (`aarch64-pc-windows-msvc`)
-- Experimental
+- 实验性
   - Linux x64 musl (`x86_64-unknown-linux-musl`)
-- Other
+- 其他
   - Linux arm64 musl (`aarch64-unknown-linux-musl`)
 
-If a prebuilt binary is not available for your platform, installation will fail with an error.
+如果你的平台没有预构建的二进制文件，安装将会失败并报错。
 
-On Alpine Linux (musl), you need to install `libstdc++` before using Vite+:
+在 Alpine Linux (musl) 上，使用 Vite+ 前需要安装 `libstdc++`：
 
 ```sh
 apk add libstdc++
 ```
 
-This is required because the managed [unofficial-builds](https://unofficial-builds.nodejs.org/) Node.js runtime depends on the GNU C++ standard library.
+这是因为所管理的 [非官方构建版本](https://unofficial-builds.nodejs.org/) Node.js 运行时依赖于 GNU C++ 标准库。
 
 :::
 
-## Quick Start
+## 快速开始
 
-Create a project, install dependencies, and use the default commands:
+创建一个项目，安装依赖项，并使用默认命令：
 
 ```bash
-vp create # Create a new project
-vp install # Install dependencies
-vp dev # Start the dev server
-vp check # Format, lint, type-check
-vp test # Run JavaScript tests
-vp build # Build for production
+vp create # 创建一个新项目
+vp install # 安装依赖项
+vp dev # 启动开发服务器
+vp check # 格式化、Lint、类型检查
+vp test # 运行 JavaScript 测试
+vp build # 构建生产版本
 ```
 
-You can also just run `vp` on its own and use the interactive command line.
+你也可以直接运行 `vp` 并使用交互式命令行。
 
-## Core Commands
+## 核心命令
 
-Vite+ can handle the entire local frontend development cycle from starting a project, developing it, checking & testing, and building it for production.
+Vite+ 可以从启动项目、开发、检查与测试，一直到构建生产版本，处理整个本地前端开发周期。
 
-### Start
+### 启动
 
-- [`vp create`](/guide/create) creates new apps, packages, and monorepos.
-- [`vp migrate`](/guide/migrate) moves existing projects onto Vite+.
-- [`vp config`](/guide/commit-hooks) configures commit hooks and agent integration.
-- [`vp staged`](/guide/commit-hooks) runs checks on staged files.
-- [`vp install`](/guide/install) installs dependencies with the right package manager.
-- [`vp env`](/guide/env) manages Node.js versions.
+- [`vp create`](/guide/create) 创建新的应用程序、包和单体仓库。
+- [`vp migrate`](/guide/migrate) 将现有项目迁移到 Vite+。
+- [`vp config`](/guide/commit-hooks) 配置提交钩子和代理集成。
+- [`vp staged`](/guide/commit-hooks) 对已暂存的文件运行检查。
+- [`vp install`](/guide/install) 使用正确的包管理器安装依赖项。
+- [`vp env`](/guide/env) 管理 Node.js 版本。
 
-### Develop
+### 开发
 
-- [`vp dev`](/guide/dev) starts the dev server powered by Vite.
-- [`vp check`](/guide/check) runs format, lint, and type checks together.
-- [`vp lint`](/guide/lint), [`vp fmt`](/guide/fmt), and [`vp test`](/guide/test) let you run those tools directly.
+- [`vp dev`](/guide/dev) 启动由 Vite 提供支持的开发服务器。
+- [`vp check`](/guide/check) 一起运行格式化、Lint 和类型检查。
+- [`vp lint`](/guide/lint)、[`vp fmt`](/guide/fmt) 和 [`vp test`](/guide/test) 允许你直接运行这些工具。
 
-### Execute
+### 执行
 
-- [`vp run`](/guide/run) runs tasks across workspaces with caching.
-- [`vp cache clean`](/guide/cache) clears task cache entries.
-- [`vpx`](/guide/vpx) downloads and runs binaries globally.
-- [`vp exec`](/guide/vpx) runs local project binaries.
-- [`vp dlx`](/guide/vpx) downloads and runs package binaries without adding them as dependencies.
+- [`vp run`](/guide/run) 在工作区中运行带有缓存的任务。
+- [`vp cache clean`](/guide/cache) 清除任务缓存条目。
+- [`vpx`](/guide/vpx) 全局下载并运行二进制文件。
+- [`vp exec`](/guide/vpx) 运行本地项目二进制文件。
+- [`vp dlx`](/guide/vpx) 下载并运行包二进制文件而不将其添加为依赖项。
 
-### Build
+### 构建
 
-- [`vp build`](/guide/build) builds apps.
-- [`vp pack`](/guide/pack) builds libraries or standalone artifacts.
-- [`vp preview`](/guide/build) previews the production build locally.
+- [`vp build`](/guide/build) 构建应用程序。
+- [`vp pack`](/guide/pack) 构建库或独立工件。
+- [`vp preview`](/guide/build) 本地预览生产构建。
 
-### Manage Dependencies
+### 管理依赖项
 
-- [`vp add`](/guide/install), [`vp remove`](/guide/install), [`vp update`](/guide/install), [`vp dedupe`](/guide/install), [`vp outdated`](/guide/install), [`vp why`](/guide/install), and [`vp info`](/guide/install) wrap package-manager workflows.
-- [`vp pm <command>`](/guide/install) calls other package manager commands directly.
+- [`vp add`](/guide/install)、[`vp remove`](/guide/install)、[`vp update`](/guide/install)、[`vp dedupe`](/guide/install)、[`vp outdated`](/guide/install)、[`vp why`](/guide/install) 和 [`vp info`](/guide/install) 封装包管理器工作流程。
+- [`vp pm <command>`](/guide/install) 直接调用其他包管理器命令。
 
-### Maintain
+### 维护
 
-- [`vp upgrade`](/guide/upgrade) updates the `vp` installation itself.
-- [`vp implode`](/guide/implode) removes `vp` and related Vite+ data from your machine.
+- [`vp upgrade`](/guide/upgrade) 更新 `vp` 安装本身。
+- [`vp implode`](/guide/implode) 从你的机器中移除 `vp` 和相关的 Vite+ 数据。
 
 ::: info
-Vite+ ships with many predefined commands such as `vp build`, `vp test`, and `vp dev`. These commands are built-in and cannot be changed. If you want to run a command from your `package.json` scripts, use `vp run <command>` or `vpr <command>`.
+Vite+ 提供了许多预设命令，例如 `vp build`、`vp test` 和 `vp dev`。这些命令是内置的，无法更改。如果你想要运行 `package.json` 脚本中的命令，请使用 `vp run <命令>` 或 `vpr <命令>`。
 
-[Learn more about `vp run`.](/guide/run)
+[了解更多关于 `vp run`。](/guide/run)
 :::

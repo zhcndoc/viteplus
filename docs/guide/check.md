@@ -1,31 +1,36 @@
-# Check
+# 检查
 
-`vp check` runs format, lint, and type checks together.
+`vp check` 会同时运行格式检查、Lint 检查和类型检查。
 
-## Overview
+## 概述
 
-`vp check` is the default command for fast static checks in Vite+. It brings together formatting through [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), linting through [Oxlint](https://oxc.rs/docs/guide/usage/linter.html), and TypeScript type checks through [tsgolint](https://github.com/oxc-project/tsgolint). By merging all of these tasks into a single command, `vp check` is faster than running formatting, linting, and type checking as separate tools in separate commands.
+`vp check` 是 Vite+ 中用于快速静态检查的默认命令。它整合了以下工具的功能：
+- 通过 [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 进行格式化
+- 通过 [Oxlint](https://oxc.rs/docs/guide/usage/linter.html) 进行 Lint 检查
+- 通过 [tsgolint](https://github.com/oxc-project/tsgolint) 进行 TypeScript 类型检查
 
-When `typeCheck` is enabled in the `lint.options` block in `vite.config.ts`, `vp check` also runs TypeScript type checks through the Oxlint type-aware path powered by the TypeScript Go toolchain and [tsgolint](https://github.com/oxc-project/tsgolint). `vp create` and `vp migrate` enable both `typeAware` and `typeCheck` by default.
+通过将这些任务合并到单个命令中，`vp check` 比单独运行格式化、Lint 和类型检查工具更快。
 
-We recommend turning `typeCheck` on so `vp check` becomes the single command for static checks during development.
+当在 `vite.config.ts` 的 `lint.options` 块中启用 `typeCheck` 时，`vp check` 还会通过 TypeScript Go 工具链和 [tsgolint](https://github.com/oxc-project/tsgolint) 支持的类型感知路径运行 TypeScript 类型检查。`vp create` 和 `vp migrate` 默认同时启用 `typeAware` 和 `typeCheck`。
 
-## Usage
+我们建议开启 `typeCheck`，这样 `vp check` 就成为开发过程中用于静态检查的单一命令。
+
+## 用法
 
 ```bash
 vp check
-vp check --fix # Format and run autofixers.
+vp check --fix # 格式化并运行自动修复。
 ```
 
-## Configuration
+## 配置
 
-`vp check` uses the same configuration you already define for linting and formatting:
+`vp check` 使用你已经为 Lint 和格式化定义的相同配置：
 
-- [`lint`](/guide/lint#configuration) block in `vite.config.ts`
-- [`fmt`](/guide/fmt#configuration) block in `vite.config.ts`
-- TypeScript project structure and tsconfig files for type-aware linting
+- [`lint`](/guide/lint#配置) 块（在 `vite.config.ts` 中）
+- [`fmt`](/guide/fmt#配置) 块（在 `vite.config.ts` 中）
+- 用于类型感知 Lint 的 TypeScript 项目结构和 tsconfig 文件
 
-Recommended base `lint` config:
+推荐的 Lint 基础配置：
 
 ```ts
 import { defineConfig } from 'vite-plus';

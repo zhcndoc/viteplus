@@ -1,14 +1,14 @@
-# Migrate to Vite+
+# 迁移到 Vite+
 
-`vp migrate` helps move existing projects onto Vite+.
+`vp migrate` 帮助将现有项目迁移到 Vite+。
 
-## Overview
+## 概述
 
-This command is the starting point for consolidating separate Vite, Vitest, Oxlint, Oxfmt, ESLint, and Prettier setups into Vite+.
+该命令是将独立的 Vite、Vitest、Oxlint、Oxfmt、ESLint 和 Prettier 配置整合到 Vite+ 的起点。
 
-Use it when you want to take an existing project and move it onto the Vite+ defaults instead of wiring each tool by hand.
+当您想将一个现有项目迁移到 Vite+ 默认配置，而不是手动连接每个工具时，请使用此命令。
 
-## Usage
+## 用法
 
 ```bash
 vp migrate
@@ -16,95 +16,95 @@ vp migrate <path>
 vp migrate --no-interactive
 ```
 
-## Target Path
+## 目标路径
 
-The positional `PATH` argument is optional.
+位置参数 `PATH` 是可选的。
 
-- If omitted, `vp migrate` migrates the current directory
-- If provided, it migrates that target directory instead
+- 如果省略，`vp migrate` 会迁移当前目录
+- 如果提供，它会迁移该目标目录
 
 ```bash
 vp migrate
 vp migrate my-app
 ```
 
-## Options
+## 选项
 
-- `--agent <name>` writes agent instructions into the project
-- `--no-agent` skips agent instruction setup
-- `--editor <name>` writes editor config files into the project
-- `--no-editor` skips editor config setup
-- `--hooks` sets up pre-commit hooks
-- `--no-hooks` skips hook setup
-- `--no-interactive` runs the migration without prompts
+- `--agent <name>` 将代理指令写入项目
+- `--no-agent` 跳过代理指令设置
+- `--editor <name>` 将编辑器配置文件写入项目
+- `--no-editor` 跳过编辑器配置设置
+- `--hooks` 设置预提交钩子
+- `--no-hooks` 跳过钩子设置
+- `--no-interactive` 在无提示模式下运行迁移
 
-## Migration Flow
+## 迁移流程
 
-The `migrate` command is designed to move existing projects onto Vite+ quickly. Here is what the command does:
+`migrate` 命令旨在快速将现有项目迁移到 Vite+。以下是该命令执行的操作：
 
-- Updates project dependencies
-- Rewrites imports where needed
-- Merges tool-specific config into `vite.config.ts`
-- Updates scripts to the Vite+ command surface
-- Can set up commit hooks
-- Can write agent and editor configuration files
+- 更新项目依赖
+- 在需要的地方重写导入
+- 将特定工具配置合并到 `vite.config.ts`
+- 更新脚本到 Vite+ 命令体系
+- 可设置提交钩子
+- 可写入代理和编辑器配置文件
 
-Most projects will require further manual adjustments after running `vp migrate`.
+大多数项目在运行 `vp migrate` 后仍需要进一步手动调整。
 
-## Recommended Workflow
+## 推荐工作流
 
-Before running the migration:
+在运行迁移之前：
 
-- Upgrade to Vite 8+ and Vitest 4.1+ first
-- Make sure you understand any existing lint, format, or test setup that should be preserved
+- 升级到 Vite 8+ 和 Vitest 4.1+
+- 确保您理解任何应保留的现有 lint、格式化或测试配置
 
-After running the migration:
+运行迁移后：
 
-- Run `vp install`
-- Run `vp check`
-- Run `vp test`
-- Run `vp build`
+- 运行 `vp install`
+- 运行 `vp check`
+- 运行 `vp test`
+- 运行 `vp build`
 
-## Migration Prompt
+## 迁移提示
 
-If you want to hand this work to a coding agent (or the reader is a coding agent!), use this migration prompt:
+如果您想将此工作交给编码代理（或阅读者是编码代理！），请使用以下迁移提示：
 
 ```md
-Migrate this project to Vite+. Vite+ replaces the current split tooling around runtime management, package management, dev/build/test commands, linting, formatting, and packaging. Run `vp help` to understand Vite+ capabilities and `vp help migrate` before making changes. Use `vp migrate --no-interactive` in the workspace root. Make sure the project is using Vite 8+ and Vitest 4.1+ before migrating.
+将此项目迁移到 Vite+。Vite+ 取代了围绕运行时管理、包管理、开发/构建/测试命令、Linting、格式化 和 打包 的当前拆分工具链。运行 `vp help` 了解 Vite+ 能力，并在修改前运行 `vp help migrate`。在工作区根目录使用 `vp migrate --no-interactive`。确保项目在迁移前使用 Vite 8+ 和 Vitest 4.1+。
 
-After the migration:
+迁移完成后：
 
-- Confirm `vite` imports were rewritten to `vite-plus` where needed
-- Confirm `vitest` imports were rewritten to `vite-plus/test` where needed
-- Remove old `vite` and `vitest` dependencies only after those rewrites are confirmed
-- Move remaining tool-specific config into the appropriate blocks in `vite.config.ts`
+- 确认 `vite` 导入已在需要处重写为 `vite-plus`
+- 确认 `vitest` 导入已在需要处重写为 `vite-plus/test`
+- 仅在确认这些重写完成后，才移除旧的 `vite` 和 `vitest` 依赖
+- 将剩余特定工具配置移动到 `vite.config.ts` 中的相应块
 
-Command mapping to keep in mind:
+命令映射（需牢记）：
 
-- `vp run <script>` is the equivalent of `pnpm run <script>`
-- `vp test` runs the built-in test command, while `vp run test` runs the `test` script from `package.json`
-- `vp install`, `vp add`, and `vp remove` delegate through the package manager declared by `packageManager`
-- `vp dev`, `vp build`, `vp preview`, `vp lint`, `vp fmt`, `vp check`, and `vp pack` replace the corresponding standalone tools
-- Prefer `vp check` for validation loops
+- `vp run <script>` 等价于 `pnpm run <script>`
+- `vp test` 运行内置测试命令，而 `vp run test` 运行 `package.json` 中的 `test` 脚本
+- `vp install`、`vp add` 和 `vp remove` 通过 `packageManager` 声明的包管理器委托
+- `vp dev`、`vp build`、`vp preview`、`vp lint`、`vp fmt`、`vp check` 和 `vp pack` 替换对应的独立工具
+- 优先使用 `vp check` 进行验证循环
 
-Finally, verify the migration by running: `vp install`, `vp check`, `vp test`, and `vp build`
+最后，通过运行验证迁移：`vp install`、`vp check`、`vp test` 和 `vp build`
 
-Summarize the migration at the end and report any manual follow-up still required.
+最后总结迁移并报告仍需手动跟进的事项。
 ```
 
-## Tool-Specific Migrations
+## 特定工具迁移
 
 ### Vitest
 
-Vitest is automatically migrated through `vp migrate`. If you are migrating manually, you have to update all the imports to `vite-plus/test` instead:
+Vitest 通过 `vp migrate` 自动迁移。如果手动迁移，您必须将所有导入更新为 `vite-plus/test`：
 
 ```ts
-// before
+// 之前
 import { describe, expect, it, vi } from 'vitest';
 
 const { page } = await import('@vitest/browser/context');
 
-// after
+// 之后
 import { describe, expect, it, vi } from 'vite-plus/test';
 
 const { page } = await import('vite-plus/test/browser/context');
@@ -112,10 +112,10 @@ const { page } = await import('vite-plus/test/browser/context');
 
 ### tsdown
 
-If your project uses a `tsdown.config.ts`, move its options into the `pack` block in `vite.config.ts`:
+如果项目使用 `tsdown.config.ts`，将其选项移动到 `vite.config.ts` 的 `pack` 块中：
 
 ```ts
-// before — tsdown.config.ts
+// 之前 — tsdown.config.ts
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
@@ -124,7 +124,7 @@ export default defineConfig({
   format: ['esm', 'cjs'],
 });
 
-// after — vite.config.ts
+// 之后 — vite.config.ts
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
@@ -136,13 +136,13 @@ export default defineConfig({
 });
 ```
 
-After merging, delete `tsdown.config.ts`. See the [Pack guide](/guide/pack) for the full configuration reference.
+合并后删除 `tsdown.config.ts`。有关完整配置参考，请参见 [打包指南](/guide/pack)。
 
 ### lint-staged
 
-Vite+ replaces lint-staged with its own `staged` block in `vite.config.ts`. Only the `staged` config format is supported. Standalone `.lintstagedrc` in non-JSON format and `lint-staged.config.*` are not migrated automatically.
+Vite+ 用其自身的 `staged` 块（在 `vite.config.ts` 中）取代了 lint-staged。仅支持 `staged` 配置格式。独立的非 JSON 格式 `.lintstagedrc` 和 `lint-staged.config.*` 不会被自动迁移。
 
-Move your lint-staged rules into the `staged` block:
+将您的 lint-staged 规则移动到 `staged` 块中：
 
 ```ts
 // vite.config.ts
@@ -155,20 +155,4 @@ export default defineConfig({
 });
 ```
 
-After migrating, remove lint-staged from your dependencies and delete any lint-staged config files. See the [Commit hooks guide](/guide/commit-hooks) and [Staged config reference](/config/staged) for details.
-
-## Examples
-
-```bash
-# Migrate the current project
-vp migrate
-
-# Migrate a specific directory
-vp migrate my-app
-
-# Run without prompts
-vp migrate --no-interactive
-
-# Write agent and editor setup during migration
-vp migrate --agent claude --editor zed
-```
+迁移完成后，从依赖项中移除 lint-staged 并删除任何 lint-staged 配置文件。详细信息请参见 [提交钩子指南](/guide/commit-hooks) 和 [staged 配置参考](/config/staged)。

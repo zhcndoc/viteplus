@@ -1,14 +1,14 @@
-# Run
+# 运行
 
-`vp run` runs `package.json` scripts and tasks defined in `vite.config.ts`. It works like `pnpm run`, with caching, dependency ordering, and workspace-aware execution built in.
+`vp run` 会执行 `package.json` 中定义的脚本以及 `vite.config.ts` 中定义的任务。它的工作方式类似于 `pnpm run`，但内置了缓存、依赖排序和 workspace 感知执行功能。
 
 ::: tip
-`vpr` is available as a standalone shorthand for `vp run`. All examples below work with both `vp run` and `vpr`.
+`vpr` 是 `vp run` 的独立简写形式。以下所有示例都适用于 `vp run` 和 `vpr`。
 :::
 
-## Overview
+## 概述
 
-Use `vp run` with existing `package.json` scripts:
+使用 `vp run` 执行现有的 `package.json` 脚本：
 
 ```json [package.json]
 {
@@ -19,7 +19,7 @@ Use `vp run` with existing `package.json` scripts:
 }
 ```
 
-`vp run build` executes the associated build script:
+`vp run build` 执行对应的构建脚本：
 
 ```
 $ node compile-legacy-app.js
@@ -29,7 +29,7 @@ building legacy app for production...
 ✓ built in 69s
 ```
 
-Use `vp run` without a task name to use the interactive task runner:
+不指定任务名称直接运行 `vp run` 可进入交互式任务选择器：
 
 ```
 Select a task (↑/↓, Enter to run, Esc to clear):
@@ -38,9 +38,9 @@ Select a task (↑/↓, Enter to run, Esc to clear):
     test: jest
 ```
 
-## Caching
+## 缓存
 
-`package.json` scripts are not cached by default. Use `--cache` to enable caching:
+默认情况下不会缓存 `package.json` 脚本。使用 `--cache` 启用缓存：
 
 ```bash
 vp run --cache build
@@ -51,7 +51,7 @@ $ node compile-legacy-app.js
 ✓ built in 69s
 ```
 
-If nothing changes, the output is replayed from the cache on the next run:
+如果没有变化，下次运行时输出会从缓存中重放：
 
 ```
 $ node compile-legacy-app.js ✓ cache hit, replaying
@@ -61,15 +61,15 @@ $ node compile-legacy-app.js ✓ cache hit, replaying
 vp run: cache hit, 69s saved.
 ```
 
-If an input changes, the task runs again:
+如果有输入发生变化，任务会重新运行：
 
 ```
 $ node compile-legacy-app.js ✗ cache miss: 'legacy/index.js' modified, executing
 ```
 
-## Task Definitions
+## 任务定义
 
-Vite Task automatically tracks which files your command uses. You can define tasks directly in `vite.config.ts` to enable caching by default or control which files and environment variables affect cache behavior.
+Vite 任务会自动追踪你的命令使用了哪些文件。你可以在 `vite.config.ts` 中直接定义任务，以默认启用缓存或控制影响缓存行为的文件和环境的变量。
 
 ```ts
 import { defineConfig } from 'vite-plus';
@@ -92,96 +92,96 @@ export default defineConfig({
 });
 ```
 
-If you want to run an existing `package.json` script as-is, use `vp run <script>`. If you want task-level caching, dependencies, or environment/input controls, define a task with an explicit `command`. A task name can come from `vite.config.ts` or `package.json`, but not both.
+如果你想直接运行现有的 `package.json` 脚本，请使用 `vp run <script>`。如果你需要任务级别的缓存、依赖关系或环境/输入控制，请使用显式的 `command` 定义任务。任务名称可以来自 `vite.config.ts` 或 `package.json`，但不能同时来自两者。
 
 ::: info
-Tasks defined in `vite.config.ts` are cached by default. `package.json` scripts are not. See [When Is Caching Enabled?](/guide/cache#when-is-caching-enabled) for the full resolution order.
+在 `vite.config.ts` 中定义的任务默认启用缓存。`package.json` 脚本则不会。完整的解析顺序请参见 [何时启用缓存？](/guide/cache#when-is-caching-enabled)。
 :::
 
-See [Run Config](/config/run) for the full `run` block reference.
+完整的 `run` 块参考请参见 [运行配置](/config/run)。
 
-## Task Dependencies
+## 任务依赖
 
-Use [`dependsOn`](#depends-on) to run tasks in the right order. Running `vp run deploy` with the config above runs `build` and `test` first. Dependencies can also target other packages in the same project with the `package#task` notation:
+使用 [`dependsOn`](#depends-on) 以正确的顺序运行任务。运行 `vp run deploy` 时会先执行 `build` 和 `test`。依赖项也可以使用 `package#task` 符号引用同一项目中的其他包：
 
 ```ts
 dependsOn: ['@my/core#build', '@my/utils#lint'];
 ```
 
-## Running in a Workspace
+## 在 Workspace 中运行
 
-With no package-selection flags, `vp run` runs the task in the package in your current working directory:
+不带包选择标志时，`vp run` 会在当前工作目录所在的包中运行任务：
 
 ```bash
 cd packages/app
 vp run build
 ```
 
-You can also target a package explicitly from anywhere:
+你也可以从任何位置显式指定目标包：
 
 ```bash
 vp run @my/app#build
 ```
 
-Workspace package ordering is based on the normal monorepo dependency graph declared in each package's `package.json`. In other words, when Vite+ talks about package dependencies, it means the regular `dependencies` relationships between workspace packages, not a separate task-runner-specific graph.
+工作区包的顺序基于各包 `package.json` 中声明的常规单体仓库依赖关系图。换句话说，当 Vite+ 提及包依赖时，指的是工作区包之间的常规 `dependencies` 关系，而不是与任务运行器相关的独立图谱。
 
-### Recursive (`-r`)
+### 递归（`-r`）
 
-Run the task in every workspace package, in dependency order:
+按依赖顺序在每个工作区包中运行任务：
 
 ```bash
 vp run -r build
 ```
 
-That dependency order comes from the workspace packages referenced through `package.json` dependencies.
+该依赖顺序来自通过 `package.json` 依赖引用的工作区包。
 
-### Transitive (`-t`)
+### 传递（`-t`）
 
-Run the task in one package and all of its dependencies:
+在一个包及其所有依赖项中运行任务：
 
 ```bash
 vp run -t @my/app#build
 ```
 
-If `@my/app` depends on `@my/utils`, which depends on `@my/core`, this runs all three in order. Vite+ resolves that chain from the normal workspace package dependencies declared in `package.json`.
+如果 `@my/app` 依赖于 `@my/utils`，而 `@my/utils` 又依赖于 `@my/core`，则会按顺序运行这三个包。Vite+ 会从 `package.json` 中声明的正常工作区包依赖关系解析这个链。
 
-### Filter (`--filter`)
+### 过滤（`--filter`）
 
-Select packages by name, directory, or glob pattern. The syntax matches pnpm's `--filter`:
+按名称、目录或通配符模式选择包。语法与 pnpm 的 `--filter` 相同：
 
 ```bash
-# By name
+# 按名称
 vp run --filter @my/app build
 
-# By glob
+# 按通配符
 vp run --filter "@my/*" build
 
-# By directory
+# 按目录
 vp run --filter ./packages/app build
 
-# Include dependencies
+# 包含依赖项
 vp run --filter "@my/app..." build
 
-# Include dependents
+# 包含被依赖项
 vp run --filter "...@my/core" build
 
-# Exclude packages
+# 排除包
 vp run --filter "@my/*" --filter "!@my/utils" build
 ```
 
-Multiple `--filter` flags are combined as a union. Exclusion filters are applied after all inclusions.
+多个 `--filter` 标志会合并为并集。排除过滤器在所有包含之后应用。
 
-### Workspace Root (`-w`)
+### 工作区根目录（`-w`）
 
-Explicitly run the task in the workspace root package:
+显式在工作区根包中运行任务：
 
 ```bash
 vp run -w build
 ```
 
-## Compound Commands
+## 复合命令
 
-Commands joined with `&&` are split into independent sub-tasks. Each sub-task is cached separately when [caching is enabled](/guide/cache#when-is-caching-enabled). This works for both `vite.config.ts` tasks and `package.json` scripts:
+用 `&&` 连接的命令会被拆分为独立的子任务。启用缓存时，每个子任务会单独缓存。这适用于 `vite.config.ts` 任务和 `package.json` 脚本：
 
 ```json [package.json]
 {
@@ -191,7 +191,7 @@ Commands joined with `&&` are split into independent sub-tasks. Each sub-task is
 }
 ```
 
-Now, run `vp run --cache check`:
+现在运行 `vp run --cache check`：
 
 ```
 $ vp lint
@@ -204,7 +204,7 @@ $ vp build
 vp run: 0/2 cache hit (0%).
 ```
 
-Each sub-task has its own cache entry. If only `.ts` files changed but lint still passes, only `vp build` runs again the next time `vp run --cache check` is called:
+每个子任务都有独立的缓存条目。如果只更改了 `.ts` 文件但 lint 仍通过，则下次运行 `vp run --cache check` 时只会重新运行 `vp build`：
 
 ```
 $ vp lint ✓ cache hit, replaying
@@ -215,9 +215,9 @@ $ vp build ✗ cache miss: 'src/index.ts' modified, executing
 vp run: 1/2 cache hit (50%), 120ms saved.
 ```
 
-### Nested `vp run`
+### 嵌套的 `vp run`
 
-When a command contains `vp run`, Vite Task inlines it as separate tasks instead of spawning a nested process. Each sub-task is cached independently and output stays flat:
+当命令包含 `vp run` 时，Vite 任务会将其内联为独立任务，而不是生成嵌套进程。每个子任务独立缓存，输出保持扁平化：
 
 ```json [package.json]
 {
@@ -227,17 +227,17 @@ When a command contains `vp run`, Vite Task inlines it as separate tasks instead
 }
 ```
 
-Running `vp run ci` expands into three tasks:
+运行 `vp run ci` 会展开为三个任务：
 
 ```mermaid
 graph LR
   lint --> test --> build
 ```
 
-Flags also work inside nested scripts. For example, `vp run -r build` inside a script expands into individual build tasks for every package.
+标志也适用于嵌套脚本。例如，脚本中的 `vp run -r build` 会展开为每个包的独立构建任务。
 
 ::: info
-A common monorepo pattern is a root script that runs a task recursively:
+单体仓库中常见的模式是在根脚本中递归运行任务：
 
 ```json [package.json (root)]
 {
@@ -247,14 +247,14 @@ A common monorepo pattern is a root script that runs a task recursively:
 }
 ```
 
-This creates a potential recursion: root's `build` -> `vp run -r build` -> includes root's `build` -> ...
+这可能导致递归：根 `build` -> `vp run -r build` -> 包含根 `build` -> ...
 
-Vite Task detects this and prunes the self-reference automatically, so other packages build normally.
+Vite Task 会检测到这种情况并自动剪枝自引用，确保其他包正常构建。
 :::
 
-## Execution Summary
+## 执行摘要
 
-Use `-v` to show a detailed execution summary:
+使用 `-v` 显示详细的执行摘要：
 
 ```bash
 vp run -r -v build
@@ -281,43 +281,43 @@ Task Details:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Use `--last-details` to show the summary from the last run without running tasks again:
+使用 `--last-details` 可在不重新运行任务的情况下显示上次运行的摘要：
 
 ```bash
 vp run --last-details
 ```
 
-## Concurrency
+## 并发
 
-By default, up to 4 tasks run at the same time. Use `--concurrency-limit` to change this:
+默认情况下，最多同时运行 4 个任务。使用 `--concurrency-limit` 更改此限制：
 
 ```bash
-# Run up to 8 tasks at once
+# 一次最多运行 8 个任务
 vp run -r --concurrency-limit 8 build
 
-# Run tasks one at a time
+# 一次只运行一个任务
 vp run -r --concurrency-limit 1 build
 ```
 
-The limit can also be set via the `VP_RUN_CONCURRENCY_LIMIT` environment variable. The `--concurrency-limit` flag takes priority over the environment variable.
+限制也可以通过环境变量 `VP_RUN_CONCURRENCY_LIMIT` 设置。`--concurrency-limit` 标志优先于环境变量。
 
-### Parallel Mode
+### 并行模式
 
-Use `--parallel` to ignore task dependencies and run all tasks at once with unlimited concurrency:
+使用 `--parallel` 忽略任务依赖关系并以无限制的并发运行所有任务：
 
 ```bash
 vp run -r --parallel dev
 ```
 
-This is useful when tasks are independent and you want maximum throughput. You can combine `--parallel` with `--concurrency-limit` to run tasks without dependency ordering but still cap the number of concurrent tasks:
+这在任务相互独立且需要最大吞吐量时非常有用。可以将 `--parallel` 与 `--concurrency-limit` 结合使用，以在不依赖顺序的情况下运行任务，但仍限制并发任务数：
 
 ```bash
 vp run -r --parallel --concurrency-limit 4 dev
 ```
 
-## Additional Arguments
+## 额外参数
 
-Arguments after the task name are passed through to the task command:
+在任务名称之后的参数会传递给任务命令：
 
 ```bash
 vp run test --reporter verbose

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue';
-import { onBeforeUnmount, ref } from 'vue';
+import { Icon } from "@iconify/vue";
+import { onBeforeUnmount, ref } from "vue";
 
 type CommandCard = {
   id: string;
@@ -10,14 +10,14 @@ type CommandCard = {
 
 const commandCards: CommandCard[] = [
   {
-    id: 'unix',
-    label: 'macOS / Linux',
-    command: 'curl -fsSL https://vite.plus | bash',
+    id: "unix",
+    label: "macOS / Linux",
+    command: "curl -fsSL https://vite.plus | bash",
   },
   {
-    id: 'windows',
-    label: 'Windows (PowerShell)',
-    command: 'irm https://vite.plus/ps1 | iex',
+    id: "windows",
+    label: "Windows（PowerShell）",
+    command: "irm https://vite.plus/ps1 | iex",
   },
 ];
 
@@ -54,13 +54,16 @@ onBeforeUnmount(() => {
     class="wrapper border-t grid lg:grid-cols-[0.9fr_1.1fr] divide-y lg:divide-y-0 lg:divide-x"
   >
     <div class="px-5 py-6 sm:p-10 flex flex-col gap-4 justify-center">
-      <span class="text-grey text-xs font-mono uppercase tracking-wide">Getting started</span>
-      <h4>Install vp globally</h4>
+      <span class="text-grey text-xs font-mono uppercase tracking-wide"
+        >快速开始</span
+      >
+      <h4>全局安装 vp</h4>
       <p class="max-w-[28rem] text-pretty">
-        Install Vite+ once, open a new terminal session, then run <code>vp help</code>.
+        只需安装一次 Vite+，打开一个新的终端会话，然后运行
+        <code>vp help</code>。
       </p>
       <p class="text-sm text-grey">
-        For CI, use
+        在 CI 中，请使用
         <a
           class="text-primary underline decoration-stroke underline-offset-4"
           href="https://github.com/voidzero-dev/setup-vp"
@@ -69,7 +72,7 @@ onBeforeUnmount(() => {
         >
           setup-vp
         </a>
-        .
+        。
       </p>
     </div>
     <div class="px-5 py-6 sm:p-10 grid gap-4">
@@ -80,7 +83,9 @@ onBeforeUnmount(() => {
       >
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
-            <div class="text-grey text-xs font-mono uppercase tracking-wide">{{ card.label }}</div>
+            <div class="text-grey text-xs font-mono uppercase tracking-wide">
+              {{ card.label }}
+            </div>
             <div
               class="mt-3 block overflow-x-auto whitespace-nowrap rounded-md bg-transparent p-0 font-mono text-white outline-none"
             >
@@ -90,7 +95,7 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="shrink-0 inline-flex items-center gap-2 rounded-md border border-white/12 px-3 py-2 text-sm text-grey transition-colors hover:text-white hover:border-white/25"
-            :aria-label="`Copy ${card.label} install command`"
+            :aria-label="`复制 ${card.label} 安装命令`"
             @click="copyCommand(card.id, card.command)"
           >
             <Icon
@@ -98,7 +103,7 @@ onBeforeUnmount(() => {
               class="size-4"
               aria-hidden="true"
             />
-            <span>{{ copiedId === card.id ? 'Copied' : 'Copy' }}</span>
+            <span>{{ copiedId === card.id ? "已复制" : "复制" }}</span>
           </button>
         </div>
       </div>

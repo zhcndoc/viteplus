@@ -1,36 +1,42 @@
 <script setup lang="ts">
-import OSSHeader from '@components/oss/Header.vue';
-import BaseTheme from '@voidzero-dev/vitepress-theme/src/viteplus';
-import { useData } from 'vitepress';
-import { nextTick, onUnmounted, watch } from 'vue';
+import OSSHeader from "@components/oss/Header.vue";
+import BaseTheme from "@voidzero-dev/vitepress-theme/src/viteplus";
+import { useData } from "vitepress";
+import { nextTick, onUnmounted, watch } from "vue";
 
-import Footer from './components/Footer.vue';
-import Home from './layouts/Home.vue';
+import Footer from "./components/Footer.vue";
+import Home from "./layouts/Home.vue";
 // import Error404 from "./layouts/Error404.vue";
 
 const { frontmatter, isDark } = useData();
 const { Layout: BaseLayout } = BaseTheme;
 let homeHeaderObserver: MutationObserver | null = null;
 
-const syncHeaderMobileMenuTheme = (header: HTMLElement | null, isHome: boolean) => {
-  const mobileMenu = header?.querySelector<HTMLElement>('#mobile-menu');
+const syncHeaderMobileMenuTheme = (
+  header: HTMLElement | null,
+  isHome: boolean,
+) => {
+  const mobileMenu = header?.querySelector<HTMLElement>("#mobile-menu");
 
   if (!mobileMenu) {
     return;
   }
 
   if (isHome) {
-    mobileMenu.setAttribute('data-theme', 'light');
+    mobileMenu.setAttribute("data-theme", "light");
   } else {
-    mobileMenu.removeAttribute('data-theme');
+    mobileMenu.removeAttribute("data-theme");
   }
 };
 
-const setupHomeHeaderObserver = (header: HTMLElement | null, isHome: boolean) => {
+const setupHomeHeaderObserver = (
+  header: HTMLElement | null,
+  isHome: boolean,
+) => {
   homeHeaderObserver?.disconnect();
   homeHeaderObserver = null;
 
-  if (!header || !isHome || typeof MutationObserver === 'undefined') {
+  if (!header || !isHome || typeof MutationObserver === "undefined") {
     return;
   }
 
@@ -45,22 +51,22 @@ const setupHomeHeaderObserver = (header: HTMLElement | null, isHome: boolean) =>
 };
 
 const syncHomeThemeOverride = async () => {
-  if (typeof document === 'undefined') {
+  if (typeof document === "undefined") {
     return;
   }
 
-  const isHome = frontmatter.value?.layout === 'home';
+  const isHome = frontmatter.value?.layout === "home";
   const root = document.documentElement;
 
   if (isHome) {
-    root.setAttribute('data-theme', 'light');
+    root.setAttribute("data-theme", "light");
   } else {
-    root.removeAttribute('data-theme');
+    root.removeAttribute("data-theme");
   }
 
   await nextTick();
 
-  const header = document.querySelector<HTMLElement>('.home-header');
+  const header = document.querySelector<HTMLElement>(".home-header");
 
   setupHomeHeaderObserver(header, isHome);
 
@@ -69,9 +75,9 @@ const syncHomeThemeOverride = async () => {
   }
 
   if (isHome) {
-    header.setAttribute('data-theme', 'light');
+    header.setAttribute("data-theme", "light");
   } else {
-    header.removeAttribute('data-theme');
+    header.removeAttribute("data-theme");
   }
 
   syncHeaderMobileMenuTheme(header, isHome);
@@ -97,5 +103,20 @@ onUnmounted(() => {
     <Home />
     <Footer />
   </div>
-  <BaseLayout v-else />
+  <BaseLayout v-else>
+    <template #aside-outline-before>
+      <div
+        class="wwads-cn wwads-vertical"
+        style="margin-top: 0; margin-bottom: 1rem; max-width: 200px"
+        data-id="354"
+      ></div>
+    </template>
+    <template #doc-after>
+      <div
+        class="wwads-cn wwads-horizontal"
+        style="margin-top: 1rem; margin-bottom: 1rem; max-width: 100%"
+        data-id="354"
+      ></div>
+    </template>
+  </BaseLayout>
 </template>

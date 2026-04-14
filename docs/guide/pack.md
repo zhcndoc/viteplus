@@ -1,14 +1,14 @@
 # Pack
 
-`vp pack` builds libraries for production with [tsdown](https://tsdown.dev/guide/).
+`vp pack` 使用 [tsdown](https://tsdown.dev/guide/) 构建生产环境库。
 
-## Overview
+## 概述
 
-`vp pack` builds libraries and standalone executables with tsdown. Use it for publishable packages and binary outputs. If you want to build a web application, use `vp build`. `vp pack` covers everything you need for building libraries out of the box, including declaration file generation, multiple output formats, source maps, and minification.
+`vp pack` 使用 tsdown 构建库和独立可执行文件。适用于可发布的包和二进制输出。如果你想构建一个网页应用，请使用 `vp build`。`vp pack` 开箱即用地涵盖了构建库所需的一切功能，包括声明文件生成、多种输出格式、源码映射和压缩。
 
-For more information about how tsdown works, see the official [tsdown guide](https://tsdown.dev/guide/).
+如需了解 tsdown 的工作原理，请参阅官方 [tsdown 指南](https://tsdown.dev/guide/)。
 
-## Usage
+## 用法
 
 ```bash
 vp pack
@@ -16,18 +16,18 @@ vp pack src/index.ts --dts
 vp pack --watch
 ```
 
-## Configuration
+## 配置
 
-Put packaging configuration directly in the `pack` block in `vite.config.ts` so all your configuration stays in one place. We do not recommend using `tsdown.config.ts` with Vite+.
+将打包配置直接放在 `vite.config.ts` 中的 `pack` 块内，这样所有配置都集中在一个地方。我们不推荐在 Vite+ 中使用 `tsdown.config.ts`。
 
-See the [tsdown guide](https://tsdown.dev/guide/) and the [tsdown config file docs](https://tsdown.dev/options/config-file) to learn more about how to use and configure `vp pack`.
+请参考 [tsdown 指南](https://tsdown.dev/guide/) 和 [tsdown 配置文件文档](https://tsdown.dev/options/config-file) 了解如何配置和使用 `vp pack`。
 
-Use it for:
+适用于：
 
-- [declaration files (`dts`)](https://tsdown.dev/options/dts)
-- [output formats](https://tsdown.dev/options/output-format)
-- [watch mode](https://tsdown.dev/options/watch-mode)
-- [standalone executables](https://tsdown.dev/options/exe#executable)
+- [声明文件 (`dts`)](https://tsdown.dev/options/dts)
+- [输出格式](https://tsdown.dev/options/output-format)
+- [监听模式](https://tsdown.dev/options/watch-mode)
+- [独立可执行文件](https://tsdown.dev/options/exe#executable)
 
 ```ts
 import { defineConfig } from 'vite-plus';
@@ -41,11 +41,11 @@ export default defineConfig({
 });
 ```
 
-## Standalone Executables
+## 独立可执行文件
 
-`vp pack` can also build standalone executables through tsdown's experimental [`exe` option](https://tsdown.dev/options/exe#executable).
+`vp pack` 还可以通过 tsdown 的实验性 [`exe` 选项](https://tsdown.dev/options/exe#executable) 构建独立可执行文件。
 
-Use this when you want to ship a CLI or other Node-based tool as a native executable that runs without requiring Node.js to be installed separately.
+当你希望将 CLI 或其他基于 Node 的工具作为无需单独安装 Node.js 的原生可执行文件分发时，请使用此功能。
 
 ```ts
 import { defineConfig } from 'vite-plus';
@@ -58,4 +58,4 @@ export default defineConfig({
 });
 ```
 
-See the official [tsdown executable docs](https://tsdown.dev/options/exe#executable) for details about configuring custom file names, embedded assets, and cross-platform targets.
+有关配置自定义文件名、嵌入式资产和跨平台目标的详细信息，请参阅官方 [tsdown 可执行文件文档](https://tsdown.dev/options/exe#executable)。

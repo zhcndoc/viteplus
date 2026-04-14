@@ -25,8 +25,8 @@ export interface TerminalTranscript {
 export const terminalTranscripts: TerminalTranscript[] = [
   {
     id: 'create',
-    label: 'create',
-    title: 'Scaffold a project',
+    label: '创建',
+    title: '脚手架创建项目',
     command: 'vp create',
     lineDelay: 220,
     completionDelay: 900,
@@ -34,14 +34,14 @@ export const terminalTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: '◇ ', tone: 'accent' },
-          { text: 'Select a template ', tone: 'muted' },
+          { text: '选择模板 ', tone: 'muted' },
           { text: 'vite:application', tone: 'brand' },
         ],
       },
       {
         segments: [
           { text: '◇ ', tone: 'accent' },
-          { text: 'Project directory ', tone: 'muted' },
+          { text: '项目目录 ', tone: 'muted' },
           { text: 'vite-app', tone: 'brand' },
         ],
       },
@@ -57,14 +57,14 @@ export const terminalTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: '✓ ', tone: 'success' },
-          { text: 'Dependencies installed', tone: 'base' },
-          { text: ' in 1.1s', tone: 'muted' },
+          { text: '依赖已安装', tone: 'base' },
+          { text: ' 用时 1.1s', tone: 'muted' },
         ],
       },
       {
         segments: [
           { text: '→ ', tone: 'brand' },
-          { text: 'Next: ', tone: 'muted' },
+          { text: '下一步：', tone: 'muted' },
           { text: 'cd vite-app && vp dev', tone: 'accent' },
         ],
       },
@@ -72,8 +72,8 @@ export const terminalTranscripts: TerminalTranscript[] = [
   },
   {
     id: 'dev',
-    label: 'dev',
-    title: 'Start local development',
+    label: '开发',
+    title: '启动本地开发',
     command: 'vp dev',
     lineDelay: 220,
     completionDelay: 1100,
@@ -81,39 +81,39 @@ export const terminalTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: 'VITE+ ', tone: 'brand' },
-          { text: 'ready in ', tone: 'muted' },
+          { text: '已就绪，用时 ', tone: 'muted' },
           { text: '68ms', tone: 'base' },
         ],
       },
       {
         segments: [
           { text: '→ ', tone: 'brand' },
-          { text: 'Local ', tone: 'muted' },
+          { text: '本地 ', tone: 'muted' },
           { text: 'http://localhost:5173/', tone: 'accent' },
         ],
       },
       {
         segments: [
           { text: '→ ', tone: 'muted' },
-          { text: 'Network ', tone: 'muted' },
+          { text: '网络 ', tone: 'muted' },
           { text: '--host', tone: 'base' },
-          { text: ' to expose', tone: 'muted' },
+          { text: ' 以便暴露', tone: 'muted' },
         ],
       },
       {
         segments: [
           { text: '[hmr] ', tone: 'accent' },
-          { text: 'updated ', tone: 'muted' },
+          { text: '已更新 ', tone: 'muted' },
           { text: 'src/App.tsx', tone: 'brand' },
-          { text: ' in 14ms', tone: 'muted' },
+          { text: ' 用时 14ms', tone: 'muted' },
         ],
       },
     ],
   },
   {
     id: 'check',
-    label: 'check',
-    title: 'Check the whole project',
+    label: '检查',
+    title: '检查整个项目',
     command: 'vp check',
     lineDelay: 220,
     completionDelay: 1100,
@@ -121,15 +121,15 @@ export const terminalTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: 'pass: ', tone: 'accent' },
-          { text: 'All 42 files are correctly formatted', tone: 'base' },
+          { text: '42 个文件均已正确格式化', tone: 'base' },
           { text: ' (88ms, 16 threads)', tone: 'muted' },
         ],
       },
       {
         segments: [
           { text: 'pass: ', tone: 'accent' },
-          { text: 'Found no warnings, lint errors, or type errors', tone: 'base' },
-          { text: ' in 42 files', tone: 'muted' },
+          { text: '未发现警告、lint 错误或类型错误', tone: 'base' },
+          { text: '，共 42 个文件', tone: 'muted' },
           { text: ' (184ms, 16 threads)', tone: 'muted' },
         ],
       },
@@ -137,8 +137,8 @@ export const terminalTranscripts: TerminalTranscript[] = [
   },
   {
     id: 'test',
-    label: 'test',
-    title: 'Run tests with fast feedback',
+    label: '测试',
+    title: '快速反馈运行测试',
     command: 'vp test',
     lineDelay: 220,
     completionDelay: 1100,
@@ -147,35 +147,35 @@ export const terminalTranscripts: TerminalTranscript[] = [
         segments: [
           { text: 'RUN ', tone: 'muted' },
           { text: 'test/button.spec.ts', tone: 'brand' },
-          { text: ' (3 tests)', tone: 'muted' },
+          { text: '（3 个测试）', tone: 'muted' },
         ],
       },
       {
         segments: [
           { text: '✓ ', tone: 'success' },
-          { text: 'button renders loading state', tone: 'base' },
+          { text: '按钮会渲染加载状态', tone: 'base' },
         ],
       },
       {
         segments: [
           { text: '✓ ', tone: 'success' },
-          { text: '12 tests passed', tone: 'base' },
-          { text: ' across 4 files', tone: 'muted' },
+          { text: '12 个测试通过', tone: 'base' },
+          { text: '，分布在 4 个文件中', tone: 'muted' },
         ],
       },
       {
         segments: [
-          { text: 'Duration ', tone: 'muted' },
+          { text: '耗时 ', tone: 'muted' },
           { text: '312ms', tone: 'accent' },
-          { text: ' (transform 22ms, tests 31ms)', tone: 'muted' },
+          { text: '（转换 22ms，测试 31ms）', tone: 'muted' },
         ],
       },
     ],
   },
   {
     id: 'build',
-    label: 'build',
-    title: 'Ship a production build',
+    label: '构建',
+    title: '发布生产构建',
     command: 'vp build',
     lineDelay: 220,
     completionDelay: 1100,
@@ -183,13 +183,13 @@ export const terminalTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: 'Rolldown ', tone: 'brand' },
-          { text: 'building for production', tone: 'muted' },
+          { text: '正在构建生产版本', tone: 'muted' },
         ],
       },
       {
         segments: [
           { text: '✓ ', tone: 'success' },
-          { text: '128 modules transformed', tone: 'base' },
+          { text: '已转换 128 个模块', tone: 'base' },
         ],
       },
       {
@@ -207,7 +207,7 @@ export const terminalTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: '✓ ', tone: 'success' },
-          { text: 'Built in ', tone: 'muted' },
+          { text: '构建耗时 ', tone: 'muted' },
           { text: '421ms', tone: 'base' },
         ],
       },

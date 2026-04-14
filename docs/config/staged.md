@@ -1,8 +1,8 @@
-# Staged Config
+# 分阶段配置
 
-`vp staged` and `vp config` read staged-file rules from the `staged` block in `vite.config.ts`. See the [Commit hooks guide](/guide/commit-hooks).
+`vp staged` 和 `vp config` 从 `vite.config.ts` 中的 `staged` 块读取分阶段文件规则。请参阅 [提交钩子指南](/guide/commit-hooks)。
 
-## Example
+## 示例
 
 ```ts
 import { defineConfig } from 'vite-plus';

@@ -1,32 +1,32 @@
-# Running Binaries
+# 运行二进制文件
 
-Use `vpx`, `vp exec`, and `vp dlx` to run binaries without switching between local installs, downloaded packages, and project-specific tools.
+使用 `vpx`、`vp exec` 和 `vp dlx` 运行二进制文件，无需在本地安装、下载的包和项目特定工具之间切换。
 
-## Overview
+## 概述
 
-`vpx` executes a command from a local or remote npm package. It can run a package that is already available locally, download a package on demand, or target an explicit package version.
+`vpx` 执行来自本地或远程 npm 包的命令。它可以运行已有的本地包，按需下载包，或指定目标版本。
 
-Use the other binary commands when you need stricter control:
+当需要更严格的控制时，使用其他二进制命令：
 
-- `vpx` resolves a package binary locally first by default and downloads it if not found; with `pkg@version`, `--package/-p`, or `--shell-mode`, it runs via `vp dlx`
-- `vp exec` runs a binary from the current project's `node_modules/.bin`
-- `vp dlx` runs a package binary without adding it as a dependency
+- `vpx` 默认先在本地解析包的二进制文件，如果找不到则下载；通过 `pkg@version`、`--package/-p` 或 `--shell-mode`，它会通过 `vp dlx` 运行
+- `vp exec` 从当前项目的 `node_modules/.bin` 运行二进制文件
+- `vp dlx` 在不将包添加为依赖项的情况下运行包二进制文件
 
 ## `vpx`
 
-Use `vpx` for running any local or remote binary:
+使用 `vpx` 运行任意本地或远程二进制文件：
 
 ```bash
 vpx <pkg[@version]> [args...]
 ```
 
-### Options
+### 选项
 
-- `-p, --package <name>` installs one or more additional packages before running the command
-- `-c, --shell-mode` executes the command inside a shell
-- `-s, --silent` suppresses Vite+ output and only shows the command output
+- `-p, --package <name>` 在运行命令前安装一个或多个额外的包
+- `-c, --shell-mode` 在 shell 中执行命令
+- `-s, --silent` 抑制 Vite+ 输出，只显示命令输出
 
-### Examples
+### 示例
 
 ```bash
 vpx eslint .
@@ -37,13 +37,13 @@ vpx -p cowsay -c 'echo "hi" | cowsay'
 
 ## `vp exec`
 
-Use `vp exec` when the binary must come from the current project, for example a binary from a dependency installed in `node_modules/.bin`.
+当二进制文件必须来自当前项目时使用 `vp exec`，例如来自依赖项并安装在 `node_modules/.bin` 中的二进制文件。
 
 ```bash
 vp exec <command> [args...]
 ```
 
-Examples:
+示例：
 
 ```bash
 vp exec eslint .
@@ -52,13 +52,13 @@ vp exec tsc --noEmit
 
 ## `vp dlx`
 
-Use `vp dlx` for one-off package execution without adding the package to your project dependencies.
+使用 `vp dlx` 在不将包添加到项目依赖项的情况下执行一次性包。
 
 ```bash
 vp dlx <package> [args...]
 ```
 
-Examples:
+示例：
 
 ```bash
 vp dlx create-vite

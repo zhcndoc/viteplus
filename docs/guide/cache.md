@@ -1,69 +1,69 @@
-# Task Caching
+# 任务缓存
 
-Vite Task can automatically track dependencies and cache tasks run through `vp run`.
+Vite 任务可以自动跟踪依赖关系，并缓存通过 `vp run` 执行的任务。
 
-## Overview
+## 概述
 
-When a task runs successfully (exit code 0), its terminal output (stdout/stderr) is saved. On the next run, Vite Task checks if anything changed:
+当任务成功运行（退出代码为 0）时，其终端输出（标准输出/标准错误）会被保存。下一次运行时，Vite 任务会检查是否有任何变化：
 
-1. **Arguments:** did the [additional arguments](/guide/run#additional-arguments) passed to the task change?
-2. **Environment variables:** did any [fingerprinted env vars](/config/run#env) change?
-3. **Input files:** did any file that the command reads change?
+1. **参数：** 传递给任务的[附加参数](/guide/run#附加参数)是否发生变化？
+2. **环境变量：** 任何[指纹识别的环境变量](/config/run#env)是否变化？
+3. **输入文件：** 命令读取的任何文件是否变化？
 
-If everything matches, the cached output is replayed instantly, and the command does not run.
+如果所有内容都匹配，缓存的输出会立即重放，命令不会实际执行。
 
 ::: info
-Currently, only terminal output is cached and replayed. Output files such as `dist/` are not cached. If you delete them, use `--no-cache` to force a re-run. Output file caching is planned for a future release.
+目前，仅缓存并重放终端输出。像 `dist/` 这样的输出文件不会被缓存。如果删除了它们，请使用 `--no-cache` 强制重新执行。输出文件缓存计划在未来版本中支持。
 :::
 
-When a cache miss occurs, Vite Task tells you exactly why:
+当发生缓存未命中时，Vite 任务会明确告诉你原因：
 
 ```
-$ vp lint ✗ cache miss: 'src/utils.ts' modified, executing
-$ vp build ✗ cache miss: env changed, executing
-$ vp test ✗ cache miss: args changed, executing
+$ vp lint ✗ 缓存未命中：'src/utils.ts' 已修改，正在执行
+$ vp build ✗ 缓存未命中：环境变量已更改，正在执行
+$ vp test ✗ 缓存未命中：参数已更改，正在执行
 ```
 
-## When Is Caching Enabled?
+## 何时启用缓存？
 
-A command run by `vp run` is either a **task** defined in `vite.config.ts` or a **script** defined in `package.json`. Task names and script names cannot overlap. By default, **tasks are cached and scripts are not.**
+由 `vp run` 运行的命令可以是 `vite.config.ts` 中定义的**任务**，也可以是 `package.json` 中定义的**脚本**。任务名称和脚本名称不能重叠。默认情况下，**任务会被缓存，而脚本不会**。
 
-There are three types of controls for task caching, in order:
+任务缓存共有三种控制方式，按优先级顺序如下：
 
-### 1. Per-task `cache: false`
+### 1. 每个任务的 `cache: false`
 
-A task can set [`cache: false`](/config/run#cache) to opt out. This cannot be overridden by any other cache control flag.
+任务可以设置 [`cache: false`](/config/run#cache) 选项以选择退出缓存。这不能被任何其他缓存控制标志覆盖。
 
-### 2. CLI flags
+### 2. CLI 标志
 
-`--no-cache` disables caching for everything. `--cache` enables caching for both tasks and scripts, which is equivalent to setting [`run.cache: true`](/config/run#run-cache) for that invocation.
+`--no-cache` 禁用所有缓存。`--cache` 启用任务和脚本的缓存，相当于为本次调用设置 [`run.cache: true`](/config/run#run-cache)。
 
-### 3. Workspace config
+### 3. 工作区配置
 
-The [`run.cache`](/config/run#run-cache) option in your root `vite.config.ts` controls the default for each category:
+根目录 `vite.config.ts` 中的 [`run.cache`](/config/run#run-cache) 选项控制每个类别的默认行为：
 
-| Setting         | Default | Effect                                  |
-| --------------- | ------- | --------------------------------------- |
-| `cache.tasks`   | `true`  | Cache tasks defined in `vite.config.ts` |
-| `cache.scripts` | `false` | Cache `package.json` scripts            |
+| 设置 | 默认值 | 效果 |
+| --- | --- | --- |
+| `cache.tasks` | `true` | 缓存 `vite.config.ts` 中定义的任务 |
+| `cache.scripts` | `false` | 缓存 `package.json` 脚本 |
 
-## Automatic File Tracking
+## 自动文件跟踪
 
-Vite Task tracks which files each command reads during execution. When a task runs, it records which files the process opens, such as your `.ts` source files, `vite.config.ts`, and `package.json`, and records their content hashes. On the next run, it re-checks those hashes to determine if anything changed.
+Vite 任务会在执行过程中跟踪每个命令读取了哪些文件。当任务运行时，它会记录进程打开了哪些文件，例如你的 `.ts` 源文件、`vite.config.ts` 和 `package.json`，并记录它们的内容哈希。下一次运行时，它会重新检查这些哈希值以确定是否发生了变化。
 
-This means caching works out of the box for most commands without any configuration. Vite Task also records:
+这意味着大多数命令无需任何配置即可开箱即用地支持缓存。Vite 任务还会记录：
 
-- **Missing files:** if a command probes for a file that doesn't exist, such as `utils.ts` during module resolution, creating that file later correctly invalidates the cache.
-- **Directory listings:** if a command scans a directory, such as a test runner looking for `*.test.ts`, adding or removing files in that directory invalidates the cache.
+- **缺失的文件：**如果命令在解析模块时探测到不存在的文件（例如 `utils.ts`），后续创建该文件会正确使缓存失效。
+- **目录列表：**如果命令扫描目录（例如测试运行器查找 `*.test.ts`），向该目录添加或删除文件会使缓存失效。
 
-### Avoiding Overly Broad Input Tracking
+### 避免过度宽泛的输入跟踪
 
-Automatic tracking can sometimes include more files than necessary, causing unnecessary cache misses:
+自动跟踪有时会包含比必要更多的文件，导致不必要的缓存未命中：
 
-- **Tool cache files:** some tools maintain their own cache, such as TypeScript's `.tsbuildinfo` or Cargo's `target/`. These files may change between runs even when your source code has not, causing unnecessary cache invalidation.
-- **Directory listings:** when a command scans a directory, such as when globbing for `**/*.js`, Vite Task sees the directory read but not the glob pattern. Any file added or removed in that directory, even unrelated ones, invalidates the cache.
+- **工具缓存文件：**某些工具会维护自己的缓存，例如 TypeScript 的 `.tsbuildinfo` 或 Cargo 的 `target/`。这些文件可能在源代码未变更时发生改变，导致不必要的缓存失效。
+- **目录列表：**当命令扫描目录（例如使用通配符 `**/*.js`）时，Vite 任务会看到目录读取，但看不到通配模式。该目录中添加或删除的任何文件（即使无关）都会使缓存失效。
 
-Use the [`input`](/config/run#input) option to exclude files or to replace automatic tracking with explicit file patterns:
+使用 [`input`](/config/run#input) 选项可排除文件或用显式文件模式替换自动跟踪：
 
 ```ts
 tasks: {
@@ -74,11 +74,11 @@ tasks: {
 }
 ```
 
-## Environment Variables
+## 环境变量
 
-By default, tasks run in a clean environment. Only a small set of common variables, such as `PATH`, `HOME`, and `CI`, are passed through. Other environment variables are neither visible to the task nor included in the cache fingerprint.
+默认情况下，任务在一个干净的环境中运行。仅传递少量通用变量，如 `PATH`、`HOME` 和 `CI`。其他环境变量对任务不可见，也不会包含在缓存指纹中。
 
-To add an environment variable to the cache key, add it to [`env`](/config/run#env). Changing its value then invalidates the cache:
+要将环境变量添加到缓存键中，请将其添加到 [`env`](/config/run#env)。更改其值会触发缓存失效：
 
 ```ts
 tasks: {
@@ -89,13 +89,13 @@ tasks: {
 }
 ```
 
-To pass a variable to the task **without** affecting cache behavior, use [`untrackedEnv`](/config/run#untracked-env). This is useful for variables like `CI` or `GITHUB_ACTIONS` that should be available in the task, but do not generally affect caching behavior.
+若要将变量传递给任务**而不影响**缓存行为，请使用 [`untrackedEnv`](/config/run#untracked-env)。这对于 `CI` 或 `GITHUB_ACTIONS` 等变量很有用，这些变量应可在任务中使用，但通常不会影响缓存行为。
 
-See [Run Config](/config/run#env) for details on wildcard patterns and the full list of automatically passed-through variables.
+有关通配符模式和自动传递变量的完整列表，请参见 [运行配置](/config/run#env)。
 
-## Cache Sharing
+## 缓存共享
 
-Vite Task's cache is content-based. If two tasks run the same command with the same inputs, they share the cache entry. This happens naturally when multiple tasks include a common step, either as standalone tasks or as parts of [compound commands](/guide/run#compound-commands):
+Vite 任务的缓存是基于内容的。如果两个任务使用相同的输入运行相同的命令，它们会共享同一个缓存条目。这在多个任务包含共同步骤时自然发生，无论是作为独立任务还是作为[复合命令](/guide/run#复合命令)的一部分：
 
 ```json [package.json]
 {
@@ -106,14 +106,14 @@ Vite Task's cache is content-based. If two tasks run the same command with the s
 }
 ```
 
-With caching enabled, for example through `--cache` or [`run.cache.scripts: true`](/config/run#run-cache), running `check` first means the `vp lint` step in `release` is an instant cache hit, since both run the same command against the same files.
+启用缓存后（例如通过 `--cache` 或 [`run.cache.scripts: true`](/config/run#run-cache)），先运行 `check`，则 `release` 中的 `vp lint` 步骤会立即命中缓存，因为两者针对相同文件和相同命令运行。
 
-## Cache Commands
+## 缓存命令
 
-Use `vp cache clean` when you need to clear cached task results:
+当需要清除缓存的任务结果时，请使用 `vp cache clean`：
 
 ```bash
 vp cache clean
 ```
 
-The task cache is stored in `node_modules/.vite/task-cache` at the project root. `vp cache clean` deletes that cache directory.
+任务缓存存储在项目根目录的 `node_modules/.vite/task-cache` 中。`vp cache clean` 会删除该缓存目录。

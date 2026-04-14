@@ -1,8 +1,8 @@
-# Lint Config
+# Lint 配置
 
-`vp lint` and `vp check` read Oxlint settings from the `lint` block in `vite.config.ts`. See [Oxlint's configuration](https://oxc.rs/docs/guide/usage/linter/config.html) for details.
+`vp lint` 和 `vp check` 从 `vite.config.ts` 中的 `lint` 块读取 Oxlint 设置。详细信息请参考 [Oxlint 的配置文档](https://oxc.rs/docs/guide/usage/linter/config.html)。
 
-## Example
+## 示例
 
 ```ts
 import { defineConfig } from 'vite-plus';
@@ -21,4 +21,4 @@ export default defineConfig({
 });
 ```
 
-We recommend enabling both `options.typeAware` and `options.typeCheck` so `vp lint` and `vp check` can use the full type-aware path.
+我们建议同时启用 `options.typeAware` 和 `options.typeCheck`，这样 `vp lint` 和 `vp check` 就可以使用完整的类型感知路径。

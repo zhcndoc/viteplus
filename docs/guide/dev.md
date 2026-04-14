@@ -1,24 +1,24 @@
-# Dev
+# 开发
 
-`vp dev` starts the Vite development server.
+`vp dev` 启动 Vite 开发服务器。
 
-## Overview
+## 概述
 
-`vp dev` runs the standard Vite development server through Vite+, so you keep the normal Vite dev experience while using the same CLI entry point as the rest of the toolchain. For more information about using and configuring the dev server, see the [Vite guide](https://vite.dev/guide/).
+`vp dev` 通过 Vite+ 运行标准的 Vite 开发服务器，因此你可以在使用与工具链其他部分相同的 CLI 入口点的同时，保持正常的 Vite 开发体验。有关使用和配置开发服务器的更多信息，请参阅 [Vite 指南](https://vite.dev/guide/)。
 
-## Usage
+## 用法
 
 ```bash
 vp dev
 ```
 
-## Configuration
+## 配置
 
-Use standard Vite config in `vite.config.ts`. For the full configuration reference, see the [Vite config docs](https://vite.dev/config/).
+在 `vite.config.ts` 中使用标准 Vite 配置。如需完整的配置参考，请参阅 [Vite 配置文档](https://vite.dev/config/)。
 
-Use it for:
+适用于：
 
-- [plugins](https://vite.dev/guide/using-plugins)
-- [aliases](https://vite.dev/config/shared-options#resolve-alias)
+- [插件](https://vite.dev/guide/using-plugins)
+- [别名](https://vite.dev/config/shared-options#resolve-alias)
 - [`server`](https://vite.dev/config/server-options)
-- [environment modes](https://vite.dev/guide/env-and-mode)
+- [环境模式](https://vite.dev/guide/env-and-mode)

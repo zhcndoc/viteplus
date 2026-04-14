@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from "vue";
 
 const features = [
-  { id: 'feature-dev-build', label: 'dev & build' },
-  { id: 'feature-check', label: 'check' },
-  { id: 'feature-test', label: 'test' },
-  { id: 'feature-run', label: 'run' },
-  { id: 'feature-pack', label: 'pack' },
+  { id: "feature-dev-build", label: "开发与构建" },
+  { id: "feature-check", label: "检查" },
+  { id: "feature-test", label: "测试" },
+  { id: "feature-run", label: "运行" },
+  { id: "feature-pack", label: "打包" },
 ];
 
-const activeSection = ref('feature-dev-build');
-const underlineStyle = ref({ left: '0px', width: '0px' });
+const activeSection = ref("feature-dev-build");
+const underlineStyle = ref({ left: "0px", width: "0px" });
 const listItems = ref<HTMLElement[]>([]);
 let scrollTimeout: number | null = null;
 
@@ -24,7 +24,7 @@ const scrollToSection = (e: Event, id: string) => {
   }
 
   // Get the toolbar height to offset the scroll
-  const toolbar = (e.currentTarget as HTMLElement).closest('section');
+  const toolbar = (e.currentTarget as HTMLElement).closest("section");
   const toolbarHeight = toolbar?.offsetHeight || 0;
 
   // Calculate position to scroll to
@@ -46,7 +46,9 @@ const scrollToSection = (e: Event, id: string) => {
 
     // Easing function (easeInOutCubic)
     const ease =
-      progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
     window.scrollTo(0, startPosition + distance * ease);
 
@@ -68,7 +70,7 @@ const updateUnderlinePosition = () => {
     };
 
     // Auto-scroll the toolbar on mobile to keep active item in view
-    const toolbar = activeItem.closest('ul');
+    const toolbar = activeItem.closest("ul");
     if (toolbar && window.innerWidth < 640) {
       // sm breakpoint
       const itemLeft = activeItem.offsetLeft;
@@ -80,7 +82,7 @@ const updateUnderlinePosition = () => {
 
       toolbar.scrollTo({
         left: targetScrollLeft,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   }
@@ -127,7 +129,8 @@ const determineActiveSection = () => {
     const lastSection = sections[sections.length - 1];
     if (
       lastSection &&
-      window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100
+      window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 100
     ) {
       activeId = lastSection.id;
     }
@@ -153,7 +156,7 @@ let observer: IntersectionObserver | null = null;
 
 onMounted(() => {
   // Set up scroll listener for active state tracking
-  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener("scroll", handleScroll, { passive: true });
 
   // Initial underline position
   setTimeout(() => {
@@ -162,12 +165,12 @@ onMounted(() => {
   }, 100);
 
   // Update on resize
-  window.addEventListener('resize', updateUnderlinePosition);
+  window.addEventListener("resize", updateUnderlinePosition);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
-  window.removeEventListener('resize', updateUnderlinePosition);
+  window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("resize", updateUnderlinePosition);
   if (scrollTimeout) {
     window.cancelAnimationFrame(scrollTimeout);
   }
@@ -175,8 +178,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="wrapper wrapper wrapper--ticks border-t w-full relative z-20"></div>
-  <section class="wrapper sticky top-0 border-b bg-primary z-10 overflow-hidden">
+  <div
+    class="wrapper wrapper wrapper--ticks border-t w-full relative z-20"
+  ></div>
+  <section
+    class="wrapper sticky top-0 border-b bg-primary z-10 overflow-hidden"
+  >
     <ul
       class="w-full sm:grid sm:grid-cols-5 flex items-center divide-x divide-nickel relative overflow-x-auto scrollbar-hide touch-none sm:touch-auto select-none sm:select-auto"
     >
@@ -268,7 +275,12 @@ onUnmounted(() => {
             </g>
             <defs>
               <clipPath id="clip0_302_1655">
-                <rect width="16" height="16" fill="white" transform="translate(0.142822)" />
+                <rect
+                  width="16"
+                  height="16"
+                  fill="white"
+                  transform="translate(0.142822)"
+                />
               </clipPath>
             </defs>
           </svg>

@@ -1,12 +1,12 @@
-# Continuous Integration
+# 持续集成
 
-You can use `voidzero-dev/setup-vp` to use Vite+ in CI environments.
+你可以使用 `voidzero-dev/setup-vp` 在 CI 环境中使用 Vite+。
 
-## Overview
+## 概述
 
-For GitHub Actions, the recommended setup is [`voidzero-dev/setup-vp`](https://github.com/voidzero-dev/setup-vp). It installs Vite+, sets up the required Node.js version and package manager, and can cache package installs automatically.
+对于 GitHub Actions，推荐使用 [`voidzero-dev/setup-vp`](https://github.com/voidzero-dev/setup-vp)。它会安装 Vite+，设置所需的 Node.js 版本和包管理器，并自动缓存依赖安装。
 
-That means you usually do not need separate `setup-node`, package-manager setup, and manual dependency-cache steps in your workflow.
+这意味着你通常不需要在工作流中单独配置 `setup-node`、包管理器设置和手动依赖缓存步骤。
 
 ## GitHub Actions
 
@@ -21,13 +21,13 @@ That means you usually do not need separate `setup-node`, package-manager setup,
 - run: vp build
 ```
 
-With `cache: true`, `setup-vp` handles dependency caching for you automatically.
+当 `cache: true` 时，`setup-vp` 会自动为你处理依赖缓存。
 
-## Simplifying Existing Workflows
+## 简化现有工作流
 
-If you are migrating an existing GitHub Actions workflow, you can often replace large blocks of Node, package-manager, and cache setup with a single `setup-vp` step.
+如果你正在迁移现有的 GitHub Actions 工作流，可以用单个 `setup-vp` 步骤替换大量的 Node、包管理器和缓存设置。
 
-#### Before:
+#### 之前：
 
 ```yaml
 - uses: actions/setup-node@v4
@@ -38,7 +38,7 @@ If you are migrating an existing GitHub Actions workflow, you can often replace 
   with:
     version: 10
 
-- name: Get pnpm store path
+- name: 获取 pnpm 仓库路径
   run: pnpm store path
 
 - uses: actions/cache@v4
@@ -50,7 +50,7 @@ If you are migrating an existing GitHub Actions workflow, you can often replace 
 - run: pnpm test
 ```
 
-#### After:
+#### 之后：
 
 ```yaml
 - uses: voidzero-dev/setup-vp@v1
