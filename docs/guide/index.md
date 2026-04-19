@@ -18,7 +18,7 @@ curl -fsSL https://vite.plus | bash
 irm https://vite.plus/ps1 | iex
 ```
 
-或者，下载并运行 [`vp-setup.exe`](https://viteplus.zhcndoc.com/vp-setup)。
+也可以下载并运行 [`vp-setup.exe`](https://setup.viteplus.dev)。
 
 ::: tip SmartScreen 警告
 `vp-setup.exe` 尚未进行代码签名。下载时浏览器可能会显示警告。点击 **“…”** → **“保留”** → **“无论如何保留”** 继续。如果 Windows Defender SmartScreen 在你运行文件时阻止它，请点击 **“更多信息”** → **“仍要运行”**。

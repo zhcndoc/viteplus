@@ -23,9 +23,9 @@ export default defineConfig({
 
 Vite+ 通过以下扩展增强了基础 Vite 配置：
 
-- [`lint`](/config/lint) 用于 Oxlint
-- [`fmt`](/config/fmt) 用于 Oxfmt
-- [`test`](/config/test) 用于 Vitest
-- [`run`](/config/run) 用于 Vite Task
-- [`pack`](/config/pack) 用于 tsdown
-- [`staged`](/config/staged) 用于 staged-file 检查
+- [`lint`](/config/lint) for Oxlint
+- [`fmt`](/config/fmt) for Oxfmt
+- [`test`](/config/test) for Vitest
+- [`run`](/config/run) for Vite Task
+- [`pack`](/config/pack) for tsdown
+- [`staged`](/config/staged) for staged-file checks

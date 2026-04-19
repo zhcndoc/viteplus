@@ -51,18 +51,19 @@ vp install -w
 
 Vite+ 提供了所有熟悉的包管理命令：
 
-- `vp install` 安装项目的当前依赖图
-- `vp add <pkg>` 添加包到 `dependencies`，使用 `-D` 表示 `devDependencies`
+- `vp install` 会为项目安装当前的依赖图
+- `vp add <pkg>` 将包添加到 `dependencies`，使用 `-D` 添加到 `devDependencies`
 - `vp remove <pkg>` 移除包
 - `vp update` 更新依赖
-- `vp dedupe` 在包管理器支持的情况下减少重复的依赖项
-- `vp outdated` 显示可用的更新
+- `vp dedupe` 在包管理器支持的情况下减少重复依赖条目
+- `vp outdated` 显示可用更新
 - `vp list` 显示已安装的包
-- `vp why <pkg>` 解释某个包存在的原因
-- `vp info <pkg>` 显示包的注册表元数据，如版本和 dist-tags
+- `vp why <pkg>` 解释为什么会安装该包
+- `vp info <pkg>` 显示包的注册表元数据
+- `vp rebuild` 重新构建原生模块（例如切换 Node.js 版本后）
 - `vp link` 和 `vp unlink` 管理本地包链接
-- `vp dlx <pkg>` 运行包二进制文件而不将其添加到项目中
-- `vp pm <command>` 当你需要超出标准化 `vp` 命令集的规范行为时，直接转发到解析的包管理器
+- `vp dlx <pkg>` 运行包的二进制文件而不将其添加到项目中
+- `vp pm <command>` 转发原始的、与包管理器相关的命令；当你需要超出已标准化的 `vp` 命令集的行为时使用
 
 ### 命令指南
 
@@ -115,7 +116,21 @@ Vite+ 提供了所有熟悉的包管理命令：
 - `vp why react` 解释为什么安装了 `react`
 - `vp info react` 显示注册表元数据，如版本和 dist-tags
 
-#### 高级用法
+#### Rebuild
+
+当需要重新编译原生模块时，使用 `vp rebuild`；例如在切换 Node.js 版本后，或当 C/C++ 加载失败的扩展无法加载时。
+
+- `vp rebuild` 重新构建所有原生模块
+- `vp rebuild -- <args>` 将额外参数传递给底层包管理器
+
+```bash
+vp rebuild
+vp rebuild -- --update-binary
+```
+
+`vp rebuild` 是 `vp pm rebuild` 的简写。
+
+#### Advanced
 
 当你需要更低级别的包管理器行为时，使用这些命令：
 
