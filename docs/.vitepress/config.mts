@@ -131,6 +131,7 @@ export default extendConfig(
           {
             text: '资源',
             items: [
+              { text: 'Team', link: '/team' },
               { text: 'GitHub', link: 'https://github.com/voidzero-dev/vite-plus' },
               { text: '版本发布', link: 'https://github.com/voidzero-dev/vite-plus/releases' },
               {
