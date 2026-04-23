@@ -116,7 +116,7 @@ Vite+ 提供了所有熟悉的包管理命令：
 - `vp why react` 解释为什么安装了 `react`
 - `vp info react` 显示注册表元数据，如版本和 dist-tags
 
-#### Rebuild
+#### 重新构建
 
 当需要重新编译原生模块时，使用 `vp rebuild`；例如在切换 Node.js 版本后，或当 C/C++ 加载失败的扩展无法加载时。
 
@@ -130,7 +130,7 @@ vp rebuild -- --update-binary
 
 `vp rebuild` 是 `vp pm rebuild` 的简写。
 
-#### Advanced
+#### 高级
 
 当你需要更低级别的包管理器行为时，使用这些命令：
 

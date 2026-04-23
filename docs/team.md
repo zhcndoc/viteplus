@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Meet the Team
-description: The development of Vite+ is guided by an international team.
+title: 认识团队
+description: Vite+ 的开发由一个国际化团队指导。
 ---
 
 <script setup>
@@ -16,17 +16,17 @@ import { core } from './_data/team'
 
 <VPTeamPage>
   <VPTeamPageTitle>
-    <template #title>Meet the Team</template>
+    <template #title>认识团队</template>
     <template #lead>
-      The team members who work on Vite+ and are responsible for its development, maintenance, and community engagement.
+      负责 Vite+ 的开发、维护以及社区参与的团队成员。
     </template>
   </VPTeamPageTitle>
   <VPTeamMembers :members="core" />
   <!-- <VPTeamPageSection v-if="emeriti.length">
-    <template #title>Team Emeriti</template>
+    <template #title>团队名誉成员</template>
     <template #lead>
-      Here we honor some no-longer-active team members who have made valuable
-      contributions in the past.
+      在这里，我们向一些已经不再活跃、但曾在过去作出宝贵
+      贡献的团队成员致敬。
     </template>
     <template #members>
       <VPTeamMembers size="small" :members="emeriti" />

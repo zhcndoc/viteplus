@@ -24,15 +24,15 @@
 ```
 $ node compile-legacy-app.js
 
-building legacy app for production...
+为生产环境构建旧版应用...
 
-✓ built in 69s
+✓ 构建完成，用时 69 秒
 ```
 
 不指定任务名称直接运行 `vp run` 可进入交互式任务选择器：
 
 ```
-Select a task (↑/↓, Enter to run, Esc to clear):
+选择一个任务（↑/↓，Enter 执行，Esc 清除）：
 
   › build: node compile-legacy-app.js
     test: jest
@@ -48,23 +48,23 @@ vp run --cache build
 
 ```
 $ node compile-legacy-app.js
-✓ built in 69s
+✓ 构建完成，用时 69 秒
 ```
 
 如果没有变化，下次运行时输出会从缓存中重放：
 
 ```
-$ node compile-legacy-app.js ✓ cache hit, replaying
-✓ built in 69s
+$ node compile-legacy-app.js ✓ 命中缓存，正在重放
+✓ 构建完成，用时 69 秒
 
 ---
-vp run: cache hit, 69s saved.
+vp run: 命中缓存，节省了 69 秒。
 ```
 
 如果有输入发生变化，任务会重新运行：
 
 ```
-$ node compile-legacy-app.js ✗ cache miss: 'legacy/index.js' modified, executing
+$ node compile-legacy-app.js ✗ 未命中缓存：'legacy/index.js' 已修改，正在执行
 ```
 
 ## 任务定义
@@ -195,24 +195,24 @@ vp run -w build
 
 ```
 $ vp lint
-Found 0 warnings and 0 errors.
+发现 0 个警告和 0 个错误。
 
 $ vp build
-✓ built in 28ms
+✓ 构建完成，用时 28 毫秒
 
 ---
-vp run: 0/2 cache hit (0%).
+vp run: 0/2 命中缓存（0%）。
 ```
 
 每个子任务都有独立的缓存条目。如果只更改了 `.ts` 文件但 lint 仍通过，则下次运行 `vp run --cache check` 时只会重新运行 `vp build`：
 
 ```
-$ vp lint ✓ cache hit, replaying
-$ vp build ✗ cache miss: 'src/index.ts' modified, executing
-✓ built in 30ms
+$ vp lint ✓ 命中缓存，正在重放
+$ vp build ✗ 未命中缓存：'src/index.ts' 已修改，正在执行
+✓ 构建完成，用时 30 毫秒
 
 ---
-vp run: 1/2 cache hit (50%), 120ms saved.
+vp run: 1/2 命中缓存（50%），节省了 120 毫秒。
 ```
 
 ### 嵌套的 `vp run`
@@ -262,22 +262,22 @@ vp run -r -v build
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Vite+ Task Runner • Execution Summary
+    Vite+ 任务运行器 • 执行摘要
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Statistics:   3 tasks • 3 cache hits • 0 cache misses
-Performance:  100% cache hit rate, 468ms saved in total
+统计信息：   3 个任务 • 3 次命中缓存 • 0 次未命中缓存
+性能：  100% 命中缓存率，总计节省 468 毫秒
 
-Task Details:
+任务详情：
 ────────────────────────────────────────────────
   [1] @my/core#build: ~/packages/core$ vp build ✓
-      → Cache hit - output replayed - 200ms saved
+      → 命中缓存 - 输出已重放 - 节省 200 毫秒
   ·······················································
   [2] @my/utils#build: ~/packages/utils$ vp build ✓
-      → Cache hit - output replayed - 150ms saved
+      → 命中缓存 - 输出已重放 - 节省 150 毫秒
   ·······················································
   [3] @my/app#build: ~/packages/app$ vp build ✓
-      → Cache hit - output replayed - 118ms saved
+      → 命中缓存 - 输出已重放 - 节省 118 毫秒
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

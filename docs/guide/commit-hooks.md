@@ -1,4 +1,4 @@
-# Commit Hooks
+# 提交钩子
 
 使用 `vp config` 安装提交钩子，使用 `vp staged` 对暂存文件运行检查。
 
