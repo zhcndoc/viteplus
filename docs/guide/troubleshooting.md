@@ -78,7 +78,7 @@ Vite+ 期望使用现代的上游工具版本。
 
 一个最小的分阶段配置示例如下：
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
@@ -94,7 +94,7 @@ export default defineConfig({
 
 使用 `lazyPlugins` 来包裹插件加载。仅在需要这些插件的命令（`dev`、`build`、`test`、`preview`）中才会加载插件，并在其他所有情况下跳过：
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig, lazyPlugins } from 'vite-plus';
 import myPlugin from 'vite-plugin-foo';
 
@@ -105,7 +105,7 @@ export default defineConfig({
 
 对于应当延迟导入的重型插件，将其与动态 `import()` 结合使用：
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig, lazyPlugins } from 'vite-plus';
 
 export default defineConfig({

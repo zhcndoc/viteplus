@@ -2,7 +2,7 @@
 
 你可以在 `vite.config.ts` 中的 `run` 字段下配置 Vite Task。查看 [`vp run`](/guide/run) 以了解有关运行脚本和任务（使用 Vite+）的更多信息。
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
@@ -27,10 +27,10 @@ export default defineConfig({
 
 启用时（默认），运行类似 `test` 的脚本会在执行前自动运行 `pretest`，执行后自动运行 `posttest`（如果它们存在于 `package.json` 中）。
 
-```ts
+```ts [vite.config.ts]
 export default defineConfig({
   run: {
-    enablePrePostScripts: false, // 禁用预/后生命周期钩子
+    enablePrePostScripts: false, // 禁用前/后生命周期钩子
   },
 });
 ```
@@ -46,7 +46,7 @@ export default defineConfig({
 
 控制是否在后续运行中缓存并重放任务结果。
 
-```ts
+```ts [vite.config.ts]
 export default defineConfig({
   run: {
     cache: {
@@ -71,7 +71,7 @@ export default defineConfig({
 
 定义任务要运行的 shell 命令。
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'vp build',
@@ -90,7 +90,7 @@ tasks: {
 
 在此任务开始之前必须成功完成的任务。
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   deploy: {
     command: 'deploy-script --prod',
@@ -101,7 +101,7 @@ tasks: {
 
 依赖项可以使用 `package#task` 格式引用其他包中的任务：
 
-```ts
+```ts [vite.config.ts]
 dependsOn: ['@my/core#build', '@my/utils#lint'];
 ```
 
@@ -114,7 +114,7 @@ dependsOn: ['@my/core#build', '@my/utils#lint'];
 
 是否缓存此任务的输出。对于不应被缓存的任务（如开发服务器），请设置为 `false`：
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   dev: {
     command: 'vp dev',
@@ -130,7 +130,7 @@ tasks: {
 
 包含在缓存指纹中的环境变量。当任何列出的变量值发生变化时，缓存将失效。
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'vp build',
@@ -153,7 +153,7 @@ $ NODE_ENV=production vp run build     # 缓存未命中：变量已更改
 
 传递给任务进程但**不**包含在缓存指纹中的环境变量。更改这些值不会使缓存失效。
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'vp build',
@@ -178,7 +178,7 @@ Vite Task 会自动检测命令使用了哪些文件（参见[自动文件跟踪
 
 **从自动跟踪中排除文件**：
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'vp build',
@@ -190,7 +190,7 @@ tasks: {
 
 **仅指定显式文件而不进行自动跟踪**：
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'vp build',
@@ -201,7 +201,7 @@ tasks: {
 
 **使用对象形式将模式解析为相对于工作区根目录**：
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'vp build',
@@ -219,7 +219,7 @@ tasks: {
 
 **完全禁用文件跟踪，仅根据命令/环境变化缓存**：
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   greet: {
     command: 'node greet.mjs',
@@ -239,7 +239,7 @@ tasks: {
 
 任务的工作目录，相对于包根目录。
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   'test-e2e': {
     command: 'vp test',

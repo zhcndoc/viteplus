@@ -22,7 +22,7 @@ vp fmt . --write
 
 对于编辑器，将格式化配置路径指向 `./vite.config.ts`，这样保存时格式化会使用相同的 `fmt` 块：
 
-```json
+```json [.vscode/settings.json]
 {
   "oxc.fmt.configPath": "./vite.config.ts"
 }
@@ -30,7 +30,7 @@ vp fmt . --write
 
 关于上游格式化程序的行为和配置参考，请参阅 [Oxfmt 文档](https://oxc.rs/docs/guide/usage/formatter.html)。
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({

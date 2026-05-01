@@ -760,7 +760,10 @@ fn delegated_help_doc(command: &str) -> Option<HelpDoc> {
                     vec![
                         row("--fix", "Auto-fix format and lint issues"),
                         row("--no-fmt", "Skip format check"),
-                        row("--no-lint", "Skip lint check"),
+                        row(
+                            "--no-lint",
+                            "Skip lint rules; type-check still runs when `lint.options.typeCheck` is true",
+                        ),
                         row(
                             "--no-error-on-unmatched-pattern",
                             "Do not exit with error when pattern is unmatched",

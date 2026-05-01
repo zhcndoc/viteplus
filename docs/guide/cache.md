@@ -65,7 +65,7 @@ Vite 任务会在执行过程中跟踪每个命令读取了哪些文件。当任
 
 使用 [`input`](/config/run#input) 选项可排除文件或用显式文件模式替换自动跟踪：
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'tsc',
@@ -80,7 +80,7 @@ tasks: {
 
 要将环境变量添加到缓存键中，请将其添加到 [`env`](/config/run#env)。更改其值会触发缓存失效：
 
-```ts
+```ts [vite.config.ts]
 tasks: {
   build: {
     command: 'webpack --mode production',

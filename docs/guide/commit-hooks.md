@@ -38,7 +38,7 @@ vp staged --fail-on-changes
 
 在 `vite.config.ts` 的 `staged` 块中定义暂存文件检查：
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({

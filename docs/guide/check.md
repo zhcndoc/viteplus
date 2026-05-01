@@ -19,7 +19,10 @@
 
 ```bash
 vp check
-vp check --fix # 格式化并运行自动修复。
+vp check --fix             # 格式化并运行自动修复器。
+vp check --no-fmt          # 跳过格式化；运行 lint（如果启用了类型检查，则也运行类型检查）。
+vp check --no-lint         # 跳过 lint 规则；启用时保留类型检查。
+vp check --no-fmt --no-lint # 仅类型检查（需要启用 `typeCheck`）。
 ```
 
 ## 配置
@@ -32,7 +35,7 @@ vp check --fix # 格式化并运行自动修复。
 
 推荐的 Lint 基础配置：
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({

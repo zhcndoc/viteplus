@@ -10,7 +10,7 @@
 
 ## GitHub Actions
 
-```yaml
+```yaml [.github/workflows/ci.yml]
 - uses: voidzero-dev/setup-vp@v1
   with:
     node-version: '22'
@@ -29,7 +29,7 @@
 
 #### 之前：
 
-```yaml
+```yaml [.github/workflows/ci.yml]
 - uses: actions/setup-node@v4
   with:
     node-version: '24'
@@ -52,7 +52,7 @@
 
 #### 之后：
 
-```yaml
+```yaml [.github/workflows/ci.yml]
 - uses: voidzero-dev/setup-vp@v1
   with:
     node-version: '24'

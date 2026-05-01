@@ -22,7 +22,7 @@ vp lint --type-aware
 
 对于上游规则集、选项和兼容性详情，请参阅 [Oxlint 文档](https://oxc.rs/docs/guide/usage/linter.html)。
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({

@@ -29,7 +29,7 @@ vp pack --watch
 - [监听模式](https://tsdown.dev/options/watch-mode)
 - [独立可执行文件](https://tsdown.dev/options/exe#executable)
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
@@ -47,7 +47,7 @@ export default defineConfig({
 
 当你希望将 CLI 或其他基于 Node 的工具作为无需单独安装 Node.js 的原生可执行文件分发时，请使用此功能。
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({

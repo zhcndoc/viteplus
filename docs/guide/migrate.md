@@ -114,8 +114,7 @@ const { page } = await import('vite-plus/test/browser/context');
 
 如果项目使用 `tsdown.config.ts`，将其选项移动到 `vite.config.ts` 的 `pack` 块中：
 
-```ts
-// 之前 — tsdown.config.ts
+```ts [tsdown.config.ts] {4-6}
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
@@ -123,8 +122,9 @@ export default defineConfig({
   dts: true,
   format: ['esm', 'cjs'],
 });
+```
 
-// 之后 — vite.config.ts
+```ts [vite.config.ts] {4-8}
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
@@ -144,8 +144,7 @@ Vite+ 用其自身的 `staged` 块（在 `vite.config.ts` 中）取代了 lint-s
 
 将您的 lint-staged 规则移动到 `staged` 块中：
 
-```ts
-// vite.config.ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({

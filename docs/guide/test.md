@@ -22,7 +22,7 @@ vp test run --coverage
 
 将测试配置直接放在 `vite.config.ts` 中的 `test` 块内，这样所有配置都集中在一处。我们不建议在 Vite+ 中使用 `vitest.config.ts`。
 
-```ts
+```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
