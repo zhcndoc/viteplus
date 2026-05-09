@@ -1,12 +1,12 @@
-# RFC: Vite+ Link and Unlink Package Commands
+# RFC：Vite+ 链接与取消链接包命令
 
-## Summary
+## 摘要
 
-Add `vp link` (alias: `vp ln`) and `vp unlink` commands that automatically adapt to the detected package manager (pnpm/yarn/npm/bun) for creating and removing symlinks to local packages, making them accessible system-wide or in other locations. This enables local package development and testing workflows.
+添加 `vp link`（别名：`vp ln`）和 `vp unlink` 命令，根据检测到的包管理器（pnpm/yarn/npm/bun）自动适配，用于创建和移除指向本地包的符号链接，使其可在系统范围内或其他位置访问。这将支持本地包开发和测试工作流。
 
-## Motivation
+## 动机
 
-Currently, developers must manually use package manager-specific commands to link local packages:
+目前，开发者必须手动使用各包管理器特定的命令来链接本地包：
 
 ```bash
 pnpm link --global
@@ -17,25 +17,25 @@ npm link
 npm link <package>
 ```
 
-This creates friction in local development workflows and requires remembering different syntaxes. A unified interface would:
+这给本地开发工作流带来了阻力，并且需要记住不同的语法。一个统一的接口将：
 
-1. **Simplify local development**: One command works across all package managers
-2. **Auto-detection**: Automatically uses the correct package manager
-3. **Consistency**: Same syntax regardless of underlying tool
-4. **Integration**: Works seamlessly with existing Vite+ features
+1. **简化本地开发**：一条命令适用于所有包管理器
+2. **自动检测**：自动使用正确的包管理器
+3. **一致性**：无论底层工具是什么，语法都相同
+4. **集成**：与现有的 Vite+ 功能无缝协作
 
-### Current Pain Points
+### 当前痛点
 
 ```bash
-# Developer needs to know which package manager is used
-pnpm link --global                    # pnpm project - register current package
-pnpm link --global react              # pnpm project - link global package
-yarn link                             # yarn project - register current package
-yarn link react                       # yarn project - link global package
-npm link                              # npm project - register current package
-npm link react                        # npm project - link global package
+# 开发者需要知道当前使用的是哪种包管理器
+pnpm link --global                    # pnpm 项目 - 注册当前包
+pnpm link --global react              # pnpm 项目 - 链接全局包
+yarn link                             # yarn 项目 - 注册当前包
+yarn link react                       # yarn 项目 - 链接全局包
+npm link                              # npm 项目 - 注册当前包
+npm link react                        # npm 项目 - 链接全局包
 
-# Different unlink commands
+# 不同的 unlink 命令
 pnpm unlink --global
 pnpm unlink --global react
 yarn unlink
@@ -44,242 +44,242 @@ npm unlink
 npm unlink react
 ```
 
-### Proposed Solution
+### 提议的解决方案
 
 ```bash
-# Works for all package managers
+# 适用于所有包管理器
 
-# Register current package globally
+# 将当前包注册为全局可链接包
 vp link
 vp ln
 
-# Link a global package to current project
+# 将全局包链接到当前项目
 vp link react
 vp ln lodash
 
-# Link a package from a specific directory
+# 将某个目录中的包链接过来
 vp link ./packages/my-lib
 vp link ../other-project
 
-# Workspace operations
-vp link --filter app                # Link in specific package
-vp link react --filter "app*"       # Link in multiple packages
+# 工作区操作
+vp link --filter app                # 在指定包中链接
+vp link react --filter "app*"       # 在多个包中链接
 
-# Unlink operations
-vp unlink                           # Unlink current package
-vp unlink react                     # Unlink specific package
-vp unlink --filter app              # Unlink in specific workspace
+# 取消链接操作
+vp unlink                           # 取消当前包的链接
+vp unlink react                     # 取消指定包的链接
+vp unlink --filter app              # 在指定工作区中取消链接
 ```
 
-## Proposed Solution
+## 提议的解决方案
 
-### Command Syntax
+### 命令语法
 
-#### Link Command
+#### Link 命令
 
 ```bash
 vp link [PACKAGE]
-vp ln [PACKAGE]        # Alias
+vp ln [PACKAGE]        # 别名
 ```
 
-**Examples:**
+**示例：**
 
 ```bash
-# Register current package globally (make it linkable)
+# 将当前包注册为全局可链接包（使其可被链接）
 vp link
 vp ln
 
-# Link a global package to current project
+# 将全局包链接到当前项目
 vp link react
 vp link @types/node
 
-# Link a local directory as a package
+# 将本地目录作为包链接
 vp link ./packages/utils
 vp link ../my-other-project
 ```
 
-#### Unlink Command
+#### Unlink 命令
 
 ```bash
 vp unlink [PACKAGE] [OPTIONS]
 ```
 
-**Examples:**
+**示例：**
 
 ```bash
-# Unregister current package from global
+# 从全局取消注册当前包
 vp unlink
 
-# Unlink a package from current project
+# 从当前项目取消某个包的链接
 vp unlink react
 vp unlink @types/node
 
-# Unlink in every workspace package (pnpm only)
+# 在每个工作区包中取消链接（仅 pnpm）
 vp unlink --recursive
 vp unlink -r
 ```
 
-### Command Mapping
+### 命令映射
 
-#### Link Command Mapping
+#### Link 命令映射
 
-**pnpm references:**
+**pnpm 参考：**
 
 - https://pnpm.io/cli/link
-- pnpm link creates symlinks to local packages or links global packages
+- pnpm link 会为本地包创建符号链接，或链接全局包
 
-**yarn references:**
+**yarn 参考：**
 
 - https://classic.yarnpkg.com/en/docs/cli/link (yarn@1)
 - https://yarnpkg.com/cli/link (yarn@2+)
-- yarn link registers/links packages
+- yarn link 会注册/链接包
 
-**npm references:**
+**npm 参考：**
 
 - https://docs.npmjs.com/cli/v11/commands/npm-link
-- npm link creates symlinks between packages
+- npm link 会在包之间创建符号链接
 
-**bun references:**
+**bun 参考：**
 
 - https://bun.sh/docs/cli/link
-- bun link creates symlinks for local packages
+- bun link 会为本地包创建符号链接
 
-| Vite+ Command   | pnpm              | yarn@1            | yarn@2+           | npm              | bun              | Description                                             |
-| --------------- | ----------------- | ----------------- | ----------------- | ---------------- | ---------------- | ------------------------------------------------------- |
-| `vp link`       | `pnpm link`       | `yarn link`       | `yarn link`       | `npm link`       | `bun link`       | Register current package or link to local directory     |
-| `vp link <pkg>` | `pnpm link <pkg>` | `yarn link <pkg>` | `yarn link <pkg>` | `npm link <pkg>` | `bun link <pkg>` | Links package to current project                        |
-| `vp link <dir>` | `pnpm link <dir>` | `yarn link <dir>` | `yarn link <dir>` | `npm link <dir>` | `bun link <dir>` | Links package from `<dir>` directory to current project |
+| Vite+ 命令      | pnpm              | yarn@1            | yarn@2+           | npm              | bun              | 描述                                   |
+| --------------- | ----------------- | ----------------- | ----------------- | ---------------- | ---------------- | -------------------------------------- |
+| `vp link`       | `pnpm link`       | `yarn link`       | `yarn link`       | `npm link`       | `bun link`       | 注册当前包或链接到本地目录             |
+| `vp link <pkg>` | `pnpm link <pkg>` | `yarn link <pkg>` | `yarn link <pkg>` | `npm link <pkg>` | `bun link <pkg>` | 将包链接到当前项目                     |
+| `vp link <dir>` | `pnpm link <dir>` | `yarn link <dir>` | `yarn link <dir>` | `npm link <dir>` | `bun link <dir>` | 将 `<dir>` 目录中的包链接到当前项目    |
 
-#### Unlink Command Mapping
+#### Unlink 命令映射
 
-**pnpm references:**
+**pnpm 参考：**
 
 - https://pnpm.io/cli/unlink
-- Unlinks packages from node_modules and removes global links
+- 从 node_modules 中取消包的链接，并移除全局链接
 
-**yarn references:**
+**yarn 参考：**
 
 - https://classic.yarnpkg.com/en/docs/cli/unlink (yarn@1)
 - https://yarnpkg.com/cli/unlink (yarn@2+)
-- Unlinks previously linked packages
+- 取消之前链接过的包
 
-**npm references:**
+**npm 参考：**
 
 - https://docs.npmjs.com/cli/v11/commands/npm-uninstall
-- npm unlink removes symlinks
+- npm unlink 会移除符号链接
 
-| Vite+ Command           | pnpm                      | yarn@1              | yarn@2+             | npm                | bun          | Description                        |
-| ----------------------- | ------------------------- | ------------------- | ------------------- | ------------------ | ------------ | ---------------------------------- |
-| `vp unlink`             | `pnpm unlink`             | `yarn unlink`       | `yarn unlink`       | `npm unlink`       | `bun unlink` | Unlinks current package            |
-| `vp unlink <pkg>`       | `pnpm unlink <pkg>`       | `yarn unlink <pkg>` | `yarn unlink <pkg>` | `npm unlink <pkg>` | `bun unlink` | Unlinks specific package           |
-| `vp unlink --recursive` | `pnpm unlink --recursive` | N/A                 | `yarn unlink --all` | N/A                | N/A          | Unlinks in every workspace package |
+| Vite+ 命令             | pnpm                      | yarn@1              | yarn@2+             | npm                | bun          | 描述                           |
+| --------------------- | ------------------------- | ------------------- | ------------------- | ------------------ | ------------ | ------------------------------ |
+| `vp unlink`           | `pnpm unlink`             | `yarn unlink`       | `yarn unlink`       | `npm unlink`       | `bun unlink` | 取消当前包的链接               |
+| `vp unlink <pkg>`     | `pnpm unlink <pkg>`       | `yarn unlink <pkg>` | `yarn unlink <pkg>` | `npm unlink <pkg>` | `bun unlink` | 取消指定包的链接               |
+| `vp unlink --recursive` | `pnpm unlink --recursive` | N/A                 | `yarn unlink --all` | N/A                | N/A          | 在每个工作区包中取消链接       |
 
-### Link/Unlink Behavior Differences Across Package Managers
+### 各包管理器之间的 Link/Unlink 行为差异
 
 #### pnpm
 
-**Link behavior:**
+**Link 行为：**
 
-- `pnpm link`: Links current package dependencies to local directory
-- `pnpm link <pkg>`: Links a package to current project (searches globally and locally)
-- `pnpm link <dir>`: Links a local directory directly (no global registration)
+- `pnpm link`：将当前包依赖链接到本地目录
+- `pnpm link <pkg>`：将一个包链接到当前项目（会同时搜索全局和本地）
+- `pnpm link <dir>`：直接链接本地目录（无需全局注册）
 
-**Unlink behavior:**
+**Unlink 行为：**
 
-- `pnpm unlink`: Unlinks current package dependencies (removes symlinks)
-- `pnpm unlink <pkg>`: Unlinks specific package
-- `pnpm unlink --global`: Unlinks current package from global store
+- `pnpm unlink`：取消当前包依赖的链接（移除符号链接）
+- `pnpm unlink <pkg>`：取消指定包的链接
+- `pnpm unlink --global`：从全局存储中取消当前包的链接
 
 #### yarn
 
-**Link behavior (yarn@1):**
+**Link 行为（yarn@1）：**
 
-- `yarn link`: Registers current package globally
-- `yarn link <pkg>`: Links a global package to current project
-- No direct directory linking (need to `yarn link` in target first)
+- `yarn link`：将当前包注册到全局
+- `yarn link <pkg>`：将全局包链接到当前项目
+- 不支持直接目录链接（需要先在目标包中执行 `yarn link`）
 
-**Link behavior (yarn@2+):**
+**Link 行为（yarn@2+）：**
 
-- `yarn link`: Creates link for current package
-- `yarn link <pkg>`: Links package
-- `yarn link <dir>`: Links local directory
+- `yarn link`：为当前包创建链接
+- `yarn link <pkg>`：链接包
+- `yarn link <dir>`：链接本地目录
 
-**Unlink behavior:**
+**Unlink 行为：**
 
-- `yarn unlink`: Unlinks current package
-- `yarn unlink <pkg>`: Unlinks specific package
+- `yarn unlink`：取消当前包的链接
+- `yarn unlink <pkg>`：取消指定包的链接
 
 #### npm
 
-**Link behavior:**
+**Link 行为：**
 
-- `npm link`: Creates global symlink to current package
-- `npm link <pkg>`: Links global package to current project
-- `npm link <dir>`: Links local directory package
+- `npm link`：为当前包创建全局符号链接
+- `npm link <pkg>`：将全局包链接到当前项目
+- `npm link <dir>`：链接本地目录包
 
-**Unlink behavior:**
+**Unlink 行为：**
 
-- `npm unlink`: Removes global symlink for current package
-- `npm unlink <pkg>`: Removes package from current project
+- `npm unlink`：移除当前包的全局符号链接
+- `npm unlink <pkg>`：从当前项目中移除包
 
 #### bun
 
-**Link behavior:**
+**Link 行为：**
 
-- `bun link`: Registers current package as a linkable package
-- `bun link <pkg>`: Links a registered package to current project
-- `--save`: Adds `link:` prefix to package.json dependency entry
+- `bun link`：将当前包注册为可链接包
+- `bun link <pkg>`：将已注册的包链接到当前项目
+- `--save`：在 package.json 的依赖项中添加 `link:` 前缀
 
-**Unlink behavior:**
+**Unlink 行为：**
 
-- `bun unlink`: Unlinks current package
+- `bun unlink`：取消当前包的链接
 
-### Implementation Architecture
+### 实现架构
 
-#### 1. Command Structure
+#### 1. 命令结构
 
-**File**: `crates/vite_task/src/lib.rs`
+**文件**：`crates/vite_task/src/lib.rs`
 
-Add new command variants:
+添加新的命令变体：
 
 ```rust
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    // ... existing commands
+    // ... 现有命令
 
-    /// Link packages for local development
+    /// 为本地开发链接包
     #[command(disable_help_flag = true, alias = "ln")]
     Link {
-        /// Package name or directory to link
-        /// If empty, registers current package globally
+        /// 要链接的包名或目录
+        /// 如果为空，则将当前包注册到全局
         package: Option<String>,
 
-        /// Arguments to pass to package manager
+        /// 传递给包管理器的参数
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         args: Vec<String>,
     },
 
-    /// Unlink packages
+    /// 取消链接包
     #[command(disable_help_flag = true)]
     Unlink {
-        /// Package name to unlink
-        /// If empty, unlinks current package globally
+        /// 要取消链接的包名
+        /// 如果为空，则将当前包在全局取消链接
         package: Option<String>,
 
-        /// Unlink in every workspace package (pnpm only)
+        /// 在每个工作区包中取消链接（仅 pnpm）
         #[arg(short = 'r', long)]
         recursive: bool,
 
-        /// Arguments to pass to package manager
+        /// 传递给包管理器的参数
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         args: Vec<String>,
     },
 }
 ```
 
-#### 2. Package Manager Adapter
+#### 2. 包管理器适配器
 
-**File**: `crates/vite_package_manager/src/commands/link.rs` (new file)
+**文件**：`crates/vite_package_manager/src/commands/link.rs`（新文件）
 
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
@@ -298,7 +298,7 @@ pub struct LinkCommandOptions<'a> {
 }
 
 impl PackageManager {
-    /// Run the link command with the package manager.
+    /// 使用包管理器运行 link 命令。
     #[must_use]
     pub async fn run_link_command(
         &self,
@@ -310,7 +310,7 @@ impl PackageManager {
             .await
     }
 
-    /// Resolve the link command.
+    /// 解析 link 命令。
     #[must_use]
     pub fn resolve_link_command(&self, options: &LinkCommandOptions) -> ResolveCommandResult {
         let bin_name: String;
@@ -332,12 +332,12 @@ impl PackageManager {
             }
         }
 
-        // Add package/directory if specified
+        // 如果指定了包/目录，则添加
         if let Some(package) = options.package {
             args.push(package.to_string());
         }
 
-        // Add pass-through args
+        // 添加透传参数
         if let Some(pass_through_args) = options.pass_through_args {
             args.extend_from_slice(pass_through_args);
         }
@@ -347,7 +347,7 @@ impl PackageManager {
 }
 ```
 
-**File**: `crates/vite_package_manager/src/commands/unlink.rs` (new file)
+**文件**：`crates/vite_package_manager/src/commands/unlink.rs`（新文件）
 
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
@@ -367,7 +367,7 @@ pub struct UnlinkCommandOptions<'a> {
 }
 
 impl PackageManager {
-    /// Run the unlink command with the package manager.
+    /// 使用包管理器运行 unlink 命令。
     #[must_use]
     pub async fn run_unlink_command(
         &self,
@@ -379,7 +379,7 @@ impl PackageManager {
             .await
     }
 
-    /// Resolve the unlink command.
+    /// 解析 unlink 命令。
     #[must_use]
     pub fn resolve_unlink_command(&self, options: &UnlinkCommandOptions) -> ResolveCommandResult {
         let bin_name: String;
@@ -413,12 +413,12 @@ impl PackageManager {
             }
         }
 
-        // Add package if specified
+        // 如果指定了包，则添加
         if let Some(package) = options.package {
             args.push(package.to_string());
         }
 
-        // Add pass-through args
+        // 添加透传参数
         if let Some(pass_through_args) = options.pass_through_args {
             args.extend_from_slice(pass_through_args);
         }
@@ -428,9 +428,9 @@ impl PackageManager {
 }
 ```
 
-#### 3. Link Command Implementation
+#### 3. Link 命令实现
 
-**File**: `crates/vite_task/src/link.rs` (new file)
+**文件**：`crates/vite_task/src/link.rs`（新文件）
 
 ```rust
 pub struct LinkCommand {
@@ -452,7 +452,7 @@ impl LinkCommand {
 
         let resolve_command = package_manager.resolve_command();
 
-        // Build link command options
+        // 构建 link 命令选项
         let link_options = LinkCommandOptions {
             package: package.as_deref(),
             pass_through_args: if extra_args.is_empty() { None } else { Some(&extra_args) },
@@ -481,9 +481,9 @@ impl LinkCommand {
 }
 ```
 
-#### 4. Unlink Command Implementation
+#### 4. Unlink 命令实现
 
-**File**: `crates/vite_task/src/unlink.rs` (new file)
+**文件**：`crates/vite_task/src/unlink.rs`（新文件）
 
 ```rust
 pub struct UnlinkCommand {
@@ -506,7 +506,7 @@ impl UnlinkCommand {
 
         let resolve_command = package_manager.resolve_command();
 
-        // Build unlink command options
+        // 构建 unlink 命令选项
         let unlink_options = UnlinkCommandOptions {
             package: package.as_deref(),
             recursive,
@@ -536,64 +536,64 @@ impl UnlinkCommand {
 }
 ```
 
-## Design Decisions
+## 设计决策
 
-### 1. No Caching
+### 1. 不缓存
 
-**Decision**: Do not cache link/unlink operations.
+**决策**：不缓存 link/unlink 操作。
 
-**Rationale**:
+**理由**：
 
-- These commands create/remove symlinks
-- Side effects make caching inappropriate
-- Each execution should run fresh
-- Similar to how add/remove/install work
+- 这些命令会创建/移除符号链接
+- 副作用使缓存不合适
+- 每次执行都应重新运行
+- 与 add/remove/install 的工作方式类似
 
-### 2. Local Directory Linking
+### 2. 本地目录链接
 
-**Decision**: Support linking local directories directly.
+**决策**：支持直接链接本地目录。
 
-**Rationale**:
+**理由**：
 
-- Common use case for monorepo development
-- Allows testing packages before publishing
-- pnpm, yarn, and npm all support this
-- Simpler than global registration workflow
+- monorepo 开发中的常见场景
+- 允许在发布前测试包
+- pnpm、yarn 和 npm 都支持这一点
+- 比全局注册流程更简单
 
-**Example**:
+**示例**：
 
 ```bash
-# Link local package without global registration
+# 不进行全局注册，直接链接本地包
 vp link ./packages/my-lib
 vp link ../other-project/packages/utils
 ```
 
-### 3. Global vs Local Linking
+### 3. 全局与本地链接
 
-**Decision**: Support both global registration and local directory linking.
+**决策**：同时支持全局注册和本地目录链接。
 
-**Rationale**:
+**理由**：
 
-- Different workflows need different approaches
-- Global: For packages used across multiple projects
-- Local: For monorepo/related project development
-- Matches native package manager capabilities
+- 不同工作流需要不同方案
+- 全局：适用于在多个项目中使用的包
+- 本地：适用于 monorepo/相关项目开发
+- 与原生包管理器能力一致
 
-### 4. Recursive Unlink Support
+### 4. 递归解除链接支持
 
-**Decision**: Support `--recursive` flag for unlink (pnpm and yarn@2+) with graceful degradation.
+**决策**：为 unlink 支持 `--recursive` 标志（pnpm 和 yarn@2+），并在能力不足时优雅降级。
 
-**Rationale**:
+**理由**：
 
-- pnpm supports `--recursive` flag to unlink in every workspace package
-- yarn@2+ supports `--all` flag for similar functionality
-- Provides workspace-wide cleanup capability
-- Warn users when unavailable on npm and yarn@1
-- Consistent with other workspace features
+- pnpm 支持 `--recursive` 标志，可在每个 workspace 包中解除链接
+- yarn@2+ 支持 `--all` 标志，提供类似功能
+- 提供整个 workspace 范围的清理能力
+- 在 npm 和 yarn@1 不可用时向用户发出警告
+- 与其他 workspace 功能保持一致
 
-## Error Handling
+## 错误处理
 
-### No Package Manager Detected
+### 未检测到包管理器
 
 ```bash
 $ vp link react
@@ -603,17 +603,17 @@ Please run one of:
   - Add packageManager field to package.json
 ```
 
-### Feature Not Supported
+### 不支持的功能
 
 ```bash
 $ vp unlink --recursive
 Warning: npm doesn't support --recursive for unlink command
-# Proceeds with standard unlink (without --recursive flag)
+# 按标准 unlink 继续执行（不带 --recursive 标志）
 ```
 
-## User Experience
+## 用户体验
 
-### Link Success Output
+### Link 成功输出
 
 ```bash
 $ vp link
@@ -651,7 +651,7 @@ added 1 package
 Done in 2.1s
 ```
 
-### Unlink Success Output
+### Unlink 成功输出
 
 ```bash
 $ vp unlink
@@ -673,93 +673,94 @@ Removed react
 Done in 0.8s
 ```
 
-## Alternative Designs Considered
+## 考虑过的替代设计
 
-### Alternative 1: Separate Global and Local Commands
-
-```bash
-vp link:global          # Register globally
-vp link:local <dir>     # Link local directory
-```
-
-**Rejected because**:
-
-- More commands to remember
-- Doesn't match native package manager APIs
-- Less intuitive than flag-based approach
-
-### Alternative 2: Auto-Detect Link Type
+### 替代方案 1：分离全局和本地命令
 
 ```bash
-vp link              # Auto-detect: global if no package, local if directory
-vp link react        # Auto-detect: global package or local directory
+vp link:global          # 全局注册
+vp link:local <dir>     # 链接本地目录
 ```
 
-**Rejected because**:
+**被拒绝，因为**：
 
-- Ambiguous behavior
-- Hard to predict what will happen
-- Explicit flags are clearer
+- 需要记住更多命令
+- 与原生包管理器 API 不一致
+- 相比基于标志的方式不够直观
 
-### Alternative 3: Interactive Mode
+### 替代方案 2：自动检测链接类型
+
+```bash
+vp link              # 自动检测：无 package 时为全局，有目录时为本地
+vp link react        # 自动检测：全局包或本地目录
+```
+
+**被拒绝，因为**：
+
+- 行为有歧义
+- 很难预测会发生什么
+- 显式标志更清晰
+
+### 替代方案 3：交互模式
 
 ```bash
 $ vp link
-? What would you like to link?
-  > Register current package globally
-    Link a global package
-    Link a local directory
+? 你想链接什么？
+  > 将当前包全局注册
+    链接一个全局包
+    链接一个本地目录
 ```
 
-**Rejected for initial version**:
+**在初始版本中被拒绝**：
 
-- Slower for experienced users
-- Not scriptable
-- Can be added later as optional mode
+- 对有经验的用户来说更慢
+- 不适合脚本化
+- 以后可以作为可选模式添加
 
-## Implementation Plan
+## 实现计划
 
-### Phase 1: Core Functionality
+### 阶段 1：核心功能
 
-1. Add `Link` and `Unlink` command variants to `Commands` enum
-2. Create `link.rs` and `unlink.rs` modules in both crates
-3. Implement package manager command resolution
-4. Add basic error handling
+1. 在 `Commands` 枚举中添加 `Link` 和 `Unlink` 命令变体
+2. 在两个 crate 中创建 `link.rs` 和 `unlink.rs` 模块
+3. 实现包管理器命令解析
+4. 添加基础错误处理
 
-### Phase 2: Advanced Features
+### 阶段 2：高级功能
 
-1. Support local directory linking
-2. Implement pnpm-specific `--dir` flag
-3. Add npm save flags support
-4. Handle workspace filtering (pnpm only)
+1. 支持本地目录链接
+2. 实现 pnpm 特定的 `--dir` 标志
+3. 添加 npm save 标志支持
+4. 处理 workspace 过滤（仅 pnpm）
 
-### Phase 3: Testing
+### 阶段 3：测试
 
-1. Unit tests for command resolution
-2. Integration tests with mock package managers
-3. Test global and local linking
-4. Test workspace operations
+1. 为命令解析编写单元测试
+2. 使用模拟包管理器进行集成测试
+3. 测试全局和本地链接
+4. 测试 workspace 操作
 
-### Phase 4: Documentation
+### 阶段 4：文档
 
-1. Update CLI documentation
-2. Add examples to README
-3. Document package manager compatibility
-4. Add troubleshooting guide
+1. 更新 CLI 文档
+2. 在 README 中添加示例
+3. 记录包管理器兼容性
+4. 添加故障排查指南
 
-## Testing Strategy
+## 测试策略
 
-### Test Package Manager Versions
+### 测试包管理器版本
 
 - pnpm@9.x
 - pnpm@10.x
+- pnpm@11.x（在 CI=true 下向 `vp unlink` 传入 `-- --no-frozen-lockfile`；参见 snap-tests `command-unlink-pnpm11`）
 - yarn@1.x
 - yarn@4.x
 - npm@10.x
 - npm@11.x
 - bun@1.x [WIP]
 
-### Unit Tests
+### 单元测试
 
 ```rust
 #[test]
@@ -835,9 +836,9 @@ fn test_pnpm_unlink_recursive() {
 }
 ```
 
-### Integration Tests
+### 集成测试
 
-Create fixtures for testing with each package manager:
+为每个包管理器创建测试夹具：
 
 ```
 fixtures/link-unlink-test/
@@ -851,19 +852,19 @@ fixtures/link-unlink-test/
   test-steps.json
 ```
 
-Test cases:
+测试用例：
 
-1. Link current package globally
-2. Link global package to project
-3. Link local directory
-4. Unlink current package
-5. Unlink specific package
-6. Unlink with --recursive (pnpm only)
-7. Warning for unsupported --recursive on yarn/npm
+1. 将当前包全局注册
+2. 将全局包链接到项目
+3. 链接本地目录
+4. 解除当前包的链接
+5. 解除指定包的链接
+6. 使用 --recursive 解除链接（仅 pnpm）
+7. 针对 yarn/npm 不支持的 --recursive 发出警告
 
-## CLI Help Output
+## CLI 帮助输出
 
-### Link Command
+### Link 命令
 
 ```bash
 $ vp link --help
@@ -893,7 +894,7 @@ Examples:
   vp link ../my-lib              # Link from parent directory
 ```
 
-### Unlink Command
+### Unlink 命令
 
 ```bash
 $ vp unlink --help
@@ -916,139 +917,139 @@ Examples:
   vp unlink -r                   # Same as above (short form)
 ```
 
-## Performance Considerations
+## 性能考虑
 
-1. **No Caching**: Operations run directly without cache overhead
-2. **Symlink Creation**: Fast operation, minimal performance impact
-3. **Single Execution**: Unlike task runner, these are one-off operations
-4. **Auto-Detection**: Reuses existing package manager detection (already cached)
+1. **不缓存**：操作直接运行，没有缓存开销
+2. **符号链接创建**：操作快速，对性能影响极小
+3. **单次执行**：不同于任务运行器，这些都是一次性操作
+4. **自动检测**：复用现有的包管理器检测逻辑（已缓存）
 
-## Security Considerations
+## 安全性考虑
 
-1. **Symlink Safety**: Symlinks are standard package manager feature
-2. **Path Validation**: Validate that directories exist before linking
-3. **No Code Execution**: Just creates/removes symlinks via package manager
-4. **Global Store**: Respects package manager's global store location
+1. **符号链接安全性**：符号链接是标准包管理器功能
+2. **路径校验**：在链接前验证目录是否存在
+3. **不执行代码**：仅通过包管理器创建/移除符号链接
+4. **全局存储**：遵循包管理器的全局存储位置
 
-## Backward Compatibility
+## 向后兼容性
 
-This is a new feature with no breaking changes:
+这是一个不会引入破坏性变更的新功能：
 
-- Existing commands unaffected
-- New commands are additive
-- No changes to task configuration
-- No changes to caching behavior
+- 现有命令不受影响
+- 新命令是增量添加
+- 不更改任务配置
+- 不更改缓存行为
 
-## Migration Path
+## 迁移路径
 
-### Adoption
+### 采用方式
 
-Users can start using immediately:
+用户可以立即开始使用：
 
 ```bash
-# Old way
+# 旧方式
 pnpm link --global
 pnpm link --global react
 
-# New way (works with any package manager)
+# 新方式（适用于任何包管理器）
 vp link
 vp link react
 ```
 
-### Discoverability
+### 可发现性
 
-Add to:
+添加到：
 
-- CLI help output
-- Documentation
-- VSCode extension suggestions
-- Shell completions
+- CLI 帮助输出
+- 文档
+- VSCode 扩展建议
+- Shell 补全
 
-## Real-World Usage Examples
+## 真实世界使用示例
 
-### Local Package Development
+### 本地包开发
 
 ```bash
-# Working on a shared library
+# 正在处理一个共享库
 cd ~/projects/my-monorepo/packages/shared-utils
-vp link                           # Register globally
+vp link                           # 全局注册
 
-# Use it in another project
+# 在另一个项目中使用它
 cd ~/projects/my-app
-vp link shared-utils              # Link the global package
+vp link shared-utils              # 链接全局包
 
-# Or link directly without global registration
+# 或者直接链接，而不进行全局注册
 cd ~/projects/my-app
 vp link ~/projects/my-monorepo/packages/shared-utils
 ```
 
-### Monorepo Development
+### Monorepo 开发
 
 ```bash
-# Unlink in all workspace packages (pnpm only)
-vp unlink --recursive             # Unlink current package from all workspaces
-vp unlink -r                      # Same as above (short form)
+# 在所有 workspace 包中解除链接（仅 pnpm）
+vp unlink --recursive             # 从所有 workspace 中解除当前包的链接
+vp unlink -r                      # 同上（短格式）
 ```
 
-### Testing Unpublished Changes
+### 测试未发布的变更
 
 ```bash
-# Develop a library
+# 开发一个库
 cd ~/my-lib
 npm version patch
 vp link
 
-# Test in consuming project
+# 在使用方项目中测试
 cd ~/consuming-app
 vp link my-lib
 npm test
 
-# Unlink when done
+# 完成后解除链接
 vp unlink my-lib
 npm install my-lib@latest
 ```
 
-## Package Manager Compatibility
+## 包管理器兼容性
 
-| Feature              | pnpm                    | yarn@1           | yarn@2+           | npm              | bun              | Notes            |
+| 功能                 | pnpm                    | yarn@1           | yarn@2+           | npm              | bun              | 备注             |
 | -------------------- | ----------------------- | ---------------- | ----------------- | ---------------- | ---------------- | ---------------- |
-| Link package/dir     | `link`                  | `link`           | `link`            | `link`           | `link`           | All supported    |
-| Link with package    | `link <pkg>`            | `link <pkg>`     | `link <pkg>`      | `link <pkg>`     | `link <pkg>`     | All supported    |
-| Link local directory | `link <dir>`            | `link <dir>`     | `link <dir>`      | `link <dir>`     | `link <dir>`     | All supported    |
-| Save to package.json | N/A                     | N/A              | N/A               | N/A              | `--save`         | bun-specific     |
-| Unlink               | `unlink`                | `unlink`         | `unlink`          | `unlink`         | `unlink`         | All supported    |
-| Recursive unlink     | ✅ `unlink --recursive` | ❌ Not supported | ✅ `unlink --all` | ❌ Not supported | ❌ Not supported | pnpm and yarn@2+ |
+| 链接包/目录          | `link`                  | `link`           | `link`            | `link`           | `link`           | 全部支持         |
+| 使用包进行链接       | `link <pkg>`            | `link <pkg>`     | `link <pkg>`      | `link <pkg>`     | `link <pkg>`     | 全部支持         |
+| 链接本地目录         | `link <dir>`            | `link <dir>`     | `link <dir>`      | `link <dir>`     | `link <dir>`     | 全部支持         |
+| 保存到 package.json  | 不适用                  | 不适用           | 不适用            | 不适用           | `--save`         | bun 特有         |
+| 取消链接             | `unlink`                | `unlink`         | `unlink`          | `unlink`         | `unlink`         | 全部支持         |
+| 递归取消链接         | ✅ `unlink --recursive` | ❌ 不支持         | ✅ `unlink --all` | ❌ 不支持         | ❌ 不支持         | pnpm 和 yarn@2+ |
 
-## Future Enhancements
+## 未来增强
 
-### 1. Link Status Command
+### 1. 链接状态命令
 
-Show which packages are currently linked:
+显示当前已链接的包：
 
 ```bash
 vp link:status
 vp link --list
 
-# Output:
-Linked packages:
+# 输出：
+已链接的包：
   react -> ~/.pnpm-global/5/node_modules/react
   my-lib -> ~/projects/my-lib
 ```
 
-### 2. Auto-Link Workspace Dependencies
+### 2. 自动链接工作区依赖
 
-Automatically link all workspace dependencies:
+自动链接所有工作区依赖：
 
 ```bash
 vp link --workspace-deps
 
-# Scans package.json for workspace: protocol dependencies
-# and links them automatically
+# 扫描 package.json 中的 workspace: 协议依赖
+# 并自动进行链接
 ```
 
-### 3. Link Groups
+### 3. 链接分组
 
-Save and restore link configurations:
+保存并恢复链接配置：
 
 ```bash
 vp link --save-config dev
@@ -1067,57 +1068,57 @@ vp link --load-config dev
 }
 ```
 
-### 4. Link Verification
+### 4. 链接验证
 
-Verify linked packages are valid:
+验证已链接的包是否有效：
 
 ```bash
 vp link --verify
 
-# Checks that all symlinks point to valid directories
-# Reports broken links
+# 检查所有符号链接是否指向有效目录
+# 报告损坏的链接
 ```
 
-## Open Questions
+## 待解决问题
 
-1. **Should we validate directory existence before linking?**
-   - Proposed: Yes, provide clear error if directory doesn't exist
-   - Better UX than cryptic package manager errors
+1. **我们是否应该在链接前验证目录是否存在？**
+   - 建议：是，若目录不存在则提供清晰的错误提示
+   - 比起晦涩的包管理器错误，这会带来更好的用户体验
 
-2. **Should we support relative paths?**
-   - Proposed: Yes, resolve relative paths before passing to package manager
-   - Makes commands more intuitive from any location
+2. **我们是否应该支持相对路径？**
+   - 建议：是，在传递给包管理器之前先解析相对路径
+   - 让从任何位置执行命令都更直观
 
-3. **Should we warn when linking without global registration on yarn/npm?**
-   - Proposed: No, this is standard behavior
-   - Users expect this workflow
+3. **在 yarn/npm 上链接但不进行全局注册时，我们是否应该警告？**
+   - 建议：否，这是标准行为
+   - 用户对这种工作流有预期
 
-4. **Should we support unlinking all packages at once?**
-   - Proposed: Later enhancement, not MVP
-   - Use case: "clean slate" before testing
+4. **我们是否应该支持一次性取消链接所有包？**
+   - 建议：后续增强，不是 MVP
+   - 使用场景：测试前“清空重来”
 
-5. **Should we provide better error messages for common issues?**
-   - Proposed: Yes, detect common errors and provide helpful suggestions
-   - Example: Package not found → "Did you run 'vp link' in the package directory first?"
+5. **我们是否应该为常见问题提供更好的错误消息？**
+   - 建议：是，检测常见错误并提供有帮助的建议
+   - 示例：找不到包 → “你是否先在包目录中运行了 'vp link'？”
 
-## Success Metrics
+## 成功指标
 
-1. **Adoption**: % of users using `vp link/unlink` vs direct package manager
-2. **Error Rate**: Track command failures vs package manager direct usage
-3. **User Feedback**: Survey/issues about command ergonomics
-4. **Performance**: Measure overhead vs direct package manager calls (<100ms target)
+1. **采用率**：使用 `vp link/unlink` 的用户占比 vs 直接使用包管理器
+2. **错误率**：跟踪命令失败率 vs 直接使用包管理器
+3. **用户反馈**：关于命令易用性的调查/问题反馈
+4. **性能**：测量相较于直接调用包管理器的额外开销（目标 <100ms）
 
-## Conclusion
+## 结论
 
-This RFC proposes adding `vp link` and `vp unlink` commands to provide a unified interface for local package development across pnpm/yarn/npm/bun. The design:
+此 RFC 提议添加 `vp link` 和 `vp unlink` 命令，以便为 pnpm/yarn/npm/bun 之间的本地包开发提供统一接口。设计如下：
 
-- ✅ Automatically adapts to detected package manager
-- ✅ Supports both package and local directory linking
-- ✅ Minimal options for simplicity (only --recursive for unlink)
-- ✅ Consistent behavior across all package managers
-- ✅ Clear error messages and warnings
-- ✅ No caching overhead
-- ✅ Simple implementation leveraging existing infrastructure
-- ✅ Extensible for future enhancements
+- ✅ 自动适配检测到的包管理器
+- ✅ 同时支持包链接和本地目录链接
+- ✅ 为简洁性提供最少选项（unlink 仅支持 --recursive）
+- ✅ 在所有包管理器之间保持一致行为
+- ✅ 清晰的错误消息和警告
+- ✅ 无缓存开销
+- ✅ 利用现有基础设施，易于实现
+- ✅ 可扩展以支持未来增强
 
-The implementation follows the same patterns as other package manager commands while keeping the interface simple and intuitive for local package development workflows.
+该实现遵循与其他包管理器命令相同的模式，同时保持接口简单直观，适用于本地包开发工作流。

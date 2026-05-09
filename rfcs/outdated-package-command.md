@@ -1,12 +1,12 @@
-# RFC: Vite+ Outdated Package Command
+# RFC: Vite+ 过时包命令
 
-## Summary
+## 摘要
 
-Add `vite outdated` command that automatically adapts to the detected package manager (pnpm/npm/yarn/bun) for checking outdated packages. This helps developers identify packages that have newer versions available, maintain up-to-date dependencies, and manage security vulnerabilities by showing which packages can be updated.
+添加 `vite outdated` 命令，该命令会自动适配检测到的包管理器（pnpm/npm/yarn/bun）来检查过时的包。这有助于开发者识别有哪些包已有更新版本、保持依赖处于最新状态，并通过展示哪些包可以更新来管理安全漏洞。
 
-## Motivation
+## 动机
 
-Currently, developers must manually use package manager-specific commands to check for outdated packages:
+目前，开发者必须手动使用各个包管理器特定的命令来检查过时包：
 
 ```bash
 pnpm outdated [<pattern>...]
@@ -14,185 +14,185 @@ npm outdated [[@scope/]<package>...]
 yarn outdated [<package>...]
 ```
 
-This creates friction in dependency management workflows and requires remembering different syntaxes. A unified interface would:
+这会在依赖管理工作流中造成摩擦，并且需要记住不同的语法。一个统一的接口将带来以下好处：
 
-1. **Simplify dependency updates**: One command works across all package managers
-2. **Auto-detection**: Automatically uses the correct package manager
-3. **Consistency**: Same syntax regardless of underlying tool
-4. **Integration**: Works seamlessly with existing Vite+ features
+1. **简化依赖更新**：一个命令可跨所有包管理器使用
+2. **自动检测**：自动使用正确的包管理器
+3. **一致性**：无论底层工具是什么，语法都相同
+4. **集成性**：与现有的 Vite+ 功能无缝协作
 
-### Current Pain Points
-
-```bash
-# Developer needs to know which package manager is used
-pnpm outdated                         # pnpm project
-npm outdated                          # npm project
-yarn outdated                         # yarn project
-
-# Different output formats
-pnpm outdated --format json           # pnpm - JSON output
-npm outdated --json                   # npm - JSON output
-yarn outdated                         # yarn - table format (no JSON in v1)
-
-# Different workspace targeting
-pnpm outdated --filter app            # pnpm - filter workspaces
-npm outdated --workspace app          # npm - specify workspace
-yarn outdated                         # yarn - no workspace filtering in v1
-
-# Different dependency type filtering
-pnpm outdated --prod                  # pnpm - only production deps
-npm outdated                          # npm - no filtering option
-yarn outdated                         # yarn - no filtering option
-```
-
-### Proposed Solution
+### 目前的痛点
 
 ```bash
-# Works for all package managers
-vite outdated                         # Check all packages
-vite outdated <package>               # Check specific packages
+# 开发者需要知道使用的是哪个包管理器
+pnpm outdated                         # pnpm 项目
+npm outdated                          # npm 项目
+yarn outdated                         # yarn 项目
 
-# Output formats
-vite outdated --format json           # JSON output (maps to pnpm --format json, npm --json, yarn --json)
-vite outdated --format list           # List output (maps to pnpm --format list, npm --parseable)
-vite outdated --format table          # Table format (default)
-vite outdated --long                  # Verbose output
+# 不同的输出格式
+pnpm outdated --format json           # pnpm - JSON 输出
+npm outdated --json                   # npm - JSON 输出
+yarn outdated                         # yarn - 表格格式（v1 中没有 JSON）
 
-# Workspace operations
-vite outdated --filter app            # Check in specific workspace (maps to pnpm --filter, npm --workspace)
-vite outdated -r                      # Check recursively across workspaces (maps to pnpm -r, npm --all)
-vite outdated -w                      # Include workspace root (pnpm)
-vite outdated -w -r                   # Include workspace root and check recursively (pnpm)
+# 不同的工作区目标定位
+pnpm outdated --filter app            # pnpm - 过滤工作区
+npm outdated --workspace app          # npm - 指定工作区
+yarn outdated                         # yarn - v1 中没有工作区过滤
 
-# Dependency type filtering
-vite outdated -P                      # Only production dependencies (pnpm)
-vite outdated --prod                  # Only production dependencies (pnpm)
-vite outdated -D                      # Only dev dependencies (pnpm)
-vite outdated --dev                   # Only dev dependencies (pnpm)
-vite outdated --compatible            # Only versions satisfying package.json (pnpm)
-
-# Sorting and filtering
-vite outdated --sort-by name          # Sort results by name (pnpm)
-vite outdated --no-optional           # Exclude optional dependencies (pnpm)
+# 不同的依赖类型过滤
+pnpm outdated --prod                  # pnpm - 仅生产依赖
+npm outdated                          # npm - 没有过滤选项
+yarn outdated                         # yarn - 没有过滤选项
 ```
 
-## Proposed Solution
+### 拟议方案
 
-### Command Syntax
+```bash
+# 适用于所有包管理器
+vite outdated                         # 检查所有包
+vite outdated <package>               # 检查指定包
+
+# 输出格式
+vite outdated --format json           # JSON 输出（映射到 pnpm --format json、npm --json、yarn --json）
+vite outdated --format list           # 列表输出（映射到 pnpm --format list、npm --parseable）
+vite outdated --format table          # 表格格式（默认）
+vite outdated --long                  # 详细输出
+
+# 工作区操作
+vite outdated --filter app            # 在指定工作区中检查（映射到 pnpm --filter、npm --workspace）
+vite outdated -r                      # 跨工作区递归检查（映射到 pnpm -r、npm --all）
+vite outdated -w                      # 包含工作区根目录（pnpm）
+vite outdated -w -r                   # 包含工作区根目录并递归检查（pnpm）
+
+# 依赖类型过滤
+vite outdated -P                      # 仅生产依赖（pnpm）
+vite outdated --prod                  # 仅生产依赖（pnpm）
+vite outdated -D                      # 仅 dev 依赖（pnpm）
+vite outdated --dev                   # 仅 dev 依赖（pnpm）
+vite outdated --compatible            # 仅符合 package.json 要求的版本（pnpm）
+
+# 排序和过滤
+vite outdated --sort-by name          # 按名称排序结果（pnpm）
+vite outdated --no-optional           # 排除可选依赖（pnpm）
+```
+
+## 拟议方案
+
+### 命令语法
 
 ```bash
 vite outdated [PACKAGE...] [OPTIONS]
 ```
 
-**Examples:**
+**示例：**
 
 ```bash
-# Basic usage
+# 基本用法
 vite outdated
 vite outdated react
 vite outdated "*gulp-*" @babel/core
 
-# Output formats
-vite outdated --format json           # JSON output
-vite outdated --format list           # List output
-vite outdated --long                  # Verbose output
+# 输出格式
+vite outdated --format json           # JSON 输出
+vite outdated --format list           # 列表输出
+vite outdated --long                  # 详细输出
 
-# Workspace operations
-vite outdated -r                      # Recursive across all workspaces
-vite outdated --recursive             # Recursive across all workspaces
-vite outdated --filter app            # Check in specific workspace
-vite outdated -w                      # Include workspace root (pnpm)
-vite outdated -w -r                   # Include workspace root and check recursively (pnpm)
+# 工作区操作
+vite outdated -r                      # 在所有工作区中递归
+vite outdated --recursive             # 在所有工作区中递归
+vite outdated --filter app            # 在指定工作区中检查
+vite outdated -w                      # 包含工作区根目录（pnpm）
+vite outdated -w -r                   # 包含工作区根目录并递归检查（pnpm）
 
-# Dependency type filtering
-vite outdated -P                      # Only production dependencies (pnpm)
-vite outdated --prod                  # Only production dependencies (pnpm)
-vite outdated -D                      # Only dev dependencies (pnpm)
-vite outdated --dev                   # Only dev dependencies (pnpm)
-vite outdated --no-optional           # Exclude optional dependencies (pnpm)
-vite outdated --compatible            # Only compatible versions (pnpm)
+# 依赖类型过滤
+vite outdated -P                      # 仅生产依赖（pnpm）
+vite outdated --prod                  # 仅生产依赖（pnpm）
+vite outdated -D                      # 仅 dev 依赖（pnpm）
+vite outdated --dev                   # 仅 dev 依赖（pnpm）
+vite outdated --no-optional           # 排除可选依赖（pnpm）
+vite outdated --compatible            # 仅兼容版本（pnpm）
 
-# Sorting
-vite outdated --sort-by name          # Sort results by name (pnpm)
+# 排序
+vite outdated --sort-by name          # 按名称排序结果（pnpm）
 
-# Global packages
-vite outdated -g                      # Check globally installed packages
+# 全局包
+vite outdated -g                      # 检查全局安装的包
 ```
 
-### Global packages checking
+### 全局包检查
 
-Only use `npm` to check globally installed packages, because `vp install -g` uses `npm` cli to install global packages.
+仅使用 `npm` 来检查全局安装的包，因为 `vp install -g` 使用的是 `npm` cli 来安装全局包。
 
 ```bash
-vite outdated -g                      # Check globally installed packages
+vite outdated -g                      # 检查全局安装的包
 
 -> npm outdated -g
 ```
 
-### Command Mapping
+### 命令映射
 
-**pnpm references:**
+**pnpm 参考：**
 
 - https://pnpm.io/cli/outdated
-- Checks for outdated packages with pattern support
+- 使用模式支持检查过时包
 
-**npm references:**
+**npm 参考：**
 
 - https://docs.npmjs.com/cli/v11/commands/npm-outdated
-- Lists outdated packages
+- 列出过时包
 
-**yarn references:**
+**yarn 参考：**
 
 - https://classic.yarnpkg.com/en/docs/cli/outdated (yarn@1)
 - https://yarnpkg.com/cli/upgrade-interactive (yarn@2+)
-- Checks for outdated package dependencies
+- 检查过时的包依赖
 
-**bun references:**
+**bun 参考：**
 
 - https://bun.sh/docs/cli/outdated
-- Checks for outdated packages in the current project
+- 检查当前项目中的过时包
 
-| Vite+ Flag             | pnpm                   | npm                                 | yarn@1          | yarn@2+                    | bun                  | Description                                   |
+| Vite+ 标志             | pnpm                   | npm                                 | yarn@1          | yarn@2+                    | bun                  | 说明                                          |
 | ---------------------- | ---------------------- | ----------------------------------- | --------------- | -------------------------- | -------------------- | --------------------------------------------- |
-| `vite outdated`        | `pnpm outdated`        | `npm outdated`                      | `yarn outdated` | `yarn upgrade-interactive` | `bun outdated`       | Check for outdated packages                   |
-| `<pattern>...`         | `<pattern>...`         | `[[@scope/]<pkg>]`                  | `[<package>]`   | N/A                        | N/A                  | Package patterns to check                     |
-| `--long`               | `--long`               | `--long`                            | N/A             | N/A                        | N/A                  | Extended output format                        |
-| `--format <format>`    | `--format <format>`    | json: `--json`/ list: `--parseable` | `--json`        | N/A                        | N/A                  | Output format (table/list/json)               |
-| `-r, --recursive`      | `-r, --recursive`      | `--all`                             | N/A             | N/A                        | `-r` / `--recursive` | Check across all workspaces                   |
-| `--filter <pattern>`   | `--filter <pattern>`   | `--workspace <pattern>`             | N/A             | N/A                        | `--filter` / `-F`    | Target specific workspace                     |
-| `-w, --workspace-root` | `-w, --workspace-root` | `--include-workspace-root`          | N/A             | N/A                        | N/A                  | Include workspace root                        |
-| `-P, --prod`           | `-P, --prod`           | N/A                                 | N/A             | N/A                        | `--production`       | Only production dependencies                  |
-| `-D, --dev`            | `-D, --dev`            | N/A                                 | N/A             | N/A                        | N/A                  | Only dev dependencies (pnpm-specific)         |
-| `--no-optional`        | `--no-optional`        | N/A                                 | N/A             | N/A                        | `--omit optional`    | Exclude optional dependencies                 |
-| `--compatible`         | `--compatible`         | N/A                                 | N/A             | N/A                        | N/A                  | Only show compatible versions (pnpm-specific) |
-| `--sort-by <field>`    | `--sort-by <field>`    | N/A                                 | N/A             | N/A                        | N/A                  | Sort results by field (pnpm-specific)         |
-| `-g, --global`         | `-g, --global`         | `-g, --global`                      | N/A             | N/A                        | N/A                  | Check globally installed packages             |
+| `vite outdated`        | `pnpm outdated`        | `npm outdated`                      | `yarn outdated` | `yarn upgrade-interactive` | `bun outdated`       | 检查过时包                                    |
+| `<pattern>...`         | `<pattern>...`         | `[[@scope/]<pkg>]`                  | `[<package>]`   | N/A                        | N/A                  | 要检查的包模式                                 |
+| `--long`               | `--long`               | `--long`                            | N/A             | N/A                        | N/A                  | 扩展输出格式                                   |
+| `--format <format>`    | `--format <format>`    | json: `--json`/ list: `--parseable` | `--json`        | N/A                        | N/A                  | 输出格式（table/list/json）                   |
+| `-r, --recursive`      | `-r, --recursive`      | `--all`                             | N/A             | N/A                        | `-r` / `--recursive` | 跨所有工作区检查                               |
+| `--filter <pattern>`   | `--filter <pattern>`   | `--workspace <pattern>`             | N/A             | N/A                        | `--filter` / `-F`    | 目标特定工作区                                 |
+| `-w, --workspace-root` | `-w, --workspace-root` | `--include-workspace-root`          | N/A             | N/A                        | N/A                  | 包含工作区根目录                               |
+| `-P, --prod`           | `-P, --prod`           | N/A                                 | N/A             | N/A                        | `--production`       | 仅生产依赖                                     |
+| `-D, --dev`            | `-D, --dev`            | N/A                                 | N/A             | N/A                        | N/A                  | 仅 dev 依赖（pnpm 特有）                      |
+| `--no-optional`        | `--no-optional`        | N/A                                 | N/A             | N/A                        | `--omit optional`    | 排除可选依赖                                   |
+| `--compatible`         | `--compatible`         | N/A                                 | N/A             | N/A                        | N/A                  | 仅显示兼容版本（pnpm 特有）                   |
+| `--sort-by <field>`    | `--sort-by <field>`    | N/A                                 | N/A             | N/A                        | N/A                  | 按字段排序结果（pnpm 特有）                   |
+| `-g, --global`         | `-g, --global`         | `-g, --global`                      | N/A             | N/A                        | N/A                  | 检查全局安装的包                               |
 
-**Note:**
+**注意：**
 
-- pnpm supports pattern matching for selective package checking
-- npm accepts package names but not glob patterns
-- yarn@1 accepts package names but limited filtering options
-- yarn@2+ uses interactive mode (`upgrade-interactive`) instead of traditional `outdated`
-- pnpm has the most comprehensive filtering and output options
-- bun supports `--filter` / `-F` for workspace filtering, `-r` / `--recursive` for checking across all workspaces, `--production` for production-only, and `--omit optional` for excluding optional dependencies
-- bun does not support JSON output format (`--format json`)
+- pnpm 支持模式匹配，可选择性地检查包
+- npm 接受包名，但不接受 glob 模式
+- yarn@1 接受包名，但过滤选项有限
+- yarn@2+ 使用交互模式（`upgrade-interactive`）而不是传统的 `outdated`
+- pnpm 具有最全面的过滤和输出选项
+- bun 支持用于工作区过滤的 `--filter` / `-F`、用于跨所有工作区检查的 `-r` / `--recursive`、用于仅生产依赖的 `--production`，以及用于排除可选依赖的 `--omit optional`
+- bun 不支持 JSON 输出格式（`--format json`）
 
-### Outdated Behavior Differences Across Package Managers
+### 各包管理器之间的 outdated 行为差异
 
 #### pnpm
 
-**Outdated behavior:**
+**outdated 行为：**
 
-- Checks for outdated packages with pattern support
-- Supports glob patterns: `pnpm outdated "*gulp-*" @babel/core`
-- Shows current, wanted, and latest versions
-- Supports workspace filtering with `--filter`
-- Can filter by dependency type (prod, dev, optional)
-- Multiple output formats (table, list, json)
-- Shows only compatible versions with `--compatible`
+- 支持模式的过时包检查
+- 支持 glob 模式：`pnpm outdated "*gulp-*" @babel/core`
+- 显示 current、wanted 和 latest 版本
+- 支持使用 `--filter` 进行工作区过滤
+- 可按依赖类型过滤（prod、dev、optional）
+- 多种输出格式（table、list、json）
+- 使用 `--compatible` 仅显示兼容版本
 
-**Output format:**
+**输出格式：**
 
 ```
 Package         Current  Wanted  Latest
@@ -201,29 +201,29 @@ lodash          4.17.20  4.17.21 4.17.21
 @babel/core     7.20.0   7.20.12 7.25.8
 ```
 
-**Options:**
+**选项：**
 
-- `--format`: Output format (table, list, json)
-- `--long`: Extended information
-- `-r`: Recursive across workspaces
-- `--filter`: Workspace filtering
-- `--prod`/`--dev`: Dependency type filtering
-- `--compatible`: Only compatible versions
-- `--sort-by`: Sort results by field
-- `--no-optional`: Exclude optional dependencies
+- `--format`：输出格式（table、list、json）
+- `--long`：扩展信息
+- `-r`：跨工作区递归
+- `--filter`：工作区过滤
+- `--prod`/`--dev`：依赖类型过滤
+- `--compatible`：仅兼容版本
+- `--sort-by`：按字段排序结果
+- `--no-optional`：排除可选依赖
 
 #### npm
 
-**Outdated behavior:**
+**outdated 行为：**
 
-- Lists outdated packages
-- Shows current, wanted, latest, location, and depended by
-- Supports workspace targeting with `--workspace`
-- Can show all dependencies with `--all` (including transitive)
-- JSON and parseable output available
-- Color-coded output (red = should update, yellow = major version)
+- 列出过时包
+- 显示 current、wanted、latest、location 和 depended by
+- 支持使用 `--workspace` 进行工作区定位
+- 可使用 `--all` 显示所有依赖（包括传递依赖）
+- 提供 JSON 和可解析输出
+- 彩色输出（红色 = 应该更新，黄色 = 主版本）
 
-**Output format:**
+**输出格式：**
 
 ```
 Package         Current  Wanted  Latest  Location             Depended by
@@ -231,26 +231,26 @@ react           18.2.0   18.3.1  18.3.1  node_modules/react   my-app
 lodash          4.17.20  4.17.21 4.17.21 node_modules/lodash  my-app
 ```
 
-**Options:**
+**选项：**
 
-- `--json`: JSON format
-- `--long`: Extended information (shows package type)
-- `--parseable`: Parseable format
-- `--all`: Show all outdated packages including transitive
-- `--workspace`: Target specific workspace
+- `--json`：JSON 格式
+- `--long`：扩展信息（显示包类型）
+- `--parseable`：可解析格式
+- `--all`：显示所有过时包，包括传递依赖
+- `--workspace`：目标指定工作区
 
-#### yarn@1 (Classic)
+#### yarn@1（经典版）
 
-**Outdated behavior:**
+**outdated 行为：**
 
-- Checks for outdated package dependencies
-- Shows package name, current, wanted, latest, package type, and URL
-- Simple table output
-- Can check specific packages
-- No JSON output support
-- No workspace filtering
+- 检查过时的包依赖
+- 显示包名、current、wanted、latest、包类型和 URL
+- 简单的表格输出
+- 可检查指定包
+- 不支持 JSON 输出
+- 不支持工作区过滤
 
-**Output format:**
+**输出格式：**
 
 ```
 Package         Current  Wanted  Latest  Package Type  URL
@@ -258,113 +258,113 @@ react           18.2.0   18.3.1  18.3.1  dependencies  https://...
 lodash          4.17.20  4.17.21 4.17.21 dependencies  https://...
 ```
 
-**Options:**
+**选项：**
 
-- No command-line options for filtering or formatting
-- Accepts package names as arguments
+- 没有用于过滤或格式化的命令行选项
+- 以参数形式接受包名
 
-#### yarn@2+ (Berry)
+#### yarn@2+（Berry）
 
-**Outdated behavior:**
+**outdated 行为：**
 
-- Uses `yarn upgrade-interactive` instead of `outdated`
-- Opens fullscreen terminal interface
-- Shows out-of-date packages with status comparison
-- Allows selective upgrading
-- Different paradigm from traditional `outdated` command
+- 使用 `yarn upgrade-interactive` 代替 `outdated`
+- 打开全屏终端界面
+- 显示带状态对比的过期包
+- 允许选择性升级
+- 与传统 `outdated` 命令采用不同的范式
 
-**Output format:**
+**输出格式：**
 
-Interactive terminal UI showing:
+交互式终端 UI，显示：
 
-- Package names
-- Current versions
-- Available versions
-- Selection checkboxes
+- 包名
+- 当前版本
+- 可用版本
+- 选择复选框
 
-**Options:**
+**选项：**
 
-- Interactive mode only
-- `yarn upgrade-interactive` for checking and upgrading
+- 仅交互模式
+- 使用 `yarn upgrade-interactive` 进行检查和升级
 
-### Implementation Architecture
+### 实现架构
 
-#### 1. Command Structure
+#### 1. 命令结构
 
-**File**: `crates/vite_task/src/lib.rs`
+**文件**：`crates/vite_task/src/lib.rs`
 
-Add new command variant:
+添加新的命令变体：
 
 ```rust
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    // ... existing commands
+    // ... 现有命令
 
-    /// Check for outdated packages
+    /// 检查过时包
     #[command(disable_help_flag = true)]
     Outdated {
-        /// Package name(s) to check (supports glob patterns in pnpm)
+        /// 要检查的包名（pnpm 中支持 glob 模式）
         #[arg(value_name = "PACKAGE")]
         packages: Vec<String>,
 
-        /// Show extended information
+        /// 显示扩展信息
         #[arg(long)]
         long: bool,
 
-        /// Output format: table (default), list, or json
-        /// Maps to: pnpm: --format <format>, npm: --json/--parseable, yarn@1: --json
+        /// 输出格式：table（默认）、list 或 json
+        /// 映射到：pnpm: --format <format>，npm: --json/--parseable，yarn@1: --json
         #[arg(long, value_name = "FORMAT")]
         format: Option<String>,
 
-        /// Check recursively across all workspaces
-        /// Maps to: pnpm: -r, npm: --all
+        /// 跨所有工作区递归检查
+        /// 映射到：pnpm: -r，npm: --all
         #[arg(short = 'r', long)]
         recursive: bool,
 
-        /// Filter packages in monorepo (can be used multiple times)
-        /// Maps to: pnpm: --filter <pattern>, npm: --workspace <pattern>
+        /// 过滤 monorepo 中的包（可重复使用）
+        /// 映射到：pnpm: --filter <pattern>，npm: --workspace <pattern>
         #[arg(long, value_name = "PATTERN")]
         filter: Vec<String>,
 
-        /// Include workspace root
-        /// Maps to: pnpm: -w/--workspace-root, npm: --include-workspace-root
+        /// 包含工作区根目录
+        /// 映射到：pnpm: -w/--workspace-root，npm: --include-workspace-root
         #[arg(short = 'w', long)]
         workspace_root: bool,
 
-        /// Only production and optional dependencies (pnpm-specific)
+        /// 仅生产和可选依赖（pnpm 特有）
         #[arg(short = 'P', long)]
         prod: bool,
 
-        /// Only dev dependencies (pnpm-specific)
+        /// 仅 dev 依赖（pnpm 特有）
         #[arg(short = 'D', long)]
         dev: bool,
 
-        /// Exclude optional dependencies (pnpm-specific)
+        /// 排除可选依赖（pnpm 特有）
         #[arg(long)]
         no_optional: bool,
 
-        /// Only show compatible versions (pnpm-specific)
+        /// 仅显示兼容版本（pnpm 特有）
         #[arg(long)]
         compatible: bool,
 
-        /// Sort results by field (pnpm-specific)
+        /// 按字段排序结果（pnpm 特有）
         #[arg(long, value_name = "FIELD")]
         sort_by: Option<String>,
 
-        /// Check globally installed packages
+        /// 检查全局安装的包
         #[arg(short = 'g', long)]
         global: bool,
 
-        /// Additional arguments to pass through to the package manager
+        /// 传递给包管理器的附加参数
         #[arg(last = true, allow_hyphen_values = true)]
         pass_through_args: Option<Vec<String>>,
     },
 }
 ```
 
-#### 2. Package Manager Adapter
+#### 2. 包管理器适配器
 
-**File**: `crates/vite_package_manager/src/commands/outdated.rs` (new file)
+**文件**：`crates/vite_package_manager/src/commands/outdated.rs`（新文件）
 
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
@@ -394,7 +394,7 @@ pub struct OutdatedCommandOptions<'a> {
 }
 
 impl PackageManager {
-    /// Run the outdated command with the package manager.
+    /// 使用包管理器运行 outdated 命令。
     #[must_use]
     pub async fn run_outdated_command(
         &self,
@@ -406,14 +406,14 @@ impl PackageManager {
             .await
     }
 
-    /// Resolve the outdated command.
+    /// 解析 outdated 命令。
     #[must_use]
     pub fn resolve_outdated_command(&self, options: &OutdatedCommandOptions) -> ResolveCommandResult {
         let bin_name: String;
         let envs = HashMap::from([("PATH".to_string(), format_path_env(self.get_bin_prefix()))]);
         let mut args: Vec<String> = Vec::new();
 
-        // Global packages should use npm cli only
+        // 全局包应仅使用 npm cli
         if options.global {
             bin_name = "npm".into();
             args.push("outdated".into());
@@ -429,7 +429,7 @@ impl PackageManager {
             PackageManagerType::Pnpm => {
                 bin_name = "pnpm".into();
 
-                // pnpm: --filter must come before command
+                // pnpm：--filter 必须放在命令前
                 if let Some(filters) = options.filters {
                     for filter in filters {
                         args.push("--filter".into());
@@ -439,7 +439,7 @@ impl PackageManager {
 
                 args.push("outdated".into());
 
-                // Handle format option
+                // 处理 format 选项
                 if let Some(format) = options.format {
                     args.push("--format".into());
                     args.push(format.into());
@@ -482,18 +482,18 @@ impl PackageManager {
                     args.push("--global".into());
                 }
 
-                // Add packages (pnpm supports glob patterns)
+                // 添加包（pnpm 支持 glob 模式）
                 args.extend_from_slice(options.packages);
             }
             PackageManagerType::Yarn => {
                 bin_name = "yarn".into();
 
-                // Check if yarn@2+ (uses upgrade-interactive)
+                // 检查是否为 yarn@2+（使用 upgrade-interactive）
                 if !self.version.starts_with("1.") {
                     println!("Note: yarn@2+ uses 'yarn upgrade-interactive' for checking outdated packages");
                     args.push("upgrade-interactive".into());
 
-                    // Warn about unsupported flags
+                    // 提示不支持的标志
                     if options.format.is_some() {
                         println!("Warning: --format not supported by yarn@2+");
                     }
@@ -501,10 +501,10 @@ impl PackageManager {
                     // yarn@1
                     args.push("outdated".into());
 
-                    // Add packages (yarn@1 supports package names)
+                    // 添加包（yarn@1 支持包名）
                     args.extend_from_slice(options.packages);
 
-                    // yarn@1 supports --json format
+                    // yarn@1 支持 --json 格式
                     if let Some(format) = options.format {
                         if format == "json" {
                             args.push("--json".into());
@@ -514,7 +514,7 @@ impl PackageManager {
                     }
                 }
 
-                // Common warnings
+                // 通用警告
                 if options.long {
                     println!("Warning: --long not supported by yarn");
                 }
@@ -546,12 +546,12 @@ impl PackageManager {
                 bin_name = "npm".into();
                 args.push("outdated".into());
 
-                // npm format flags - translate from --format
+                // npm 格式标志 - 从 --format 转换
                 if let Some(format) = options.format {
                     match format {
                         "json" => args.push("--json".into()),
                         "list" => args.push("--parseable".into()),
-                        "table" => {}, // Default, no flag needed
+                        "table" => {}, // 默认，无需标志
                         _ => println!("Warning: npm only supports formats: json, list, table"),
                     }
                 }
@@ -560,7 +560,7 @@ impl PackageManager {
                     args.push("--long".into());
                 }
 
-                // npm workspace flags - translate from --filter
+                // npm 工作区标志 - 从 --filter 转换
                 if let Some(filters) = options.filters {
                     for filter in filters {
                         args.push("--workspace".into());
@@ -568,12 +568,12 @@ impl PackageManager {
                     }
                 }
 
-                // npm uses --include-workspace-root when workspace_root is set
+                // 当设置 workspace_root 时，npm 使用 --include-workspace-root
                 if options.workspace_root {
                     args.push("--include-workspace-root".into());
                 }
 
-                // npm --all translates from -r/--recursive
+                // npm 的 --all 对应 -r/--recursive
                 if options.recursive {
                     args.push("--all".into());
                 }
@@ -582,10 +582,10 @@ impl PackageManager {
                     args.push("--global".into());
                 }
 
-                // Add packages (npm supports package names)
+                // 添加包（npm 支持包名）
                 args.extend_from_slice(options.packages);
 
-                // Warn about pnpm-specific flags
+                // 提示 pnpm 特有标志
                 if options.prod || options.dev {
                     println!("Warning: --prod/--dev not supported by npm");
                 }
@@ -601,7 +601,7 @@ impl PackageManager {
             }
         }
 
-        // Add pass-through args
+        // 添加透传参数
         if let Some(pass_through_args) = options.pass_through_args {
             args.extend_from_slice(pass_through_args);
         }
@@ -611,9 +611,9 @@ impl PackageManager {
 }
 ```
 
-**File**: `crates/vite_package_manager/src/commands/mod.rs`
+**文件**：`crates/vite_package_manager/src/commands/mod.rs`
 
-Update to include outdated module:
+更新以包含 outdated 模块：
 
 ```rust
 pub mod add;
@@ -624,12 +624,12 @@ pub mod link;
 pub mod unlink;
 pub mod dedupe;
 pub mod why;
-pub mod outdated;  // Add this line
+pub mod outdated;  // 添加这一行
 ```
 
-#### 3. Outdated Command Implementation
+#### 3. Outdated 命令实现
 
-**File**: `crates/vite_task/src/outdated.rs` (new file)
+**文件**：`crates/vite_task/src/outdated.rs`（新文件）
 
 ```rust
 use vite_error::Error;
@@ -667,7 +667,7 @@ impl OutdatedCommand {
         let package_manager = PackageManager::builder(&self.workspace_root).build().await?;
         let workspace = Workspace::partial_load(self.workspace_root)?;
 
-        // Build outdated command options
+        // 构建 outdated 命令选项
         let outdated_options = OutdatedCommandOptions {
             packages: &packages,
             long,
@@ -687,11 +687,11 @@ impl OutdatedCommand {
             .run_outdated_command(&outdated_options, &workspace.root)
             .await?;
 
-        // Note: outdated command may exit with code 1 if outdated packages are found
-        // This is expected behavior, not an error
+        // 注意：如果发现过时包，outdated 命令可能以 code 1 退出
+        // 这是预期行为，不是错误
         if !exit_status.success() {
             let exit_code = exit_status.code();
-            // Exit code 1 typically means outdated packages found, which is OK
+            // Exit code 1 通常表示发现了过时包，这是可以接受的
             if exit_code != Some(1) {
                 return Err(Error::CommandFailed {
                     command: "outdated".to_string(),
@@ -707,89 +707,89 @@ impl OutdatedCommand {
 }
 ```
 
-## Design Decisions
+## 设计决策
 
-### 1. No Caching
+### 1. 不缓存
 
-**Decision**: Do not cache outdated operations.
+**决策**：不要缓存过时操作。
 
-**Rationale**:
+**原因**：
 
-- `outdated` queries remote registry for latest versions
-- Results change frequently as new versions are published
-- Caching would provide stale information
-- Users expect fresh data when checking for updates
+- `outdated` 会查询远程注册表以获取最新版本
+- 随着新版本发布，结果会频繁变化
+- 缓存会提供过期信息
+- 用户在检查更新时期望获得最新数据
 
-### 2. Pattern Support
+### 2. 模式支持
 
-**Decision**: Accept patterns but warn when package manager doesn't support glob patterns.
+**决策**：接受模式，但当包管理器不支持 glob 模式时发出警告。
 
-**Rationale**:
+**原因**：
 
-- pnpm supports glob patterns: `pnpm outdated "*gulp-*" @babel/core`
-- npm and yarn accept package names but not glob patterns
-- Warn users about limited pattern support
-- Better UX than erroring
+- pnpm 支持 glob 模式：`pnpm outdated "*gulp-*" @babel/core`
+- npm 和 yarn 接受包名，但不接受 glob 模式
+- 向用户警告受限的模式支持
+- 比直接报错提供更好的用户体验
 
-### 3. Exit Code Handling
+### 3. 退出码处理
 
-**Decision**: Don't treat exit code 1 as an error for outdated command.
+**决策**：不要将 `outdated` 命令的退出码 1 视为错误。
 
-**Rationale**:
+**原因**：
 
-- Package managers return exit code 1 when outdated packages are found
-- This is expected behavior, not a failure
-- Only treat other exit codes as errors
-- Matches package manager semantics
+- 当发现过时包时，包管理器会返回退出码 1
+- 这是预期行为，不是失败
+- 只将其他退出码视为错误
+- 与包管理器语义保持一致
 
-### 4. Output Format Support
+### 4. 输出格式支持
 
-**Decision**: Support pnpm's `--format` flag and npm's `--json`/`--parseable` flags.
+**决策**：支持 pnpm 的 `--format` 标志，以及 npm 的 `--json`/`--parseable` 标志。
 
-**Rationale**:
+**原因**：
 
-- pnpm has `--format` with table/list/json options
-- npm has separate `--json` and `--parseable` flags
-- yarn@1 has fixed table output
-- yarn@2+ uses interactive mode
-- Translate flags appropriately per package manager
+- pnpm 提供带有 table/list/json 选项的 `--format`
+- npm 有单独的 `--json` 和 `--parseable` 标志
+- yarn@1 的表格输出是固定的
+- yarn@2+ 使用交互模式
+- 按包管理器适当地转换标志
 
-### 5. Workspace Filtering
+### 5. 工作区过滤
 
-**Decision**: Support both pnpm's `--filter` and npm's `--workspace` patterns.
+**决策**：同时支持 pnpm 的 `--filter` 和 npm 的 `--workspace` 模式。
 
-**Rationale**:
+**原因**：
 
-- Different package managers use different flags
-- Translate flags appropriately
-- Warn when flag not supported
-- Consistent with other Vite+ commands
+- 不同的包管理器使用不同的标志
+- 适当地转换标志
+- 当标志不受支持时发出警告
+- 与其他 Vite+ 命令保持一致
 
-### 6. Dependency Type Filtering
+### 6. 依赖类型过滤
 
-**Decision**: Support pnpm's `--prod`, `--dev`, `--no-optional` flags with warnings.
+**决策**：支持 pnpm 的 `--prod`、`--dev`、`--no-optional` 标志，并在不支持时发出警告。
 
-**Rationale**:
+**原因**：
 
-- pnpm allows filtering by dependency type
-- Not available in npm or yarn
-- Useful for focused updates
-- Warn when not supported
+- pnpm 允许按依赖类型进行过滤
+- npm 或 yarn 中不可用
+- 对有针对性的更新很有用
+- 不支持时发出警告
 
-### 7. Yarn@2+ Behavior
+### 7. Yarn@2+ 行为
 
-**Decision**: Use `upgrade-interactive` for yarn@2+ instead of `outdated`.
+**决策**：对 yarn@2+ 使用 `upgrade-interactive`，而不是 `outdated`。
 
-**Rationale**:
+**原因**：
 
-- yarn@2+ recommends `upgrade-interactive` for checking updates
-- Provides interactive UI instead of simple table
-- Different paradigm but achieves same goal
-- Inform users about different behavior
+- yarn@2+ 建议使用 `upgrade-interactive` 来检查更新
+- 提供交互式 UI，而不是简单的表格
+- 虽然范式不同，但达到相同目标
+- 告知用户这种不同的行为
 
-## Error Handling
+## 错误处理
 
-### No Package Manager Detected
+### 未检测到包管理器
 
 ```bash
 $ vite outdated
@@ -799,7 +799,7 @@ Please run one of:
   - Add packageManager field to package.json
 ```
 
-### Invalid Format Option
+### 无效的格式选项
 
 ```bash
 $ vite outdated --format invalid
@@ -807,7 +807,7 @@ Error: Invalid format 'invalid'
 Valid formats: table, list, json
 ```
 
-### Unsupported Flag Warning
+### 不支持的标志警告
 
 ```bash
 $ vite outdated --prod
@@ -816,9 +816,9 @@ Warning: --prod not supported by npm
 Running: npm outdated
 ```
 
-## User Experience
+## 用户体验
 
-### Success Output (pnpm)
+### 成功输出（pnpm）
 
 ```bash
 $ vite outdated
@@ -833,7 +833,7 @@ lodash          4.17.20  4.17.21 4.17.21
 Done in 1.2s
 ```
 
-### Success Output (npm)
+### 成功输出（npm）
 
 ```bash
 $ vite outdated
@@ -847,7 +847,7 @@ lodash          4.17.20  4.17.21 4.17.21 node_modules/lodash  my-app
 Done in 0.8s
 ```
 
-### Success Output (yarn@1)
+### 成功输出（yarn@1）
 
 ```bash
 $ vite outdated
@@ -861,7 +861,7 @@ lodash          4.17.20  4.17.21 4.17.21 dependencies  https://...
 Done in 1.0s
 ```
 
-### JSON Output (pnpm)
+### JSON 输出（pnpm）
 
 ```bash
 $ vite outdated --format json
@@ -888,7 +888,7 @@ Running: pnpm outdated --format json
 Done in 1.1s
 ```
 
-### Pattern Matching (pnpm)
+### 模式匹配（pnpm）
 
 ```bash
 $ vite outdated "*babel*" "eslint-*"
@@ -904,7 +904,7 @@ eslint-plugin-react  7.32.0   7.32.2   7.37.2
 Done in 1.3s
 ```
 
-### Workspace Filtering (pnpm)
+### 工作区过滤（pnpm）
 
 ```bash
 $ vite outdated --filter app -r
@@ -920,98 +920,99 @@ react-dom       18.2.0   18.3.1  18.3.1
 Done in 1.0s
 ```
 
-## Alternative Designs Considered
+## 考虑过的替代方案
 
-### Alternative 1: Always Error on Exit Code 1
+### 备选方案 1：始终将退出码 1 视为错误
 
 ```bash
 vite outdated
-# Exit code 1 when outdated packages found
-# Treat as error
+# 当发现过时包时退出码为 1
+# 视为错误
 ```
 
-**Rejected because**:
+**被拒绝的原因**：
 
-- Outdated packages found is normal, not an error
-- Would break CI/CD workflows
-- Matches package manager behavior
-- Users expect exit code 1 to indicate packages need updating
+- 发现过时包是正常情况，不是错误
+- 会破坏 CI/CD 工作流
+- 与包管理器行为一致
+- 用户期望退出码 1 表示包需要更新
 
-### Alternative 2: Custom Output Format
+### 备选方案 2：自定义输出格式
 
 ```bash
 vite outdated --format vite
-# Custom unified format across all package managers
+# 在所有包管理器之间使用自定义统一格式
 ```
 
-**Rejected because**:
+**被拒绝的原因**：
 
-- Output format parsing is fragile
-- Different package managers provide different data
-- Better to pass through native output
-- Let users see familiar format from their package manager
+- 输出格式解析很脆弱
+- 不同包管理器提供不同数据
+- 更好的做法是透传原生输出
+- 让用户看到与其包管理器一致的熟悉格式
 
-### Alternative 3: Auto-Update Option
+### 备选方案 3：自动更新选项
 
 ```bash
 vp outdated --update
-# Automatically update all outdated packages
+# 自动更新所有过时包
 ```
 
-**Rejected because**:
+**被拒绝的原因**：
 
-- Mixing check and update is dangerous
-- Users should review before updating
-- Separate `vp update` command exists
-- Keep commands focused on single purpose
+- 将检查和更新混在一起很危险
+- 用户应在更新前进行审查
+- 已经存在单独的 `vp update` 命令
+- 保持命令专注于单一目的
 
-## Implementation Plan
+## 实施计划
 
-### Phase 1: Core Functionality
+### 第一阶段：核心功能
 
-1. Add `Outdated` command variant to `Commands` enum
-2. Create `outdated.rs` module in both crates
-3. Implement package manager command resolution
-4. Handle exit code 1 as success case
-5. Add basic error handling
+1. 在 `Commands` 枚举中添加 `Outdated` 命令变体
+2. 在两个 crate 中创建 `outdated.rs` 模块
+3. 实现包管理器命令解析
+4. 将退出码 1 作为成功情况处理
+5. 添加基础错误处理
 
-### Phase 2: Advanced Features
+### 第二阶段：高级功能
 
-1. Implement output format options (json, table, list, parseable)
-2. Add workspace filtering support
-3. Implement dependency type filtering (prod, dev)
-4. Add pattern matching support
-5. Handle yarn@2+ interactive mode
+1. 实现输出格式选项（json、table、list、parseable）
+2. 添加工作区过滤支持
+3. 实现依赖类型过滤（prod、dev）
+4. 添加模式匹配支持
+5. 处理 yarn@2+ 交互模式
 
-### Phase 3: Testing
+### 第三阶段：测试
 
-1. Unit tests for command resolution
-2. Test pattern matching (pnpm)
-3. Test workspace operations
-4. Test output format options
-5. Test exit code handling
-6. Integration tests with mock package managers
+1. 为命令解析编写单元测试
+2. 测试模式匹配（pnpm）
+3. 测试工作区操作
+4. 测试输出格式选项
+5. 测试退出码处理
+6. 使用模拟包管理器进行集成测试
 
-### Phase 4: Documentation
+### 第四阶段：文档
 
-1. Update CLI documentation
-2. Add examples to README
-3. Document package manager compatibility
-4. Add troubleshooting guide
+1. 更新 CLI 文档
+2. 在 README 中添加示例
+3. 文档化包管理器兼容性
+4. 添加故障排查指南
 
-## Testing Strategy
+## 测试策略
 
-### Test Package Manager Versions
+### 测试包管理器版本
 
 - pnpm@9.x
 - pnpm@10.x
+- pnpm@11.x
 - yarn@1.x
 - yarn@4.x
 - npm@10.x
 - npm@11.x
 - bun@1.x [WIP]
 
-### Unit Tests
+### 单元测试
 
 ```rust
 #[test]
@@ -1093,9 +1094,9 @@ fn test_pnpm_outdated_prod_only() {
 }
 ```
 
-### Integration Tests
+### 集成测试
 
-Create fixtures for testing with each package manager:
+创建用于每个包管理器测试的 fixture：
 
 ```
 fixtures/outdated-test/
@@ -1109,20 +1110,20 @@ fixtures/outdated-test/
   test-steps.json
 ```
 
-Test cases:
+测试用例：
 
-1. Basic outdated check
-2. Pattern matching (pnpm only)
-3. JSON output
-4. Workspace-specific outdated
-5. Recursive workspace checking
-6. Dependency type filtering
-7. Compatible versions only
-8. Global package checking
-9. Warning messages for unsupported flags
-10. Exit code 1 handling (outdated found)
+1. 基础过时检查
+2. 模式匹配（仅 pnpm）
+3. JSON 输出
+4. 特定工作区中过时检查
+5. 递归工作区检查
+6. 依赖类型过滤
+7. 仅兼容版本
+8. 全局包检查
+9. 不支持标志的警告消息
+10. 退出码 1 处理（发现过时项）
 
-## CLI Help Output
+## CLI 帮助输出
 
 ```bash
 $ vite outdated --help
@@ -1163,158 +1164,158 @@ Exit Codes:
   Other: Command failed
 
 Examples:
-  vite outdated                        # Check all packages
-  vite outdated react                  # Check specific package
-  vite outdated "*babel*" "eslint-*"   # Check with patterns (pnpm)
-  vite outdated --format json          # JSON output
-  vite outdated --long                 # Verbose output
-  vite outdated -r                     # Recursive across workspaces
-  vite outdated --filter app           # Check in specific workspace
-  vite outdated -w                     # Include workspace root (pnpm)
-  vite outdated -w -r                  # Include workspace root and recursive (pnpm)
-  vite outdated --prod                 # Only production deps (pnpm)
-  vite outdated --compatible           # Only compatible versions (pnpm)
-  vite outdated --sort-by name         # Sort results by name (pnpm)
-  vite outdated -g                     # Check global packages
+  vite outdated                        # 检查所有包
+  vite outdated react                  # 检查特定包
+  vite outdated "*babel*" "eslint-*"   # 使用模式检查（pnpm）
+  vite outdated --format json          # JSON 输出
+  vite outdated --long                 # 详细输出
+  vite outdated -r                     # 在工作区中递归检查
+  vite outdated --filter app           # 检查特定工作区中的内容
+  vite outdated -w                     # 包含工作区根目录（pnpm）
+  vite outdated -w -r                  # 包含工作区根目录并递归（pnpm）
+  vite outdated --prod                 # 仅生产依赖（pnpm）
+  vite outdated --compatible           # 仅兼容版本（pnpm）
+  vite outdated --sort-by name         # 按名称排序结果（pnpm）
+  vite outdated -g                     # 检查全局包
 ```
 
-## Performance Considerations
+## 性能考量
 
-1. **No Caching**: Queries remote registry, caching would be stale
-2. **Network Dependent**: Performance depends on registry response time
-3. **Parallel Checks**: Some package managers parallelize version checks
-4. **JSON Output**: Faster to parse programmatically than table format
+1. **无缓存**：查询远程注册表，缓存会过期
+2. **依赖网络**：性能取决于注册表响应时间
+3. **并行检查**：某些包管理器会并行执行版本检查
+4. **JSON 输出**：比表格格式更便于程序化解析
 
-## Security Considerations
+## 安全考量
 
-1. **Read-Only**: Only queries package versions, no modifications
-2. **Registry Trust**: Relies on package registry for version information
-3. **Vulnerability Detection**: Helps identify packages with known vulnerabilities
-4. **Safe for CI**: Can be run safely in CI/CD pipelines
-5. **Audit Integration**: Results can inform security audits
+1. **只读**：仅查询包版本，不进行修改
+2. **注册表信任**：依赖 package registry 提供版本信息
+3. **漏洞检测**：有助于识别已知存在漏洞的包
+4. **适用于 CI**：可安全运行于 CI/CD 流水线中
+5. **审计集成**：结果可用于安全审计
 
-## Backward Compatibility
+## 向后兼容性
 
-This is a new feature with no breaking changes:
+这是一个没有破坏性变更的新功能：
 
-- Existing commands unaffected
-- New command is additive
-- No changes to task configuration
-- No changes to caching behavior
+- 现有命令不受影响
+- 新命令是增量添加
+- 任务配置无变化
+- 缓存行为无变化
 
-## Migration Path
+## 迁移路径
 
-### Adoption
+### 采用
 
-Users can start using immediately:
+用户可以立即开始使用：
 
 ```bash
-# Old way
+# 旧方式
 pnpm outdated
 npm outdated
 yarn outdated
 
-# New way (works with any package manager)
+# 新方式（适用于任何包管理器）
 vite outdated
 ```
 
-### CI/CD Integration
+### CI/CD 集成
 
 ```yaml
-# Check for outdated packages
+# 检查过期包
 - run: vite outdated --format json > outdated.json
 
-# Fail build if critical packages are outdated
+# 如果关键包已过期则构建失败
 - run: |
     vite outdated --format json > outdated.json
-    # Parse JSON and check for critical packages
+    # 解析 JSON 并检查关键包
     node scripts/check-critical-outdated.js
 
-# Weekly outdated report
+# 每周过期包报告
 - run: vite outdated -r --format json > weekly-outdated-report.json
 ```
 
-## Real-World Usage Examples
+## 实际使用示例
 
-### Checking for Updates
+### 检查更新
 
 ```bash
-# Check all packages
+# 检查所有包
 vite outdated
 
-# Check specific packages
+# 检查指定包
 vite outdated react react-dom
 
-# Check with pattern (pnpm)
+# 使用模式匹配检查（pnpm）
 vite outdated "@babel/*" "eslint-*"
 ```
 
-### Production Dependency Updates
+### 生产依赖更新
 
 ```bash
-# Only production dependencies (pnpm)
+# 仅生产依赖（pnpm）
 vite outdated --prod
 
-# Check with JSON output for automation
+# 使用 JSON 输出以便自动化处理
 vite outdated --prod --format json > prod-outdated.json
 ```
 
-### Workspace Analysis
+### 工作区分析
 
 ```bash
-# Check all workspaces
+# 检查所有工作区
 vite outdated -r
 
-# Check specific workspace
+# 检查指定工作区
 vite outdated --filter app
 
-# Compare workspaces
+# 比较工作区
 vite outdated --filter "app*" -r
 ```
 
-### Compatible Version Updates
+### 兼容版本更新
 
 ```bash
-# Only show versions that satisfy package.json (pnpm)
+# 仅显示符合 package.json 的版本（pnpm）
 vite outdated --compatible
 
-# Show all possible updates
+# 显示所有可能的更新
 vite outdated
 ```
 
-### Global Package Updates
+### 全局包更新
 
 ```bash
-# Check globally installed packages
+# 检查全局安装的包
 vite outdated -g
 
-# Check specific global package
+# 检查指定的全局包
 vite outdated -g typescript
 ```
 
-## Package Manager Compatibility
+## 包管理器兼容性
 
-| Feature             | pnpm               | npm                           | yarn@1           | yarn@2+             | bun                  | Notes                    |
-| ------------------- | ------------------ | ----------------------------- | ---------------- | ------------------- | -------------------- | ------------------------ |
-| Basic command       | ✅ `outdated`      | ✅ `outdated`                 | ✅ `outdated`    | ⚠️ `upgrade-int...` | ✅ `outdated`        | yarn@2+ uses interactive |
-| Pattern matching    | ✅ Glob patterns   | ⚠️ Package names              | ⚠️ Package names | ❌ Not supported    | ❌ Not supported     | pnpm supports globs      |
-| JSON output         | ✅ `--format json` | ✅ `--json`                   | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | Different flags          |
-| Long output         | ✅ `--long`        | ✅ `--long`                   | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | pnpm and npm only        |
-| Parseable           | ❌ Not supported   | ✅ `--parseable`              | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | npm only                 |
-| Recursive           | ✅ `-r`            | ❌ Not supported              | ❌ Not supported | ❌ Not supported    | ✅ `-r`              | pnpm and bun             |
-| Workspace filter    | ✅ `--filter`      | ✅ `--workspace`              | ❌ Not supported | ❌ Not supported    | ✅ `--filter` / `-F` | Different flags          |
-| Workspace root      | ✅ `-w`            | ✅ `--include-workspace-root` | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | Different flags          |
-| Dep type filter     | ✅ `--prod/--dev`  | ❌ Not supported              | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | pnpm only                |
-| Compatible only     | ✅ `--compatible`  | ❌ Not supported              | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | pnpm only                |
-| Sort results        | ✅ `--sort-by`     | ❌ Not supported              | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | pnpm only                |
-| Global check        | ✅ `-g`            | ✅ `-g`                       | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | pnpm and npm             |
-| Show all transitive | ⚠️ Use `-r`        | ✅ `--all`                    | ❌ Not supported | ❌ Not supported    | ❌ Not supported     | Different approaches     |
+| 功能               | pnpm               | npm                           | yarn@1           | yarn@2+             | bun                  | 备注                     |
+| ------------------ | ------------------ | ----------------------------- | ---------------- | ------------------- | -------------------- | ------------------------ |
+| 基本命令           | ✅ `outdated`      | ✅ `outdated`                 | ✅ `outdated`    | ⚠️ `upgrade-int...` | ✅ `outdated`        | yarn@2+ 使用交互式界面   |
+| 模式匹配           | ✅ Glob patterns   | ⚠️ 包名                        | ⚠️ 包名           | ❌ 不支持            | ❌ 不支持             | pnpm 支持 glob 模式      |
+| JSON 输出          | ✅ `--format json` | ✅ `--json`                   | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 不同的标志               |
+| 长输出             | ✅ `--long`        | ✅ `--long`                   | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm 和 npm           |
+| 可解析             | ❌ 不支持          | ✅ `--parseable`              | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 npm                   |
+| 递归               | ✅ `-r`            | ❌ 不支持                      | ❌ 不支持         | ❌ 不支持            | ✅ `-r`               | pnpm 和 bun              |
+| 工作区筛选         | ✅ `--filter`      | ✅ `--workspace`              | ❌ 不支持         | ❌ 不支持            | ✅ `--filter` / `-F` | 不同的标志               |
+| 工作区根目录       | ✅ `-w`            | ✅ `--include-workspace-root` | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 不同的标志               |
+| 依赖类型筛选       | ✅ `--prod/--dev`  | ❌ 不支持                      | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm                  |
+| 仅兼容版本         | ✅ `--compatible`  | ❌ 不支持                      | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm                  |
+| 排序结果           | ✅ `--sort-by`     | ❌ 不支持                      | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm                  |
+| 全局检查           | ✅ `-g`            | ✅ `-g`                       | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | pnpm 和 npm              |
+| 显示所有传递依赖   | ⚠️ `-r`            | ✅ `--all`                    | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 不同的方法               |
 
-## Future Enhancements
+## 未来增强
 
-### 1. Severity Indicators
+### 1. 严重性指示
 
-Show update severity based on semver:
+根据 semver 显示更新严重性：
 
 ```bash
 vite outdated --with-severity
@@ -1325,9 +1326,9 @@ lodash          4.17.20  4.17.21 4.17.21 Patch
 webpack         5.0.0    5.0.0   6.0.0   Major ⚠️
 ```
 
-### 2. Security Integration
+### 2. 安全集成
 
-Integrate with security advisories:
+与安全公告集成：
 
 ```bash
 vite outdated --format json --with-security
@@ -1338,14 +1339,14 @@ axios           0.21.0   1.7.0   🟡 Moderate severity issue
 react           18.2.0   18.3.1  ✅ No known issues
 ```
 
-### 3. Update Plan Generation
+### 3. 更新计划生成
 
-Generate update plan with dependency analysis:
+通过依赖分析生成更新计划：
 
 ```bash
 vite outdated --format json --plan > update-plan.json
 
-# Output:
+# 输出：
 {
   "safeUpdates": ["lodash@4.17.21", "react@18.3.1"],
   "breakingUpdates": ["webpack@6.0.0"],
@@ -1355,14 +1356,14 @@ vite outdated --format json --plan > update-plan.json
 }
 ```
 
-### 4. Interactive Mode
+### 4. 交互模式
 
-Add interactive selection mode for all package managers:
+为所有包管理器添加交互式选择模式：
 
 ```bash
 vite outdated --interactive
 
-# Shows interactive UI:
+# 显示交互式 UI：
 ┌─ Outdated Packages ────────────────────┐
 │ [x] react       18.2.0 → 18.3.1       │
 │ [x] lodash      4.17.20 → 4.17.21     │
@@ -1371,9 +1372,9 @@ vite outdated --interactive
 Press <space> to select, <enter> to update
 ```
 
-### 5. Change Log Integration
+### 5. 更新日志集成
 
-Show change logs for updates:
+显示更新的变更日志：
 
 ```bash
 vite outdated --with-changelog
@@ -1385,56 +1386,56 @@ Changes:
 - Perf: Improved rendering performance
 ```
 
-## Open Questions
+## 待解决问题
 
-1. **Should we handle exit code 1 differently?**
-   - Proposed: No, treat as success when outdated packages found
-   - Matches package manager behavior
-   - Expected by users
+1. **我们是否应该以不同方式处理退出码 1？**
+   - 建议：不，将找到过期包视为成功
+   - 与包管理器行为一致
+   - 符合用户预期
 
-2. **Should we add a --fix flag to auto-update?**
-   - Proposed: No, use separate `vp update` command
-   - Keep commands focused
-   - Prevents accidental updates
+2. **我们是否应该添加 --fix 标志来自动更新？**
+   - 建议：不，使用单独的 `vp update` 命令
+   - 保持命令聚焦
+   - 防止意外更新
 
-3. **Should we support custom output formats?**
-   - Proposed: No, use native package manager output
-   - Simpler implementation
-   - Familiar to users
-   - Can add in future if needed
+3. **我们是否应该支持自定义输出格式？**
+   - 建议：不，使用原生包管理器输出
+   - 实现更简单
+   - 用户更熟悉
+   - 如有需要，未来可添加
 
-4. **Should we cache registry queries?**
-   - Proposed: No, always query fresh data
-   - Registry data changes frequently
-   - Users expect current information
+4. **我们是否应该缓存注册表查询？**
+   - 建议：不，始终查询最新数据
+   - 注册表数据变化频繁
+   - 用户期望获取当前信息
 
-5. **Should we support yarn@2+ differently?**
-   - Proposed: Yes, use `upgrade-interactive`
-   - Matches yarn@2+ recommendations
-   - Provide note to users about different UI
+5. **我们是否应该以不同方式支持 yarn@2+？**
+   - 建议：是，使用 `upgrade-interactive`
+   - 与 yarn@2+ 的推荐方式一致
+   - 向用户提供有关不同 UI 的说明
 
-## Success Metrics
+## 成功指标
 
-1. **Adoption**: % of users using `vite outdated` vs direct package manager
-2. **Update Frequency**: How often users update packages after checking
-3. **CI Integration**: Usage in CI/CD for outdated checks
-4. **User Feedback**: Survey/issues about command usefulness
-5. **Security Impact**: Reduction in outdated packages with vulnerabilities
+1. **采用率**：使用 `vite outdated` 而非直接使用包管理器的用户占比
+2. **更新频率**：用户检查后更新包的频率
+3. **CI 集成**：在 CI/CD 中用于过期检查的使用情况
+4. **用户反馈**：关于命令实用性的调查/问题
+5. **安全影响**：含有漏洞的过期包数量减少
 
-## Conclusion
+## 结论
 
-This RFC proposes adding `vite outdated` command to provide a unified interface for checking outdated packages across pnpm/npm/yarn/bun. The design:
+本 RFC 提议添加 `vite outdated` 命令，以提供一个统一接口，用于跨 pnpm/npm/yarn/bun 检查过期包。该设计：
 
-- ✅ Automatically adapts to detected package manager
-- ✅ Supports pattern matching (pnpm) with graceful degradation
-- ✅ Full pnpm feature support (format, filters, compatible, sorting)
-- ✅ npm and yarn compatibility with appropriate warnings
-- ✅ Workspace-aware operations
-- ✅ Multiple output formats (json, table, list, parseable)
-- ✅ Proper exit code handling (1 = outdated found)
-- ✅ No caching (always fresh data)
-- ✅ Security-conscious (helps identify vulnerable packages)
-- ✅ Simple implementation leveraging existing infrastructure
-- ✅ Extensible for future enhancements (severity, security, interactive)
+- ✅ 自动适配检测到的包管理器
+- ✅ 支持模式匹配（pnpm），并可优雅降级
+- ✅ 完整支持 pnpm 功能（格式、筛选、兼容性、排序）
+- ✅ 兼容 npm 和 yarn，并提供适当警告
+- ✅ 支持感知工作区的操作
+- ✅ 多种输出格式（json、table、list、parseable）
+- ✅ 正确处理退出码（1 = 找到过期包）
+- ✅ 无缓存（始终获取最新数据）
+- ✅ 注重安全（有助于识别有漏洞的包）
+- ✅ 实现简单，充分利用现有基础设施
+- ✅ 可扩展以支持未来增强（严重性、安全、交互式）
 
-The implementation follows the same patterns as other package management commands while providing the dependency update checking features developers need to maintain current, secure dependencies across their projects.
+该实现遵循与其他包管理命令相同的模式，同时提供开发者维护项目中最新且安全依赖所需的依赖更新检查功能。

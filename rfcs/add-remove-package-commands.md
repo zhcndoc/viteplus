@@ -1,12 +1,12 @@
-# RFC: Vite+ Add and Remove Package Commands
+# RFC：Vite+ 增加和移除包命令
 
-## Summary
+## 概要
 
-Add `vp add` and `vp remove` commands that automatically adapt to the detected package manager (pnpm/yarn/npm/bun) for adding and removing packages, with support for multiple packages, common flags, and workspace-aware operations based on pnpm's API design.
+添加 `vp add` 和 `vp remove` 命令，它们会根据检测到的包管理器（pnpm/yarn/npm/bun）自动适配，用于添加和移除包，并支持多个包、常见标志，以及基于 pnpm API 设计的 workspace 感知操作。
 
-## Motivation
+## 动机
 
-Currently, developers must manually use package manager-specific commands:
+目前，开发者必须手动使用各个包管理器特定的命令：
 
 ```bash
 pnpm add react
@@ -15,87 +15,87 @@ npm install react
 bun add react
 ```
 
-This creates friction in monorepo workflows and requires remembering different syntaxes. A unified interface would:
+这会给 monorepo 工作流带来阻力，并且需要记住不同的语法。一个统一的接口将：
 
-1. **Simplify workflows**: One command works across all package managers
-2. **Auto-detection**: Automatically uses the correct package manager
-3. **Consistency**: Same syntax regardless of underlying tool
-4. **Integration**: Works seamlessly with existing Vite+ features
+1. **简化工作流**：一个命令可跨所有包管理器工作
+2. **自动检测**：自动使用正确的包管理器
+3. **一致性**：无论底层工具如何，语法保持一致
+4. **集成**：与现有 Vite+ 功能无缝协作
 
-### Current Pain Points
+### 当前痛点
 
 ```bash
-# Developer needs to know which package manager is used
-pnpm add -D typescript  # pnpm project
-yarn add --dev typescript  # yarn project
-npm install --save-dev typescript  # npm project
-bun add --dev typescript  # bun project
+# 开发者需要知道正在使用哪个包管理器
+pnpm add -D typescript  # pnpm 项目
+yarn add --dev typescript  # yarn 项目
+npm install --save-dev typescript  # npm 项目
+bun add --dev typescript  # bun 项目
 
-# Different remove commands
+# 不同的移除命令
 pnpm remove lodash
 yarn remove lodash
 npm uninstall lodash
 bun remove lodash
 ```
 
-### Proposed Solution
+### 提议的解决方案
 
 ```bash
-# Works for all package managers
+# 适用于所有包管理器
 vp add typescript -D
 vp remove lodash
 
-# Multiple packages
+# 多个包
 vp add react react-dom
 vp remove axios lodash
 
-# Workspace operations
+# Workspace 操作
 vp add react --filter app
 vp add @myorg/utils --workspace --filter app
-vp add lodash -w  # Add to workspace root
+vp add lodash -w  # 添加到 workspace 根目录
 ```
 
-## Proposed Solution
+## 提议的解决方案
 
-### Command Syntax
+### 命令语法
 
-#### Add Command
+#### Add 命令
 
 ```bash
 vp add <PACKAGES>... [OPTIONS]
 ```
 
-**Examples:**
+**示例：**
 
 ```bash
-# Add production dependency
+# 添加生产依赖
 vp add react react-dom
 
-# Add dev dependency
+# 添加开发依赖
 vp add -D typescript @types/react
 
-# Add with exact version
+# 添加指定精确版本
 vp add react -E
 
-# Add peer dependency
+# 添加 peer 依赖
 vp add --save-peer react
 
-# Add optional dependency
+# 添加可选依赖
 vp add -O sharp
 
-# Workspace operations
-vp add react --filter app              # Add to specific package
-vp add @myorg/utils --workspace --filter app  # Add workspace dependency
-vp add lodash -w                       # Add to workspace root
-vp add react --filter "app*"           # Add to multiple packages (pattern)
-vp add utils --filter "!@myorg/core"   # Exclude packages
+# Workspace 操作
+vp add react --filter app              # 添加到特定包
+vp add @myorg/utils --workspace --filter app  # 添加 workspace 依赖
+vp add lodash -w                       # 添加到 workspace 根目录
+vp add react --filter "app*"           # 添加到多个包（模式匹配）
+vp add utils --filter "!@myorg/core"   # 排除包
 ```
 
-##### `vp install` Command with `PACKAGES` arguments
+##### 带有 `PACKAGES` 参数的 `vp install` 命令
 
-To accommodate the user habits and experience of `npm install <PACKAGES>…`, `vp install <PACKAGES>...` will be specially treated as an alias for the add command.
+为了适配用户对 `npm install <PACKAGES>…` 的习惯和体验，`vp install <PACKAGES>...` 将被特殊处理为 add 命令的别名。
 
-The following commands will be automatically converted to the add command for processing:
+以下命令会在处理时自动转换为 add 命令：
 
 ```bash
 vp install <PACKAGES>... [OPTIONS]
@@ -103,11 +103,11 @@ vp install <PACKAGES>... [OPTIONS]
 -> vp add <PACKAGES>... [OPTIONS]
 ```
 
-##### Install global packages with npm cli only
+##### 仅使用 npm cli 安装全局包
 
-For global packages, we will use npm cli only (except for bun, which natively supports `bun add -g`).
+对于全局包，我们将仅使用 npm cli（除了 bun，它原生支持 `bun add -g`）。
 
-> Because yarn do not support global packages install on [version>=2.x](https://yarnpkg.com/migration/guide#use-yarn-dlx-instead-of-yarn-global), and pnpm global install has some bugs like `wrong bin file` issues.
+> 因为 yarn 在 [version>=2.x](https://yarnpkg.com/migration/guide#use-yarn-dlx-instead-of-yarn-global) 上不支持全局包安装，而且 pnpm 的全局安装存在一些 bug，例如 `wrong bin file` 问题。
 
 ```bash
 vp install -g <PACKAGES>...
@@ -116,109 +116,109 @@ vp add -g <PACKAGES>...
 -> npm install -g <PACKAGES>...
 ```
 
-#### Remove Command
+#### Remove 命令
 
 ```bash
 vp remove <PACKAGES>... [OPTIONS]
-vp rm <PACKAGES>... [OPTIONS]        # Alias
+vp rm <PACKAGES>... [OPTIONS]        # 别名
 ```
 
-**Examples:**
+**示例：**
 
 ```bash
-# Remove packages
+# 移除包
 vp remove lodash axios
 
-# Remove dev dependency
+# 移除开发依赖
 vp rm typescript
 
-# Alias support
+# 别名支持
 vp rm old-package
 
-# Workspace operations
-vp remove lodash --filter app          # Remove from specific package
-vp rm utils --filter "app*"            # Remove from multiple packages
-vp remove -g typescript                # Remove global package
+# Workspace 操作
+vp remove lodash --filter app          # 从特定包中移除
+vp rm utils --filter "app*"            # 从多个包中移除
+vp remove -g typescript                # 移除全局包
 ```
 
-### Command Mapping
+### 命令映射
 
-#### Add Command Mapping
+#### Add 命令映射
 
 - https://pnpm.io/cli/add#options
 - https://yarnpkg.com/cli/add#options
 - https://docs.npmjs.com/cli/v11/commands/npm-install#description
 - https://bun.sh/docs/cli/add
 
-| Vite+ Flag                           | pnpm                     | yarn                                            | npm                             | bun               | Description                                             |
+| Vite+ 标志                           | pnpm                     | yarn                                            | npm                             | bun               | 说明                                                    |
 | ------------------------------------ | ------------------------ | ----------------------------------------------- | ------------------------------- | ----------------- | ------------------------------------------------------- |
-| `<packages>`                         | `add <packages>`         | `add <packages>`                                | `install <packages>`            | `add <packages>`  | Add packages                                            |
-| `--filter <pattern>`                 | `--filter <pattern> add` | `workspaces foreach -A --include <pattern> add` | `install --workspace <pattern>` | N/A               | Target specific workspace package(s)                    |
-| `-w, --workspace-root`               | `-w`                     | `-W` for v1, v2+ N/A                            | `--include-workspace-root`      | N/A               | Add to workspace root (ignore-workspace-root-check)     |
-| `--workspace`                        | `--workspace`            | N/A                                             | N/A                             | N/A               | Only add if package exists in workspace (pnpm-specific) |
-| `-P, --save-prod`                    | `--save-prod` / `-P`     | N/A                                             | `--save-prod` / `-P`            | N/A               | Save to `dependencies`. The default behavior            |
-| `-D, --save-dev`                     | `-D`                     | `--dev` / `-D`                                  | `--save-dev` / `-D`             | `--dev` / `-d`    | Save to `devDependencies`                               |
-| `--save-peer`                        | `--save-peer`            | `--peer` / `-P`                                 | `--save-peer`                   | `--peer`          | Save to `peerDependencies` and `devDependencies`        |
-| `-O, --save-optional`                | `-O`                     | `--optional` / `-O`                             | `--save-optional` / `-O`        | `--optional`      | Save to `optionalDependencies`                          |
-| `-E, --save-exact`                   | `-E`                     | `--exact` / `-E`                                | `--save-exact` / `-E`           | `--exact` / `-E`  | Save exact version                                      |
-| `-g, --global`                       | `-g`                     | `global add`                                    | `--global` / `-g`               | `--global` / `-g` | Install globally                                        |
-| `--save-catalog`                     | pnpm@10+ only            | N/A                                             | N/A                             | N/A               | Save the new dependency to the default catalog          |
-| `--save-catalog-name <catalog_name>` | pnpm@10+ only            | N/A                                             | N/A                             | N/A               | Save the new dependency to the specified catalog        |
-| `--allow-build <names>`              | pnpm@10+ only            | N/A                                             | N/A                             | N/A               | A list of package names allowed to run postinstall      |
+| `<packages>`                         | `add <packages>`         | `add <packages>`                                | `install <packages>`            | `add <packages>`  | 添加包                                                  |
+| `--filter <pattern>`                 | `--filter <pattern> add` | `workspaces foreach -A --include <pattern> add` | `install --workspace <pattern>` | 不适用            | 目标特定的 workspace 包                                  |
+| `-w, --workspace-root`               | `-w`                     | `-W` 用于 v1，v2+ 不适用                        | `--include-workspace-root`      | 不适用            | 添加到 workspace 根目录（忽略 workspace 根目录检查）      |
+| `--workspace`                        | `--workspace`            | 不适用                                           | 不适用                          | 不适用            | 仅当包存在于 workspace 中时才添加（pnpm 特有）            |
+| `-P, --save-prod`                    | `--save-prod` / `-P`     | 不适用                                           | `--save-prod` / `-P`            | 不适用            | 保存到 `dependencies`。默认行为                          |
+| `-D, --save-dev`                     | `-D`                     | `--dev` / `-D`                                  | `--save-dev` / `-D`             | `--dev` / `-d`    | 保存到 `devDependencies`                                |
+| `--save-peer`                        | `--save-peer`            | `--peer` / `-P`                                 | `--save-peer`                   | `--peer`          | 保存到 `peerDependencies` 和 `devDependencies`          |
+| `-O, --save-optional`                | `-O`                     | `--optional` / `-O`                             | `--save-optional` / `-O`        | `--optional`      | 保存到 `optionalDependencies`                           |
+| `-E, --save-exact`                   | `-E`                     | `--exact` / `-E`                                | `--save-exact` / `-E`           | `--exact` / `-E`  | 保存精确版本                                             |
+| `-g, --global`                       | `-g`                     | `global add`                                    | `--global` / `-g`               | `--global` / `-g` | 全局安装                                                 |
+| `--save-catalog`                     | 仅 pnpm@10+              | 不适用                                           | 不适用                          | 不适用            | 将新的依赖保存到默认 catalog                             |
+| `--save-catalog-name <catalog_name>` | 仅 pnpm@10+              | 不适用                                           | 不适用                          | 不适用            | 将新的依赖保存到指定 catalog                             |
+| `--allow-build <names>`              | 仅 pnpm@10+              | 不适用                                           | 不适用                          | 不适用            | 允许运行 postinstall 的包名列表                           |
 
-**Note**: For pnpm, `--filter` must come before the command (e.g., `pnpm --filter app add react`). For yarn/npm, it's integrated into the command structure.
+**注意**：对于 pnpm，`--filter` 必须放在命令之前（例如，`pnpm --filter app add react`）。对于 yarn/npm，它会集成到命令结构中。
 
-#### Remove Command Mapping
+#### Remove 命令映射
 
 - https://pnpm.io/cli/remove#options
 - https://yarnpkg.com/cli/remove#options
 - https://docs.npmjs.com/cli/v11/commands/npm-uninstall#description
 - https://bun.sh/docs/cli/remove
 
-| Vite+ Flag             | pnpm                        | yarn                                               | npm                               | bun                 | Description                                    |
+| Vite+ 标志             | pnpm                        | yarn                                               | npm                               | bun                 | 说明                                           |
 | ---------------------- | --------------------------- | -------------------------------------------------- | --------------------------------- | ------------------- | ---------------------------------------------- |
-| `<packages>`           | `remove <packages>`         | `remove <packages>`                                | `uninstall <packages>`            | `remove <packages>` | Remove packages                                |
-| `-D, --save-dev`       | `-D`                        | N/A                                                | `--save-dev` / `-D`               | N/A                 | Only remove from `devDependencies`             |
-| `-O, --save-optional`  | `-O`                        | N/A                                                | `--save-optional` / `-O`          | N/A                 | Only remove from `optionalDependencies`        |
-| `-P, --save-prod`      | `-P`                        | N/A                                                | `--save-prod` / `-P`              | N/A                 | Only remove from `dependencies`                |
-| `--filter <pattern>`   | `--filter <pattern> remove` | `workspaces foreach -A --include <pattern> remove` | `uninstall --workspace <pattern>` | N/A                 | Target specific workspace package(s)           |
-| `-w, --workspace-root` | `-w`                        | N/A                                                | `--include-workspace-root`        | N/A                 | Remove from workspace root                     |
-| `-r, --recursive`      | `-r, --recursive`           | `-A, --all`                                        | `--workspaces`                    | N/A                 | Remove recursively from all workspace packages |
-| `-g, --global`         | `-g`                        | N/A                                                | `--global` / `-g`                 | `--global` / `-g`   | Remove global packages                         |
+| `<packages>`           | `remove <packages>`         | `remove <packages>`                                | `uninstall <packages>`            | `remove <packages>` | 移除包                                         |
+| `-D, --save-dev`       | `-D`                        | 不适用                                             | `--save-dev` / `-D`               | 不适用             | 仅从 `devDependencies` 中移除                   |
+| `-O, --save-optional`  | `-O`                        | 不适用                                             | `--save-optional` / `-O`          | 不适用             | 仅从 `optionalDependencies` 中移除              |
+| `-P, --save-prod`      | `-P`                        | 不适用                                             | `--save-prod` / `-P`              | 不适用             | 仅从 `dependencies` 中移除                      |
+| `--filter <pattern>`   | `--filter <pattern> remove` | `workspaces foreach -A --include <pattern> remove` | `uninstall --workspace <pattern>` | 不适用             | 目标特定的 workspace 包                         |
+| `-w, --workspace-root` | `-w`                        | 不适用                                             | `--include-workspace-root`        | 不适用             | 从 workspace 根目录中移除                       |
+| `-r, --recursive`      | `-r, --recursive`           | `-A, --all`                                        | `--workspaces`                    | 不适用             | 递归地从所有 workspace 包中移除                 |
+| `-g, --global`         | `-g`                        | 不适用                                             | `--global` / `-g`                 | `--global` / `-g`   | 移除全局包                                      |
 
-**Note**: Similar to add, `--filter` must precede the command for pnpm.
+**注意**：与 add 类似，pnpm 的 `--filter` 必须放在命令之前。
 
-**Aliases:**
+**别名：**
 
 - `vp rm` = `vp remove`
 - `vp un` = `vp remove`
 - `vp uninstall` = `vp remove`
 
-#### Workspace Filter Patterns
+#### Workspace Filter 模式
 
-Based on pnpm's filter syntax:
+基于 pnpm 的 filter 语法：
 
-| Pattern      | Description              | Example                                    |
-| ------------ | ------------------------ | ------------------------------------------ |
-| `<pkg-name>` | Exact package name       | `--filter app`                             |
-| `<pattern>*` | Wildcard match           | `--filter "app*"` matches app, app-web     |
-| `@<scope>/*` | Scope match              | `--filter "@myorg/*"`                      |
-| `!<pattern>` | Exclude pattern          | `--filter "!test*"` excludes test packages |
-| `<pkg>...`   | Package and dependencies | `--filter "app..."`                        |
-| `...<pkg>`   | Package and dependents   | `--filter "...utils"`                      |
+| 模式         | 说明                   | 示例                                   |
+| ------------ | ---------------------- | -------------------------------------- |
+| `<pkg-name>` | 精确包名               | `--filter app`                         |
+| `<pattern>*` | 通配符匹配             | `--filter "app*"` 匹配 app、app-web     |
+| `@<scope>/*` | scope 匹配             | `--filter "@myorg/*"`                  |
+| `!<pattern>` | 排除模式               | `--filter "!test*"` 排除测试包         |
+| `<pkg>...`   | 包及其依赖             | `--filter "app..."`                    |
+| `...<pkg>`   | 包及其依赖者           | `--filter "...utils"`                  |
 
-**Multiple Filters**:
+**多个 Filter：**
 
 ```bash
-vp add react --filter app --filter web  # Add to both app and web
-vp add react --filter "app*" --filter "!app-test"  # Add to app* except app-test
+vp add react --filter app --filter web  # 同时添加到 app 和 web
+vp add react --filter "app*" --filter "!app-test"  # 添加到 app*，但排除 app-test
 ```
 
-#### Pass-Through Arguments
+#### 透传参数
 
-Additional parameters not covered by Vite+ can all be handled through pass-through arguments.
+Vite+ 未覆盖的额外参数都可以通过透传参数来处理。
 
-All arguments after `--` will be passed through to the package manager.
+`--` 之后的所有参数都会传递给包管理器。
 
 ```bash
 vp add react --allow-build=react,napi -- --use-stderr
@@ -229,72 +229,72 @@ vp add react --allow-build=react,napi -- --use-stderr
 -> bun add --use-stderr react
 ```
 
-### Implementation Architecture
+### 实现架构
 
-#### 1. Command Structure
+#### 1. 命令结构
 
-**File**: `crates/vite_task/src/lib.rs`
+**文件**：`crates/vite_task/src/lib.rs`
 
-Add new command variants:
+添加新的命令变体：
 
 ```rust
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    // ... existing commands
+    // ... 现有命令
 
-    /// Add packages to dependencies
+    /// 向依赖中添加包
     #[command(disable_help_flag = true)]
     Add {
-        /// Packages to add
+        /// 要添加的包
         packages: Vec<String>,
 
-        /// Filter packages in monorepo (can be used multiple times)
+        /// 过滤 monorepo 中的包（可重复使用）
         #[arg(long, value_name = "PATTERN")]
         filter: Vec<String>,
 
-        /// Add to workspace root (ignore-workspace-root-check)
+        /// 添加到 workspace 根目录（忽略 workspace 根目录检查）
         #[arg(short = 'w', long)]
         workspace_root: bool,
 
-        /// Only add if package exists in workspace
+        /// 仅当包存在于 workspace 中时才添加
         #[arg(long)]
         workspace: bool,
 
-        /// Arguments to pass to package manager
+        /// 传递给包管理器的参数
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         args: Vec<String>,
     },
 
-    /// Remove packages from dependencies
+    /// 从依赖中移除包
     #[command(disable_help_flag = true, alias = "rm", alias = "un", alias = "uninstall")]
     Remove {
-        /// Packages to remove
+        /// 要移除的包
         packages: Vec<String>,
 
-        /// Filter packages in monorepo (can be used multiple times)
+        /// 过滤 monorepo 中的包（可重复使用）
         #[arg(long, value_name = "PATTERN")]
         filter: Vec<String>,
 
-        /// Remove from workspace root
+        /// 从 workspace 根目录中移除
         #[arg(short = 'w', long)]
         workspace_root: bool,
 
-        /// Arguments to pass to package manager
+        /// 传递给包管理器的参数
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         args: Vec<String>,
     },
 }
 ```
 
-#### 2. Package Manager Adapter
+#### 2. 包管理器适配器
 
-**File**: `crates/vite_package_manager/src/package_manager.rs`
+**文件**：`crates/vite_package_manager/src/package_manager.rs`
 
-Add methods to translate commands:
+添加用于翻译命令的方法：
 
 ```rust
 impl PackageManager {
-    /// Resolve add command for the package manager
+    /// 解析包管理器的 add 命令
     pub fn resolve_add_command(&self) -> &'static str {
         match self.client {
             PackageManagerType::Pnpm => "add",
@@ -304,7 +304,7 @@ impl PackageManager {
         }
     }
 
-    /// Resolve remove command for the package manager
+    /// 解析包管理器的 remove 命令
     pub fn resolve_remove_command(&self) -> &'static str {
         match self.client {
             PackageManagerType::Pnpm => "remove",
@@ -314,7 +314,7 @@ impl PackageManager {
         }
     }
 
-    /// Build command arguments with workspace support
+    /// 构建带 workspace 支持的命令参数
     pub fn build_add_args(
         &self,
         packages: &[String],
@@ -327,7 +327,7 @@ impl PackageManager {
 
         match self.client {
             PackageManagerType::Pnpm => {
-                // pnpm: --filter must come before command
+                // pnpm：--filter 必须放在命令之前
                 for filter in filters {
                     args.push("--filter".to_string());
                     args.push(filter.clone());
@@ -343,7 +343,7 @@ impl PackageManager {
                 args.extend_from_slice(extra_args);
             }
             PackageManagerType::Yarn => {
-                // yarn: workspace <pkg> add
+                // yarn：workspace <pkg> add
                 if !filters.is_empty() {
                     // yarn workspace <name> add
                     for filter in filters {
@@ -359,7 +359,7 @@ impl PackageManager {
                 args.extend_from_slice(extra_args);
             }
             PackageManagerType::Npm => {
-                // npm: --workspace must come before install
+                // npm：--workspace 必须放在 install 之前
                 if !filters.is_empty() {
                     for filter in filters {
                         args.push("--workspace".to_string());
@@ -374,7 +374,7 @@ impl PackageManager {
                 args.extend_from_slice(extra_args);
             }
             PackageManagerType::Bun => {
-                // bun: simple add command, no workspace filter support
+                // bun：简单的 add 命令，不支持 workspace filter
                 args.push("add".to_string());
                 args.extend_from_slice(packages);
                 args.extend_from_slice(extra_args);
@@ -384,7 +384,7 @@ impl PackageManager {
         args
     }
 
-    /// Build remove command arguments with workspace support
+    /// 构建带 workspace 支持的 remove 命令参数
     pub fn build_remove_args(
         &self,
         packages: &[String],
@@ -430,7 +430,7 @@ impl PackageManager {
                 args.extend_from_slice(extra_args);
             }
             PackageManagerType::Bun => {
-                // bun: simple remove command, no workspace filter support
+                // bun：简单的 remove 命令，不支持 workspace filter
                 args.push("remove".to_string());
                 args.extend_from_slice(packages);
                 args.extend_from_slice(extra_args);
@@ -442,9 +442,9 @@ impl PackageManager {
 }
 ```
 
-#### 3. Add Command Implementation
+#### 3. Add 命令实现
 
-**File**: `crates/vite_task/src/add.rs` (new file)
+**文件**：`crates/vite_task/src/add.rs`（新文件）
 
 ```rust
 pub struct AddCommand {
@@ -469,7 +469,7 @@ impl AddCommand {
 
         let resolve_command = package_manager.resolve_command();
 
-        // Build command with workspace support
+        // 构建带 workspace 支持的命令
         let full_args = package_manager.build_add_args(
             &packages,
             &filters,
@@ -499,9 +499,9 @@ impl AddCommand {
 }
 ```
 
-#### 4. Remove Command Implementation
+#### 4. Remove 命令实现
 
-**File**: `crates/vite_task/src/remove.rs` (new file)
+**文件**：`crates/vite_task/src/remove.rs`（新文件）
 
 ```rust
 pub struct RemoveCommand {
@@ -525,7 +525,7 @@ impl RemoveCommand {
 
         let resolve_command = package_manager.resolve_command();
 
-        // Build command with workspace support
+        // 构建带 workspace 支持的命令
         let full_args = package_manager.build_remove_args(
             &packages,
             &filters,
@@ -554,11 +554,11 @@ impl RemoveCommand {
 }
 ```
 
-### Special Handling
+### 特殊处理
 
-#### 1. Global Packages
+#### 1. 全局包
 
-Yarn requires different command structure for global operations:
+Yarn 对全局操作需要不同的命令结构：
 
 ```rust
 // pnpm/npm/bun: <bin> add -g <package>
@@ -577,7 +577,7 @@ fn handle_global_flag(args: &[String], pm_type: PackageManagerType) -> (Vec<Stri
 
 #### 2. Workspace Filters
 
-pnpm uses `--filter` before command, yarn/npm use different approaches:
+pnpm 使用 `--filter` 放在命令前，而 yarn/npm 使用不同的方法：
 
 ```rust
 fn build_workspace_command(
@@ -620,7 +620,7 @@ fn build_workspace_command(
             args
         }
         PackageManagerType::Bun => {
-            // bun: no workspace filter support
+            // bun：不支持 workspace filter
             let mut args = vec![operation.to_string()];
             args.extend_from_slice(packages);
             args
@@ -629,49 +629,49 @@ fn build_workspace_command(
 }
 ```
 
-#### 3. Workspace Dependencies
+#### 3. Workspace 依赖
 
-When adding workspace dependencies with `--workspace` flag:
+当使用 `--workspace` 标志添加 workspace 依赖时：
 
 ```bash
-# pnpm: Adds with workspace: protocol
+# pnpm：以 workspace: 协议添加
 vp add @myorg/utils --workspace --filter app
 # → pnpm --filter app add @myorg/utils --workspace
-# → Adds: "@myorg/utils": "workspace:*"
+# → 添加为："@myorg/utils": "workspace:*"
 
-# Without --workspace: Tries to install from registry
+# 不使用 --workspace：尝试从 registry 安装
 vp add @myorg/utils --filter app
 # → pnpm --filter app add @myorg/utils
-# → Tries npm registry (may fail if not published)
+# → 尝试从 npm registry 安装（如果尚未发布，可能失败）
 ```
 
-## Design Decisions
+## 设计决策
 
-### 1. No Caching
+### 1. 不缓存
 
-**Decision**: Do not cache add/remove operations.
+**决策**：不缓存 add/remove 操作。
 
-**Rationale**:
+**原因**：
 
-- These commands modify package.json and lockfiles
-- Side effects make caching inappropriate
-- Each execution should run fresh
-- Similar to how `vp install` works
+- 这些命令会修改 package.json 和 lockfile
+- 副作用使得缓存不合适
+- 每次执行都应重新运行
+- 类似于 `vp install` 的工作方式
 
-**Implementation**: Set `cacheable: false` or skip cache entirely.
+**实现**：设置 `cacheable: false`，或者完全跳过缓存。
 
-### 2. Pass-Through Arguments
+### 2. 参数透传
 
-**Decision**: Pass all arguments after packages directly to package manager.
+**决策**：在包名之后的所有参数直接透传给包管理器。
 
-**Rationale**:
+**原因**：
 
-- Package managers have many flags (40+ for npm)
-- Maintaining complete flag mapping is error-prone
-- Pass-through allows accessing all features
-- Only translate critical command name differences
+- 包管理器有很多标志参数（npm 有 40+ 个）
+- 维护完整的标志映射很容易出错
+- 透传可以访问所有功能
+- 只翻译关键命令名称差异
 
-**Example**:
+**示例**：
 
 ```bash
 vp add react --save-exact
@@ -681,49 +681,49 @@ vp add react --save-exact
 # → bun add react --exact
 ```
 
-### 3. Common Flags Only
+### 3. 仅支持常用标志
 
-**Decision**: Only explicitly support most common flags with automatic translation.
+**决策**：只显式支持最常用的标志，并进行自动翻译。
 
-**Common Flags**:
+**常用标志**：
 
-- `-D, --save-dev` - universally supported
-- `-g, --global` - needs special handling for yarn; bun uses `--global` / `-g`
-- `-E, --save-exact` - universally supported
-- `-P, --save-peer` - universally supported
-- `-O, --save-optional` - universally supported
+- `-D, --save-dev` - 各家均支持
+- `-g, --global` - yarn 需要特殊处理；bun 使用 `--global` / `-g`
+- `-E, --save-exact` - 各家均支持
+- `-P, --save-peer` - 各家均支持
+- `-O, --save-optional` - 各家均支持
 
-**Advanced Flags**: Pass through as-is
+**高级标志**：原样透传
 
-### 4. Command Aliases
+### 4. 命令别名
 
-**Decision**: Support multiple aliases for remove command.
+**决策**：为 remove 命令支持多个别名。
 
-**Aliases**:
+**别名**：
 
-- `vp remove` (primary)
-- `vp rm` (short)
-- `vp un` (short, matches pnpm)
-- `vp uninstall` (explicit, matches npm)
+- `vp remove`（主命令）
+- `vp rm`（短别名）
+- `vp un`（短别名，与 pnpm 一致）
+- `vp uninstall`（显式，与 npm 一致）
 
-**Rationale**: Matches user expectations from other tools.
+**原因**：符合用户对其他工具的预期。
 
-### 5. Multiple Package Support
+### 5. 支持多个包
 
-**Decision**: Allow specifying multiple packages in single command.
+**决策**：允许在单个命令中指定多个包。
 
-**Example**:
+**示例**：
 
 ```bash
 vp add react react-dom @types/react -D
 vp remove lodash axios underscore
 ```
 
-**Implementation**: Packages are positional arguments before flags.
+**实现**：包名作为标志前的位置参数。
 
-## Error Handling
+## 错误处理
 
-### No Packages Specified
+### 未指定包
 
 ```bash
 $ vp add
@@ -731,7 +731,7 @@ Error: No packages specified
 Usage: vp add <PACKAGES>... [OPTIONS]
 ```
 
-### Package Manager Not Detected
+### 未检测到包管理器
 
 ```bash
 $ vp add react
@@ -741,13 +741,13 @@ Please run one of:
   - Add packageManager field to package.json
 ```
 
-### Invalid Package Names
+### 无效的包名
 
-Let the underlying package manager handle validation and provide clear errors.
+让底层包管理器负责校验并提供清晰的错误信息。
 
-## User Experience
+## 用户体验
 
-### Success Output
+### 成功输出
 
 ```bash
 $ vp add react react-dom
@@ -767,7 +767,7 @@ dependencies:
 Done in 2.3s
 ```
 
-### Error Output
+### 错误输出
 
 ```bash
 $ vp add invalid-package-that-does-not-exist
@@ -781,11 +781,11 @@ This error happened while installing the dependencies of undefined@undefined
 Error: Command failed with exit code 1
 ```
 
-## Alternative Designs Considered
+## 考虑过的替代方案
 
-### Alternative 1: Flag Translation Layer
+### 方案 1：标志翻译层
 
-Translate all flags to package manager-specific equivalents:
+将所有标志翻译为各包管理器对应的等价形式：
 
 ```bash
 vp add react --dev
@@ -795,14 +795,14 @@ vp add react --dev
 # → bun add react --dev
 ```
 
-**Rejected because**:
+**被拒绝的原因**：
 
-- Maintenance burden (40+ npm flags)
-- Package managers evolve with new flags
-- Pass-through is simpler and more flexible
-- Users can use native flags directly
+- 维护负担重（npm 40+ 个标志）
+- 包管理器会随着新标志不断演进
+- 透传更简单、更灵活
+- 用户可以直接使用原生标志
 
-### Alternative 2: Separate Commands per Package Manager
+### 方案 2：为每个包管理器单独提供命令
 
 ```bash
 vp pnpm:add react
@@ -811,15 +811,15 @@ vp npm:install react
 vp bun:add react
 ```
 
-**Rejected because**:
+**被拒绝的原因**：
 
-- Defeats purpose of unified interface
-- More verbose
-- Doesn't leverage auto-detection
+- 背离统一接口的初衷
+- 更冗长
+- 无法利用自动检测
 
-### Alternative 3: Interactive Mode
+### 方案 3：交互模式
 
-Prompt for packages and options interactively:
+以交互方式提示输入包和选项：
 
 ```bash
 $ vp add
@@ -827,52 +827,53 @@ $ vp add
 ? Add as dev dependency? Yes
 ```
 
-**Rejected for initial version**:
+**初始版本中被拒绝的原因**：
 
-- Slower for experienced users
-- Not scriptable
-- Can be added later as optional mode
+- 对有经验的用户来说更慢
+- 不能用于脚本化
+- 之后可以作为可选模式再添加
 
-## Implementation Plan
+## 实现计划
 
-### Phase 1: Core Functionality
+### 阶段 1：核心功能
 
-1. Add `Add` and `Remove` command variants to `Commands` enum
-2. Create `add.rs` and `remove.rs` modules
-3. Implement package manager command resolution
-4. Add basic error handling
+1. 在 `Commands` 枚举中添加 `Add` 和 `Remove` 命令变体
+2. 创建 `add.rs` 和 `remove.rs` 模块
+3. 实现包管理器命令解析
+4. 添加基础错误处理
 
-### Phase 2: Special Cases
+### 阶段 2：特殊情况
 
-1. Handle yarn global commands differently
-2. Validate package names (optional)
-3. Support workspace-specific operations
+1. 以不同方式处理 yarn 全局命令
+2. 校验包名（可选）
+3. 支持特定 workspace 的操作
 
-### Phase 3: Testing
+### 阶段 3：测试
 
-1. Unit tests for command resolution
-2. Integration tests with mock package managers
-3. Manual testing with real package managers
+1. 命令解析的单元测试
+2. 使用模拟包管理器的集成测试
+3. 使用真实包管理器进行手动测试
 
-### Phase 4: Documentation
+### 阶段 4：文档
 
-1. Update CLI documentation
-2. Add examples to README
-3. Document flag compatibility matrix
+1. 更新 CLI 文档
+2. 在 README 中添加示例
+3. 记录标志兼容性矩阵
 
-## Testing Strategy
+## 测试策略
 
-### Test Package Manager Versions
+### 测试包管理器版本
 
 - pnpm@9.x [WIP]
 - pnpm@10.x
+- pnpm@11.x
 - yarn@1.x [WIP]
 - yarn@4.x
 - npm@10.x
 - npm@11.x [WIP]
 - bun@1.x
 
-### Unit Tests
+### 单元测试
 
 ```rust
 #[test]
@@ -918,7 +919,7 @@ fn test_build_add_args_with_workspace_root() {
     let args = pm.build_add_args(
         &["typescript".to_string()],
         &[],
-        true,  // workspace_root
+        true,  // 工作区根目录
         false,
         &["-D".to_string()],
     );
@@ -951,9 +952,9 @@ fn test_build_remove_args_with_filter() {
 }
 ```
 
-### Integration Tests
+### 集成测试
 
-Create fixtures for testing with each package manager:
+为每个包管理器创建测试夹具：
 
 ```
 fixtures/add-remove-test/
@@ -967,24 +968,24 @@ fixtures/add-remove-test/
   test-steps.json
 ```
 
-Test cases:
+测试用例：
 
-1. Add single package
-2. Add multiple packages
-3. Add with -D flag
-4. Add with --filter to specific package
-5. Add with --filter wildcard pattern
-6. Add to workspace root with -w
-7. Add workspace dependency with --workspace
-8. Remove single package
-9. Remove multiple packages
-10. Remove with --filter
-11. Error handling for invalid packages
-12. Error handling for incompatible filters on yarn/npm
+1. 添加单个包
+2. 添加多个包
+3. 使用 -D 标志添加
+4. 使用 --filter 向特定包添加
+5. 使用 --filter 通配符模式添加
+6. 使用 -w 添加到 workspace 根目录
+7. 使用 --workspace 添加 workspace 依赖
+8. 删除单个包
+9. 删除多个包
+10. 使用 --filter 删除
+11. 无效包的错误处理
+12. yarn/npm 上不兼容 filter 的错误处理
 
-## CLI Help Output
+## CLI 帮助输出
 
-### Add Command
+### add 命令
 
 ```bash
 $ vp add --help
@@ -1023,7 +1024,7 @@ Examples:
   vp add lodash -w
 ```
 
-### Remove Command
+### remove 命令
 
 ```bash
 $ vp remove --help
@@ -1056,125 +1057,125 @@ Examples:
   vp rm old-package
 ```
 
-## Performance Considerations
+## 性能考虑
 
-1. **No Caching**: Operations run directly without cache overhead
-2. **Single Execution**: Unlike task runner, these are one-off operations
-3. **Pass-Through**: Minimal processing, just command translation
-4. **Auto-Detection**: Reuses existing package manager detection (already cached)
+1. **不缓存**：操作直接运行，无缓存开销
+2. **单次执行**：与任务运行器不同，这些是一次性操作
+3. **透传**：处理最少，只做命令翻译
+4. **自动检测**：复用现有的包管理器检测逻辑（已缓存）
 
-## Security Considerations
+## 安全考虑
 
-1. **Package Name Validation**: Let package manager handle validation
-2. **Lockfile Integrity**: Package manager ensures integrity
-3. **No Code Execution**: Just passes through to trusted package manager
-4. **Audit Flags**: Users can add `--audit` via pass-through
+1. **包名校验**：让包管理器负责校验
+2. **锁文件完整性**：由包管理器保证完整性
+3. **不执行代码**：只是透传给受信任的包管理器
+4. **审计标志**：用户可以通过透传添加 `--audit`
 
-## Backward Compatibility
+## 向后兼容性
 
-This is a new feature with no breaking changes:
+这是一个没有破坏性变更的新功能：
 
-- Existing commands unaffected
-- New commands are additive
-- No changes to task configuration
-- No changes to caching behavior
+- 现有命令不受影响
+- 新命令是增量添加的
+- 不更改任务配置
+- 不更改缓存行为
 
-## Migration Path
+## 迁移路径
 
-### Adoption
+### 采用方式
 
-Users can start using immediately:
+用户可以立即开始使用：
 
 ```bash
-# Old way (package manager specific)
+# 旧方式（特定于包管理器）
 pnpm add react
 yarn add react
 npm install react
 bun add react
 
-# New way (works with any package manager)
+# 新方式（适用于任何包管理器）
 vp add react
 ```
 
-### Discoverability
+### 可发现性
 
-Add to:
+添加到：
 
-- CLI help output
-- Documentation
-- VSCode extension suggestions
-- Shell completions
+- CLI 帮助输出
+- 文档
+- VSCode 扩展建议
+- Shell 补全
 
-## Documentation Requirements
+## 文档要求
 
-### User Guide
+### 用户指南
 
-Add to CLI documentation:
+添加到 CLI 文档中：
 
 ````markdown
-### Adding Packages
+### 添加包
 
 ```bash
 vp add <packages>... [OPTIONS]
 ```
 ````
 
-Automatically uses the detected package manager (pnpm/yarn/npm/bun).
+会自动使用检测到的包管理器（pnpm/yarn/npm/bun）。
 
-**Basic Examples:**
+**基础示例：**
 
-- `vp add react` - Add production dependency
-- `vp add -D typescript` - Add dev dependency
-- `vp add react react-dom` - Add multiple packages
+- `vp add react` - 添加生产依赖
+- `vp add -D typescript` - 添加开发依赖
+- `vp add react react-dom` - 添加多个包
 
-**Workspace Examples:**
+**工作区示例：**
 
-- `vp add react --filter app` - Add to specific package
-- `vp add react --filter "app*"` - Add to multiple packages (pnpm)
-- `vp add @myorg/utils --workspace --filter web` - Add workspace dependency
-- `vp add lodash -w` - Add to workspace root
+- `vp add react --filter app` - 添加到特定包
+- `vp add react --filter "app*"` - 添加到多个包（pnpm）
+- `vp add @myorg/utils --workspace --filter web` - 添加工作区依赖
+- `vp add lodash -w` - 添加到工作区根目录
 
-**Common Options:**
+**常用选项：**
 
-- `--filter <pattern>` - Target specific workspace package(s)
-- `-w, --workspace-root` - Add to workspace root
-- `--workspace` - Add workspace dependency (pnpm)
-- `-D, --save-dev` - Add as dev dependency
-- `-E, --save-exact` - Save exact version
-- `-P, --save-peer` - Add as peer dependency
-- `-O, --save-optional` - Add as optional dependency
-- `-g, --global` - Install globally
+- `--filter <pattern>` - 目标特定工作区包
+- `-w, --workspace-root` - 添加到工作区根目录
+- `--workspace` - 添加工作区依赖（pnpm）
+- `-D, --save-dev` - 作为开发依赖添加
+- `-E, --save-exact` - 保存精确版本
+- `-P, --save-peer` - 作为 peer 依赖添加
+- `-O, --save-optional` - 作为可选依赖添加
+- `-g, --global` - 全局安装
 
-### Removing Packages
+### 删除包
 
 ```bash
 vp remove <packages>... [OPTIONS]
 vp rm <packages>... [OPTIONS]
 ```
 
-Aliases: `rm`, `un`, `uninstall`
+别名：`rm`、`un`、`uninstall`
 
-**Basic Examples:**
+**基础示例：**
 
-- `vp remove lodash` - Remove package
-- `vp rm axios underscore` - Remove multiple packages
+- `vp remove lodash` - 删除包
+- `vp rm axios underscore` - 删除多个包
 
-**Workspace Examples:**
+**工作区示例：**
 
-- `vp remove lodash --filter app` - Remove from specific package
-- `vp rm utils --filter "app*"` - Remove from multiple packages (pnpm)
-- `vp remove -g typescript` - Remove global package
+- `vp remove lodash --filter app` - 从特定包中删除
+- `vp rm utils --filter "app*"` - 从多个包中删除（pnpm）
+- `vp remove -g typescript` - 删除全局包
 
-**Options:**
+**选项：**
 
-- `--filter <pattern>` - Target specific workspace package(s)
-- `-w, --workspace-root` - Remove from workspace root
-- `-g, --global` - Remove global packages
+- `--filter <pattern>` - 目标特定工作区包
+- `-w, --workspace-root` - 从工作区根目录删除
+- `-g, --global` - 删除全局包
 
 ````
-### Package Manager Compatibility
+### 包管理器兼容性
 
-Document flag support matrix:
+记录 flag 支持矩阵：
 
 | Flag | pnpm | yarn | npm | bun |
 |------|------|------|-----|-----|
@@ -1182,126 +1183,126 @@ Document flag support matrix:
 | `-E` | ✅ | ✅ | ✅ | ✅ |
 | `-P` | ✅ | ✅ | ✅ | ✅ |
 | `-O` | ✅ | ✅ | ✅ | ✅ |
-| `-g` | ✅ | ⚠️ (use global) | ✅ | ✅ |
+| `-g` | ✅ | ⚠️（使用 global） | ✅ | ✅ |
 
-## Workspace Operations Deep Dive
+## 工作区操作深入说明
 
-### Filter Patterns (pnpm-inspired)
+### 过滤模式（受 pnpm 启发）
 
-Following pnpm's filter API:
+遵循 pnpm 的 filter API：
 
-**Exact Match:**
+**精确匹配：**
 ```bash
 vp add react --filter app
 # → pnpm --filter app add react
 ````
 
-**Wildcard Patterns:**
+**通配符模式：**
 
 ```bash
 vp add react --filter "app*"
 # → pnpm --filter "app*" add react
-# Matches: app, app-web, app-mobile
+# 匹配：app、app-web、app-mobile
 ```
 
-**Scope Patterns:**
+**范围模式：**
 
 ```bash
 vp add lodash --filter "@myorg/*"
 # → pnpm --filter "@myorg/*" add lodash
-# Matches all packages in @myorg scope
+# 匹配 @myorg 作用域中的所有包
 ```
 
-**Exclusion Patterns:**
+**排除模式：**
 
 ```bash
 vp add react --filter "!test*"
 # → pnpm --filter "!test*" add react
-# Adds to all packages EXCEPT those starting with test
+# 添加到所有包，除以 test 开头的包之外
 ```
 
-**Multiple Filters:**
+**多个过滤器：**
 
 ```bash
 vp add react --filter app --filter web
 # → pnpm --filter app --filter web add react
-# Adds to both app AND web packages
+# 同时添加到 app 和 web 包
 ```
 
-**Dependency Selectors:**
+**依赖选择器：**
 
 ```bash
-# Add to package and all its dependencies
+# 添加到包及其所有依赖
 vp add lodash --filter "app..."
 # → pnpm --filter "app..." add lodash
 
-# Add to package and all its dependents
+# 添加到包及其所有依赖者
 vp add utils --filter "...core"
 # → pnpm --filter "...core" add utils
 ```
 
-### Workspace Root Operations
+### 工作区根目录操作
 
-Add dependencies to workspace root (requires special flag):
+向工作区根目录添加依赖（需要特殊 flag）：
 
 ```bash
 vp add -D typescript -w
-# → pnpm add -D typescript -w  (pnpm)
-# → yarn add -D typescript -W  (yarn)
-# → npm install -D typescript -w  (npm)
-# → bun add --dev typescript  (bun, no workspace root flag)
+# → pnpm add -D typescript -w  （pnpm）
+# → yarn add -D typescript -W  （yarn）
+# → npm install -D typescript -w  （npm）
+# → bun add --dev typescript  （bun，没有 workspace root flag）
 ```
 
-**Why needed**: By default, package managers prevent adding to workspace root to encourage proper package structure.
+**原因**：默认情况下，包管理器会阻止向工作区根目录添加，以鼓励正确的包结构。
 
-### Workspace Protocol
+### 工作区协议
 
-For internal monorepo dependencies:
+用于内部 monorepo 依赖：
 
 ```bash
-# Add workspace dependency with workspace: protocol
+# 使用 workspace: 协议添加工作区依赖
 vp add @myorg/utils --workspace --filter app
 # → pnpm --filter app add @myorg/utils --workspace
-# → Adds: "@myorg/utils": "workspace:*"
+# → 添加："@myorg/utils": "workspace:*"
 
-# Specify version
+# 指定版本
 vp add "@myorg/utils@workspace:^" --filter app
-# → Adds: "@myorg/utils": "workspace:^"
+# → 添加："@myorg/utils": "workspace:^"
 ```
 
-### Package Manager Compatibility
+### 包管理器兼容性
 
-| Feature                    | pnpm               | yarn                  | npm                     | bun              | Notes                    |
-| -------------------------- | ------------------ | --------------------- | ----------------------- | ---------------- | ------------------------ |
-| `--filter <pattern>`       | ✅ Native          | ⚠️ `workspace <name>` | ⚠️ `--workspace <name>` | ❌ Not supported | Syntax differs           |
-| Multiple filters           | ✅ Repeatable flag | ❌ Single only        | ⚠️ Limited              | ❌ Not supported | pnpm most flexible       |
-| Wildcard patterns          | ✅ Full support    | ⚠️ Limited            | ❌ No wildcards         | ❌ Not supported | pnpm best                |
-| Exclusion `!`              | ✅ Supported       | ❌ Not supported      | ❌ Not supported        | ❌ Not supported | pnpm only                |
-| Dependency selectors `...` | ✅ Supported       | ❌ Not supported      | ❌ Not supported        | ❌ Not supported | pnpm only                |
-| `-w` (root)                | ✅ `-w`            | ✅ `-W`               | ✅ `-w`                 | ❌ Not supported | Slightly different flags |
-| `--workspace` protocol     | ✅ Supported       | ❌ Manual             | ❌ Manual               | ❌ Not supported | pnpm feature             |
+| 功能                       | pnpm              | yarn                 | npm                     | bun              | 说明                     |
+| -------------------------- | ----------------- | -------------------- | ----------------------- | ---------------- | ------------------------ |
+| `--filter <pattern>`       | ✅ 原生支持       | ⚠️ `workspace <name>` | ⚠️ `--workspace <name>` | ❌ 不支持         | 语法不同                 |
+| 多个过滤器                 | ✅ 可重复使用 flag | ❌ 仅支持单个         | ⚠️ 有限                 | ❌ 不支持         | pnpm 最灵活              |
+| 通配符模式                 | ✅ 完整支持       | ⚠️ 有限               | ❌ 不支持通配符         | ❌ 不支持         | pnpm 最佳                |
+| 排除 `!`                   | ✅ 支持           | ❌ 不支持             | ❌ 不支持               | ❌ 不支持         | 仅 pnpm                  |
+| 依赖选择器 `...`          | ✅ 支持           | ❌ 不支持             | ❌ 不支持               | ❌ 不支持         | 仅 pnpm                  |
+| `-w`（根目录）             | ✅ `-w`           | ✅ `-W`              | ✅ `-w`                 | ❌ 不支持         | flag 略有不同           |
+| `--workspace` 协议         | ✅ 支持           | ❌ 需手动处理         | ❌ 需手动处理           | ❌ 不支持         | pnpm 特性               |
 
-**Graceful Degradation**:
+**优雅降级**：
 
-- Advanced pnpm features (wildcard, exclusion, selectors) will error on yarn/npm/bun with helpful message
-- Basic `--filter <exact-name>` works across all package managers
+- pnpm 的高级特性（通配符、排除、选择器）在 yarn/npm/bun 上会报错，并给出有帮助的信息
+- 基础的 `--filter <exact-name>` 可在所有包管理器上正常工作
 
-## Future Enhancements
+## 未来增强
 
-### 1. Enhanced Filter Support for yarn/npm/bun
+### 1. 为 yarn/npm/bun 增强过滤支持
 
-Implement wildcard translation for yarn/npm/bun:
+为 yarn/npm/bun 实现通配符转换：
 
 ```bash
 vp add react --filter "app*"
-# → For yarn: Run `yarn workspace app add react` for each matching package
-# → For npm: Run `npm install react --workspace app` for each matching package
-# → For bun: Run `bun add react` in each matching package directory
+# → 对 yarn：对每个匹配的包运行 `yarn workspace app add react`
+# → 对 npm：对每个匹配的包运行 `npm install react --workspace app`
+# → 对 bun：在每个匹配的包目录中运行 `bun add react`
 ```
 
-### 2. Interactive Mode
+### 2. 交互模式
 
-> Referer to ni's interactive mode https://github.com/antfu-collective/ni
+> 参考 ni 的交互模式 https://github.com/antfu-collective/ni
 
 ```bash
 $ vp add --interactive
@@ -1328,7 +1329,7 @@ $ vp add --interactive
     peer
 ```
 
-### 3. Upgrade Command
+### 3. 升级命令
 
 ```bash
 vp upgrade react
@@ -1336,16 +1337,16 @@ vp upgrade --latest
 vp upgrade --interactive
 ```
 
-### 4. Smart Suggestions
+### 4. 智能建议
 
 ```bash
 $ vp add react
 Adding react...
-💡 Suggestion: Install @types/react for TypeScript support?
-   Run: vp add -D @types/react
+💡 建议：是否为 TypeScript 支持安装 @types/react？
+   运行：vp add -D @types/react
 ```
 
-### 5. Dependency Analysis
+### 5. 依赖分析
 
 ```bash
 $ vp add react
@@ -1358,169 +1359,169 @@ Analyzing dependency impact...
 Proceed? (Y/n)
 ```
 
-## Open Questions
+## 未决问题
 
-1. **Should we warn about peer dependency conflicts?**
-   - Proposed: Let package manager handle warnings
-   - Can be enhanced later with custom warnings
+1. **我们是否应该警告 peer 依赖冲突？**
+   - 建议：让包管理器处理警告
+   - 之后可以通过自定义警告增强
 
-2. **Should we support version specifiers?**
-   - Proposed: Yes, pass through to package manager
-   - Example: `vp add react@18.2.0`
+2. **我们是否应该支持版本指定符？**
+   - 建议：支持，并直接透传给包管理器
+   - 示例：`vp add react@18.2.0`
 
-3. **Should we support scoped package shortcuts?**
-   - Proposed: No special handling, pass through as-is
-   - Example: `vp add @types/react` works naturally
+3. **我们是否应该支持作用域包快捷写法？**
+   - 建议：不做特殊处理，原样透传
+   - 示例：`vp add @types/react` 可自然工作
 
-4. **Should we prevent adding to wrong dependency types?**
-   - Proposed: No validation, trust package manager
-   - Package managers handle this well already
+4. **我们是否应该阻止添加到错误的依赖类型？**
+   - 建议：不做校验，信任包管理器
+   - 包管理器已经能很好地处理这个问题
 
-5. **How to handle pnpm-specific filter features on yarn/npm?**
-   - Proposed: For wildcards/exclusions on yarn/npm:
-     - Option A: Error with clear message explaining pnpm-only feature
-     - Option B: Resolve wildcard ourselves and run command for each package
-   - Recommendation: Start with Option A, add Option B later
+5. **如何处理 yarn/npm 上 pnpm 特有的 filter 功能？**
+   - 建议：对于 yarn/npm 的通配符/排除：
+     - 方案 A：报错并清晰说明这是 pnpm 专有特性
+     - 方案 B：我们自己解析通配符并对每个包执行命令
+   - 推荐：先采用方案 A，之后再加入方案 B
 
-6. **Should we support workspace protocol configuration?**
-   - Proposed: Pass through to pnpm, document in .npmrc for users
-   - Example: `save-workspace-protocol=rolling` in .npmrc
-   - Vite+ doesn't need to handle this explicitly
+6. **我们是否应该支持 workspace 协议配置？**
+   - 建议：透传给 pnpm，并在 .npmrc 中为用户记录文档
+   - 示例：在 .npmrc 中设置 `save-workspace-protocol=rolling`
+   - Vite+ 不需要显式处理这一点
 
-7. **Should we validate that filtered packages exist?**
-   - Proposed: Let package manager validate
-   - Clearer error messages from native tools
-   - Avoids duplicating workspace parsing logic
+7. **我们是否应该校验被过滤的包是否存在？**
+   - 建议：让包管理器进行校验
+   - 原生工具会给出更清晰的错误信息
+   - 避免重复实现工作区解析逻辑
 
-## Success Metrics
+## 成功指标
 
-1. **Adoption**: % of users using `vp add/remove` vs direct package manager
-2. **Error Rate**: Track command failures vs package manager direct usage
-3. **User Feedback**: Survey/issues about command ergonomics
-4. **Performance**: Measure overhead vs direct package manager calls (<100ms target)
+1. **采用率**：使用 `vp add/remove` 与直接使用包管理器的用户占比
+2. **错误率**：跟踪命令失败率与直接使用包管理器时的对比
+3. **用户反馈**：关于命令易用性的调查/issue
+4. **性能**：测量相较于直接调用包管理器的开销（目标 <100ms）
 
-## Implementation Timeline
+## 实施时间线
 
-- **Week 1**: Core implementation (command parsing, package manager adapter)
-- **Week 2**: Testing (unit tests, integration tests)
-- **Week 3**: Documentation and examples
-- **Week 4**: Review, polish, and release
+- **第 1 周**：核心实现（命令解析、包管理器适配器）
+- **第 2 周**：测试（单元测试、集成测试）
+- **第 3 周**：文档和示例
+- **第 4 周**：审查、润色和发布
 
-## Dependencies
+## 依赖项
 
-### New Dependencies
+### 新依赖
 
-None required - leverages existing:
+不需要 - 利用现有的：
 
-- `vite_package_manager` - package manager detection
-- `clap` - command parsing
-- Existing task execution infrastructure
+- `vite_package_manager` - 包管理器检测
+- `clap` - 命令解析
+- 现有任务执行基础设施
 
-### Modified Files
+### 修改的文件
 
-- `crates/vite_task/src/lib.rs` - Add command enum variants
-- `crates/vite_task/src/add.rs` - New file
-- `crates/vite_task/src/remove.rs` - New file
-- `crates/vite_package_manager/src/package_manager.rs` - Add command resolution methods
-- `docs/cli.md` - Documentation updates
+- `crates/vite_task/src/lib.rs` - 添加命令枚举变体
+- `crates/vite_task/src/add.rs` - 新文件
+- `crates/vite_task/src/remove.rs` - 新文件
+- `crates/vite_package_manager/src/package_manager.rs` - 添加命令解析方法
+- `docs/cli.md` - 文档更新
 
-## Workspace Feature Implementation Priority
+## 工作区功能实现优先级
 
-### Phase 1: Core Functionality (MVP)
+### 阶段 1：核心功能（MVP）
 
-- ✅ Basic add/remove without filters
-- ✅ Multiple package support
-- ✅ Auto package manager detection
-- ✅ Common flags (-D, -E, -P, -O)
+- ✅ 基本的添加/移除，不带过滤器
+- ✅ 支持多个包
+- ✅ 自动检测包管理器
+- ✅ 常用标志（-D、-E、-P、-O）
 
-### Phase 2: Workspace Support (pnpm-focused)
+### 阶段 2：工作区支持（以 pnpm 为重点）
 
-- ✅ `--filter <exact-name>` for all package managers
-- ✅ `-w` flag for workspace root
-- ✅ `--workspace` flag for workspace dependencies (pnpm)
-- ✅ Wildcard patterns `*` (pnpm only, error on others)
-- ✅ Scope patterns `@scope/*` (pnpm only)
+- ✅ `--filter <exact-name>` 适用于所有包管理器
+- ✅ `-w` 标志用于工作区根目录
+- ✅ `--workspace` 标志用于工作区依赖（pnpm）
+- ✅ 通配符模式 `*`（仅 pnpm，其他情况报错）
+- ✅ 范围模式 `@scope/*`（仅 pnpm）
 
-### Phase 3: Advanced Filters (pnpm-focused)
+### 阶段 3：高级过滤器（以 pnpm 为重点）
 
-- Exclusion patterns `!<pattern>` (pnpm only)
-- Dependency selectors `...` (pnpm only)
-- Multiple filter support
-- Graceful degradation for yarn/npm
+- 排除模式 `!<pattern>`（仅 pnpm）
+- 依赖选择器 `...`（仅 pnpm）
+- 支持多个过滤器
+- 为 yarn/npm 提供优雅降级
 
-### Phase 4: Cross-PM Compatibility (optional)
+### 阶段 4：跨包管理器兼容性（可选）
 
-- Wildcard resolution for yarn/npm
-- Run filtered command for each matching package
-- Unified behavior across all package managers
+- 为 yarn/npm 解析通配符
+- 为每个匹配的包运行过滤后的命令
+- 在所有包管理器之间提供统一行为
 
-## Real-World Usage Examples
+## 真实世界使用示例
 
-### Monorepo Package Management
+### Monorepo 包管理
 
 ```bash
-# Add React to all frontend packages
+# 将 React 添加到所有前端包
 vp add react react-dom --filter "@myorg/app-*"
 
-# Add testing library to all packages
+# 将测试库添加到所有包
 vp add -D vitest --filter "*"
 
-# Add shared utils to app packages (workspace dependency)
+# 将共享工具添加到 app 包（工作区依赖）
 vp add @myorg/shared-utils --workspace --filter "@myorg/app-*"
 
-# Remove deprecated package from all packages
+# 从所有包中移除已弃用的包
 vp remove moment --filter "*"
 
-# Add TypeScript to workspace root (shared config)
+# 将 TypeScript 添加到工作区根目录（共享配置）
 vp add -D typescript @types/node -w
 ```
 
-### Development Workflow
+### 开发工作流
 
 ```bash
-# Clone new monorepo
+# 克隆新的 monorepo
 git clone <repo>
 vp install
 
-# Add new feature dependencies to web app
+# 向 web 应用添加新的功能依赖
 cd packages/web
 vp add axios react-query
 
-# Add development tool to specific package
+# 向特定包添加开发工具
 vp add -D webpack-bundle-analyzer --filter web
 
-# Remove unused dependencies from utils package
+# 从 utils 包中移除未使用的依赖
 vp rm lodash underscore --filter utils
 
-# Add workspace package as dependency
+# 将工作区包作为依赖添加
 vp add @myorg/ui-components --workspace --filter web
 ```
 
-### Migration from Direct Package Manager
+### 从直接使用包管理器迁移
 
 ```bash
-# Before (package manager specific)
+# 之前（特定于包管理器）
 pnpm --filter app add react
 yarn workspace app add react
 npm install react --workspace app
 
-# After (unified)
+# 之后（统一）
 vp add react --filter app
 ```
 
-## Conclusion
+## 结论
 
-This RFC proposes adding `vp add` and `vp remove` commands to provide a unified interface for package management across pnpm/yarn/npm. The design:
+本 RFC 提议添加 `vp add` 和 `vp remove` 命令，以为 pnpm/yarn/npm 之间的包管理提供统一接口。该设计：
 
-- ✅ Automatically adapts to detected package manager
-- ✅ Supports multiple packages in single command
-- ✅ **Full workspace support following pnpm's API design**
-- ✅ **Filter patterns for targeting specific packages**
-- ✅ **Workspace root and workspace protocol support**
-- ✅ Uses pass-through for maximum flexibility
-- ✅ No caching overhead (as requested)
-- ✅ Simple implementation leveraging existing infrastructure
-- ✅ Graceful degradation for package manager-specific features
-- ✅ Extensible for future enhancements
+- ✅ 自动适配检测到的包管理器
+- ✅ 在单个命令中支持多个包
+- ✅ **完整支持工作区，遵循 pnpm 的 API 设计**
+- ✅ **支持用于定位特定包的过滤模式**
+- ✅ **支持工作区根目录和 workspace 协议**
+- ✅ 使用透传以获得最大灵活性
+- ✅ 无缓存开销（按要求）
+- ✅ 利用现有基础设施，实现简单
+- ✅ 为包管理器特定功能提供优雅降级
+- ✅ 可扩展以支持未来增强
 
-The implementation follows pnpm's battle-tested workspace API design while providing graceful degradation for yarn/npm users. This provides immediate value to monorepo developers with a unified, intuitive interface.
+该实现遵循 pnpm 久经验证的工作区 API 设计，同时为 yarn/npm 用户提供优雅降级。这将通过统一、直观的界面，为 monorepo 开发者带来立竿见影的价值。

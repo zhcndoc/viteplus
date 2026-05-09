@@ -165,6 +165,7 @@ export default extendConfig(
               text: '配置',
               items: [
                 { text: '配置 Vite+', link: '/config/' },
+                { text: '创建', link: '/config/create' },
                 { text: '运行', link: '/config/run' },
                 { text: '格式化', link: '/config/fmt' },
                 { text: 'Lint', link: '/config/lint' },
