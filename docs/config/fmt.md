@@ -16,3 +16,5 @@ export default defineConfig({
   },
 });
 ```
+
+对于工作区中针对特定包的格式化设置，请在根目录的 `vite.config.ts` 中使用 [`fmt.overrides`](/guide/monorepo#format-overrides)。

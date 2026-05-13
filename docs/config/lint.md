@@ -22,3 +22,5 @@ export default defineConfig({
 ```
 
 我们建议同时启用 `options.typeAware` 和 `options.typeCheck`，这样 `vp lint` 和 `vp check` 就可以使用完整的类型感知路径。
+
+对于工作区中面向特定包的 lint 规则，请从根目录的 `vite.config.ts` 使用 [`lint.overrides`](/guide/monorepo#root-config-with-overrides)。

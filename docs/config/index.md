@@ -28,4 +28,4 @@ Vite+ 通过以下扩展增强了基础 Vite 配置：
 - [`test`](/config/test) 用于 Vitest
 - [`run`](/config/run) 用于 Vite Task
 - [`pack`](/config/pack) 用于 tsdown
-- [`staged`](/config/staged) 用于 staged-file checks
+- [`staged`](/config/staged) 用于 staged-file 检查

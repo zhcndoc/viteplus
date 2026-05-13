@@ -153,18 +153,18 @@ vp create
     "templates": [
       {
         "name": "monorepo",
-        "description": "Monorepo",
+        "description": "单体仓库",
         "template": "@your-org/template-monorepo",
         "monorepo": true
       },
       {
         "name": "web",
-        "description": "Web app template (Vite + React)",
+        "description": "Web 应用模板（Vite + React）",
         "template": "@your-org/template-web"
       },
       {
         "name": "demo",
-        "description": "Bundled demo template",
+        "description": "内置演示模板",
         "template": "./templates/demo"
       }
     ]
@@ -174,12 +174,12 @@ vp create
 
 每个条目都支持：
 
-| 字段 | 必需 | 说明 |
-| ------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name` | 是 | kebab-case 标识符。`vp create @org:<name>` 会使用它进行直接选择。整个数组中必须唯一。 |
-| `description` | 是 | 在选择器中显示的一行描述。 |
-| `template` | 是 | 一个 npm 指定符（`@org/template-foo`，可选 `@version`）、GitHub URL（`github:user/repo`）、`vite:*` 内置模板、本地工作区包名，或相对于 `@org/create` 根目录解析的相对路径（`./templates/foo`）。 |
-| `monorepo` | 否 | 如果为 `true`，则将此条目标记为“创建单体仓库”的模板。在 `vp create` 运行于现有单体仓库内部时，这一项会像内置的 `vite:monorepo` 过滤一样从选择器中隐藏。 |
+| 字段          | 必需 | 说明                                                                                                                                                                                                                                      |
+| ------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | 是   | Kebab-case 标识符。由 `vp create @org:<name>` 用于直接选择。数组内必须唯一。                                                                                                                              |
+| `description` | 是   | 在选择器中显示的一行描述。                                                                                                                                                                                                  |
+| `template`    | 是   | 一个 npm 指定符（`@org/template-foo`，可选 `@version`）、一个 GitHub URL（`github:user/repo`）、一个 `vite:*` 内置项、一个本地工作区包名，或一个相对于 `@org/create` 根目录解析的相对路径（`./templates/foo`）。 |
+| `monorepo`    | 否   | 若为 `true`，表示此条目是一个创建单体仓库的模板。在现有单体仓库中运行 `vp create` 时会从选择器中隐藏，行为与内置的 `vite:monorepo` 过滤器一致。                                                      |
 
 无效的清单会直接报错，而不会静默回退——已发布清单的维护者应该能看到出错的字段，例如：`@your-org/create: createConfig.templates[2].template must be a non-empty string`。
 
@@ -208,20 +208,20 @@ export default defineConfig({
 `vp create @org --no-interactive` 会打印清单表并以 1 退出：
 
 ```
-A template name is required when running `vp create @your-org` in non-interactive mode.
+运行 `vp create @your-org` 的非交互模式时，需要提供模板名称。
 
-Available templates in @your-org/create:
+@your-org/create 中可用的模板：
 
   NAME     DESCRIPTION                          TEMPLATE
-  web      Web app template (Vite + React)      @your-org/template-web
-  library  TypeScript library template          @your-org/template-library
-  demo     Bundled demo template                ./templates/demo
+  web      Web 应用模板（Vite + React）           @your-org/template-web
+  library  TypeScript 库模板                      @your-org/template-library
+  demo     内置演示模板                          ./templates/demo
 
-Examples:
-  # Scaffold a specific template from the org
+示例：
+  # 从该组织中搭建一个指定模板
   vp create @your-org:web --no-interactive
 
-  # Or use a Vite+ built-in template
+  # 或使用 Vite+ 内置模板
   vp create vite:application --no-interactive
 ```
 

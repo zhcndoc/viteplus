@@ -24,8 +24,6 @@ Vite+ 期望使用现代的上游工具版本。
 
 ## `vp lint` / `vp fmt` 可能无法读取 `vite.config.ts`
 
-`vp lint`、`vp fmt` 以及 Oxc VS Code 扩展都会从 `vite.config.ts` 中读取 `lint` / `fmt` 配置块。目前该支持存在重要限制。
-
 ### 当前支持的内容
 
 - 静态对象导出：

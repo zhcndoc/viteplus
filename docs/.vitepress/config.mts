@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 import type { VoidZeroThemeConfig } from '@voidzero-dev/vitepress-theme';
 import { extendConfig } from '@voidzero-dev/vitepress-theme/config';
 import { defineConfig, type HeadConfig } from 'vitepress';
+import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons';
 import { withMermaid } from 'vitepress-plugin-mermaid';
-import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 
 const taskRunnerGuideItems = [
   {
@@ -72,6 +72,7 @@ const guideSidebar = [
       { text: 'IDE 集成', link: '/guide/ide-integration' },
       { text: 'CI', link: '/guide/ci' },
       { text: '提交钩子', link: '/guide/commit-hooks' },
+      { text: 'Monorepo 指南', link: '/guide/monorepo' },
       { text: '故障排查', link: '/guide/troubleshooting' },
     ],
   },
@@ -106,7 +107,6 @@ export default extendConfig(
           include: ['mermaid > @braintree/sanitize-url'],
         },
         resolve: {
-          tsconfigPaths: true,
           alias: [
             { find: '@local-assets', replacement: resolve(__dirname, 'theme/assets') },
             { find: '@layouts', replacement: resolve(__dirname, 'theme/layouts') },
@@ -118,9 +118,9 @@ export default extendConfig(
         plugins: [
           groupIconVitePlugin({
             customIcon: {
-              tsdown: 'https://tsdown.dev/tsdown.svg'
-            }
-          })
+              tsdown: 'https://tsdown.dev/tsdown.svg',
+            },
+          }),
         ],
       },
       themeConfig: {
@@ -246,7 +246,7 @@ export default extendConfig(
       },
       markdown: {
         config(md) {
-          md.use(groupIconMdPlugin)
+          md.use(groupIconMdPlugin);
         },
       },
     }),

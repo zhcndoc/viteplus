@@ -7,7 +7,7 @@
     />
     <section class="wrapper">
       <Footer
-        heading="让团队生产力再上一个台阶"
+        heading="使用 Vite+ 将您团队的生产力提升到新高度"
         subheading=" "
         button-text="开始使用"
         button-link="/guide"
@@ -18,6 +18,6 @@
 
 <style scoped></style>
 <script setup lang="ts">
-import Sponsors from "@components/oss/Sponsors.vue";
 import Footer from "@components/oss/Footer.vue";
+import Sponsors from "@components/oss/Sponsors.vue";
 </script>
