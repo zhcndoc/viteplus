@@ -28,10 +28,32 @@ vp env off
 
 ### 设置
 
-- `vp env setup` 在 `VP_HOME/bin` 中创建或更新 shim
+- `vp env setup` 会在 `VP_HOME/bin` 中创建或更新 shim，并将每个 shell 的设置脚本写入 `~/.vite-plus/`
 - `vp env on` 启用托管模式，使 shim 始终使用 Vite+ 管理的 Node.js
 - `vp env off` 启用系统优先模式，使 shim 优先使用系统 Node.js
 - `vp env print` 打印当前会话的 shell 片段
+
+PowerShell 需要在 `vp env use` 之前，在当前 shell 中 dot-source 生成的设置脚本，才能只影响该 shell 会话：
+
+```powershell
+. "$env:USERPROFILE\.vite-plus\env.ps1"
+```
+
+将该行添加到你的 PowerShell `$PROFILE` 末尾，以便在新 shell 中自动应用。它不需要提升权限。
+
+如果配置文件不存在，请创建它：
+
+```powershell
+if (-not (Test-Path $PROFILE)) { New-Item $PROFILE -Force }
+```
+
+打开配置文件进行编辑：
+
+```powershell
+Invoke-Item $PROFILE
+```
+
+在 CI 中，`vp env use` 仍然可以在没有 shell 初始化的情况下运行。它会在 `VP_HOME` 下写入一个临时会话文件，以便同一作业中后续的 shim 调用可以解析所选的 Node.js 版本。
 
 ### 管理
 

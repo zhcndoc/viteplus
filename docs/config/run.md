@@ -167,7 +167,7 @@ tasks: {
 - **系统:** `HOME`, `USER`, `PATH`, `SHELL`, `LANG`, `TZ`
 - **Node.js:** `NODE_OPTIONS`, `COREPACK_HOME`, `PNPM_HOME`
 - **CI/CD:** `CI`, `VERCEL_*`, `NEXT_*`
-- **终端:** `TERM`, `COLORTERM`, `FORCE_COLOR`, `NO_COLOR`
+- **终端:** 颜色变量（`FORCE_COLOR`、`NO_COLOR`、`COLORTERM`、`TERM`、`TERM_PROGRAM`）不会传递给任务，除非你将它们列在 `env` 下（其值会被纳入指纹，因此更改后会使缓存失效）或 `untrackedEnv` 下（传递但不进行指纹识别）。如果 `FORCE_COLOR` 不在这两个列表中，子进程会获得 `FORCE_COLOR=1`，以便缓存日志保持彩色。当终端无法渲染颜色时，颜色会在显示时被去除。
 
 ### `input`
 
@@ -232,6 +232,36 @@ tasks: {
 ::: tip
 字符串通配符模式默认相对于包目录解析。使用对象形式并设置 `base: "workspace"` 可将解析基准设为工作区根目录。
 :::
+
+### `output`
+
+- **类型:** `Array<string | { pattern: string, base: "workspace" | "package" }>`
+- **默认值:** `[]`（不归档任何内容）
+
+任务生成的文件。它们会在成功运行后归档，并在缓存命中时恢复，因此你无需重新构建它们。留空（或省略）则不会归档任何内容。
+
+```ts [vite.config.ts]
+tasks: {
+  build: {
+    command: 'vp build',
+    output: ['dist/**', '!dist/cache/**'],
+  },
+}
+```
+
+如果任务会写入其自身包之外的位置，请使用带有 `base: "workspace"` 的对象形式：
+
+```ts [vite.config.ts]
+tasks: {
+  build: {
+    command: 'vp build',
+    output: [
+      'dist/**',
+      { pattern: 'shared-artifacts/**', base: 'workspace' },
+    ],
+  },
+}
+```
 
 ### `cwd`
 

@@ -26,7 +26,7 @@ import oxcIcon from "@assets/icons/oxc-light.svg";
             compatible 格式化兼容
           </li>
           <li>
-            600+ 条
+            750+ 条
             <code class="mx-1 outline-none bg-nickel/50 text-aqua">ESLint</code>
             兼容规则
           </li>

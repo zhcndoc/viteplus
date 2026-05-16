@@ -121,14 +121,18 @@ Vite+ 提供了所有熟悉的包管理命令：
 当需要重新编译原生模块时，使用 `vp rebuild`；例如在切换 Node.js 版本后，或当 C/C++ 加载失败的扩展无法加载时。
 
 - `vp rebuild` 重新构建所有原生模块
+- `vp rebuild <package...>` 仅重新构建列出的包
 - `vp rebuild -- <args>` 将额外参数传递给底层包管理器
 
 ```bash
 vp rebuild
+vp rebuild better-sqlite3 sharp
 vp rebuild -- --update-binary
 ```
 
 `vp rebuild` 是 `vp pm rebuild` 的简写。
+
+对于 pnpm v10+，裸用 `vp rebuild` 只会重新构建其构建脚本列在 `onlyBuiltDependencies` 中（或通过 `pnpm approve-builds` 批准）的包；如果要强制重新构建并绕过批准门槛，请显式指定包名。
 
 #### 高级
 
