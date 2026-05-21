@@ -1,6 +1,6 @@
 {
   "name": "vite-plus",
-  "version": "0.0.0",
+  "version": "0.1.22",
   "description": "The Unified Toolchain for the Web",
   "homepage": "https://viteplus.dev/guide",
   "bugs": {
@@ -73,6 +73,13 @@
     "./lint": {
       "types": "./dist/lint.d.ts",
       "import": "./dist/lint.js"
+    },
+    "./oxlint-plugin": {
+      "module-sync": "./dist/oxlint-plugin.js",
+      "node": "./dist/oxlint-plugin.js",
+      "import": "./dist/oxlint-plugin.js",
+      "default": "./dist/oxlint-plugin.js",
+      "types": "./dist/oxlint-plugin.d.ts"
     },
     "./package.json": "./package.json",
     "./pack": {
@@ -332,6 +339,7 @@
   },
   "dependencies": {
     "@oxc-project/types": "catalog:",
+    "@oxlint/plugins": "catalog:",
     "@voidzero-dev/vite-plus-core": "workspace:*",
     "@voidzero-dev/vite-plus-test": "workspace:*",
     "oxfmt": "catalog:",
