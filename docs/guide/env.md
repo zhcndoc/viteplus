@@ -6,7 +6,9 @@
 
 默认情况下托管模式处于开启状态，因此 `node`、`npm` 和相关的 shim 会通过 Vite+ 解析，并为当前项目选择正确的 Node.js 版本。
 
-默认情况下，Vite+ 将托管运行时及相关文件存储在 `~/.vite-plus` 中。如需覆盖该位置，可以使用 `VP_HOME`。
+当项目在 `package.json` 中声明 `packageManager` 时，匹配的包管理器 shim 也会使用该精确的包管理器版本。例如，`packageManager: "npm@10.9.4"` 会让 `npm` 和 `npx` 都通过 npm 10.9.4 运行。别名对会遵循已安装的包管理器 shim：`npm`/`npx`、`pnpm`/`pnpx`、`yarn`/`yarnpkg`，以及 `bun`/`bunx`。Vite+ 不会转换不匹配的命令，因此即使某个项目固定为 `pnpm`，`npm` 仍会回退到与所解析的 Node.js 运行时一同提供的 npm。
+
+默认情况下，Vite+ 会将其受管理的运行时和相关文件存储在 `~/.vite-plus` 中。如有需要，你可以使用 `VP_HOME` 覆盖该位置。
 
 如果希望保持这种行为，请运行：
 
@@ -97,8 +99,9 @@ vp env use --unset            # 移除会话覆盖
 
 # 检查
 vp env current                # 显示当前已解析的环境
-vp env current --json         # 用于自动化的 JSON 输出
-vp env which node             # 显示将使用的 node 二进制路径
+vp env current --json         # 为自动化输出 JSON
+vp env which node             # 显示将使用哪个 node 二进制文件
+vp env which npx              # 当 packageManager 匹配时显示固定的包管理器别名
 vp env list-remote --lts      # 仅列出 LTS 版本
 
 # 执行

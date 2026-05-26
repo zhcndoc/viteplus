@@ -20,7 +20,9 @@ Vite+ 按照以下顺序检测包管理器：
 
 如果以上文件都不存在，Vite+ 默认回退到 `pnpm`。Vite+ 会自动下载匹配的包管理器并用于你运行的命令。
 
-## 用法
+The explicit `packageManager` field also affects matching package-manager shims. If a project has `packageManager: "npm@10.9.4"`, `npm` and `npx` use npm 10.9.4. Other generated alias pairs behave the same way: `pnpm`/`pnpx`, `yarn`/`yarnpkg`, and `bun`/`bunx`. Mismatched tools are not translated; `npm` in a `pnpm` project still resolves as npm.
+
+## Usage
 
 ```bash
 vp install

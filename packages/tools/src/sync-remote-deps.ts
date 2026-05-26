@@ -721,6 +721,7 @@ export async function syncRemote() {
   // Write the merged workspace back
   const yamlContent = stringifyYaml(mergedWorkspace, {
     lineWidth: -1,
+    singleQuote: true,
   });
 
   writeFileSync(mainWorkspacePath, yamlContent, 'utf-8');
@@ -739,6 +740,9 @@ export async function syncRemote() {
     rootDir,
     ROLLDOWN_DIR,
     'packages',
+    'rolldown',
+    'node_modules',
+    '@rolldown',
     'pluginutils',
     'package.json',
   );
