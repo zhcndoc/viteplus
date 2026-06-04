@@ -20,9 +20,9 @@ Vite+ 按照以下顺序检测包管理器：
 
 如果以上文件都不存在，Vite+ 默认回退到 `pnpm`。Vite+ 会自动下载匹配的包管理器并用于你运行的命令。
 
-The explicit `packageManager` field also affects matching package-manager shims. If a project has `packageManager: "npm@10.9.4"`, `npm` and `npx` use npm 10.9.4. Other generated alias pairs behave the same way: `pnpm`/`pnpx`, `yarn`/`yarnpkg`, and `bun`/`bunx`. Mismatched tools are not translated; `npm` in a `pnpm` project still resolves as npm.
+显式的 `packageManager` 字段也会影响匹配的包管理器 shim。如果项目中有 `packageManager: "npm@10.9.4"`，那么 `npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也有相同的行为：`pnpm`/`pnpx`、`yarn`/`yarnpkg` 以及 `bun`/`bunx`。不匹配的工具不会被转换；`pnpm` 项目中的 `npm` 仍然会被解析为 npm。
 
-## Usage
+## 用法
 
 ```bash
 vp install
@@ -151,3 +151,20 @@ vp pm config get registry
 vp pm cache clean --force
 vp pm exec tsc --version
 ```
+
+#### 分阶段发布
+
+`vp pm stage` 提供了 [npm 的分阶段发布](https://docs.npmjs.com/staged-publishing) 工作流：构建产物会被上传到暂存区（不需要 2FA，适合 CI），然后维护者可以从受信任的设备上批准或拒绝它（2FA）。它会适配检测到的包管理器。
+
+```bash
+vp pm stage publish              # 将包上传到暂存区（不需要 2FA）
+vp pm stage list                 # 列出暂存的版本
+vp pm stage view <stage-id>      # 查看暂存版本
+vp pm stage download <stage-id>  # 下载暂存的 tarball
+vp pm stage approve <stage-id>   # 推送到正式注册表（2FA）
+vp pm stage reject <stage-id>    # 丢弃暂存版本（2FA）
+```
+
+- pnpm（`pnpm stage`，要求 pnpm ≥ 11.3）和 npm（`npm stage`，要求 npm ≥ 11.15 且 Node ≥ 22.14）会直接透传。
+- yarn（Berry）使用其 npm 插件（`yarn npm publish --staged`、`yarn npm stage …`）；`view`/`download` 会回退到 npm。
+- yarn Classic 和 bun 不支持分阶段发布，因此会回退到 `npm stage`。

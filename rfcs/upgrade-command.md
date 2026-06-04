@@ -1,58 +1,58 @@
-# RFC: Self-Update Command
+# RFC：自更新命令
 
-## Status
+## 状态
 
-Draft
+草案
 
-## Background
+## 背景
 
-Vite+ is distributed as a standalone Rust binary via bash installation (`curl -fsSL https://vite.plus | bash`). Currently, users must re-run the full install script to update to a new version. This is friction-heavy and unfamiliar to users who expect a built-in update mechanism (like `rustup update`, `volta fetch`, or `brew upgrade`).
+Vite+ 通过 bash 安装脚本（`curl -fsSL https://vite.plus | bash`）作为独立的 Rust 二进制文件分发。目前，用户必须重新运行完整的安装脚本才能更新到新版本。这种方式摩擦较大，而且对于期望内置更新机制的用户来说也不够熟悉（例如 `rustup update`、`volta fetch` 或 `brew upgrade`）。
 
-A native `vp upgrade` command would allow users to update the CLI in-place with a single command, improving the upgrade experience significantly.
+一个原生的 `vp upgrade` 命令将允许用户通过单个命令原地更新 CLI，显著改善升级体验。
 
-### Current Installation Structure
+### 当前安装结构
 
 ```
 ~/.vite-plus/
 ├── bin/
-│   ├── vp → ../current/bin/vp       # Stable symlink (in PATH)
-│   ├── node → ../current/bin/node   # Shim symlinks
+│   ├── vp → ../current/bin/vp       # 稳定的符号链接（在 PATH 中）
+│   ├── node → ../current/bin/node   # Shim 符号链接
 │   ├── npm → ../current/bin/npm
 │   └── npx → ../current/bin/npx
-├── current → 0.1.0/                 # Symlink to active version
-├── 0.1.0/                           # Version directory
-│   ├── bin/vp                       # Actual binary
-│   ├── dist/                        # JS bundles + .node files
+├── current → 0.1.0/                 # 指向活动版本的符号链接
+├── 0.1.0/                           # 版本目录
+│   ├── bin/vp                       # 实际二进制文件
+│   ├── dist/                        # JS bundles + .node 文件
 │   ├── package.json
 │   └── node_modules/
-├── 0.0.9/                           # Previous version (kept for rollback)
-├── env                              # POSIX shell env (sourced by shell config)
-├── env.fish                         # Fish shell env
-└── env.ps1                          # PowerShell env
+├── 0.0.9/                           # 上一个版本（保留用于回滚）
+├── env                              # POSIX shell 环境（由 shell 配置加载）
+├── env.fish                         # Fish shell 环境
+└── env.ps1                          # PowerShell 环境
 ```
 
-Key invariant: `~/.vite-plus/bin/vp` is a symlink to `../current/bin/vp` (Unix) or a trampoline `.exe` forwarding to `current\bin\vp.exe` (Windows), and `current` is a symlink (Unix) or junction (Windows) to the active version directory. Upgrading swaps the `current` link — atomic on Unix, near-instant on Windows.
+关键不变式：`~/.vite-plus/bin/vp` 是指向 `../current/bin/vp` 的符号链接（Unix），或者是转发到 `current\bin\vp.exe` 的 trampoline `.exe`（Windows），而 `current` 是一个符号链接（Unix）或 junction（Windows），指向活动版本目录。升级时只需切换 `current` 链接——在 Unix 上是原子的，在 Windows 上也几乎是瞬时完成的。
 
-## Goals
+## 目标
 
-1. Provide a fast, reliable `vp upgrade` command that upgrades the CLI to the latest (or specified) version
-2. Reuse the same npm-based distribution channel (no new infrastructure)
-3. Support atomic upgrades with automatic rollback on failure
-4. Keep the last 5 versions for manual rollback
-5. Support version pinning and channel selection (latest, test)
+1. 提供一个快速、可靠的 `vp upgrade` 命令，将 CLI 升级到最新版本（或指定版本）
+2. 复用相同的基于 npm 的分发渠道（不引入新基础设施）
+3. 支持具备自动回滚能力的原子升级
+4. 保留最近 3 个版本以便手动回滚
+5. 支持版本固定和通道选择（latest、test）
 
-## Non-Goals
+## 非目标
 
-1. Auto-update on every command invocation (may be a future enhancement)
-2. Windows PowerShell install path (covered by `install.ps1`)
-3. Migrating away from npm as the distribution channel
-4. Updating Node.js versions (already handled by `vp env`)
+1. 每次命令调用时自动更新（这可能是未来增强）
+2. Windows PowerShell 安装路径（由 `install.ps1` 覆盖）
+3. 从 npm 分发渠道迁移走
+4. 更新 Node.js 版本（已由 `vp env` 负责）
 
-## User Stories
+## 用户故事
 
-### Story 1: Quick Update to Latest
+### 故事 1：快速更新到最新版本
 
-A developer sees that a new version of Vite+ is available and wants to update.
+某开发者发现 Vite+ 有新版本可用，希望进行更新。
 
 ```bash
 $ vp upgrade
@@ -66,7 +66,7 @@ info: installing...
   Release notes: https://github.com/voidzero-dev/vite-plus/releases/tag/v0.2.0
 ```
 
-### Story 2: Already Up to Date
+### 故事 2：已经是最新版本
 
 ```bash
 $ vp upgrade
@@ -75,7 +75,7 @@ info: checking for updates...
 ✔ Already up to date (0.2.0)
 ```
 
-### Story 3: Update to a Specific Version
+### 故事 3：更新到指定版本
 
 ```bash
 $ vp upgrade 0.1.5
@@ -87,7 +87,7 @@ info: installing...
 ✔ Updated vite-plus from 0.2.0 → 0.1.5
 ```
 
-### Story 4: Install a Test Channel Build
+### 故事 4：安装测试通道构建
 
 ```bash
 $ vp upgrade --tag test
@@ -99,7 +99,7 @@ info: installing...
 ✔ Updated vite-plus from 0.2.0 → 0.3.0-beta.1
 ```
 
-### Story 5: Rollback to Previous Version
+### 故事 5：回滚到上一个版本
 
 ```bash
 $ vp upgrade --rollback
@@ -109,7 +109,7 @@ info: switching from 0.2.0 → 0.1.0
 ✔ Rolled back to 0.1.0
 ```
 
-### Story 6: Check for Updates Without Installing
+### 故事 6：仅检查更新，不安装
 
 ```bash
 $ vp upgrade --check
@@ -118,20 +118,20 @@ Update available: 0.2.0 → 0.3.0
 Run `vp upgrade` to update.
 ```
 
-### Story 7: CI Environment — Non-interactive
+### 故事 7：CI 环境——非交互式
 
 ```bash
-# In CI, just update silently
+# 在 CI 中，静默更新即可
 $ vp upgrade --silent
 ```
 
-## Technical Design
+## 技术设计
 
-### Command Interface
+### 命令接口
 
 ```
 vp upgrade [VERSION] [OPTIONS]
-vp upgrade [VERSION] [OPTIONS]       # alias
+vp upgrade [VERSION] [OPTIONS]       # 别名
 
 Arguments:
   [VERSION]    Target version (e.g., "0.2.0"). Defaults to "latest"
@@ -145,9 +145,9 @@ Options:
   --registry <URL> Custom npm registry URL (overrides NPM_CONFIG_REGISTRY)
 ```
 
-### Architecture
+### 架构
 
-The upgrade command is implemented entirely in Rust within the `vite_global_cli` crate, mirroring the logic of `install.sh` but running as a native subprocess workflow.
+升级命令完全在 `vite_global_cli` crate 内使用 Rust 实现，逻辑与 `install.sh` 保持一致，但作为原生子进程工作流运行。
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -161,46 +161,46 @@ The upgrade command is implemented entirely in Rust within the `vite_global_cli`
 │  6. Install production dependencies             │
 │  7. Atomic swap: current → {version}            │
 │  8. Refresh shims (non-fatal)                   │
-│  9. Cleanup old versions (non-fatal, keep 5)    │
+│  9. Cleanup old versions (non-fatal, keep 3)    │
 └─────────────────────────────────────────────────┘
 ```
 
-### Implementation Flow
+### 实现流程
 
-#### Step 1: Version Resolution
+#### 步骤 1：版本解析
 
-Query the npm registry for the target version:
+向 npm registry 查询目标版本：
 
 ```
 GET {registry}/vite-plus-cli/{version_or_tag}
 ```
 
-- If `VERSION` arg is provided, use it directly
-- If `--tag` is provided, resolve that dist-tag (e.g., `latest`, `test`)
-- Default to `latest`
+- 如果提供了 `VERSION` 参数，则直接使用它
+- 如果提供了 `--tag`，则解析该 dist-tag（例如 `latest`、`test`）
+- 默认使用 `latest`
 
-Parse the JSON response to extract:
+解析 JSON 响应以提取：
 
-- `version`: the resolved semver version
-- `optionalDependencies`: to find the platform-specific package name
+- `version`：解析后的 semver 版本
+- `optionalDependencies`：用于查找平台特定包名
 
-#### Step 2: Version Comparison
+#### 步骤 2：版本比较
 
-Compare the resolved version against the currently running binary's version (`env!("CARGO_PKG_VERSION")`).
+将解析出的版本与当前运行二进制的版本（`env!("CARGO_PKG_VERSION")`）进行比较。
 
-- If same version and `--force` is not set: print "already up to date" and exit
-- If target is older: proceed (allows deliberate downgrade)
+- 如果版本相同且未设置 `--force`：打印“已是最新”并退出
+- 如果目标版本更旧：继续执行（允许有意降级）
 
-#### Step 3: Download and Verify
+#### 步骤 3：下载与校验
 
-Download two tarballs from the npm registry:
+从 npm registry 下载两个 tarball：
 
-1. **Platform binary**: `{registry}/@voidzero-dev/vite-plus-cli-{platform_suffix}/-/vite-plus-cli-{suffix}-{version}.tgz`
-   - Contains: `vp` binary + `.node` NAPI files
-2. **Main package**: `{registry}/vite-plus-cli/-/vite-plus-cli-{version}.tgz`
-   - Contains: `dist/` (JS bundles), `package.json`, `templates/`, `rules/`, `AGENTS.md`
+1. **平台二进制**：`{registry}/@voidzero-dev/vite-plus-cli-{platform_suffix}/-/vite-plus-cli-{suffix}-{version}.tgz`
+   - 包含：`vp` 二进制 + `.node` NAPI 文件
+2. **主包**：`{registry}/vite-plus-cli/-/vite-plus-cli-{version}.tgz`
+   - 包含：`dist/`（JS bundles）、`package.json`、`templates/`、`rules/`、`AGENTS.md`
 
-**Integrity verification**: Each tarball is verified against the `integrity` field from the npm registry metadata. The npm registry provides SHA-512 hashes in the [Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/) format:
+**完整性校验**：每个 tarball 都会使用 npm registry 元数据中的 `integrity` 字段进行校验。npm registry 以 [Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/) 格式提供 SHA-512 哈希：
 
 ```json
 {
@@ -212,19 +212,19 @@ Download two tarballs from the npm registry:
 }
 ```
 
-Verification flow:
+校验流程：
 
-1. Download tarball to temp file
-2. Compute SHA-512 hash of the downloaded file
-3. Base64-encode and compare against `integrity` field (format: `sha512-{base64}`)
-4. If mismatch: delete temp file, report error, abort update
+1. 将 tarball 下载到临时文件
+2. 计算下载文件的 SHA-512 哈希
+3. Base64 编码并与 `integrity` 字段比较（格式：`sha512-{base64}`）
+4. 如果不匹配：删除临时文件，报告错误，中止更新
 
 ```rust
 use sha2::{Sha512, Digest};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 
 fn verify_integrity(data: &[u8], expected: &str) -> Result<(), Error> {
-    // Parse "sha512-{base64}" format
+    // 解析 "sha512-{base64}" 格式
     let expected_hash = expected.strip_prefix("sha512-")
         .ok_or(Error::UnsupportedIntegrity(expected.into()))?;
 
@@ -242,72 +242,72 @@ fn verify_integrity(data: &[u8], expected: &str) -> Result<(), Error> {
 }
 ```
 
-To get the `integrity` field for the platform package, we need to query its metadata separately:
+要获取平台包的 `integrity` 字段，需要单独查询其元数据：
 
-- Main package metadata: `{registry}/vite-plus-cli/{version}` → contains `dist.integrity`
-- Platform package metadata: `{registry}/@voidzero-dev/vite-plus-cli-{suffix}/{version}` → contains `dist.integrity`
+- 主包元数据：`{registry}/vite-plus-cli/{version}` → 包含 `dist.integrity`
+- 平台包元数据：`{registry}/@voidzero-dev/vite-plus-cli-{suffix}/{version}` → 包含 `dist.integrity`
 
-Platform detection reuses existing logic from `vite_js_runtime` or mirrors the bash script's approach:
+平台检测复用 `vite_js_runtime` 中已有的逻辑，或镜像 bash 脚本的做法：
 
-- `uname -s` → os (darwin, linux)
-- `uname -m` → arch (x64, arm64)
-- Linux: detect gnu vs musl libc
+- `uname -s` → os（darwin、linux）
+- `uname -m` → arch（x64、arm64）
+- Linux：检测 gnu vs musl libc
 
-#### Step 4: Extract and Install
+#### 步骤 4：解压并安装
 
-1. Create `~/.vite-plus/{version}/` with `bin/` and `dist/` subdirectories
-2. Extract platform binary to `{version}/bin/vp`, set executable permissions
-3. Extract `.node` files to `{version}/dist/`
-4. Extract JS bundle, templates, rules, package.json to `{version}/`
-5. Strip `devDependencies` and `optionalDependencies` from package.json
-6. Run `vp install --silent` in the version directory to install production dependencies
+1. 创建 `~/.vite-plus/{version}/`，包含 `bin/` 和 `dist/` 子目录
+2. 将平台二进制解压到 `{version}/bin/vp`，并设置可执行权限
+3. 将 `.node` 文件解压到 `{version}/dist/`
+4. 将 JS bundle、templates、rules、package.json 解压到 `{version}/`
+5. 从 package.json 中移除 `devDependencies` 和 `optionalDependencies`
+6. 在版本目录中运行 `vp install --silent` 以安装生产依赖
 
-#### Step 5: Version Swap
+#### 步骤 5：版本切换
 
-**Unix (macOS/Linux)** — Atomic symlink swap:
+**Unix（macOS/Linux）** —— 原子符号链接切换：
 
 ```rust
-// Atomic symlink swap using rename
+// 使用 rename 进行原子符号链接切换
 let temp_link = install_dir.join("current.new");
 std::os::unix::fs::symlink(version, &temp_link)?;
 std::fs::rename(&temp_link, install_dir.join("current"))?;
 ```
 
-This is atomic on POSIX systems because `rename()` on a symlink is an atomic operation.
+这在 POSIX 系统上是原子的，因为对符号链接执行 `rename()` 是一个原子操作。
 
-**Windows** — Junction swap (non-atomic, matching `install.ps1`):
+**Windows** —— junction 切换（非原子，与 `install.ps1` 保持一致）：
 
 ```rust
-// Windows uses junctions (mklink /J) — no admin privileges required
+// Windows 使用 junctions（mklink /J）—— 不需要管理员权限
 let current_link = install_dir.join("current");
 
-// Remove existing junction
+// 删除现有 junction
 if current_link.exists() {
     junction::delete(&current_link)?;
 }
 
-// Create new junction pointing to version directory
+// 创建指向版本目录的新 junction
 junction::create(version_dir, &current_link)?;
 ```
 
-Key differences on Windows:
+Windows 上的关键差异：
 
-- **Junctions** (`mklink /J`) are used instead of symlinks — junctions don't require admin privileges
-- Junctions only work for directories (which `current` is), and use absolute paths internally
-- The swap is **not atomic** — there's a brief window (~milliseconds) where `current` doesn't exist
-- `bin/vp.exe` is a trampoline (not a symlink) that resolves through `current`, so it doesn't need updating during upgrade
-- This matches the existing `install.ps1` behavior exactly
+- 使用 **junctions**（`mklink /J`）而不是符号链接——junction 不需要管理员权限
+- junction 只能用于目录（`current` 正是目录），并且内部使用绝对路径
+- 切换 **不是原子操作**——会有一个很短的窗口（约毫秒级）使得 `current` 不存在
+- `bin/vp.exe` 是 trampoline（不是符号链接），它通过 `current` 解析，因此升级期间无需更新
+- 这与现有的 `install.ps1` 行为完全一致
 
-#### Step 6: Post-Update (Non-Fatal)
+#### 步骤 6：更新后处理（非致命）
 
-After the symlink swap (the **point of no return**), post-update operations are treated as non-fatal. Errors are printed to stderr as warnings but do not trigger the outer error handler (which would delete the now-active version directory).
+在符号链接切换之后（**不可回头点**），后续更新操作都视为非致命。错误会打印到 stderr 作为警告，但不会触发外层错误处理器（否则会删除现在已生效的版本目录）。
 
-1. **Refresh shims**: Run the equivalent of `vp env setup --refresh` to ensure node/npm/npx shims point to the new version. This also refreshes trampoline `.exe` files for globally installed package shims (e.g., `corepack.exe`, `tsc.exe`) by scanning `BinConfig` entries. If this fails, the user can run it manually.
-2. **Cleanup old versions**: Remove old version directories, keeping the 5 most recent by **creation time** (matching `install.sh` behavior). The new version and the previous version are always protected from cleanup, even if they fall outside the top 5 (e.g., after a downgrade via `--rollback`).
+1. **刷新 shims**：运行等价于 `vp env setup --refresh` 的操作，确保 node/npm/npx shims 指向新版本。这也会通过扫描 `BinConfig` 条目，刷新全局安装包 shims 的 trampoline `.exe` 文件（例如 `corepack.exe`、`tsc.exe`）。如果失败，用户可以手动运行。
+2. **清理旧版本**：移除旧版本目录，按**创建时间**保留最近 3 个版本（与 `install.sh` 行为一致）。新版本和上一个版本始终受保护，不会被清理，即使它们落在前 3 名之外（例如通过 `--rollback` 降级之后）。
 
-#### Step 7: Running Binary Consideration
+#### 步骤 7：正在运行的二进制考虑
 
-The running `vp` process is **not** the binary being replaced. The flow is:
+当前运行的 `vp` 进程**不是**正在被替换的二进制。流程如下：
 
 ```
 # Unix
@@ -317,59 +317,59 @@ The running `vp` process is **not** the binary being replaced. The flow is:
 ~/.vite-plus/bin/vp.exe (trampoline)  →  current\bin\vp.exe  →  {old_version}\bin\vp.exe
 ```
 
-After the `current` link swap, any **new** invocation of `vp` will use the new binary. The currently running process continues to execute from the old version's binary file on disk:
+在 `current` 链接切换之后，任何**新的** `vp` 调用都会使用新二进制。当前正在运行的进程会继续执行磁盘上旧版本的二进制文件：
 
-- **Unix**: The old binary remains valid because Unix doesn't delete open files until all file descriptors are closed
-- **Windows**: The old `.exe` file is locked while running, but since we install to a **new version directory** (not overwriting in-place), there's no conflict. The old version directory is preserved (kept in the "last 5" cleanup policy)
+- **Unix**：旧二进制仍然有效，因为 Unix 不会在所有文件描述符关闭之前删除打开的文件
+- **Windows**：运行中的旧 `.exe` 文件会被锁定，但由于我们安装到的是**新版本目录**（而不是原地覆盖），因此不会发生冲突。旧版本目录会被保留（在“最近 5 个”清理策略中保留）
 
-### Rollback Design
+### 回滚设计
 
-The `--rollback` flag switches the `current` symlink to the previously active version.
+`--rollback` 标志会将 `current` 符号链接切换到之前活动的版本。
 
-To track the previous version, we can:
+为了跟踪上一个版本，可以：
 
-1. Read the `current` symlink target before updating
-2. After the update, write the previous version to `~/.vite-plus/.previous-version`
+1. 在更新前读取 `current` 符号链接目标
+2. 更新后，将上一个版本写入 `~/.vite-plus/.previous-version`
 
-For `--rollback`:
+对于 `--rollback`：
 
-1. Read `~/.vite-plus/.previous-version`
-2. Verify that version directory still exists
-3. Swap `current` symlink to point to it
-4. Update `.previous-version` to point to the version we just rolled back from
+1. 读取 `~/.vite-plus/.previous-version`
+2. 验证该版本目录仍然存在
+3. 切换 `current` 符号链接使其指向该目录
+4. 更新 `.previous-version`，使其指向我们刚刚回滚离开的版本
 
-### Error Handling
+### 错误处理
 
-| Error                           | Recovery                                                      |
-| ------------------------------- | ------------------------------------------------------------- |
-| Network failure during download | Clean up partial temp files, exit with helpful message        |
-| Integrity mismatch (SHA-512)    | Delete downloaded file, report expected vs actual hash, abort |
-| Corrupted tarball               | Verify extraction success, clean up version dir if partial    |
-| `vp install` fails              | Remove the version dir, keep current version unchanged        |
-| Disk full                       | Detect and report, clean up partial state                     |
-| Permission denied               | Report with suggestion to check directory ownership           |
-| Registry returns error          | Parse npm error JSON, show human-readable message             |
+| 错误                           | 恢复方式                                                      |
+| ----------------------------- | ------------------------------------------------------------- |
+| 下载期间网络失败              | 清理未完成的临时文件，以有帮助的消息退出                      |
+| 完整性不匹配（SHA-512）       | 删除已下载文件，报告预期与实际哈希，中止                     |
+| tarball 损坏                  | 验证解压是否成功，若部分完成则清理版本目录                    |
+| `vp install` 失败             | 删除版本目录，保持当前版本不变                                |
+| 磁盘空间不足                  | 检测并报告，清理部分状态                                      |
+| 权限被拒绝                    | 报告并建议检查目录所有权                                      |
+| registry 返回错误             | 解析 npm 错误 JSON，显示人类可读的消息                        |
 
-Key principle: **The `current` symlink is only swapped after all pre-swap steps succeed.** If any pre-swap step fails, the existing installation is untouched. Post-swap operations (shim refresh, old version cleanup) are non-fatal — their errors are printed to stderr as warnings but do not roll back the update.
+核心原则：**只有在所有切换前步骤成功后，才会交换 `current` 符号链接。** 如果任何切换前步骤失败，现有安装不会受到影响。切换后的操作（shim 刷新、旧版本清理）都是非致命的——它们的错误只会作为警告打印到 stderr，不会回滚更新。
 
-### File Structure
+### 文件结构
 
 ```
 crates/vite_global_cli/
 ├── src/
 │   ├── commands/
 │   │   ├── upgrade/
-│   │   │   ├── mod.rs        # Module root, public execute() function
-│   │   │   ├── registry.rs   # npm registry client (version resolution, tarball URLs)
-│   │   │   ├── platform.rs   # Platform detection (os, arch, libc)
-│   │   │   ├── download.rs   # HTTP download + tarball extraction
-│   │   │   └── install.rs    # Extract, dependency install, symlink swap, cleanup
-│   │   ├── mod.rs            # Add upgrade module
+│   │   │   ├── mod.rs        # 模块根，公开 execute() 函数
+│   │   │   ├── registry.rs   # npm registry 客户端（版本解析、tarball URL）
+│   │   │   ├── platform.rs   # 平台检测（os、arch、libc）
+│   │   │   ├── download.rs   # HTTP 下载 + tarball 解压
+│   │   │   └── install.rs    # 解压、依赖安装、符号链接切换、清理
+│   │   ├── mod.rs            # 添加 upgrade 模块
 │   │   └── ...
-│   └── cli.rs                # Add Upgrade command variant
+│   └── cli.rs                # 添加 Upgrade 命令变体
 ```
 
-### Platform Detection
+### 平台检测
 
 ```rust
 fn detect_platform() -> Result<String, Error> {
@@ -400,9 +400,9 @@ fn detect_platform() -> Result<String, Error> {
 }
 ```
 
-### Registry Client
+### Registry 客户端
 
-Uses `reqwest` (already a dependency via `vite_js_runtime`) for HTTP requests:
+使用 `reqwest`（已通过 `vite_js_runtime` 成为依赖）进行 HTTP 请求：
 
 ```rust
 async fn resolve_version(registry: &str, version_or_tag: &str) -> Result<PackageMetadata, Error> {
@@ -412,218 +412,218 @@ async fn resolve_version(registry: &str, version_or_tag: &str) -> Result<Package
 }
 ```
 
-### CLI Integration
+### CLI 集成
 
-Add `Upgrade` to the `Commands` enum in `cli.rs`:
+在 `cli.rs` 中向 `Commands` 枚举添加 `Upgrade`：
 
 ```rust
-/// Update vp itself to the latest version
+/// 将 vp 本身更新到最新版本
 #[command(name = "upgrade", visible_alias = "upgrade")]
 Upgrade {
-    /// Target version (default: latest)
+    /// 目标版本（默认：latest）
     version: Option<String>,
 
-    /// npm dist-tag (default: "latest")
+    /// npm dist-tag（默认：latest）
     #[arg(long, default_value = "latest")]
     tag: String,
 
-    /// Check for updates without installing
+    /// 仅检查更新，不安装
     #[arg(long)]
     check: bool,
 
-    /// Revert to previous version
+    /// 回退到上一个版本
     #[arg(long)]
     rollback: bool,
 
-    /// Force reinstall even if up to date
+    /// 即使已是最新也强制重装
     #[arg(long)]
     force: bool,
 
-    /// Suppress output
+    /// 抑制输出
     #[arg(long)]
     silent: bool,
 
-    /// Custom npm registry URL
+    /// 自定义 npm registry URL
     #[arg(long)]
     registry: Option<String>,
 },
 ```
 
-## Design Decisions
+## 设计决策
 
-### 1. Command Name: `upgrade`
+### 1. 命令名称：`upgrade`
 
-**Decision**: Use `vp upgrade` (with hyphen).
+**决策**：使用 `vp upgrade`（带连字符）。
 
-**Alternatives considered**:
+**考虑过的替代方案**：
 
-- `vp upgrade` — used by Deno, Bun, proto; shorter but ambiguous with `vp update` (packages)
-- `vp self upgrade` — used by rustup (`rustup self update`); requires subcommand group
+- `vp upgrade` — 被 Deno、Bun、proto 使用；更短，但与 `vp update`（包）容易混淆
+- `vp self upgrade` — 被 rustup 使用（`rustup self update`）；需要子命令分组
 
-**Rationale**:
+**理由**：
 
-- Matches pnpm (`pnpm upgrade`) and mise (`mise upgrade`) conventions
-- Zero ambiguity with `vp update` (which updates npm packages)
-- The hyphen is consistent with `list-remote` in `vp env`
-- Tools without upgrade (fnm, volta, nvm) require re-running install scripts — worse UX
-- `upgrade` is registered as a visible alias, so `vp upgrade` also works (matches Deno/Bun/proto users' expectations)
+- 符合 pnpm（`pnpm upgrade`）和 mise（`mise upgrade`）的约定
+- 与 `vp update`（用于更新 npm 包）完全没有歧义
+- 连字符与 `vp env` 中的 `list-remote` 保持一致
+- 没有 upgrade 命令的工具（fnm、volta、nvm）需要重新运行安装脚本 —— 用户体验更差
+- `upgrade` 被注册为一个可见别名，因此 `vp upgrade` 也能工作（符合 Deno/Bun/proto 用户的预期）
 
-### 2. Pure Rust Implementation (No Shell Script Re-execution)
+### 2. 纯 Rust 实现（不重新执行 Shell 脚本）
 
-**Decision**: Implement the update logic entirely in Rust.
+**决策**：完全使用 Rust 实现更新逻辑。
 
-**Rationale**:
+**理由**：
 
-- No dependency on bash or curl being installed
-- Better error handling and progress reporting
-- Consistent behavior across platforms
-- The install.sh script remains for first-time installation only
+- 不依赖已安装的 bash 或 curl
+- 更好的错误处理和进度报告
+- 跨平台行为一致
+- `install.sh` 脚本仅保留用于首次安装
 
-### 3. Reuse npm Distribution Channel
+### 3. 复用 npm 分发渠道
 
-**Decision**: Download tarballs from the same npm registry used by `install.sh`.
+**决策**：从 `install.sh` 使用的同一个 npm 注册表下载 tarball。
 
-**Rationale**:
+**理由**：
 
-- No new infrastructure needed
-- Same release pipeline, same artifacts
-- Supports custom registries and mirrors via `--registry` or `NPM_CONFIG_REGISTRY`
-- Users behind corporate proxies already have npm registry access configured
+- 不需要新的基础设施
+- 相同的发布流水线，相同的制品
+- 通过 `--registry` 或 `NPM_CONFIG_REGISTRY` 支持自定义注册表和镜像
+- 企业代理后的用户通常已经配置好了 npm 注册表访问
 
-### 4. No Automatic Update Checks
+### 4. 不自动检查更新
 
-**Decision**: Do not check for updates on every `vp` invocation.
+**决策**：不要在每次调用 `vp` 时检查更新。
 
-**Rationale**:
+**理由**：
 
-- Avoids unexpected network requests that slow down commands
-- Avoids privacy concerns (phoning home on every run)
-- Users can opt into periodic checks via their own cron/launchd if desired
-- This can be revisited as a future enhancement with proper opt-in
+- 避免意外的网络请求拖慢命令执行
+- 避免隐私问题（每次运行都“回传”）
+- 如果用户愿意，可以通过自己的 cron/launchd 选择启用定期检查
+- 未来可以在适当的用户主动选择机制下重新考虑作为增强功能
 
-### 5. Keep 5 Versions for Rollback
+### 5. 保留 3 个版本以便回滚
 
-**Decision**: Maintain the same cleanup policy as `install.sh` (keep 5 most recent versions by creation time, with protected versions).
+**决策**：保持与 `install.sh` 相同的清理策略（按创建时间保留最近 3 个版本，并带有受保护版本）。
 
-**Rationale**:
+**理由**：
 
-- Consistent with existing `install.sh` behavior (sorts by creation time, not semver)
-- Provides rollback safety net without unbounded disk usage
-- Each version is ~20-30MB, so 5 versions is ~100-150MB total
-- The active version and previous version are always protected from cleanup, preventing accidental deletion after a downgrade
+- 与现有 `install.sh` 行为一致（按创建时间排序，而不是 semver）
+- 在不无限制占用磁盘空间的前提下提供回滚安全保障
+- 每个版本约为 ~20-30MB，因此 3 个版本总计约为 ~60-90MB
+- 当前活动版本和上一个版本始终受到清理保护，防止降级后被意外删除
 
-## Implementation Phases
+## 实现阶段
 
-### Phase 0 (P0): Core Self-Update
+### 阶段 0（P0）：核心自更新
 
-**Scope:**
+**范围：**
 
-- `vp upgrade` — downloads and installs the latest version
-- `vp upgrade <version>` — installs a specific version
-- `--tag`, `--force`, `--silent` flags
-- Platform detection, npm registry query, download, extract, symlink swap
-- Version cleanup (keep 5)
-- Error handling with clean rollback
+- `vp upgrade` — 下载并安装最新版本
+- `vp upgrade <version>` — 安装指定版本
+- `--tag`、`--force`、`--silent` 标志
+- 平台检测、npm 注册表查询、下载、解压、符号链接切换
+- 版本清理（保留 3 个）
+- 带有干净回滚的错误处理
 
-**Files to create/modify:**
+**需要创建/修改的文件：**
 
-- `crates/vite_global_cli/src/commands/upgrade/mod.rs` (new)
-- `crates/vite_global_cli/src/commands/upgrade/registry.rs` (new)
-- `crates/vite_global_cli/src/commands/upgrade/platform.rs` (new)
-- `crates/vite_global_cli/src/commands/upgrade/download.rs` (new)
-- `crates/vite_global_cli/src/commands/upgrade/install.rs` (new)
-- `crates/vite_global_cli/src/commands/mod.rs` (add module)
-- `crates/vite_global_cli/src/cli.rs` (add command variant + routing)
+- `crates/vite_global_cli/src/commands/upgrade/mod.rs`（新建）
+- `crates/vite_global_cli/src/commands/upgrade/registry.rs`（新建）
+- `crates/vite_global_cli/src/commands/upgrade/platform.rs`（新建）
+- `crates/vite_global_cli/src/commands/upgrade/download.rs`（新建）
+- `crates/vite_global_cli/src/commands/upgrade/install.rs`（新建）
+- `crates/vite_global_cli/src/commands/mod.rs`（添加模块）
+- `crates/vite_global_cli/src/cli.rs`（添加命令变体 + 路由）
 
-**Success Criteria:**
+**成功标准：**
 
-- [ ] `vp upgrade` downloads and installs the latest version
-- [ ] `vp upgrade 0.x.y` installs a specific version
-- [ ] Downloaded tarballs are verified against npm registry `integrity` (SHA-512)
-- [ ] Running binary is not affected during update
-- [ ] Failed update leaves the current installation untouched
-- [ ] Old versions are cleaned up (max 5 retained)
-- [ ] Works on macOS, Linux, and Windows
+- [ ] `vp upgrade` 能下载并安装最新版本
+- [ ] `vp upgrade 0.x.y` 能安装指定版本
+- [ ] 下载的 tarball 会根据 npm 注册表中的 `integrity`（SHA-512）进行校验
+- [ ] 运行中的二进制文件在更新期间不受影响
+- [ ] 更新失败时保持当前安装不变
+- [ ] 旧版本会被清理（最多保留 3 个）
+- [ ] 可在 macOS、Linux 和 Windows 上运行
 
-### Phase 1 (P1): Rollback and Check
+### 阶段 1（P1）：回滚与检查
 
-**Scope:**
+**范围：**
 
-- `--rollback` flag with `.previous-version` tracking
-- `--check` flag for update availability check
+- 带有 `.previous-version` 跟踪的 `--rollback` 标志
+- 用于检查更新可用性的 `--check` 标志
 
-**Success Criteria:**
+**成功标准：**
 
-- [ ] `vp upgrade --rollback` reverts to previous version
-- [ ] `vp upgrade --check` shows available update without installing
+- [ ] `vp upgrade --rollback` 可回退到上一个版本
+- [ ] `vp upgrade --check` 可显示可用更新而不进行安装
 
-### Phase 2 (P2): Enhanced UX
+### 阶段 2（P2）：增强用户体验
 
-**Scope:**
+**范围：**
 
-- Progress bar for downloads (using `indicatif` or similar)
-- Release notes URL in update success message
-- `--registry` flag for custom npm registry
+- 下载进度条（使用 `indicatif` 或类似工具）
+- 更新成功消息中显示发布说明 URL
+- 用于自定义 npm 注册表的 `--registry` 标志
 
-**Success Criteria:**
+**成功标准：**
 
-- [ ] Download progress is visible for large binaries
-- [ ] Release notes link is shown after successful update
+- [ ] 大型二进制文件的下载进度可见
+- [ ] 成功更新后会显示发布说明链接
 
-## Testing Strategy
+## 测试策略
 
-### Unit Tests
+### 单元测试
 
-- Version comparison logic (semver parsing, equality, ordering)
-- Platform detection (mock `std::env::consts`)
-- Registry URL construction
-- Symlink swap atomicity
+- 版本比较逻辑（semver 解析、相等性、排序）
+- 平台检测（mock `std::env::consts`）
+- 注册表 URL 构造
+- 符号链接切换的原子性
 
-### Integration Tests
+### 集成测试
 
-- Download and extract a real package from the test npm tag
-- Verify version directory structure after install
-- Verify `current` symlink points to new version
-- Verify old version cleanup
+- 从测试 npm tag 下载并解压一个真实包
+- 验证安装后的版本目录结构
+- 验证 `current` 符号链接指向新版本
+- 验证旧版本清理
 
-### Snap Tests
+### 快照测试
 
 ```bash
-# Test: upgrade check (mock registry response)
+# 测试：upgrade 检查（mock 注册表响应）
 pnpm -F vite-plus-cli snap-test upgrade-check
 
-# Test: upgrade to specific version
+# 测试：升级到指定版本
 pnpm -F vite-plus-cli snap-test upgrade-version
 ```
 
-### Manual Testing
+### 手动测试
 
 ```bash
-# Build and install current version
+# 构建并安装当前版本
 pnpm bootstrap-cli
 
-# Run upgrade to latest published version
+# 运行 upgrade 到最新已发布版本
 vp upgrade
 
-# Verify version changed
+# 验证版本已变更
 vp -V
 
-# Test rollback
+# 测试回滚
 vp upgrade --rollback
 vp -V
 ```
 
-## Future Enhancements
+## 未来增强
 
-- **Automatic update check**: Periodic background check with opt-in notification (e.g., once per day, cached result)
-- **Update channels**: Allow pinning to a channel (stable, beta, nightly) via config file
-- **Delta updates**: Download only changed files instead of full tarballs
-- **Windows support**: Extend to PowerShell-based update mechanism for Windows native installs
+- **自动检查更新**：带有用户主动选择通知的周期性后台检查（例如每天一次，缓存结果）
+- **更新通道**：允许通过配置文件固定到某个通道（stable、beta、nightly）
+- **增量更新**：只下载变更的文件，而不是完整 tarball
+- **Windows 支持**：为 Windows 原生安装扩展基于 PowerShell 的更新机制
 
-## References
+## 参考资料
 
-- [RFC: Global CLI (Rust Binary)](./global-cli-rust-binary.md)
-- [RFC: Split Global CLI](./split-global-cli.md)
-- [RFC: Env Command](./env-command.md)
-- [Install Script](../packages/cli/install.sh)
-- [Release Workflow](../.github/workflows/release.yml)
+- [RFC：全局 CLI（Rust 二进制）](./global-cli-rust-binary.md)
+- [RFC：拆分全局 CLI](./split-global-cli.md)
+- [RFC：Env 命令](./env-command.md)
+- [安装脚本](../packages/cli/install.sh)
+- [发布工作流](../.github/workflows/release.yml)

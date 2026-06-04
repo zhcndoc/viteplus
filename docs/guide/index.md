@@ -4,6 +4,10 @@ Vite+ 是统一的网络开发工具链和入口点。它通过结合 [Vite](htt
 
 Vite+ 分为两部分：`vp`（全局命令行工具）和 `vite-plus`（安装在每个项目中的本地包）。如果你已经有一个 Vite 项目，请使用 [`vp migrate`](/guide/migrate) 将其迁移到 Vite+，或者将我们的 [迁移提示](/guide/migrate#migration-prompt) 粘贴到你的编码工具中。
 
+正在使用 AI 助手进行构建？复制一份现成的设置提示：
+
+<CopyPrompt />
+
 ## 安装 `vp`
 
 ### macOS / Linux

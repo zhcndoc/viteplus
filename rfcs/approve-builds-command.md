@@ -177,25 +177,28 @@ Running: bun pm trust --all
 
 **npm 参考：**
 
-- 没有等价命令。最接近的配置项：[`ignore-scripts`](https://docs.npmjs.com/cli/v11/using-npm/config#ignore-scripts) 和 [`npm rebuild`](https://docs.npmjs.com/cli/v11/commands/npm-rebuild)。
+- `npm approve-scripts` / `npm deny-scripts` (npm ≥ 11.16.0, npm/cli #9360) 在 `package.json` 中管理一个建议性的 `allowScripts` 字段。在 npm 11.x 中这只是建议性的：安装脚本仍会运行；npm 只会对未审核的包发出警告。
+- 对于 npm < 11.16.0：没有等价命令。最接近的配置是 [`ignore-scripts`](https://docs.npmjs.com/cli/v11/using-npm/config#ignore-scripts) 和 [`npm rebuild`](https://docs.npmjs.com/cli/v11/commands/npm-rebuild)。
 
 **yarn 参考：**
 
 - 没有等价命令。yarn@2+ 默认已阻止第三方构建脚本（[`enableScripts`](https://yarnpkg.com/configuration/yarnrc#enableScripts) 默认为 `false`）；按包启用通过 `package.json` 中的 [`dependenciesMeta.<pkg>.built`](https://yarnpkg.com/configuration/manifest#dependenciesMeta) 完成。
 
-| Vite+ 标志                    | pnpm                                     | npm        | yarn@1     | yarn@2+    | bun                         | 说明                            |
-| ----------------------------- | ---------------------------------------- | ---------- | ---------- | ---------- | --------------------------- | ------------------------------- |
-| `vp pm approve-builds`        | `pnpm approve-builds`                    | N/A（警告） | N/A（警告） | N/A（警告） | N/A（提示）                  | 交互式提示（仅 pnpm）            |
-| `vp pm approve-builds <pkg>`  | `pnpm approve-builds <pkg>`              | N/A（警告） | N/A（警告） | N/A（警告） | `bun pm trust <pkg>`        | 批准指定包                      |
-| `vp pm approve-builds !<pkg>` | `pnpm approve-builds !<pkg>`             | N/A（警告） | N/A（警告） | N/A（警告） | N/A（警告——模型不匹配）     | 拒绝指定包（仅 pnpm）           |
-| `--all`                       | `pnpm approve-builds --all`（≥ v10.32.0） | N/A（警告） | N/A（警告） | N/A（警告） | `bun pm trust --all`        | 批准所有待处理包               |
+| Vite+ Flag                    | pnpm                                     | npm (≥ 11.16.0)                               | yarn@1     | yarn@2+    | bun                         | Description                                 |
+| ----------------------------- | ---------------------------------------- | --------------------------------------------- | ---------- | ---------- | --------------------------- | ------------------------------------------- |
+| `vp pm approve-builds`        | `pnpm approve-builds`                    | `npm approve-scripts --allow-scripts-pending` | N/A (warn) | N/A (warn) | N/A (note)                  | pnpm: 交互式提示；npm: 列出待处理项 |
+| `vp pm approve-builds <pkg>`  | `pnpm approve-builds <pkg>`              | `npm approve-scripts <pkg>`                   | N/A (warn) | N/A (warn) | `bun pm trust <pkg>`        | 批准命名包                      |
+| `vp pm approve-builds !<pkg>` | `pnpm approve-builds !<pkg>`             | `npm deny-scripts <pkg>`                      | N/A (warn) | N/A (warn) | N/A (warn — model mismatch) | 拒绝命名包（pnpm、npm）             |
+| `--all`                       | `pnpm approve-builds --all` (≥ v10.32.0) | `npm approve-scripts --all`                   | N/A (warn) | N/A (warn) | `bun pm trust --all`        | 批准所有待处理包               |
 
 **说明：**
 
-- **`!pkg` 拒绝语法仅适用于 pnpm。** 对于 bun，会以警告拒绝该语法，并明确指出受影响的位置参数名（这样用户能注意到，而不是悄悄得到一个部分批准的结果）。
-- **npm 和 yarn 从不拥有 `approve-builds` 命令。** Vite+ 会打印一行 `warn` 并以 0 退出。对于 npm（默认执行脚本），警告会指向 `ignore-scripts`。对于 yarn（默认阻止第三方脚本），警告会指向 `dependenciesMeta.<pkg>.built`。我们刻意以 0 退出（而不是非 0），这样在异构环境中机会式运行 `vp pm approve-builds` 的 monorepo 脚本不会失败。
-- **bun 的无参数模式** 也会以 0 退出并打印 `note`（因为 `bun pm trust` 需要包名；没有可转发的交互式选择器）。
-- **配置存储不同：** pnpm 将内容写入 `pnpm-workspace.yaml` 的 `allowBuilds:` 下；bun 将内容写入 `package.json` 的 `trustedDependencies: []` 下。Vite+ 不会统一存储位置——各个 PM 都由自己维护状态。（见 [设计决策 §2](#2-do-not-normalize-storage)。）
+- **`!pkg` 拒绝语法在 pnpm 和 npm 上受支持。** pnpm 会原样转发 `!core-js`；npm 会去掉 `!` 并将其路由到 `npm deny-scripts core-js`。对于 bun，拒绝语法会被拒绝，并给出一个警告，说明受影响的位置参数名称（这样用户能注意到，而不是悄悄获得一个部分批准结果）。
+- **npm 将批准与拒绝拆分为两个独立命令**（`approve-scripts` / `deny-scripts`）。由于 `vp pm approve-builds` 一次调用中同时接受两者，npm 上的混合调用（`vp pm approve-builds esbuild !core-js`）会被**拒绝**，并给出可执行的消息，要求用户分别执行两项操作。pnpm 在单个命令中处理混合情况。
+- **npm < 11.16.0 和 yarn 从来都没有 `approve-builds` 命令。** Vite+ 会打印一行 `warn` 并以 0 退出。对于 npm，警告会提示升级到 npm ≥ 11.16.0（或使用 `ignore-scripts`）。对于 yarn（默认阻止第三方脚本），警告会提示 `dependenciesMeta.<pkg>.built`。我们有意以 0 退出（而非非 0），这样在异构环境中按机会运行 `vp pm approve-builds` 的 monorepo 脚本不会失败。
+- **npm 的 `allowScripts` 在 npm 11.x 中仅为建议性。** 即使批准之后，安装脚本仍会运行；npm 只会在安装时对未审核的包发出警告。Vite+ 会在 npm approve/deny 写入后显示一行 `note`，以明确这一点。强制执行计划在未来的 npm 版本中实现。
+- **bun 的无参数模式** 同样会以 `note` 和 0 退出（bun 的 `bun pm trust` 需要包名；没有可转发的交互式选择器）。
+- **配置存储不同：** pnpm 写入 `pnpm-workspace.yaml` 下的 `allowBuilds:`。bun 写入 `package.json` 下的 `trustedDependencies: []`。Vite+ 不会统一存储位置——每个 PM 拥有各自的状态。（参见 [设计决策 §2](#2-do-not-normalize-storage)。)
 
 ### 实现架构
 
@@ -394,7 +397,7 @@ impl ApproveBuildsCommand {
 
 ### 1. 严格镜像 pnpm 已文档化的表面能力
 
-**决策**：Vite+ 仅暴露 `pnpm approve-builds` 文档中说明的内容——位置参数包名（带 `!pkg` 拒绝前缀）以及 `--all`。Bun 的额外命令（`bun pm untrusted`、`bun pm default-trusted`）**不**会被折叠成标志位。
+**决策**：Vite+ 仅暴露 `pnpm approve-builds` 文档中说明的内容——位置参数包名（带 `!pkg` 拒绝前缀）以及 `--all`。Bun 的额外命令（`bun pm untrusted`、`bun pm default-trusted`）**不会**被折叠成标志位。
 
 **理由**：pnpm 和 bun 只共享“批准这些包”这一操作。添加 `--list`、`--default-trusted`、`-y` 或 `-g` 要么是凭空发明出 pnpm 文档表面并不存在的标志，要么是掩盖 bun 的独立命令模型。如果以后需要 `vp pm untrusted` 和 `vp pm default-trusted`，它们应该作为 `pm` 下的同级子命令单独存在（类似 bun）——那应是后续 RFC，而不是这里的范围蔓延。
 
@@ -419,17 +422,19 @@ impl ApproveBuildsCommand {
 - 直接报错会让一位开发者在 `vp pm approve-builds esbuild !core-js` 时受阻——他可能是从 pnpm 教程复制了命令，但恰好在某个仓库里使用 bun。
 - 该警告会指出被丢弃的包名，因此这种差异是可审计的。
 
-### 4. npm / yarn：警告 + 退出码 0
+### 4. npm < 11.16.0 / yarn: warn + exit 0
 
-**决策**：在 npm 和 yarn 上输出 `warn`，并返回退出码 0。
+**决策**：当包管理器没有可转发到的原生批准命令时，输出 `warn` 并返回退出码 0：yarn（所有版本）以及 npm < 11.16.0。
+
+> **更新（npm ≥ 11.16.0）**：npm 已发布 `approve-scripts` / `deny-scripts`（[npm/cli#9360](https://github.com/npm/cli/pull/9360)）。Vite+ 现在会转发到它们（见 [命令映射](#command-mapping)）。与 pnpm 和 bun 一样，这意味着会真正运行命令并可能返回非零退出码，而且混合的 approve+deny 调用会被拒绝（`Error::InvalidArgument`）。下面的 warn + exit-0 回退仅适用于 npm < 11.16.0。
 
 **理由**：
 
-- **npm** 默认会运行生命周期脚本——该警告会提示如何去 _限制_ 它们（`ignore-scripts=true`）。
-- **yarn（Berry）** 默认会阻止第三方构建脚本；按包启用的配置位于 `package.json` 中（`dependenciesMeta.<pkg>.built: true`）。我们使用 `warn` 提示这个字段，而不是自行修改文件——这样可以保持在 RFC 有意收紧的范围内。
-- 两种场景都使用 `warn`（而不是 `note`）以保持一致：用户调用了 `approve-builds`，但在该包管理器上无法完成请求的动作，因此需要一个可见信号和手动替代方案。
-- 退出码 0 使得在不同仓库中有条件运行 `vp pm approve-builds --all` 的 CI 脚本可以正常工作。
-- 返回非 0（另一种选择）会破坏 monorepo 编排脚本，并要求针对不同 PM 编写条件分支。
+- **npm < 11.16.0** 默认运行生命周期脚本，并且没有批准命令——该警告会提示升级到 npm ≥ 11.16.0，或者提示如何 _限制_ 脚本（`ignore-scripts=true`）。
+- **yarn（Berry）** 默认阻止第三方构建脚本；按包启用的配置位于 `package.json` 中（`dependenciesMeta.<pkg>.built: true`）。我们会 `warn` 并指向该字段，而不是自行修改——这仍然保持在 RFC 有意收紧的范围内。
+- 这两种回退路径都使用 `warn`（而不是 `note`）以保持一致：用户调用了 `approve-builds`，但在该 PM 上无法完成请求的动作，因此需要一个明显的信号和手动替代方案。
+- 在回退路径上返回退出码 0，可以让在 CI 中按条件运行 `vp pm approve-builds --all` 的脚本，在不同仓库中正常工作，即使某些 PM 没有批准命令。
+- 回退路径返回非零退出码（另一种方案）会破坏 monorepo 编排脚本，并迫使引入按 PM 区分的条件分支。（一旦某个 PM _确实_ 有命令——pnpm、bun、npm ≥ 11.16.0——Vite+ 就会运行它并暴露其真实退出码，与任何转发命令一致。）
 
 ### 5. bun 上无参数：`note` + 退出码 0
 

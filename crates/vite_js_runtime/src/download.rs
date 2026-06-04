@@ -37,73 +37,104 @@ pub async fn download_file(
     target_path: &AbsolutePath,
     message: &str,
 ) -> Result<(), Error> {
-    vite_shared::ensure_tls_provider();
+    let client = vite_shared::shared_http_client();
 
     tracing::debug!("Downloading {url} to {target_path:?}");
 
-    let response = (|| async { reqwest::get(url).await?.error_for_status() })
-        .retry(
-            ExponentialBuilder::default()
-                .with_jitter()
-                .with_min_delay(Duration::from_millis(500))
-                .with_max_times(3),
-        )
-        .await
-        .map_err(|e| Error::DownloadFailed { url: url.into(), reason: vite_str::format!("{e}") })?;
-
-    // Get Content-Length for progress bar
-    let total_size = response.content_length();
-
-    // Create progress bar (only in TTY and not in CI)
+    // Create progress bar (only in TTY and not in CI). Built once and reused
+    // across retry attempts; its position is reset at the start of every
+    // attempt so a retried download doesn't double-count bytes.
     let is_ci = vite_shared::EnvConfig::get().is_ci;
     let progress = if std::io::stderr().is_terminal() && !is_ci {
-        let pb = if let Some(size) = total_size {
-            let pb = ProgressBar::new(size);
-            pb.set_style(
-                ProgressStyle::default_bar()
-                    .template(
-                        "{msg}\n{spinner:.green} [{elapsed_precise}] [{bar:40.blue/white}] \
-                         {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
-                    )
-                    .expect("valid progress bar template")
-                    .progress_chars("#>-"),
-            );
-            pb
-        } else {
-            let pb = ProgressBar::new_spinner();
-            pb.set_style(
-                ProgressStyle::default_spinner()
-                    .template(
-                        "{msg}\n{spinner:.green} [{elapsed_precise}] {bytes} ({bytes_per_sec})",
-                    )
-                    .expect("valid spinner template"),
-            );
-            pb.enable_steady_tick(Duration::from_millis(100));
-            pb
-        };
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("{msg}\n{spinner:.green} [{elapsed_precise}] {bytes} ({bytes_per_sec})")
+                .expect("valid spinner template"),
+        );
+        pb.enable_steady_tick(Duration::from_millis(100));
         pb.set_message(message.to_string());
         Some(pb)
     } else {
         None
     };
 
-    // Stream to file with progress updates
-    let mut file = fs::File::create(target_path).await?;
-    let mut stream = response.bytes_stream();
+    // Make the request *and* the body stream a single retried unit, so a
+    // truncated download (bytes written != advertised Content-Length) triggers
+    // a re-download instead of surfacing as a corrupt archive later.
+    let result = (|| async {
+        let response = client.get(url).send().await?.error_for_status()?;
 
-    while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result?;
+        // Advertised length, used both for the progress bar and the
+        // truncation check below.
+        let total_size = response.content_length();
+
         if let Some(ref pb) = progress {
-            pb.inc(chunk.len() as u64);
+            // Reset for this attempt.
+            pb.set_position(0);
+            if let Some(size) = total_size {
+                pb.set_length(size);
+                pb.set_style(
+                    ProgressStyle::default_bar()
+                        .template(
+                            "{msg}\n{spinner:.green} [{elapsed_precise}] [{bar:40.blue/white}] \
+                             {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
+                        )
+                        .expect("valid progress bar template")
+                        .progress_chars("#>-"),
+                );
+            }
         }
-        file.write_all(&chunk).await?;
-    }
 
-    file.flush().await?;
+        // Stream to file with progress updates.
+        let mut file = fs::File::create(target_path).await?;
+        let mut stream = response.bytes_stream();
+        let mut bytes_written: u64 = 0;
+
+        while let Some(chunk_result) = stream.next().await {
+            let chunk = chunk_result?;
+            bytes_written += chunk.len() as u64;
+            if let Some(ref pb) = progress {
+                pb.inc(chunk.len() as u64);
+            }
+            file.write_all(&chunk).await?;
+        }
+
+        file.flush().await?;
+
+        // Detect truncation: a short read against an advertised Content-Length
+        // is an incomplete download — error out so the retry re-downloads.
+        if let Some(expected_len) = total_size
+            && bytes_written != expected_len
+        {
+            return Err(Error::Io(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                vite_str::format!(
+                    "incomplete download: expected {expected_len} bytes, got {bytes_written}"
+                )
+                .to_string(),
+            )));
+        }
+
+        Ok(())
+    })
+    .retry(
+        ExponentialBuilder::default()
+            .with_jitter()
+            .with_min_delay(Duration::from_millis(500))
+            .with_max_times(3),
+    )
+    .await
+    .map_err(|e| Error::DownloadFailed {
+        url: url.into(),
+        reason: vite_shared::format_error_chain(&e).into(),
+    });
 
     if let Some(pb) = progress {
         pb.finish_and_clear();
     }
+
+    result?;
 
     tracing::debug!("Download completed: {target_path:?}");
 
@@ -113,11 +144,11 @@ pub async fn download_file(
 /// Download text content from a URL with retry logic
 #[expect(clippy::disallowed_types, reason = "HTTP response body is a String")]
 pub async fn download_text(url: &str) -> Result<String, Error> {
-    vite_shared::ensure_tls_provider();
+    let client = vite_shared::shared_http_client();
 
     tracing::debug!("Downloading text from {url}");
 
-    let content = (|| async { reqwest::get(url).await?.text().await })
+    let content = (|| async { client.get(url).send().await?.error_for_status()?.text().await })
         .retry(
             ExponentialBuilder::default()
                 .with_jitter()
@@ -125,7 +156,10 @@ pub async fn download_text(url: &str) -> Result<String, Error> {
                 .with_max_times(3),
         )
         .await
-        .map_err(|e| Error::DownloadFailed { url: url.into(), reason: vite_str::format!("{e}") })?;
+        .map_err(|e| Error::DownloadFailed {
+            url: url.into(),
+            reason: vite_shared::format_error_chain(&e).into(),
+        })?;
 
     Ok(content)
 }
@@ -138,12 +172,11 @@ pub async fn fetch_with_cache_headers(
     url: &str,
     if_none_match: Option<&str>,
 ) -> Result<CachedFetchResponse, Error> {
-    vite_shared::ensure_tls_provider();
+    let client = vite_shared::shared_http_client();
 
     tracing::debug!("Fetching with cache headers from {url}");
 
     let response = (|| async {
-        let client = reqwest::Client::new();
         let mut request = client.get(url);
 
         if let Some(etag) = if_none_match {
@@ -159,7 +192,10 @@ pub async fn fetch_with_cache_headers(
             .with_max_times(3),
     )
     .await
-    .map_err(|e| Error::DownloadFailed { url: url.into(), reason: vite_str::format!("{e}") })?;
+    .map_err(|e| Error::DownloadFailed {
+        url: url.into(),
+        reason: vite_shared::format_error_chain(&e).into(),
+    })?;
 
     // Check for 304 Not Modified
     if response.status() == reqwest::StatusCode::NOT_MODIFIED {
@@ -182,10 +218,10 @@ pub async fn fetch_with_cache_headers(
         .and_then(|v| v.to_str().ok())
         .and_then(parse_max_age);
 
-    let body = response
-        .text()
-        .await
-        .map_err(|e| Error::DownloadFailed { url: url.into(), reason: vite_str::format!("{e}") })?;
+    let body = response.text().await.map_err(|e| Error::DownloadFailed {
+        url: url.into(),
+        reason: vite_shared::format_error_chain(&e).into(),
+    })?;
 
     Ok(CachedFetchResponse { body: Some(body), etag, max_age, not_modified: false })
 }

@@ -61,15 +61,35 @@ export default defineConfig({
 
 ## `run.tasks`
 
-- **类型:** `Record<string, TaskConfig>`
+- **类型:** `Record<string, Task | string | string[]>`
 
 定义可以通过 `vp run <task>` 运行的任务。
 
+作为简写，任务值可以直接是命令字符串或命令字符串数组：
+
+```ts [vite.config.ts]
+tasks: {
+  build: 'vp build',
+  check: ['vp lint', 'vp build'],
+}
+```
+
+这等价于仅在任务配置中设置 `command`：
+
+```ts [vite.config.ts]
+tasks: {
+  build: { command: 'vp build' },
+  check: { command: ['vp lint', 'vp build'] },
+}
+```
+
+当任务需要其他字段，如 `cache`、`dependsOn`、`env` 或 `input` 时，请使用对象形式。
+
 ### `command`
 
-- **类型:** `string`
+- **类型:** `string | string[]`
 
-定义任务要运行的 shell 命令。
+定义要为该任务运行的 shell 命令。该字符串会由 shell 解释，因此空格、引号、`&&`、管道符和重定向都可以像在命令行中写的那样正常工作。
 
 ```ts [vite.config.ts]
 tasks: {
@@ -79,9 +99,24 @@ tasks: {
 }
 ```
 
-在 `vite.config.ts` 中定义的每个任务都必须包含自己的 `command`。你不能使用相同的任务名称在 `vite.config.ts` 和 `package.json` 中定义任务。
+数组会按顺序将每一项作为单独的命令运行，等同于用 `&&` 连接。它**不是**将一个命令拆分为 argv 参数的方式——`['vp', 'build']` 会尝试先运行一个名为 `vp` 的命令且不带参数，然后再运行一个名为 `build` 的命令，而不是 `vp build`。
 
-使用 `&&` 连接的命令会自动拆分为独立缓存的子任务。参见[复合命令](/guide/run#compound-commands)。
+```ts [vite.config.ts]
+tasks: {
+  check: {
+    // 两个命令，按顺序运行
+    command: ['vp lint', 'vp build'],
+  },
+  bad: {
+    // 错误：这不是 `vp build`；而是先执行 `vp`，再执行 `build`
+    command: ['vp', 'build'],
+  },
+}
+```
+
+在 `vite.config.ts` 中定义的每个任务都必须包含自己的 `command`。你不能在 `vite.config.ts` 和 `package.json` 中定义同名任务。
+
+使用 `&&` 连接的命令（或以数组形式提供的命令）会自动拆分为可独立缓存的子任务。参见[复合命令](/guide/run#compound-commands)。
 
 ### `dependsOn`
 
@@ -182,7 +217,7 @@ Vite Task 会自动检测命令使用了哪些文件（参见[自动文件跟踪
 tasks: {
   build: {
     command: 'vp build',
-    // 使用 `{ auto: true }` 使用自动指纹识别（默认）。
+    // 使用 `{ auto: true }` 进行自动指纹识别（默认）。
     input: [{ auto: true }, '!**/*.tsbuildinfo', '!dist/**'],
   },
 }

@@ -169,6 +169,8 @@ pub async fn dispatch(
             latest,
             global: _,
             concurrency: _,
+            reinstall_node_mismatch: _,
+            ignore_node_mismatch: _,
             recursive,
             filter,
             workspace_root,
@@ -217,6 +219,7 @@ pub async fn dispatch(
             compatible,
             sort_by,
             global,
+            concurrency: _,
             pass_through_args,
         } => {
             let options = OutdatedCommandOptions {
@@ -249,7 +252,6 @@ pub async fn dispatch(
             dev,
             depth,
             no_optional,
-            global,
             exclude_peers,
             find_by,
             pass_through_args,
@@ -266,7 +268,6 @@ pub async fn dispatch(
                 dev,
                 depth,
                 no_optional,
-                global,
                 exclude_peers,
                 find_by: find_by.as_deref(),
                 pass_through_args: pass_through_args.as_deref(),

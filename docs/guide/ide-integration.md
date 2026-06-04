@@ -71,7 +71,7 @@ Vite+ 通过编辑器特定设置支持 VS Code 和 Zed，`vp create` 和 `vp mi
     "oxfmt": {
       "initialization_options": {
         "settings": {
-          "configPath": "./vite.config.ts",
+          "fmt.configPath": "./vite.config.ts",
           "run": "onSave"
         }
       }
@@ -98,4 +98,4 @@ Vite+ 通过编辑器特定设置支持 VS Code 和 Zed，`vp create` 和 `vp mi
 }
 ```
 
-将 `oxfmt.configPath` 设置为 `./vite.config.ts`，可以让编辑器的保存时格式化与 Vite+ 配置中的 `fmt` 区块保持一致。生成的完整配置还涵盖了其他语言（CSS、HTML、JSON、Markdown 等）——运行 `vp create` 或 `vp migrate` 可自动写入完整文件。
+将 `oxfmt.fmt.configPath` 设置为 `./vite.config.ts`，可以让编辑器的保存时格式化与 Vite+ 配置中的 `fmt` 区块保持一致。完整生成的配置还涵盖了其他语言（CSS、HTML、JSON、Markdown 等）——运行 `vp create` 或 `vp migrate` 可自动写入完整文件。

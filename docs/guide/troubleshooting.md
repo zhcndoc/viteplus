@@ -17,40 +17,19 @@ Vite+ 期望使用现代的上游工具版本。
 
 ## `vp check` 未运行类型感知 lint 规则或类型检查
 
-- 确认 `lint.options.typeAware` 和 `lint.options.typeCheck` 在 `vite.config.ts` 中已启用
-- 检查你的 `tsconfig.json` 是否使用了 `compilerOptions.baseUrl`
+- 确认 `vite.config.ts` 中已启用 `lint.options.typeAware` 和 `lint.options.typeCheck`
+- 检查你的 `tsconfig.json` 是否仍在使用 `compilerOptions.baseUrl`
 
-由 `tsgolint` 驱动的 Oxlint 类型检查器不支持 `baseUrl`，因此当该设置存在时，Vite+ 会跳过 `typeAware` 和 `typeCheck`。
+由 `tsgolint` 驱动的 Oxlint 类型检查器路径不支持 `baseUrl`。
+`vp migrate` 和 `vp lint --init` 会尝试运行 `vp dlx @andrewbranch/ts5to6 --fixBaseUrl .`
+以在启用类型感知 lint 之前修复该问题。如果该修复失败或被拒绝，Vite+
+会跳过 `typeAware` 和 `typeCheck`。
 
-## `vp lint` / `vp fmt` 可能无法读取 `vite.config.ts`
-
-### 当前支持的内容
-
-- 静态对象导出：
-  - `export default { ... }`
-  - `export default defineConfig({ ... })`
-
-### 当前集成中可能失败的情况
-
-- 函数式或异步配置：
-  - `defineConfig((env) => ({ ... }))`
-  - `defineConfig(async (env) => ({ ... }))`
-- 依赖 Vite 转换/打包行为来执行的配置文件。
-
-在问题 #930 中报告的某些场景下，读取 `vite.config.ts` 的 Oxc 侧集成可能更接近原生 ESM 加载行为（类似于 Vite 的 `--configLoader native`），而不是 Vite 的默认打包加载器。这意味着依赖打包/转换的配置可能无法为 lint/fmt/编辑器路径加载成功。请参见：https://github.com/voidzero-dev/vite-plus/issues/930
-
-### 解决方法
-
-- 当需要在 `vite.config.ts` 中使用 `lint` / `fmt` 时，优先使用静态的 `defineConfig({ ... })` 导出。
-- 避免在 lint/fmt 使用的配置代码中使用 Node 特定全局变量（如 ESM 中的 `__dirname`）、未解析的 TS 专用导入，或没有导入属性的 JSON 导入。
-- 如果需要，可将 `.oxlintrc.*` / `.oxfmtrc.*` 作为临时回退文件保留（尽管我们通常不推荐这样做），[尽管在此期间我们不建议这样做](/guide/lint##configuration)，直到此集成行为得到改进。
-
-### VS Code 多根工作区注意事项
+## VS Code 扩展未读取 `vite.config.ts`
 
 如果 VS Code 同时打开了多个文件夹，共享的 Oxc 语言服务器可能会选择与预期不同的工作区。这可能导致看起来像是缺少 `vite.config.ts` 支持。
 
-- 确认扩展正在使用预期的工作区。
-- 确认工作区解析为最新的 Oxc/Oxlint/Oxfmt 工具链。
+- 确认扩展正在使用正确的工作区。
 
 ## `vp build` 未运行我的构建脚本
 

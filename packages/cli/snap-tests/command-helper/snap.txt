@@ -8,7 +8,7 @@ Core Commands:
   build          Build for production
   test           Run tests
   lint           Lint code
-  fmt            Format code
+  fmt, format    Format code
   check          Run format, lint, and type checks
   pack           Build library
   run            Run tasks
@@ -194,6 +194,7 @@ Output
                               `stylish`, `unix`
         --debug=OPTIONS       Enable debug output options. Options are comma-separated. Possible
                               values:
+                               * `files` - Print the list of files that will be linted, then exit.
                                * `timings` - Enable per-rule timing information.
 
 Miscellaneous

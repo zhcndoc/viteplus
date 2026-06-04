@@ -14,8 +14,19 @@
 ## 全局 `vp`
 
 ```bash
-vp upgrade
+vp upgrade              # 升级到最新版本
+vp upgrade --check      # 检查更新但不安装
 ```
+
+### 回滚
+
+Vite+ 会保留最近的 **3 个**已安装版本，因此你可以快速回退：
+
+```bash
+vp upgrade --rollback
+```
+
+每次升级后，较旧的版本会自动清理。当前使用的版本和上一个版本始终会被保留，因此回滚目标不会被删除。
 
 ## 本地 `vite-plus`
 

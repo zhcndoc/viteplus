@@ -751,7 +751,7 @@ main_url="${NPM_REGISTRY}/vite-plus-cli/-/vite-plus-cli-${VITE_PLUS_VERSION}.tgz
 # 创建/更新 current 符号链接
 ln -sfn "$VITE_PLUS_VERSION" "$CURRENT_LINK"
 
-# 清理旧版本（最多保留 5 个）
+# Cleanup old versions (keep max 3)
 cleanup_old_versions
 
 # 将 ~/.vite-plus/current/bin 添加到 PATH
@@ -803,7 +803,7 @@ if (Test-Path $CurrentLink) {
 }
 cmd /c mklink /J "$CurrentLink" "$VersionDir" | Out-Null
 
-# 清理旧版本（最多保留 5 个）
+# Cleanup old versions (keep max 3)
 Cleanup-OldVersions -InstallDir $InstallDir
 
 # 将 $InstallDir\current\bin 添加到用户 PATH
@@ -851,9 +851,9 @@ Cleanup-OldVersions -InstallDir $InstallDir
 
 **关键特性：**
 
-- PATH 指向 `~/.vite-plus/current/bin`（稳定位置）
-- 安装新版本会更新 `current` 符号链接
-- 旧版本会自动清理（保留最多 5 个版本）
+- PATH points to `~/.vite-plus/current/bin` (stable location)
+- Installing a new version updates the `current` symlink
+- Old versions are automatically cleaned up (keeps max 3 versions)
 
 #### Rust 二进制如何使用 JS 脚本
 

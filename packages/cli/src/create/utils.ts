@@ -6,6 +6,39 @@ import validateNpmPackageName from 'validate-npm-package-name';
 import { editJsonFile } from '../utils/json.ts';
 import { getRandomProjectName } from './random-name.ts';
 
+export type CreateEditorOption = string | false | undefined;
+type ParsedCreateEditorOption = CreateEditorOption | CreateEditorOption[];
+
+function hasExplicitEditorOptIn(editor: CreateEditorOption): boolean {
+  return typeof editor === 'string' && editor.trim() !== '';
+}
+
+export function normalizeEditorOption(editor: ParsedCreateEditorOption): CreateEditorOption {
+  if (!Array.isArray(editor)) {
+    return editor;
+  }
+  if (editor.includes(false)) {
+    return false;
+  }
+  return editor.findLast((value): value is string => typeof value === 'string');
+}
+
+export function shouldConfigureEditorsForCreate({
+  editor,
+  isMonorepo,
+}: {
+  editor: CreateEditorOption;
+  isMonorepo: boolean;
+}): boolean {
+  if (editor === false) {
+    return false;
+  }
+  if (!isMonorepo) {
+    return true;
+  }
+  return hasExplicitEditorOptIn(editor);
+}
+
 // Helper functions for file operations
 export function copy(src: string, dest: string) {
   const stat = fs.statSync(src);
@@ -149,6 +182,52 @@ export function ensureGitignoreNodeModules(projectDir: string): void {
   }
   const prefix = content === '' || content.endsWith('\n') ? '' : '\n';
   fs.appendFileSync(gitignorePath, `${prefix}node_modules\n`);
+}
+
+const VSCODE_SETTINGS_PATH = '.vscode/settings.json';
+const VSCODE_EXTENSIONS_PATH = '.vscode/extensions.json';
+const VSCODE_CONFIG_UNIGNORE_BLOCK = [
+  '!.vscode/',
+  `!${VSCODE_SETTINGS_PATH}`,
+  `!${VSCODE_EXTENSIONS_PATH}`,
+] as const;
+
+/**
+ * Make generated VS Code workspace config trackable when `vp create` writes VS Code config.
+ */
+export function ensureGitignoreVsCodeEditorConfigs(projectDir: string): void {
+  if (!fs.existsSync(path.join(projectDir, VSCODE_SETTINGS_PATH))) {
+    return;
+  }
+
+  const gitignorePath = path.join(projectDir, '.gitignore');
+  let content: string;
+  try {
+    content = fs.readFileSync(gitignorePath, 'utf-8');
+  } catch {
+    return;
+  }
+
+  appendGitignoreVsCodeEditorConfigsBlock(gitignorePath, content);
+}
+
+function appendGitignoreVsCodeEditorConfigsBlock(gitignorePath: string, content: string): void {
+  if (content.trimEnd().endsWith(VSCODE_CONFIG_UNIGNORE_BLOCK.join('\n'))) {
+    return;
+  }
+  appendGitignoreLines(gitignorePath, content, VSCODE_CONFIG_UNIGNORE_BLOCK);
+}
+
+function appendGitignoreLines(
+  gitignorePath: string,
+  content: string,
+  lines: readonly string[],
+): void {
+  if (lines.length === 0) {
+    return;
+  }
+  const prefix = content === '' || content.endsWith('\n') ? '' : '\n';
+  fs.appendFileSync(gitignorePath, `${prefix}${lines.join('\n')}\n`);
 }
 
 export function formatDisplayTargetDir(targetDir: string) {

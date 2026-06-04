@@ -16,7 +16,7 @@
         </p>
         <p class="text-sm text-grey">采用 MIT 许可证的免费开源项目。</p>
       </div>
-      <div class="flex items-center gap-5">
+      <div class="flex flex-wrap items-center justify-center gap-5">
         <a href="/guide" target="_self" class="button button--primary">
           开始使用
         </a>
@@ -28,6 +28,7 @@
         >
           阅读公告
         </a>
+        <CopyPrompt />
       </div>
     </div>
   </div>

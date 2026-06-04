@@ -74,10 +74,10 @@ vp migrate my-app
 
 迁移完成后：
 
-- 确认 `vite` 导入已在需要处重写为 `vite-plus`
-- 确认 `vitest` 导入已在需要处重写为 `vite-plus/test`
-- 仅在确认这些重写完成后，才移除旧的 `vite` 和 `vitest` 依赖
-- 将剩余特定工具配置移动到 `vite.config.ts` 中的相应块
+- Confirm `vite` imports were rewritten to `vite-plus` where needed
+- Confirm `vitest` imports were rewritten to `vite-plus/test` where needed
+- On pnpm, keep the `vite` / `vitest` entries that `vp migrate` aliased to the Vite+ packages so the workspace override stays effective; with other package managers you can remove them once those rewrites are confirmed
+- Move remaining tool-specific config into the appropriate blocks in `vite.config.ts`
 
 命令映射（需牢记）：
 

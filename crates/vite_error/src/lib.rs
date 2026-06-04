@@ -60,9 +60,6 @@ pub enum Error {
     IgnoreError(#[from] ignore::Error),
 
     #[error(transparent)]
-    SerdeYml(#[from] serde_yml::Error),
-
-    #[error(transparent)]
     WorkspaceError(#[from] vite_workspace::Error),
 
     #[error("Lint failed, reason: {reason}")]
@@ -106,7 +103,12 @@ pub enum Error {
     #[error(transparent)]
     Semver(#[from] semver::Error),
 
-    #[error(transparent)]
+    // `#[error("{}", ...)]` not `transparent`: surface the full `source()`
+    // chain (TLS handshake → UnknownIssuer, hyper IO errors, etc.) instead of
+    // just reqwest's top-level "error sending request for url (...)" message.
+    // Keeps `From<reqwest::Error>` and `source()` semantics intact, so 404
+    // detection via `e.status()` at call sites still works.
+    #[error("{}", vite_shared::format_error_chain(.0))]
     Reqwest(#[from] reqwest::Error),
 
     #[error(transparent)]

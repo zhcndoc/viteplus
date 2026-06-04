@@ -11,11 +11,11 @@ Start:
   env         Manage Node.js versions
 
 Develop:
-  dev    Run the development server
-  check  Run format, lint, and type checks
-  lint   Lint code
-  fmt    Format code
-  test   Run tests
+  dev          Run the development server
+  check        Run format, lint, and type checks
+  lint         Lint code
+  fmt, format  Format code
+  test         Run tests
 
 Execute:
   run    Run tasks (also available as standalone `vpr`)
@@ -176,6 +176,8 @@ Options:
   -L, --latest                 Update to latest version (ignore semver range)
   -g, --global                 Update global packages
   --concurrency <CONCURRENCY>  Number of global package updates to run in parallel (only with -g)
+  --reinstall-node-mismatch    Reinstall up-to-date global packages installed with a different Node.js version
+  --ignore-node-mismatch       Skip up-to-date global packages installed with a different Node.js version
   -r, --recursive              Update recursively in all workspace packages
   --filter <PATTERN>           Filter packages in monorepo (can be used multiple times)
   -w, --workspace-root         Include workspace root
@@ -246,18 +248,19 @@ Arguments:
   [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
 Options:
-  --long                Show extended information
-  --format <FORMAT>     Output format: table (default), list, or json
-  -r, --recursive       Check recursively across all workspaces
-  --filter <PATTERN>    Filter packages in monorepo
-  -w, --workspace-root  Include workspace root
-  -P, --prod            Only production and optional dependencies
-  -D, --dev             Only dev dependencies
-  --no-optional         Exclude optional dependencies
-  --compatible          Only show compatible versions
-  --sort-by <FIELD>     Sort results by field
-  -g, --global          Check globally installed packages
-  -h, --help            Print help
+  --long                       Show extended information
+  --format <FORMAT>            Output format: table (default), list, or json
+  -r, --recursive              Check recursively across all workspaces
+  --filter <PATTERN>           Filter packages in monorepo
+  -w, --workspace-root         Include workspace root
+  -P, --prod                   Only production and optional dependencies
+  -D, --dev                    Only dev dependencies
+  --no-optional                Exclude optional dependencies
+  --compatible                 Only show compatible versions
+  --sort-by <FIELD>            Sort results by field
+  -g, --global                 Check globally installed packages
+  --concurrency <CONCURRENCY>  Number of global package checks to run in parallel (only with -g)
+  -h, --help                   Print help
 
 Documentation: https://viteplus.dev/guide/install
 
@@ -282,7 +285,6 @@ Options:
   -D, --dev                Only dev dependencies
   --depth <DEPTH>          Limit tree depth
   --no-optional            Exclude optional dependencies
-  -g, --global             Check globally installed packages
   --exclude-peers          Exclude peer dependencies
   --find-by <FINDER_NAME>  Use a finder function defined in .pnpmfile.cjs
   -h, --help               Print help
@@ -319,6 +321,7 @@ Commands:
   list            List installed packages [aliases: ls]
   view            View package information from the registry [aliases: info, show]
   publish         Publish package to registry
+  stage           Stage a package for publishing (npm staged publishing workflow)
   owner           Manage package owners [aliases: author]
   cache           Manage package cache
   config          Manage package manager configuration [aliases: c]

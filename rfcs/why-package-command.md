@@ -101,22 +101,11 @@ vp why react --no-optional      # 排除可选依赖
 # 深度控制
 vp why react --depth 3          # 将树深度限制为 3 层
 
-# 全局包
-vp why typescript -g            # 检查全局安装的包
-
 # 自定义 finder（仅 pnpm）
 vp why react --find-by myFinder # 使用 .pnpmfile.cjs 中的 finder 函数
 ```
 
-### 全局包检查
-
-仅使用 `npm` 来检查全局安装的包，因为 `vp install -g` 使用的是 `npm` cli 来安装全局包。
-
-```bash
-vp why typescript -g            # 检查全局安装的包
-
--> npm why typescript -g
-```
+Vite+ 不提供对全局包的 `why` 功能。
 
 ### 命令映射
 
@@ -138,22 +127,21 @@ vp why typescript -g            # 检查全局安装的包
 - https://yarnpkg.com/cli/why（yarn@2+）
 - 标识某个包为何已被安装
 
-| Vite+ 标志               | pnpm                      | npm                     | yarn@1              | yarn@2+                  | bun             | 描述                                                         |
-| ------------------------ | ------------------------- | ----------------------- | ------------------- | ------------------------ | --------------- | ------------------------------------------------------------ |
+| Vite+ Flag                | pnpm                      | npm                     | yarn@1              | yarn@2+                  | bun             | Description                                                     |
+| ------------------------- | ------------------------- | ----------------------- | ------------------- | ------------------------ | --------------- | --------------------------------------------------------------- |
 | `vp why <pkg>`            | `pnpm why <pkg>`          | `npm explain <pkg>`     | `yarn why <pkg>`    | `yarn why <pkg> --peers` | `bun why <pkg>` | 显示包为何被安装                                               |
-| `--json`                  | `--json`                  | `--json`                | `--json`            | `--json`                 | N/A             | JSON 输出格式                                                 |
-| `--long`                  | `--long`                  | N/A                     | N/A                 | N/A                      | N/A             | 详细输出（仅 pnpm）                                           |
-| `--parseable`             | `--parseable`             | N/A                     | N/A                 | N/A                      | N/A             | 可解析格式（仅 pnpm）                                         |
-| `-r, --recursive`         | `-r, --recursive`         | N/A                     | N/A                 | `--recursive`            | N/A             | 跨所有工作区检查                                               |
-| `--filter <pattern>`      | `--filter <pattern>`      | `--workspace <pattern>` | N/A                 | N/A                      | N/A             | 目标特定工作区（pnpm/npm）                                     |
+| `--json`                  | `--json`                  | `--json`                | `--json`            | `--json`                 | N/A             | JSON 输出格式                                                   |
+| `--long`                  | `--long`                  | N/A                     | N/A                 | N/A                      | N/A             | 详细输出（仅 pnpm）                                             |
+| `--parseable`             | `--parseable`             | N/A                     | N/A                 | N/A                      | N/A             | 可解析格式（仅 pnpm）                                           |
+| `-r, --recursive`         | `-r, --recursive`         | N/A                     | N/A                 | `--recursive`            | N/A             | 跨所有工作区检查                                                 |
+| `--filter <pattern>`      | `--filter <pattern>`      | `--workspace <pattern>` | N/A                 | N/A                      | N/A             | 目标特定工作区（pnpm/npm）                                      |
 | `-w, --workspace-root`    | `-w`                      | N/A                     | N/A                 | N/A                      | N/A             | 在工作区根目录检查（pnpm 特有）                                 |
-| `-P, --prod`              | `-P, --prod`              | N/A                     | N/A                 | N/A                      | N/A             | 仅生产依赖（仅 pnpm）                                         |
-| `-D, --dev`               | `-D, --dev`               | N/A                     | N/A                 | N/A                      | N/A             | 仅开发依赖（仅 pnpm）                                         |
-| `--depth <number>`        | `--depth <number>`        | N/A                     | N/A                 | N/A                      | `--depth`       | 限制树深度（pnpm/bun）                                        |
-| `--no-optional`           | `--no-optional`           | N/A                     | `--ignore-optional` | N/A                      | N/A             | 排除可选依赖（仅 pnpm）                                       |
-| `-g, --global`            | `-g, --global`            | N/A                     | N/A                 | N/A                      | N/A             | 检查全局安装的包                                               |
-| `--exclude-peers`         | `--exclude-peers`         | N/A                     | N/A                 | Removes `--peers` flag   | N/A             | 排除 peer 依赖（yarn@2+ 默认包含 peers）                      |
-| `--find-by <finder_name>` | `--find-by <finder_name>` | N/A                     | N/A                 | N/A                      | N/A             | 使用 .pnpmfile.cjs 中的 finder 函数                            |
+| `-P, --prod`              | `-P, --prod`              | N/A                     | N/A                 | N/A                      | N/A             | 仅生产依赖（仅 pnpm）                                           |
+| `-D, --dev`               | `-D, --dev`              | N/A                     | N/A                 | N/A                      | N/A             | 仅开发依赖（仅 pnpm）                                           |
+| `--depth <number>`        | `--depth <number>`        | N/A                     | N/A                 | N/A                      | `--depth`       | 限制树深度（pnpm/bun）                                          |
+| `--no-optional`           | `--no-optional`           | N/A                     | `--ignore-optional` | N/A                      | N/A             | 排除可选依赖（仅 pnpm）                                         |
+| `--exclude-peers`         | `--exclude-peers`         | N/A                     | N/A                 | 移除 `--peers` 标志      | N/A             | 排除 peer 依赖（yarn@2+ 默认包含 peer 依赖）                    |
+| `--find-by <finder_name>` | `--find-by <finder_name>` | N/A                     | N/A                 | N/A                      | N/A             | 使用 .pnpmfile.cjs 中的 finder 函数                             |
 
 **注意：**
 
@@ -176,12 +164,11 @@ vp why typescript -g            # 检查全局安装的包
 
 - 显示所有依赖指定包的包
 - 支持多个包和 glob 模式：`pnpm why babel-* eslint-*`
-- 展示包含完整路径的依赖树
-- 在 10 个终端叶子节点后截断输出，以防止内存问题
+- 显示完整路径的依赖树
+- 为防止内存问题，在 10 个末端叶子后截断输出
 - 支持使用 `--filter` 进行工作区过滤
-- 可按依赖类型（prod、dev、optional）过滤
-- 支持限制深度
-- 可用 `-g` 检查全局包
+- 可按依赖类型过滤（prod、dev、optional）
+- 支持深度限制
 
 **输出格式：**
 
@@ -249,13 +236,13 @@ node_modules/react
 **输出格式：**
 
 ```
-[1/4] 🤔  Why do we have the package "jest"?
-[2/4] 🚚  Required dependencies
+[1/4] 🤔  为什么我们有这个包 "jest"？
+[2/4] 🚚  需要的依赖
 info Reasons this module exists
    - "@my/package#devDependencies" depends on it
    - Hoisted from "@my/package#jest"
-[3/4] 💾  Disk size without dependencies: "0B"
-[4/4] 📦  Dependencies using this package
+[3/4] 💾  不包含依赖的磁盘大小: "0B"
+[4/4] 📦  使用此包的依赖
 ```
 
 **选项：**
@@ -277,8 +264,8 @@ info Reasons this module exists
 
 ```
 ➤ YN0000: react@npm:18.3.1
-➤ YN0000: └ Required by: react-dom@npm:18.3.1
-➤ YN0000: └ Required by: @testing-library/react@npm:14.0.0
+➤ YN0000: └ 由以下项要求：react-dom@npm:18.3.1
+➤ YN0000: └ 由以下项要求：@testing-library/react@npm:14.0.0
 ```
 
 **选项：**
@@ -467,10 +454,6 @@ impl PackageManager {
 
                 if options.no_optional {
                     args.push("--no-optional".into());
-                }
-
-                if options.global {
-                    args.push("--global".into());
                 }
 
                 if options.exclude_peers {
@@ -912,8 +895,8 @@ Done in 0.6s
 ### 方案 1：分离命令名称
 
 ```bash
-vp why <package>      # For pnpm/yarn
-vp explain <package>  # For npm only
+vp why <package>      # 适用于 pnpm/yarn
+vp explain <package>  # 仅适用于 npm
 ```
 
 **被拒绝的原因**：
@@ -925,8 +908,8 @@ vp explain <package>  # For npm only
 ### 方案 2：始终使用多包格式
 
 ```bash
-vp why react react-dom  # Always accept multiple
-# Error on npm/yarn
+vp why react react-dom  # 始终接受多个
+# 在 npm/yarn 上报错
 ```
 
 **被拒绝的原因**：
@@ -938,8 +921,8 @@ vp why react react-dom  # Always accept multiple
 ### 方案 3：自动转换输出格式
 
 ```bash
-vp why react --json  # On yarn
-# Attempt to convert yarn's output to JSON
+vp why react --json  # 在 yarn 上
+# 尝试将 yarn 的输出转换为 JSON
 ```
 
 **被拒绝的原因**：
@@ -1122,7 +1105,6 @@ Options:
   -D, --dev              Only dev dependencies (pnpm-specific)
   --depth <NUMBER>       Limit tree depth (pnpm-specific)
   --no-optional          Exclude optional dependencies (pnpm-specific)
-  -g, --global           Check globally installed packages
   --exclude-peers        Exclude peer dependencies (pnpm/yarn@2+-specific)
   --find-by <FINDER_NAME> Use a finder function defined in .pnpmfile.cjs (pnpm-specific)
   -h, --help             Print help
@@ -1143,7 +1125,6 @@ Examples:
   vp why react --filter app          # Check in specific workspace (pnpm)
   vp why react --prod                # Only production deps (pnpm)
   vp why react --depth 3             # Limit tree depth (pnpm)
-  vp why typescript -g               # Check global packages
   vp why react --find-by myFinder    # Use custom finder (pnpm)
 ```
 
@@ -1258,18 +1239,17 @@ vp why package --prod --json
 
 | 功能             | pnpm              | npm              | yarn@1           | yarn@2+          | bun              | 说明                    |
 | ---------------- | ----------------- | ---------------- | ---------------- | ---------------- | ---------------- | ----------------------- |
-| 基础命令         | `why`             | `explain`        | `why`            | `why`            | `why`            | npm 使用不同名称        |
-| 多个包           | ✅ 支持           | ✅ 支持          | ❌ 仅单个        | ❌ 仅单个        | ❌ 仅单个        | pnpm 和 npm            |
-| 通配符模式       | ✅ 支持           | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm               |
-| JSON 输出        | ✅ `--json`       | ✅ `--json`      | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm 和 npm         |
-| 长输出           | ✅ `--long`       | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm               |
-| 可解析输出       | ✅ `--parseable`  | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm               |
-| 递归             | ✅ `-r`           | ❌ 不支持        | ❌ 不支持        | ✅ `--recursive` | ❌ 不支持        | pnpm 和 yarn@2+        |
-| 工作区过滤       | ✅ `--filter`     | ✅ `--workspace` | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | pnpm 和 npm            |
-| 依赖类型过滤     | ✅ `--prod/--dev` | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm               |
-| 深度限制         | ✅ `--depth`      | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ✅ `--depth`     | pnpm 和 bun            |
-| 全局检查         | ✅ `-g`           | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm               |
-| 树状视图         | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ✅ 内置          | bun 显示树状视图       |
+| 基本命令         | `why`             | `explain`        | `why`            | `why`            | `why`            | npm 使用不同的名称      |
+| 多包             | ✅ 支持           | ✅ 支持          | ❌ 仅单个        | ❌ 仅单个        | ❌ 仅单个        | pnpm 和 npm             |
+| 全局模式         | ✅ 支持           | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm                 |
+| JSON 输出        | ✅ `--json`       | ✅ `--json`      | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm 和 npm          |
+| 长输出           | ✅ `--long`       | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm                 |
+| 可解析格式       | ✅ `--parseable`  | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm                 |
+| 递归             | ✅ `-r`           | ❌ 不支持        | ❌ 不支持        | ✅ `--recursive` | ❌ 不支持        | pnpm 和 yarn@2+         |
+| 工作区过滤       | ✅ `--filter`     | ✅ `--workspace` | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | pnpm 和 npm             |
+| 依赖类型过滤     | ✅ `--prod/--dev` | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | 仅 pnpm                 |
+| 深度限制         | ✅ `--depth`      | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ✅ `--depth`     | pnpm 和 bun             |
+| 树状视图         | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ❌ 不支持        | ✅ 内置          | bun 显示树状视图        |
 
 ## 未来增强
 
