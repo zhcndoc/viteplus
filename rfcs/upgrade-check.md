@@ -1,308 +1,295 @@
-# RFC: Upgrade Check
+# RFC: 升级检查
 
-## Status
+## 状态
 
-Draft
+草案
 
-## Background
+## 背景
 
-Vite+ has a `vp upgrade` command for self-updating, but users only discover new versions if they manually run `vp upgrade --check` or hear about it externally. Most modern CLI tools (npm, rustup, Homebrew) display a brief, non-intrusive notice when a newer version is available. This helps users stay current without requiring them to actively poll for updates.
+Vite+ 有一个用于自我更新的 `vp upgrade` 命令，但用户只有在手动运行 `vp upgrade --check` 或从外部得知时，才会发现新版本。大多数现代 CLI 工具（npm、rustup、Homebrew）在有新版本可用时都会显示一条简短、非侵入式的提示。这有助于用户保持最新，而无需主动轮询更新。
 
-The upgrade-command RFC explicitly listed "auto-update on every command invocation" as a non-goal and noted "periodic background check with opt-in notification" as a future enhancement. This RFC defines that enhancement.
+升级命令的 RFC 明确将“每次命令调用都自动更新”列为非目标，并指出“带可选通知的周期性后台检查”是未来增强功能。本 RFC 定义了这一增强。
 
-### Design Principles
+### 设计原则
 
-1. **Never block the user.** The check must not add latency to any command.
-2. **Never be annoying.** The notice should be rare, single-line, and easy to suppress.
-3. **Never phone home unexpectedly.** The network request is rate-limited and skipped in CI.
+1. **绝不阻塞用户。** 检查不能给任何命令增加延迟。
+2. **绝不令人厌烦。** 提示应当罕见、单行、且容易关闭。
+3. **绝不在未预期时连接外部服务。** 网络请求有频率限制，并在 CI 中跳过。
 
-## Goals
+## 目标
 
-1. Show a one-line upgrade notice when a newer version of `vp` is available
-2. Zero impact on command latency (fully async, cached)
-3. Reasonable default frequency (once per 24 hours)
-4. Easy to disable via environment variable
-5. Reuse the existing npm registry resolution from the upgrade command
+1. 当 `vp` 有更新版本可用时显示一行升级提示
+2. 对命令延迟零影响（完全异步、带缓存）
+3. 合理的默认频率（每 24 小时一次）
+4. 可通过环境变量轻松禁用
+5. 复用升级命令中现有的 npm registry 解析逻辑
 
-## Non-Goals
+## 非目标
 
-1. Auto-installing updates (user must explicitly run `vp upgrade`)
-2. Checking local `vite-plus` package versions (only the global CLI)
-3. Showing notices for pre-release/test channel versions
+1. 自动安装更新（用户必须显式运行 `vp upgrade`）
+2. 检查本地 `vite-plus` 包版本（仅限全局 CLI）
+3. 为预发布/测试通道版本显示提示
 
-## User Stories
+## 用户故事
 
-### Story 1: New Version Available
-
-```
-$ vp build
-...build output...
-
-vp update available: 0.1.0 → 0.2.0, run `vp upgrade`
-```
-
-### Story 2: Already Up to Date (no notice)
+### 故事 1：发现新版本
 
 ```
 $ vp build
-...build output...
+...构建输出...
+
+vp 有可用更新：0.1.0 → 0.2.0，运行 `vp upgrade`
 ```
 
-No upgrade notice is shown — the user sees only their command output.
+### 故事 2：已经是最新版本（不提示）
 
-### Story 3: CI Environment (no notice)
+```
+$ vp build
+...构建输出...
+```
+
+不会显示升级提示——用户只会看到自己的命令输出。
+
+### 故事 3：CI 环境（不提示）
 
 ```
 $ CI=true vp build
-...build output...
+...构建输出...
 ```
 
-Upgrade checks are completely disabled in CI.
+在 CI 中会完全禁用升级检查。
 
-### Story 4: User Opts Out
+### 故事 4：用户选择退出
 
 ```
 $ VP_NO_UPDATE_CHECK=1 vp build
-...build output...
+...构建输出...
 ```
 
-No network request is made and no notice is shown.
+不会发起网络请求，也不会显示提示。
 
-### Story 5: Offline / Registry Unreachable
+### 故事 5：离线 / registry 不可达
 
 ```
 $ vp build
-...build output...
+...构建输出...
 ```
 
-The check fails silently. No notice, no error, no retry spam.
+检查会静默失败。没有提示，没有错误，没有重试刷屏。
 
-## Technical Design
+## 技术设计
 
-### Overview
+### 概述
 
 ```
-Command starts
+命令开始
        │
        ├──────────────────────────────┐
        │                              │
        ▼                              ▼
-  Run the actual command        Spawn background task:
-       │                         1. Check if cache is fresh (<24h)
-       │                            → Yes: read cached version
-       │                            → No:  query npm registry,
-       │                                   write result to cache file
+  运行实际命令                 启动后台任务：
+       │                         1. 检查缓存是否新鲜（<24h）
+       │                            → 是：读取缓存版本
+       │                            → 否：查询 npm registry，
+       │                               将结果写入缓存文件
        │                              │
        ▼                              ▼
-  Command finishes              Background task finishes
+  命令结束                    后台任务结束
        │                              │
        ▼                              ▼
-  If newer version found, print one-line notice
-  Show tip (existing behavior)
-  Exit
+  如果发现更新版本，打印一行提示
+  显示 tip（现有行为）
+  退出
 ```
 
-The background task runs concurrently with the command. When the command finishes, we check if the background task has a result (with a very short timeout — if it hasn't finished, skip the notice this time).
+后台任务与命令并发运行。当命令结束时，我们会检查后台任务是否已有结果（等待时间非常短——如果还没完成，这次就跳过提示）。
 
-### Cache File
+### 缓存文件
 
-Location: `~/.vite-plus/.upgrade-check.json`
+位置：`~/.vite-plus/.upgrade-check.json`
 
-Format (single JSON line for simplicity):
+格式（为简单起见，每行一个 JSON）：
 
 ```json
 { "latest": "0.2.0", "checked_at": 1711500000, "prompted_at": 1711500000 }
 ```
 
-- `latest`: The version string returned by the npm registry for the `latest` dist-tag
-- `checked_at`: Unix timestamp (seconds) of when the registry was last queried
-- `prompted_at`: Unix timestamp (seconds) of when the user was last shown the notice
+- `latest`：npm registry 为 `latest` dist-tag 返回的版本字符串
+- `checked_at`：上次查询 registry 的 Unix 时间戳（秒）
+- `prompted_at`：上次向用户显示提示的 Unix 时间戳（秒）
 
-The file is small and cheap to read. A direct overwrite is sufficient — if corruption occurs (e.g., process killed mid-write), the worst case is one extra registry query.
+该文件很小，读取成本很低。直接覆盖写入即可——如果发生损坏（例如进程在写入过程中被杀死），最坏情况只是多一次 registry 查询。
 
-### Check Logic (Pseudocode)
+### 检查逻辑（伪代码）
 
-Two independent rate limits control the behavior:
+有两个独立的频率限制共同控制行为：
 
-1. **`checked_at`** — controls how often the registry is queried (once per 24h)
-2. **`prompted_at`** — controls how often the notice is shown (once per 24h)
+1. **`checked_at`** —— 控制查询 registry 的频率（每 24 小时一次）
+2. **`prompted_at`** —— 控制显示提示的频率（每 24 小时一次）
 
-This means: the registry is queried at most once per day, and even if an update exists, the user sees the notice at most once per day. After displaying, `prompted_at` is updated so subsequent runs within 24h are silent.
+这意味着：registry 最多每天查询一次；即使有更新存在，用户看到提示也最多每天一次。显示后会更新 `prompted_at`，因此 24 小时内的后续运行都会保持静默。
 
-### Display
+### 显示
 
-The upgrade notice is printed to **stderr** (like tips), after the command output and before the tip line:
-
-```
-vp update available: 0.1.0 → 0.2.0, run `vp upgrade`
-```
-
-Styling:
-
-- Single line, no indentation
-- Dimmed text with version numbers highlighted (current in dim, new in green bold) and `vp upgrade` highlighted
-
-The notice is printed **after** the command output and **before** any tip, so it feels like a natural postscript rather than an interruption.
-
-### Suppression Rules
-
-The notice is **not shown** when:
-
-| Condition                       | Reason                                                          |
-| ------------------------------- | --------------------------------------------------------------- |
-| `VP_NO_UPDATE_CHECK=1`          | Explicit opt-out                                                |
-| `CI` is set                     | CI environments should not see upgrade prompts                  |
-| `VP_CLI_TEST` is set            | Test environments                                               |
-| Quiet/machine-readable flags    | `--silent`, `-s`, `--json`, `--parseable`, `--format json/list` |
-| `vp upgrade` is running         | Already upgrading, don't nag                                    |
-| `vp upgrade --check` is running | Already checking, don't duplicate                               |
-| Stderr is not a TTY             | Non-interactive / piped / redirected output                     |
-| Already prompted within 24h     | Show at most once per day, not on every run                     |
-
-### Commands That Trigger the Check
-
-The background check runs on **all** commands except:
-
-- `vp upgrade` (already handles version checking)
-- `vp implode` (removing the tool)
-- `vp lint` / `vp fmt` (too fast to benefit from a background check)
-- `vp --version` / `vp -V` (version display, keep it fast)
-- Any command with quiet/machine-readable flags (`--silent`, `-s`, `--json`, `--parseable`, `--format json/list`)
-- Shim invocations (`node`, `npm`, `npx` via vp)
-
-This keeps the check broadly useful without interfering with special commands.
-
-### Integration with Tips System
-
-The upgrade notice is **not** a tip — it is higher priority and displayed independently. When both an upgrade notice and a tip would be shown, both are displayed (notice first, then tip). The tip system's rate limiting and the upgrade check's rate limiting are independent.
+升级提示会打印到 **stderr**（像 tip 一样），在命令输出之后、tip 行之前：
 
 ```
-...command output...
-
-vp update available: 0.1.0 → 0.2.0, run `vp upgrade`
-
-tip: short aliases available: i (install), rm (remove), un (uninstall), up (update), ls (list), ln (link)
+vp 有可用更新：0.1.0 → 0.2.0，运行 `vp upgrade`
 ```
 
-### File Structure
+样式：
+
+- 单行，无缩进
+- 使用暗淡文本，版本号高亮（当前版本为暗淡，新版本为绿色加粗），并高亮 `vp upgrade`
+
+提示会在命令输出之后、任何 tip 之前打印，因此更像是自然的后记，而不是一次打断。
+
+### 抑制规则
+
+在以下情况下**不会**显示提示：
+
+| 条件                            | 原因                                                         |
+| ------------------------------- | ------------------------------------------------------------ |
+| `VP_NO_UPDATE_CHECK=1`          | 显式退出                                                   |
+| 设置了 `CI`                     | CI 环境不应看到升级提示                                     |
+| 设置了 `VP_CLI_TEST`            | 测试环境                                                   |
+| 安静/机器可读标志                | `--silent`, `-s`, `--json`, `--parseable`, `--format json/list` |
+| 正在运行 `vp upgrade`           | 已经在升级，不需要再提示                                    |
+| 正在运行 `vp upgrade --check`   | 已经在检查，不要重复                                        |
+| stderr 不是 TTY                 | 非交互式 / 管道 / 重定向输出                                |
+| 24 小时内已经提示过             | 每天最多一次，不要每次运行都提示                            |
+
+### 触发检查的命令
+
+后台检查会在**所有**命令上运行，除了：
+
+- `vp upgrade`（已经处理版本检查）
+- `vp implode`（移除工具）
+- `vp lint` / `vp fmt`（太快了，后台检查收益不大）
+- `vp --version` / `vp -V`（版本显示，保持快速）
+- 任何带安静/机器可读标志的命令（`--silent`, `-s`, `--json`, `--parseable`, `--format json/list`）
+- 通过 vp 调用的 shim（`node`、`npm`、`npx`）
+
+这样可以在不干扰特殊命令的前提下，让检查尽可能有用。
+
+### 文件结构
 
 ```
 crates/vite_global_cli/src/
-├── upgrade_check.rs        # New: cache read/write, background check, display
-├── main.rs                # Modified: spawn check, display result after command
+├── upgrade_check.rs        # 新增：缓存读写、后台检查、显示
+├── main.rs                # 修改：启动检查，在命令结束后显示结果
 ```
 
-No new crate — this is a small, focused module in the existing `vite_global_cli` crate. It imports `resolve_version` from the existing `commands/upgrade/registry.rs`.
+不新增 crate——这是现有 `vite_global_cli` crate 中一个小而聚焦的模块。它会从现有的 `commands/upgrade/registry.rs` 中导入 `resolve_version`。
 
-### Implementation Details
+### 实现细节
 
-#### Async Background Check
+#### 异步后台检查
 
 ```rust
-// In main.rs, before running the command:
+// 在 main.rs 中，运行命令之前：
 let update_handle = if should_run_for_command(&args, &raw_args) {
     Some(tokio::spawn(check_for_update()))
 } else {
     None
 };
 
-// After command completes:
+// 命令完成后：
 if let Some(handle) = update_handle {
-    // Wait up to 500ms for the result — if the network is slow, skip it
+    // 最多等待 500ms 获取结果——如果网络很慢，这次就跳过
     match tokio::time::timeout(Duration::from_millis(500), handle).await {
         Ok(Ok(Some(result))) => {
-            display_upgrade_notice(&result); // also records prompted_at
+            display_upgrade_notice(&result); // 也会记录 prompted_at
         }
-        _ => {} // Timeout, error, or no update — silent
+        _ => {} // 超时、错误，或没有更新——静默处理
     }
 }
 ```
 
-The 500ms timeout ensures that even if the registry is slow, the user's command exits promptly. In practice, most checks will read from cache (instant) or complete the network request during the time the actual command runs.
+500ms 超时确保即使 registry 很慢，用户的命令也能及时退出。实际上，大多数检查会直接读取缓存（瞬时），或者在实际命令运行期间就完成网络请求。
 
-`display_upgrade_notice` updates `prompted_at` in the cache file after showing the notice, so subsequent runs within 24h are silent.
+`display_upgrade_notice` 在显示提示后会更新缓存文件中的 `prompted_at`，因此 24 小时内的后续运行都会静默。
 
-## Design Decisions
+## 设计决策
 
-### 1. Cache-Based Rate Limiting (Not Probabilistic)
+### 1. 基于缓存的频率限制（而非概率）
 
-**Decision**: Check once per 24 hours, cached to disk.
+**决策**：每 24 小时检查一次，并缓存到磁盘。
 
-**Alternatives considered**:
+**备选方案**：
 
-- Probabilistic (1-in-N chance per invocation) — simpler but inconsistent; unlucky users might never see the notice
-- Timer-based without cache — would need a background daemon or cron job
+- 概率式（每次调用 1/N 机会）——更简单，但不一致；倒霉的用户可能永远看不到提示
+- 无缓存的基于定时器——需要后台守护进程或 cron 任务
 
-**Rationale**: Deterministic behavior, no surprises. The cache file is tiny and cheap to read. 24 hours is long enough to not annoy, short enough to be useful.
+**理由**：行为确定，不会有惊喜。缓存文件很小，读取成本低。24 小时足够避免打扰，也足够有用。
 
-### 2. Background Async (Not Post-Command Blocking)
+### 2. 后台异步（而非命令后阻塞）
 
-**Decision**: Spawn the registry query concurrently with the command.
+**决策**：将 registry 查询与命令并发执行。
 
-**Alternatives considered**:
+**备选方案**：
 
-- Check after the command finishes — adds visible latency
-- Separate background daemon — heavyweight, harder to manage
+- 命令结束后再检查——会增加可见延迟
+- 独立后台守护进程——更重，管理更困难
 
-**Rationale**: The registry query runs in parallel with the actual command. By the time the command finishes, the check is usually done. The 500ms timeout is a safety net for slow networks.
+**理由**：registry 查询与实际命令并行运行。等命令结束时，检查通常已经完成。500ms 超时是为慢网络准备的安全网。
 
-### 3. Stderr for the Notice
+### 3. 将提示输出到 stderr
 
-**Decision**: Print to stderr, not stdout.
+**决策**：输出到 stderr，而不是 stdout。
 
-**Rationale**: Matches the tip system. Does not pollute stdout which may be piped or parsed. Tools that capture stdout (e.g., `result=$(vp ...)`) are unaffected.
+**理由**：与 tip 系统一致。不会污染 stdout，避免影响管道或解析。捕获 stdout 的工具（例如 `result=$(vp ...)`）不会受影响。
 
-### 4. No Opt-In Required
+### 4. 不需要显式 opt-in
 
-**Decision**: Enabled by default, with easy opt-out via `VP_NO_UPDATE_CHECK=1`.
+**决策**：默认启用，并可通过 `VP_NO_UPDATE_CHECK=1` 轻松退出。
 
-**Alternatives considered**:
+**备选方案**：
 
-- Opt-in only — most users would never discover it
-- Ask on first run — adds friction to installation
+- 仅 opt-in —— 大多数用户永远不会发现它
+- 首次运行时询问 —— 增加安装摩擦
 
-**Rationale**: Most CLI tools (npm, pip, gh) enable update checks by default. The check is non-blocking and the notice is rare (at most once per 24 hours, only when an update exists). Users who don't want it can set a single env var.
+**理由**：大多数 CLI 工具（npm、pip、gh）都默认启用更新检查。该检查不会阻塞，而且提示很少见（最多每 24 小时一次，且仅在确实有更新时）。不想要的用户可以设置一个环境变量。
 
-### 5. Semver Comparison (Not String Equality)
+### 5. Semver 比较（而非字符串相等）
 
-**Decision**: Only show the notice when `latest` is strictly greater than `current` per semver.
+**决策**：仅当 `latest` 按 semver 严格大于 `current` 时才显示提示。
 
-**Rationale**: String inequality would prompt prerelease/alpha users to "downgrade" to an older stable release. Semver comparison ensures the notice only appears for genuine upgrades. Dev builds (`0.0.0`) are skipped entirely.
+**理由**：字符串不相等会让预发布/alpha 用户被提示“降级”到更旧的稳定版。Semver 比较可确保提示只在真正升级时出现。开发构建（`0.0.0`）会被完全跳过。
 
-## Testing Strategy
+## 测试策略
 
-### Unit Tests
+### 单元测试
 
-- Cache read/write: valid JSON, corrupt file, missing file
-- `should_check`: respects env vars, cache freshness, TTY detection
-- Version comparison: same version, different version, pre-release
+- 缓存读写：有效 JSON、损坏文件、缺失文件
+- `should_check`：遵守环境变量、缓存新鲜度、TTY 检测
+- 版本比较：相同版本、不同版本、预发布版本
 
-### Integration Tests
+### 集成测试
 
-- Mock registry server returning a version, verify notice is displayed
-- Verify no notice when cache is fresh
-- Verify no notice in CI mode
-- Verify timeout behavior (slow mock server)
+- 模拟 registry 服务器返回一个版本，验证会显示提示
+- 验证缓存新鲜时不会显示提示
+- 验证 CI 模式下不会显示提示
+- 验证超时行为（缓慢的模拟服务器）
 
-### Manual Testing
+### 手动测试
 
 ```bash
-# Clear cache to force a fresh check
+# 清除缓存以强制进行一次新检查
 rm ~/.vite-plus/.upgrade-check.json
 
-# Run any command — should show notice if behind latest
+# 运行任意命令——如果落后于最新版本，应显示提示
 vp --version
 
-# Run again immediately — should not re-query (cached)
+# 立即再次运行——不应重新查询（已缓存）
 vp build
 
-# Disable and verify
+# 禁用并验证
 VP_NO_UPDATE_CHECK=1 vp build
 ```
 
-## References
+## 参考资料
 
-- [RFC: Self-Update Command](./upgrade-command.md)
-- [RFC: CLI Tips](./cli-tips.md)
-- [npm update-notifier pattern](https://github.com/yeoman/update-notifier)
-- [Rust CLI update check (cargo-update)](https://github.com/nabijaczleweli/cargo-update)
+- [RFC：自更新命令](./upgrade-command.md)
+- [npm update-notifier 模式](https://github.com/yeoman/update-notifier)
+- [Rust CLI 更新检查（cargo-update）](https://github.com/nabijaczleweli/cargo-update)

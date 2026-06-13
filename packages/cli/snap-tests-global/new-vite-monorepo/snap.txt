@@ -23,10 +23,16 @@ vite.config.ts
   "devDependencies": {
     "vite-plus": "catalog:"
   },
-  "engines": {
-    "node": ">=22.12.0"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "<semver>",
+      "onFail": "download"
+    }
   },
-  "packageManager": "pnpm@<semver>"
+  "engines": {
+    "node": ">=22.18.0"
+  }
 }
 
 > cat vite-plus-monorepo/vite.config.ts # check vite config has cache enabled
@@ -80,6 +86,10 @@ No .yarnrc.yml
 
 > test -d vite-plus-monorepo/.git && echo 'Git initialized' # check git init
 Git initialized
+
+> vp create vite:monorepo --interactive --verbose --no-git --no-hooks --no-agent --no-editor --package-manager pnpm --directory verbose-no-git-monorepo # explicit --no-git should skip verbose monorepo git prompt
+> test ! -d verbose-no-git-monorepo/.git && echo 'No git initialized for explicit --no-git' || (echo 'ERROR: git initialized' && exit 1) # check verbose --no-git is respected
+No git initialized for explicit --no-git
 
 > test -f vite-plus-monorepo/.vscode/settings.json && echo '.vscode/settings.json exists' # check VS Code settings created
 .vscode/settings.json exists
@@ -196,7 +206,6 @@ vite-plus-generator
   "private": true,
   "description": "A starter for creating a Vite+ code generator.",
   "keywords": [
-    "bingo-template",
     "vite-plus-generator"
   ],
   "bin": "./bin/index.ts",
@@ -206,7 +215,7 @@ vite-plus-generator
     "dev": "node bin/index.ts"
   },
   "dependencies": {
-    "bingo": "^0.7.0",
+    "bingo": "^0.9.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -214,7 +223,7 @@ vite-plus-generator
     "typescript": "catalog:"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.18.0"
   }
 }
 
@@ -243,8 +252,14 @@ vite.config.ts
   "devDependencies": {
     "vite-plus": "catalog:"
   },
-  "engines": {
-    "node": ">=22.12.0"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "<semver>",
+      "onFail": "download"
+    }
   },
-  "packageManager": "pnpm@<semver>"
+  "engines": {
+    "node": ">=22.18.0"
+  }
 }

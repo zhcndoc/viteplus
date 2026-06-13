@@ -80,6 +80,7 @@ fn documentation_url_for_command_path(command_path: &[&str]) -> Option<&'static 
         ["pack"] => Some("https://viteplus.dev/guide/pack"),
         ["env", ..] => Some("https://viteplus.dev/guide/env"),
         ["upgrade"] => Some("https://viteplus.dev/guide/upgrade"),
+        ["implode"] => Some("https://viteplus.dev/guide/implode"),
         _ => None,
     }
 }
@@ -514,13 +515,10 @@ fn env_help_doc() -> HelpDoc {
                 "Manage",
                 vec![
                     row("default", "Set or show the global default Node.js version"),
-                    row(
-                        "pin",
-                        "Pin a Node.js version in the current directory (creates .node-version)",
-                    ),
+                    row("pin", "Pin a Node.js version in the current directory"),
                     row(
                         "unpin",
-                        "Remove the .node-version file from current directory (alias for `pin --unpin`)",
+                        "Remove the Node.js pin from the current directory (alias for `pin --unpin`)",
                     ),
                     row("use", "Use a specific Node.js version for this shell session"),
                     row("install", "Install a Node.js version [aliases: i]"),
@@ -829,10 +827,25 @@ fn delegated_help_doc(command: &str) -> Option<HelpDoc> {
                             "Match packages by name, directory, or glob pattern",
                         ),
                         row(
+                            "--fail-if-no-match",
+                            "Exit with a non-zero status if a filter matches no packages",
+                        ),
+                        row(
                             "--ignore-depends-on",
                             "Do not run dependencies specified in `dependsOn` fields",
                         ),
                         row("-v, --verbose", "Show full detailed summary after execution"),
+                        row("--cache", "Force caching on for all tasks and scripts"),
+                        row("--no-cache", "Force caching off for all tasks and scripts"),
+                        row("--log <MODE>", "Set output mode: interleaved, labeled, or grouped"),
+                        row(
+                            "--concurrency-limit <N>",
+                            "Maximum number of tasks to run concurrently (default: 4)",
+                        ),
+                        row(
+                            "--parallel",
+                            "Run tasks without dependency ordering (unlimited concurrency by default)",
+                        ),
                         row("--last-details", "Display the detailed summary of the last run"),
                         row("-h, --help", "Print help (see more with '--help')"),
                     ],
@@ -872,6 +885,10 @@ fn delegated_help_doc(command: &str) -> Option<HelpDoc> {
                         row(
                             "-F, --filter <FILTERS>",
                             "Match packages by name, directory, or glob pattern",
+                        ),
+                        row(
+                            "--fail-if-no-match",
+                            "Exit with a non-zero status if a filter matches no packages",
                         ),
                         row("-c, --shell-mode", "Execute the command within a shell environment"),
                         row("--parallel", "Run concurrently without topological ordering"),
@@ -946,6 +963,16 @@ fn skip_clap_unified_help(command: &str) -> bool {
     )
 }
 
+fn should_skip_parent_help_for_unknown_direct_nested_child(
+    command_path: &[String],
+    argv: &[String],
+    index: usize,
+) -> bool {
+    matches!(command_path, [command] if matches!(command.as_str(), "pm" | "env"))
+        && argv.get(index).is_some_and(|arg| !arg.starts_with('-'))
+        && has_help_flag_before_terminator(&argv[index..])
+}
+
 pub fn maybe_print_unified_clap_subcommand_help(argv: &[String]) -> bool {
     if argv.len() < 3 {
         return false;
@@ -960,6 +987,10 @@ pub fn maybe_print_unified_clap_subcommand_help(argv: &[String]) -> bool {
 
     while index < argv.len() {
         let arg = &argv[index];
+        if is_help_flag(arg) {
+            index += 1;
+            continue;
+        }
         if arg.starts_with('-') {
             break;
         }
@@ -982,6 +1013,10 @@ pub fn maybe_print_unified_clap_subcommand_help(argv: &[String]) -> bool {
         return false;
     }
 
+    if should_skip_parent_help_for_unknown_direct_nested_child(&command_path, argv, index) {
+        return false;
+    }
+
     let Some(first_command_name) = first_command_name else {
         return false;
     };
@@ -991,7 +1026,7 @@ pub fn maybe_print_unified_clap_subcommand_help(argv: &[String]) -> bool {
 
     // Respect `--` option terminator: flags after `--` belong to the wrapped
     // command and should not trigger CLI help rewriting.
-    if !has_help_flag_before_terminator(&argv[index..]) {
+    if !has_help_flag_before_terminator(&argv[1..]) {
         return false;
     }
 
@@ -1066,7 +1101,8 @@ pub fn print_unified_clap_help_for_path(command_path: &[&str]) -> bool {
 mod tests {
     use super::{
         HelpDoc, documentation_url_for_command_path, has_help_flag_before_terminator,
-        parse_clap_help_to_doc, parse_rows, render_help_doc, split_comment_suffix, strip_ansi,
+        parse_clap_help_to_doc, parse_rows, render_help_doc,
+        should_skip_parent_help_for_unknown_direct_nested_child, split_comment_suffix, strip_ansi,
     };
 
     #[test]
@@ -1115,6 +1151,42 @@ Options:
     fn help_flag_after_terminator_is_ignored() {
         let args = vec!["vpx".to_string(), "--".to_string(), "--help".to_string()];
         assert!(!has_help_flag_before_terminator(&args));
+    }
+
+    #[test]
+    fn skips_parent_help_for_unknown_pm_child_with_help() {
+        let args = vec!["vp", "pm", "apprev-build", "--help"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
+        assert!(should_skip_parent_help_for_unknown_direct_nested_child(
+            &["pm".to_string()],
+            &args,
+            2,
+        ));
+    }
+
+    #[test]
+    fn keeps_unified_help_for_valid_pm_child_with_help() {
+        let args = vec!["vp", "pm", "approve-builds", "--help"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
+        assert!(!should_skip_parent_help_for_unknown_direct_nested_child(
+            &["pm".to_string(), "approve-builds".to_string()],
+            &args,
+            3,
+        ));
+    }
+
+    #[test]
+    fn keeps_unified_help_for_parent_help() {
+        let args = vec!["vp", "env", "--help"].into_iter().map(String::from).collect::<Vec<_>>();
+        assert!(!should_skip_parent_help_for_unknown_direct_nested_child(
+            &["env".to_string()],
+            &args,
+            2,
+        ));
     }
 
     #[test]
@@ -1169,6 +1241,10 @@ Options:
         assert_eq!(
             documentation_url_for_command_path(&["config"]),
             Some("https://viteplus.dev/guide/commit-hooks")
+        );
+        assert_eq!(
+            documentation_url_for_command_path(&["implode"]),
+            Some("https://viteplus.dev/guide/implode")
         );
     }
 

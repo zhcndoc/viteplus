@@ -1,105 +1,105 @@
-# RFC: JavaScript Runtime Management (`vite_js_runtime`)
+# RFC：JavaScript 运行时管理（`vite_js_runtime`）
 
-## Background
+## 背景
 
-Currently, vite-plus relies on the user's system-installed Node.js runtime. This creates several challenges:
+目前，vite-plus 依赖用户系统中已安装的 Node.js 运行时。这带来了几个挑战：
 
-1. **Version inconsistency**: Different team members may have different Node.js versions installed, leading to subtle bugs and "works on my machine" issues
-2. **CI/CD complexity**: Build pipelines need explicit Node.js version management
-3. **No runtime pinning**: Projects cannot specify and enforce a specific Node.js version
-4. **Future extensibility**: As alternatives like Bun and Deno mature, projects may want to use different runtimes
+1. **版本不一致**：不同团队成员可能安装了不同版本的 Node.js，导致细微的 bug 和“在我机器上可以运行”问题
+2. **CI/CD 复杂性**：构建流水线需要显式管理 Node.js 版本
+3. **无法固定运行时版本**：项目无法指定并强制使用特定的 Node.js 版本
+4. **未来可扩展性**：随着 Bun 和 Deno 等替代方案逐渐成熟，项目可能希望使用不同的运行时
 
-The PackageManager implementation in `vite_install` successfully handles automatic downloading and caching of package managers (pnpm, yarn, npm). We can apply the same pattern to JavaScript runtimes.
+`vite_install` 中的 PackageManager 实现已成功处理包管理器（pnpm、yarn、npm）的自动下载和缓存。我们可以将同样的模式应用到 JavaScript 运行时。
 
-## Goals
+## 目标
 
-1. **Pure library design**: A library crate that receives runtime name and version as input, downloads and caches the runtime, and returns the installation path
-2. **Cross-platform support**: Handle Windows, macOS, and Linux with appropriate binaries
-3. **Consistent caching**: Use the same global cache directory pattern as PackageManager
-4. **Extensible design**: Support Node.js initially, with architecture ready for Bun and Deno
+1. **纯库设计**：一个库 crate，接收运行时名称和版本作为输入，下载并缓存运行时，然后返回安装路径
+2. **跨平台支持**：使用合适的二进制文件处理 Windows、macOS 和 Linux
+3. **一致的缓存**：使用与 PackageManager 相同的全局缓存目录模式
+4. **可扩展设计**：初始支持 Node.js，并为 Bun 和 Deno 预留架构
 
-## Non-Goals (Initial Version)
+## 非目标（初始版本）
 
-- ~~Configuration auto-detection (no reading from package.json, .nvmrc, etc.)~~ **Now supported via `.node-version`, `engines.node`, and `devEngines.runtime`**
-- Managing multiple runtime versions simultaneously
-- Providing a version manager CLI (like nvm/fnm)
-- Supporting custom/unofficial Node.js builds
+- ~~配置自动检测（不读取 package.json、.nvmrc 等）~~ **现已通过 `.node-version`、`devEngines.runtime` 和 `engines.node` 支持**
+- 同时管理多个运行时版本
+- 提供版本管理器 CLI（如 nvm/fnm）
+- 支持自定义/非官方的 Node.js 构建
 
-## Input Format
+## 输入格式
 
-The library accepts runtime specification as a string parameter:
+该库接受一个字符串参数形式的运行时规格：
 
 ```
 <runtime>@<version>
 ```
 
-### Examples
+### 示例
 
-| Runtime       | Example        |
-| ------------- | -------------- |
-| Node.js       | `node@22.13.1` |
-| Bun (future)  | `bun@1.2.0`    |
-| Deno (future) | `deno@2.0.0`   |
+| 运行时        | 示例             |
+| ------------- | ---------------- |
+| Node.js       | `node@22.13.1`   |
+| Bun（未来）   | `bun@1.2.0`      |
+| Deno（未来）  | `deno@2.0.0`     |
 
-Both exact versions and semver ranges are supported:
+同时支持精确版本和 semver 范围：
 
-- Exact: `22.13.1`
-- Caret range: `^22.0.0` (>=22.0.0 <23.0.0)
-- Tilde range: `~22.13.0` (>=22.13.0 <22.14.0)
-- Latest: omit version to get the latest release
+- 精确版本：`22.13.1`
+- Caret 范围：`^22.0.0`（>=22.0.0 <23.0.0）
+- Tilde 范围：`~22.13.0`（>=22.13.0 <22.14.0）
+- 最新：省略版本以获取最新发布版本
 
-## Architecture
+## 架构
 
-### Crate Structure
+### crate 结构
 
 ```
 crates/vite_js_runtime/
 ├── Cargo.toml
 └── src/
-    ├── lib.rs              # Public API exports
-    ├── dev_engines.rs      # devEngines.runtime parsing from package.json
-    ├── error.rs            # Error types
-    ├── platform.rs         # Platform detection (Os, Arch, Platform)
-    ├── provider.rs         # JsRuntimeProvider trait and types
-    ├── providers/          # Provider implementations
+    ├── lib.rs              # 公共 API 导出
+    ├── dev_engines.rs      # 从 package.json 解析 devEngines.runtime
+    ├── error.rs            # 错误类型
+    ├── platform.rs         # 平台检测（Os、Arch、Platform）
+    ├── provider.rs         # JsRuntimeProvider trait 和类型
+    ├── providers/          # Provider 实现
     │   ├── mod.rs
-    │   └── node.rs         # NodeProvider with version resolution
-    ├── download.rs         # Generic download utilities
-    └── runtime.rs          # JsRuntime struct and download orchestration
+    │   └── node.rs         # 带版本解析的 NodeProvider
+    ├── download.rs         # 通用下载工具
+    └── runtime.rs          # JsRuntime 结构体和下载编排
 ```
 
-### Core Types
+### 核心类型
 
 ```rust
-/// Supported JavaScript runtime types
+/// 支持的 JavaScript 运行时类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JsRuntimeType {
     Node,
-    // Future: Bun, Deno
+    // 未来：Bun、Deno
 }
 
-/// Represents a downloaded JavaScript runtime
+/// 表示一个已下载的 JavaScript 运行时
 pub struct JsRuntime {
     pub runtime_type: JsRuntimeType,
-    pub version: Str,                   // Resolved version (e.g., "22.13.1")
+    pub version: Str,                   // 已解析的版本（例如 "22.13.1"）
     pub install_dir: AbsolutePathBuf,
-    binary_relative_path: Str,          // e.g., "bin/node" or "node.exe"
-    bin_dir_relative_path: Str,         // e.g., "bin" or ""
+    binary_relative_path: Str,          // 例如 "bin/node" 或 "node.exe"
+    bin_dir_relative_path: Str,         // 例如 "bin" 或 ""
 }
 
-/// Archive format for runtime distributions
+/// 运行时分发包的归档格式
 pub enum ArchiveFormat {
-    TarGz,  // .tar.gz (Linux, macOS)
-    Zip,    // .zip (Windows)
+    TarGz,  // .tar.gz（Linux、macOS）
+    Zip,    // .zip（Windows）
 }
 
-/// How to verify the integrity of a downloaded archive
+/// 如何验证已下载归档的完整性
 pub enum HashVerification {
-    ShasumsFile { url: Str },  // Download and parse SHASUMS file
-    None,                       // No verification
+    ShasumsFile { url: Str },  // 下载并解析 SHASUMS 文件
+    None,                       // 不进行验证
 }
 
-/// Information needed to download a runtime
+/// 下载运行时所需的信息
 pub struct DownloadInfo {
     pub archive_url: Str,
     pub archive_filename: Str,
@@ -109,90 +109,90 @@ pub struct DownloadInfo {
 }
 ```
 
-### Provider Trait
+### Provider trait
 
-The `JsRuntimeProvider` trait abstracts runtime-specific logic, making it easy to add new runtimes:
+`JsRuntimeProvider` trait 抽象了运行时特定逻辑，便于轻松添加新的运行时：
 
 ```rust
 #[async_trait]
 pub trait JsRuntimeProvider: Send + Sync {
-    /// Get the name of this runtime (e.g., "node", "bun", "deno")
+    /// 获取此运行时的名称（例如 "node"、"bun"、"deno"）
     fn name(&self) -> &'static str;
 
-    /// Get the platform string used in download URLs
+    /// 获取下载 URL 中使用的平台字符串
     fn platform_string(&self, platform: Platform) -> Str;
 
-    /// Get download information for a specific version and platform
+    /// 获取特定版本和平台的下载信息
     fn get_download_info(&self, version: &str, platform: Platform) -> DownloadInfo;
 
-    /// Get the relative path to the runtime binary from the install directory
+    /// 获取从安装目录到运行时二进制文件的相对路径
     fn binary_relative_path(&self, platform: Platform) -> Str;
 
-    /// Get the relative path to the bin directory from the install directory
+    /// 获取从安装目录到 bin 目录的相对路径
     fn bin_dir_relative_path(&self, platform: Platform) -> Str;
 
-    /// Parse a SHASUMS file to extract the hash for a specific filename
+    /// 解析 SHASUMS 文件，提取特定文件名对应的哈希值
     fn parse_shasums(&self, shasums_content: &str, filename: &str) -> Result<Str, Error>;
 }
 ```
 
-### Adding a New Runtime
+### 添加新的运行时
 
-To add support for a new runtime (e.g., Bun):
+要添加对新运行时的支持（例如 Bun）：
 
-1. Create `src/providers/bun.rs` implementing `JsRuntimeProvider`
-2. Add `Bun` variant to `JsRuntimeType` enum
-3. Add match arm in `download_runtime()` to use the new provider
-4. Export the provider from `src/providers/mod.rs`
+1. 创建 `src/providers/bun.rs`，实现 `JsRuntimeProvider`
+2. 在 `JsRuntimeType` 枚举中添加 `Bun` 变体
+3. 在 `download_runtime()` 中添加 match 分支以使用新的 provider
+4. 从 `src/providers/mod.rs` 导出该 provider
 
-### Public API
+### 公共 API
 
 ```rust
-/// Download and cache a JavaScript runtime by exact version
+/// 按精确版本下载并缓存 JavaScript 运行时
 pub async fn download_runtime(
     runtime_type: JsRuntimeType,
-    version: &str,           // Exact version (e.g., "22.13.1")
+    version: &str,           // 精确版本（例如 "22.13.1"）
 ) -> Result<JsRuntime, Error>;
 
-/// Download runtime based on project's version configuration
-/// Reads from .node-version, engines.node, or devEngines.runtime (in priority order)
-/// Resolves semver ranges, downloads the matching version
+/// 基于项目的版本配置下载运行时
+/// 按优先级顺序读取 .node-version、devEngines.runtime 或 engines.node
+/// 解析 semver 范围，下载匹配的版本
 pub async fn download_runtime_for_project(
     project_path: &AbsolutePath,
 ) -> Result<JsRuntime, Error>;
 
 impl JsRuntime {
-    /// Get the path to the runtime binary (e.g., node, bun)
+    /// 获取运行时二进制文件路径（例如 node、bun）
     pub fn get_binary_path(&self) -> AbsolutePathBuf;
 
-    /// Get the bin directory containing the runtime
+    /// 获取包含运行时的 bin 目录
     pub fn get_bin_prefix(&self) -> AbsolutePathBuf;
 
-    /// Get the runtime type
+    /// 获取运行时类型
     pub fn runtime_type(&self) -> JsRuntimeType;
 
-    /// Get the resolved version string (always exact, e.g., "22.13.1")
+    /// 获取已解析的版本字符串（始终为精确版本，例如 "22.13.1"）
     pub fn version(&self) -> &str;
 }
 
 impl NodeProvider {
-    /// Fetch version index from nodejs.org/dist/index.json (with HTTP caching)
+    /// 从 nodejs.org/dist/index.json 获取版本索引（带 HTTP 缓存）
     pub async fn fetch_version_index(&self) -> Result<Vec<NodeVersionEntry>, Error>;
 
-    /// Resolve version requirement (e.g., "^24.4.0") to exact version
+    /// 将版本要求（例如 "^24.4.0"）解析为精确版本
     pub async fn resolve_version(&self, version_req: &str) -> Result<Str, Error>;
 
-    /// Get latest LTS version
+    /// 获取最新 LTS 版本
     pub async fn resolve_latest_version(&self) -> Result<Str, Error>;
 
-    /// Get absolute latest version (including non-LTS)
+    /// 获取绝对最新版本（包括非 LTS）
     pub async fn resolve_absolute_latest_version(&self) -> Result<Str, Error>;
 }
 ```
 
-### Usage Examples
+### 使用示例
 
-**Direct version download:**
+**直接下载指定版本：**
 
 ```rust
 use vite_js_runtime::{JsRuntimeType, download_runtime};
@@ -202,7 +202,7 @@ println!("Node.js installed at: {}", runtime.get_binary_path());
 println!("Version: {}", runtime.version()); // "22.13.1"
 ```
 
-**Project-based download (reads from .node-version, engines.node, or devEngines.runtime):**
+**基于项目下载（读取 .node-version、devEngines.runtime 或 engines.node）：**
 
 ```rust
 use vite_js_runtime::download_runtime_for_project;
@@ -210,32 +210,32 @@ use vite_path::AbsolutePathBuf;
 
 let project_path = AbsolutePathBuf::new("/path/to/project".into()).unwrap();
 let runtime = download_runtime_for_project(&project_path).await?;
-// Version is resolved from .node-version > engines.node > devEngines.runtime
+// 版本按 .node-version > devEngines.runtime > engines.node 的顺序解析
 ```
 
-## Cache Directory Structure
+## 缓存目录结构
 
-Following the PackageManager pattern:
+遵循 PackageManager 模式：
 
 ```
 $VITE_PLUS_HOME/js_runtime/{runtime}/{version}/
 ```
 
-Examples:
+示例：
 
-- Linux x64: `~/.vite-plus/js_runtime/node/22.13.1/`
-- macOS ARM: `~/.vite-plus/js_runtime/node/22.13.1/`
-- Windows x64: `%USERPROFILE%\.vite-plus\js_runtime\node\22.13.1\`
+- Linux x64：`~/.vite-plus/js_runtime/node/22.13.1/`
+- macOS ARM：`~/.vite-plus/js_runtime/node/22.13.1/`
+- Windows x64：`%USERPROFILE%\.vite-plus\js_runtime\node\22.13.1\`
 
-### Version Index Cache
+### 版本索引缓存
 
-The Node.js version index is cached locally to avoid repeated network requests:
+Node.js 版本索引会被本地缓存，以避免重复网络请求：
 
 ```
 $VITE_PLUS_HOME/js_runtime/node/index_cache.json
 ```
 
-Cache structure:
+缓存结构：
 
 ```json
 {
@@ -249,54 +249,56 @@ Cache structure:
 }
 ```
 
-- Default TTL: 1 hour (3600 seconds)
-- Cache is refreshed when expired
-- Falls back to full fetch if cache is corrupted
+- 默认 TTL：1 小时（3600 秒）
+- 缓存过期时会刷新
+- 若缓存损坏，则回退为完整获取
 
-### Platform Detection
+### 平台检测
 
-| OS      | Architecture | Platform String |
-| ------- | ------------ | --------------- |
-| Linux   | x64          | `linux-x64`     |
-| Linux   | ARM64        | `linux-arm64`   |
-| macOS   | x64          | `darwin-x64`    |
-| macOS   | ARM64        | `darwin-arm64`  |
-| Windows | x64          | `win-x64`       |
-| Windows | ARM64        | `win-arm64`     |
+| 操作系统 | 架构        | 平台字符串      |
+| ------- | ----------- | --------------- |
+| Linux   | x64         | `linux-x64`     |
+| Linux   | ARM64       | `linux-arm64`   |
+| macOS   | x64         | `darwin-x64`    |
+| macOS   | ARM64       | `darwin-arm64`  |
+| Windows | x64         | `win-x64`       |
+| Windows | ARM64       | `win-arm64`     |
 
-## Version Source Priority
+## 版本来源优先级
 
-The `download_runtime_for_project` function reads Node.js version from multiple sources with the following priority:
+`download_runtime_for_project` 函数从多个来源读取 Node.js 版本，优先级如下：
 
-| Priority    | Source               | File            | Example                               | Used By                       |
+| 优先级      | 来源                 | 文件            | 示例                                  | 被谁使用                       |
 | ----------- | -------------------- | --------------- | ------------------------------------- | ----------------------------- |
-| 1 (highest) | `.node-version`      | `.node-version` | `22.13.1`                             | fnm, nvm, Netlify, Cloudflare |
-| 2           | `engines.node`       | `package.json`  | `">=20.0.0"`                          | Vercel, npm                   |
-| 3 (lowest)  | `devEngines.runtime` | `package.json`  | `{"name":"node","version":"^24.4.0"}` | npm RFC                       |
+| 1（最高）   | `.node-version`      | `.node-version` | `22.13.1`                             | fnm、nvm、Netlify、Cloudflare |
+| 2           | `devEngines.runtime` | `package.json`  | `{"name":"node","version":"^24.4.0"}` | npm、pnpm                     |
+| 3（最低）   | `engines.node`       | `package.json`  | `">=20.0.0"`                          | Vercel、npm                   |
 
-### `.node-version` File Format
+`devEngines.runtime` 的优先级高于 `engines.node`，因为它声明的是开发环境要求，而 `engines.node` 是面向使用者的支持范围。参见 [RFC: devEngines 支持](./dev-engines.md)。
 
-Reference: https://github.com/shadowspawn/node-version-usage
+### `.node-version` 文件格式
 
-**Supported Formats:**
+参考：https://github.com/shadowspawn/node-version-usage
 
-| Format              | Example   | Support Level                    |
-| ------------------- | --------- | -------------------------------- |
-| Three-part version  | `20.5.0`  | Universal                        |
-| With `v` prefix     | `v20.5.0` | Universal                        |
-| Two-part version    | `20.5`    | Supported (treated as `^20.5.0`) |
-| Single-part version | `20`      | Supported (treated as `^20.0.0`) |
+**支持的格式：**
 
-**Format Rules:**
+| 格式               | 示例        | 支持级别                         |
+| ------------------ | ----------- | -------------------------------- |
+| 三段式版本         | `20.5.0`    | 通用                             |
+| 带 `v` 前缀        | `v20.5.0`   | 通用                             |
+| 两段式版本         | `20.5`      | 支持（视为 `^20.5.0`）            |
+| 单段式版本         | `20`        | 支持（视为 `^20.0.0`）            |
 
-1. Single line with Unix line ending (`\n`)
-2. Trim whitespace from both ends
-3. Optional `v` prefix - normalized by stripping
-4. No comments - entire line is the version
+**格式规则：**
 
-### `engines.node` Format
+1. 单行，使用 Unix 换行符（`\n`）
+2. 去除首尾空白字符
+3. 可选 `v` 前缀 - 会被去除并归一化
+4. 不允许注释 - 整行即为版本
 
-Standard npm `engines` field in package.json:
+### `engines.node` 格式
+
+package.json 中标准的 npm `engines` 字段：
 
 ```json
 {
@@ -306,11 +308,11 @@ Standard npm `engines` field in package.json:
 }
 ```
 
-### `devEngines.runtime` Format
+### `devEngines.runtime` 格式
 
-Following the [npm devEngines RFC](https://github.com/npm/rfcs/blob/main/accepted/0048-devEngines.md):
+遵循 [npm devEngines RFC](https://github.com/npm/rfcs/blob/main/accepted/0048-devEngines.md)：
 
-**Single Runtime:**
+**单个运行时：**
 
 ```json
 {
@@ -324,7 +326,7 @@ Following the [npm devEngines RFC](https://github.com/npm/rfcs/blob/main/accepte
 }
 ```
 
-**Multiple Runtimes (Array):**
+**多个运行时（数组）：**
 
 ```json
 {
@@ -345,119 +347,119 @@ Following the [npm devEngines RFC](https://github.com/npm/rfcs/blob/main/accepte
 }
 ```
 
-**Note:** Currently only the `"node"` runtime is supported. Other runtimes are ignored.
+**注意：** 目前仅支持 `"node"` 运行时。其他运行时会被忽略。
 
-### Version Validation
+### 版本验证
 
-Before using a version string from any source, it is normalized and validated:
+在使用来自任何来源的版本字符串之前，都会先进行归一化和验证：
 
-1. **Trim whitespace**: Leading and trailing whitespace is removed
-2. **Validate as semver**: The version must be either:
-   - An exact version (e.g., `20.18.0`, `v20.18.0`)
-   - A valid semver range (e.g., `^20.0.0`, `>=18 <21`, `20.x`, `*`)
-3. **Invalid versions are ignored**: If validation fails, a warning is printed and the source is skipped
+1. **去除空白字符**：删除首尾空白字符
+2. **按 semver 验证**：版本必须是以下之一：
+   - 精确版本（例如 `20.18.0`、`v20.18.0`）
+   - 有效的 semver 范围（例如 `^20.0.0`、`>=18 <21`、`20.x`、`*`）
+3. **无效版本会被忽略**：如果验证失败，会打印警告并跳过该来源
 
-**Example warning:**
+**警告示例：**
 
 ```
 warning: invalid version 'latest' in .node-version, ignoring
 ```
 
-This allows fallthrough to lower-priority sources when a higher-priority source contains an invalid version.
+这样当高优先级来源包含无效版本时，可以继续回退到低优先级来源。
 
-### Version Resolution
+### 版本解析
 
-The version resolution is optimized to minimize network requests:
+版本解析经过优化，以尽量减少网络请求：
 
-| Version Specified  | Local Cache | Network Request | Result                     |
-| ------------------ | ----------- | --------------- | -------------------------- |
-| Exact (`20.18.0`)  | -           | **No**          | Use exact version directly |
-| Range (`^20.18.0`) | Match found | **No**          | Use cached version         |
-| Range (`^20.18.0`) | No match    | **Yes**         | Resolve from network       |
-| Empty/None         | Match found | **No**          | Use latest cached version  |
-| Empty/None         | No match    | **Yes**         | Get latest LTS version     |
+| 指定版本           | 本地缓存 | 网络请求 | 结果                       |
+| ------------------ | -------- | -------- | -------------------------- |
+| 精确版本 (`20.18.0`)  | -        | **否**   | 直接使用精确版本           |
+| 范围 (`^20.18.0`)     | 找到匹配 | **否**   | 使用缓存版本               |
+| 范围 (`^20.18.0`)     | 未找到   | **是**   | 从网络解析                 |
+| 空/None           | 找到匹配 | **否**   | 使用最新缓存版本           |
+| 空/None           | 未找到   | **是**   | 获取最新 LTS 版本          |
 
-**Exact versions** (e.g., `20.18.0`, `v20.18.0`) are detected using `node_semver::Version::parse()` and used directly without network validation. The `v` prefix is normalized (stripped) since download URLs already add it.
+**精确版本**（例如 `20.18.0`、`v20.18.0`）使用 `node_semver::Version::parse()` 检测，并直接使用，无需网络验证。`v` 前缀会被归一化（去除），因为下载 URL 已经会添加它。
 
-**Partial versions** like `20` or `20.18` are treated as ranges by the `node-semver` crate.
+**部分版本** 如 `20` 或 `20.18` 会被 `node-semver` crate 视为范围。
 
-**Semver ranges** (e.g., `^24.4.0`) trigger version resolution:
+**semver 范围**（例如 `^24.4.0`）会触发版本解析：
 
-1. First, check locally cached Node.js installations for a version that satisfies the range
-2. If a matching cached version exists, use the highest one (no network request)
-3. Otherwise, fetch the version index from `https://nodejs.org/dist/index.json`
-4. Cache the index locally with 1-hour TTL (supports ETag-based conditional requests)
-5. Use `node-semver` crate for npm-compatible range matching
-6. Return the highest version that satisfies the range
+1. 首先检查本地缓存的 Node.js 安装，查找满足该范围的版本
+2. 如果存在匹配的缓存版本，则使用最高版本（无需网络请求）
+3. 否则，从 `https://nodejs.org/dist/index.json` 获取版本索引
+4. 将索引本地缓存，TTL 为 1 小时（支持基于 ETag 的条件请求）
+5. 使用 `node-semver` crate 进行与 npm 兼容的范围匹配
+6. 返回满足该范围的最高版本
 
-### Mismatch Detection
+### 不匹配检测
 
-When the resolved version from the highest priority source does NOT satisfy constraints from lower priority sources, a warning is emitted.
+当来自最高优先级来源的解析版本不满足低优先级来源的约束时，会发出警告。
 
-| .node-version | engines.node | devEngines | Resolved             | Warning?                         |
-| ------------- | ------------ | ---------- | -------------------- | -------------------------------- |
-| `22.13.1`     | `>=20.0.0`   | -          | `22.13.1`            | No (22.13.1 satisfies >=20)      |
-| `22.13.1`     | `>=24.0.0`   | -          | `22.13.1`            | **Yes** (22.13.1 < 24)           |
-| -             | `>=20.0.0`   | `^24.4.0`  | latest matching >=20 | No (if resolved >= 24)           |
-| `20.18.0`     | -            | `^24.4.0`  | `20.18.0`            | **Yes** (20 doesn't satisfy ^24) |
+| .node-version | engines.node | devEngines | 已解析              | 警告？                          |
+| ------------- | ------------ | ---------- | -------------------- | ------------------------------- |
+| `22.13.1`     | `>=20.0.0`   | -          | `22.13.1`            | 否（22.13.1 满足 >=20）         |
+| `22.13.1`     | `>=24.0.0`   | -          | `22.13.1`            | **是**（22.13.1 < 24）          |
+| -             | `>=20.0.0`   | `^24.4.0`  | latest matching >=20 | 否（如果解析结果 >= 24）         |
+| `20.18.0`     | -            | `^24.4.0`  | `20.18.0`            | **是**（20 不满足 ^24）         |
 
-### Fallback Behavior
+### 回退行为
 
-When no version source exists:
+当不存在任何版本来源时：
 
-1. Check local cache for installed Node.js versions
-2. Use the **latest installed version** (if any exist)
-3. If no cached versions exist, fetch and use latest LTS from network
+1. 检查本地缓存中已安装的 Node.js 版本
+2. 使用**最新已安装版本**（如果存在）
+3. 如果没有缓存版本，则从网络获取并使用最新 LTS
 
-This optimizes for:
+这优化了以下方面：
 
-- Avoiding unnecessary network requests
-- Using what the user already has installed
+- 避免不必要的网络请求
+- 使用用户已经安装的版本
 
-**Note:** `.node-version` is only written explicitly via `vp env pin`.
+**注意：** `.node-version` 仅通过 `vp env pin` 显式写入。
 
-## Download Sources
+## 下载源
 
 ### Node.js
 
-Official distribution from nodejs.org:
+来自 nodejs.org 的官方发行版：
 
 ```
 https://nodejs.org/dist/v{version}/node-v{version}-{platform}.{ext}
 ```
 
-| Platform | Archive Format | Example                             |
-| -------- | -------------- | ----------------------------------- |
-| Linux    | `.tar.gz`      | `node-v22.13.1-linux-x64.tar.gz`    |
-| macOS    | `.tar.gz`      | `node-v22.13.1-darwin-arm64.tar.gz` |
-| Windows  | `.zip`         | `node-v22.13.1-win-x64.zip`         |
+| 平台     | 压缩包格式 | 示例                                  |
+| -------- | ---------- | ------------------------------------- |
+| Linux    | `.tar.gz`  | `node-v22.13.1-linux-x64.tar.gz`      |
+| macOS    | `.tar.gz`  | `node-v22.13.1-darwin-arm64.tar.gz`   |
+| Windows  | `.zip`     | `node-v22.13.1-win-x64.zip`           |
 
-### Custom Mirror Support
+### 自定义镜像支持
 
-The distribution URL can be overridden using the `VP_NODE_DIST_MIRROR` environment variable. This is useful for corporate environments or regions where nodejs.org might be slow or blocked.
+可以使用 `VP_NODE_DIST_MIRROR` 环境变量覆盖发行版 URL。这对于企业环境或 nodejs.org 可能较慢或被屏蔽的地区非常有用。
 
 ```bash
 VP_NODE_DIST_MIRROR=https://example.com/mirrors/node vp build
 ```
 
-The mirror URL should have the same directory structure as the official distribution. Trailing slashes are automatically trimmed.
+镜像 URL 应与官方发行版具有相同的目录结构。末尾斜杠会被自动去除。
 
-### Integrity Verification
+### 完整性验证
 
-Node.js provides SHASUMS256.txt for each release:
+Node.js 为每个发布版本提供 SHASUMS256.txt：
 
 ```
 https://nodejs.org/dist/v{version}/SHASUMS256.txt
 ```
 
-The implementation verifies download integrity automatically:
+实现会自动验证下载完整性：
 
-1. Download SHASUMS256.txt for the target version
-2. Parse and extract the SHA256 hash for the target archive filename
-3. After downloading the archive, verify it against the expected hash
-4. Fail with error if hash doesn't match (corrupted download)
+1. 下载目标版本的 SHASUMS256.txt
+2. 解析并提取目标压缩包文件名对应的 SHA256 哈希
+3. 下载压缩包后，将其与预期哈希进行校验
+4. 如果哈希不匹配则报错失败（下载损坏）
 
-Example SHASUMS256.txt content:
+SHASUMS256.txt 内容示例：
 
 ```
 a1b2c3d4...  node-v22.13.1-darwin-arm64.tar.gz
@@ -466,68 +468,68 @@ i9j0k1l2...  node-v22.13.1-linux-arm64.tar.gz
 ...
 ```
 
-## Implementation Details
+## 实现细节
 
-### Download Flow
+### 下载流程
 
 ```
-1. Receive runtime type and exact version as input
+1. 接收运行时类型和精确版本作为输入
 
-2. Select the appropriate JsRuntimeProvider
-   └── e.g., NodeProvider for JsRuntimeType::Node
+2. 选择合适的 JsRuntimeProvider
+   └── 例如，JsRuntimeType::Node 对应 NodeProvider
 
-3. Get download info from provider
-   ├── Platform string (e.g., "linux-x64", "win-x64")
-   ├── Archive URL and filename
-   ├── Hash verification method
-   └── Extracted directory name
+3. 从 provider 获取下载信息
+   ├── 平台字符串（例如 "linux-x64"、"win-x64"）
+   ├── 压缩包 URL 和文件名
+   ├── 哈希校验方法
+   └── 解压后的目录名
 
-4. Check cache for existing installation
-   └── If exists: return cached path
-   └── If not: continue to download
+4. 检查缓存中是否已有安装
+   └── 如果存在：返回缓存路径
+   └── 如果不存在：继续下载
 
-5. Download with atomic operations
-   ├── Create temp directory
-   ├── Download SHASUMS file and parse expected hash (via provider)
-   ├── Download archive with retry logic
-   ├── Verify archive hash
-   ├── Extract archive (tar.gz or zip based on format)
-   ├── Acquire file lock (prevent concurrent installs)
-   └── Atomic rename to final location
+5. 使用原子操作下载
+   ├── 创建临时目录
+   ├── 下载 SHASUMS 文件并解析预期哈希（通过 provider）
+   ├── 使用重试逻辑下载压缩包
+   ├── 验证压缩包哈希
+   ├── 解压压缩包（根据格式为 tar.gz 或 zip）
+   ├── 获取文件锁（防止并发安装）
+   └── 原子重命名到最终位置
 
-6. Return JsRuntime with install path and relative paths
+6. 返回包含安装路径和相对路径的 JsRuntime
 ```
 
-### Concurrent Download Protection
+### 并发下载保护
 
-Same pattern as PackageManager:
+与 PackageManager 使用相同模式：
 
-- Use tempfile for atomic operations
-- File-based locking to prevent race conditions
-- Check cache after acquiring lock (another process may have completed)
+- 使用 tempfile 进行原子操作
+- 基于文件的锁，防止竞态条件
+- 获取锁后再次检查缓存（另一个进程可能已经完成）
 
-## Integration with vite_install
+## 与 vite_install 的集成
 
-The `vite_install` crate can use `vite_js_runtime` to:
+`vite_install` crate 可以使用 `vite_js_runtime` 来：
 
-1. Ensure the correct Node.js version before running package manager commands
-2. Use the managed Node.js to execute package manager binaries
+1. 在运行包管理器命令前确保正确的 Node.js 版本
+2. 使用受管理的 Node.js 执行包管理器二进制文件
 
 ```rust
-// Example integration in vite_install
+// vite_install 中的集成示例
 use vite_js_runtime::{JsRuntimeType, download_runtime};
 
 async fn run_with_managed_node(
     node_version: &str,
     args: &[&str],
 ) -> Result<(), Error> {
-    // Download/cache the runtime
+    // 下载/缓存运行时
     let runtime = download_runtime(JsRuntimeType::Node, node_version).await?;
 
-    // Use the managed Node.js binary
+    // 使用受管理的 Node.js 二进制文件
     let node_path = runtime.get_binary_path();
 
-    // Execute command with managed Node.js
+    // 使用受管理的 Node.js 执行命令
     Command::new(node_path)
         .args(args)
         .spawn()?
@@ -537,40 +539,40 @@ async fn run_with_managed_node(
 }
 ```
 
-## Error Handling
+## 错误处理
 
-Error variants in `vite_js_runtime::Error`:
+`vite_js_runtime::Error` 中的错误变体：
 
 ```rust
 pub enum Error {
-    /// Version not found in official releases
+    /// 在官方发布版本中未找到该版本
     VersionNotFound { runtime: Str, version: Str },
 
-    /// Platform not supported for this runtime
+    /// 该运行时不支持此平台
     UnsupportedPlatform { platform: Str, runtime: Str },
 
-    /// Download failed after retries
+    /// 多次重试后下载失败
     DownloadFailed { url: Str, reason: Str },
 
-    /// Hash verification failed (download corrupted)
+    /// 哈希校验失败（下载损坏）
     HashMismatch { filename: Str, expected: Str, actual: Str },
 
-    /// Archive extraction failed
+    /// 压缩包解压失败
     ExtractionFailed { reason: Str },
 
-    /// SHASUMS file parsing failed
+    /// SHASUMS 文件解析失败
     ShasumsParseFailed { reason: Str },
 
-    /// Hash not found in SHASUMS file
+    /// 在 SHASUMS 文件中未找到哈希
     HashNotFound { filename: Str },
 
-    /// Failed to parse version index
+    /// 解析版本索引失败
     VersionIndexParseFailed { reason: Str },
 
-    /// No version matching the requirement found
+    /// 未找到与要求匹配的版本
     NoMatchingVersion { version_req: Str },
 
-    /// IO, HTTP, JSON, and semver errors
+    /// IO、HTTP、JSON 和 semver 错误
     Io(std::io::Error),
     Reqwest(reqwest::Error),
     JoinError(tokio::task::JoinError),
@@ -579,127 +581,127 @@ pub enum Error {
 }
 ```
 
-## Testing Strategy
+## 测试策略
 
-### Unit Tests
+### 单元测试
 
-1. **Platform detection**
-   - Test all supported platform/arch combinations
-   - Test mapping to Node.js distribution names
+1. **平台检测**
+   - 测试所有受支持的平台/架构组合
+   - 测试映射到 Node.js 分发名称
 
-2. **Cache path generation**
-   - Verify correct directory structure
+2. **缓存路径生成**
+   - 验证正确的目录结构
 
-### Integration Tests
+### 集成测试
 
-1. **Download and cache**
-   - Download a specific Node.js version
-   - Verify binary exists and is executable
-   - Verify cache reuse on second call
+1. **下载与缓存**
+   - 下载特定版本的 Node.js
+   - 验证二进制文件存在且可执行
+   - 验证第二次调用时复用缓存
 
-2. **Integrity verification**
-   - Test successful verification against SHASUMS256.txt
-   - Test failure when archive is corrupted (hash mismatch)
+2. **完整性验证**
+   - 测试基于 SHASUMS256.txt 的成功校验
+   - 测试压缩包损坏时的失败情况（哈希不匹配）
 
-3. **Concurrent downloads**
-   - Simulate multiple processes downloading same version
-   - Verify no corruption or conflicts
+3. **并发下载**
+   - 模拟多个进程下载同一版本
+   - 验证不会出现损坏或冲突
 
-## Design Decisions
+## 设计决策
 
-### 1. Pure Library vs. Configuration-Aware
+### 1. 纯库 vs. 感知配置
 
-**Decision**: Pure library that receives runtime name and version as input.
+**决策**：使用一个纯库，接收运行时名称和版本作为输入。
 
-**Rationale**:
+**理由**：
 
-- Maximum flexibility - callers decide how to obtain the runtime specification
-- No coupling to specific configuration formats (package.json, .nvmrc, etc.)
-- Easier to test in isolation
-- Clear single responsibility: download and cache runtimes
+- 最大灵活性——由调用方决定如何获取运行时规范
+- 不与特定配置格式（package.json、.nvmrc 等）耦合
+- 更容易独立测试
+- 职责单一清晰：下载并缓存运行时
 
-### 2. Separate Crate vs. Extending vite_install
+### 2. 独立 Crate vs. 扩展 vite_install
 
-**Decision**: Create a new `vite_js_runtime` crate.
+**决策**：创建一个新的 `vite_js_runtime` crate。
 
-**Rationale**:
+**理由**：
 
-- Clear separation of concerns (runtime vs. package manager)
-- Reusable by other crates without pulling in package manager logic
-- Easier to maintain and test independently
-- Follows existing crate organization pattern
+- 职责分离清晰（运行时 vs. 包管理器）
+- 可被其他 crate 复用，而无需引入包管理器逻辑
+- 更易维护和独立测试
+- 遵循现有的 crate 组织模式
 
-### 3. Version Specification Format
+### 3. 版本规范格式
 
-**Decision**: Support both exact versions and semver ranges.
+**决策**：同时支持精确版本和 semver 范围。
 
-**Rationale**:
+**理由**：
 
-- Mirrors the established `packageManager` format for exact versions
-- Semver ranges provide flexibility for automatic updates within constraints
-- Version index is cached locally (1-hour TTL) to minimize network requests
-- Uses `node-semver` crate for npm-compatible range parsing
-- `download_runtime()` takes exact versions; `download_runtime_for_project()` handles range resolution
+- 与既定的 `packageManager` 精确版本格式保持一致
+- semver 范围在约束内提供自动更新的灵活性
+- 版本索引在本地缓存（1 小时 TTL）以减少网络请求
+- 使用 `node-semver` crate 解析与 npm 兼容的范围
+- `download_runtime()` 接受精确版本；`download_runtime_for_project()` 负责处理范围解析
 
-### 4. Initial Node.js Only
+### 4. 初始仅支持 Node.js
 
-**Decision**: Support only Node.js in the initial version.
+**决策**：初始版本仅支持 Node.js。
 
-**Rationale**:
+**理由**：
 
-- Node.js is the most widely used runtime
-- Allows focused, well-tested implementation
-- Trait-based architecture (`JsRuntimeProvider`) makes adding Bun/Deno straightforward
-- Reduces initial complexity and scope
+- Node.js 是最广泛使用的运行时
+- 便于实现专注且经过充分测试的方案
+- 基于 trait 的架构（`JsRuntimeProvider`）使后续添加 Bun/Deno 变得直接
+- 降低初始复杂度和范围
 
-### 5. Trait-Based Provider Architecture
+### 5. 基于 Trait 的 Provider 架构
 
-**Decision**: Use a `JsRuntimeProvider` trait to abstract runtime-specific logic.
+**决策**：使用 `JsRuntimeProvider` trait 来抽象运行时特定逻辑。
 
-**Rationale**:
+**理由**：
 
-- Clean separation between generic download logic and runtime-specific details
-- Each provider encapsulates: platform strings, URL construction, hash verification, binary paths
-- Adding a new runtime only requires implementing the trait
-- Generic download utilities are reusable across all providers
+- 将通用下载逻辑与运行时特定细节清晰分离
+- 每个 provider 封装：平台字符串、URL 构造、哈希验证、二进制路径
+- 添加新运行时只需实现该 trait
+- 通用下载工具可在所有 provider 之间复用
 
-## Future Enhancements
+## 未来增强
 
-1. ✅ **Version aliases**: Support `latest` alias with cached version index
-2. **Bun support**: Create `BunProvider` implementing `JsRuntimeProvider`
-3. **Deno support**: Create `DenoProvider` implementing `JsRuntimeProvider`
-4. ✅ **Version ranges**: Support semver ranges like `node@^22.0.0`
-5. **Offline mode**: Full offline support (partial: ranges check local cache first)
-6. **LTS alias**: Support `lts` alias to download latest LTS version
+1. ✅ **版本别名**：支持 `latest` 别名，并使用缓存的版本索引
+2. **Bun 支持**：创建实现 `JsRuntimeProvider` 的 `BunProvider`
+3. **Deno 支持**：创建实现 `JsRuntimeProvider` 的 `DenoProvider`
+4. ✅ **版本范围**：支持如 `node@^22.0.0` 这样的 semver 范围
+5. **离线模式**：完整离线支持（部分：范围会优先检查本地缓存）
+6. **LTS 别名**：支持 `lts` 别名以下载最新 LTS 版本
 
-## Success Criteria
+## 成功标准
 
-1. ✅ Can download and cache Node.js by exact version specification
-2. ✅ Works on Linux, macOS, and Windows (x64 and ARM64)
-3. ✅ Verifies download integrity using SHASUMS256.txt
-4. ✅ Handles concurrent downloads safely
-5. ✅ Returns version and binary path
-6. ✅ Comprehensive test coverage
-7. ✅ Custom mirrors via `VP_NODE_DIST_MIRROR` environment variable
-8. ✅ Support `devEngines.runtime` from package.json
-9. ✅ Support semver ranges (^, ~, etc.) with version resolution
-10. ✅ Version index caching with 1-hour TTL
-11. ✅ Support both single runtime and array of runtimes in devEngines
-12. ~~Write resolved version to `.node-version` file~~ (removed — `.node-version` is only written by `vp env pin`)
-13. ✅ Optimized version resolution (skip network for exact versions, check local cache for ranges)
-14. ✅ Multi-source version reading with priority: `.node-version` > `engines.node` > `devEngines.runtime`
-15. ✅ Support `.node-version` file format (with/without v prefix, partial versions)
-16. ✅ Support `engines.node` from package.json
-17. ✅ Warn when resolved version conflicts with lower-priority source constraints
-18. ✅ Use latest cached version when no source specified (avoid network request)
-19. ✅ Invalid version strings are ignored with warning, falling through to lower-priority sources
+1. ✅ 可通过精确版本规范下载并缓存 Node.js
+2. ✅ 在 Linux、macOS 和 Windows（x64 和 ARM64）上可用
+3. ✅ 使用 SHASUMS256.txt 验证下载完整性
+4. ✅ 安全处理并发下载
+5. ✅ 返回版本和二进制路径
+6. ✅ 全面的测试覆盖
+7. ✅ 通过 `VP_NODE_DIST_MIRROR` 环境变量支持自定义镜像
+8. ✅ 支持来自 package.json 的 `devEngines.runtime`
+9. ✅ 支持 semver 范围（^、~ 等）及版本解析
+10. ✅ 版本索引缓存，TTL 为 1 小时
+11. ✅ 在 devEngines 中同时支持单个 runtime 和 runtime 数组
+12. ~~将解析后的版本写入 `.node-version` 文件~~（已移除——`.node-version` 仅由 `vp env pin` 写入）
+13. ✅ 优化版本解析（精确版本跳过网络，范围会检查本地缓存）
+14. ✅ 多来源版本读取，优先级为：`.node-version` > `engines.node` > `devEngines.runtime`
+15. ✅ 支持 `.node-version` 文件格式（带/不带 v 前缀，部分版本）
+16. ✅ 支持 package.json 中的 `engines.node`
+17. ✅ 当解析后的版本与低优先级来源约束冲突时发出警告
+18. ✅ 在未指定来源时使用最新缓存版本（避免网络请求）
+19. ✅ 无效版本字符串会被忽略并发出警告，继续回退到更低优先级来源
 
-## References
+## 参考资料
 
-- [Node.js Releases](https://nodejs.org/en/download/releases/)
-- [Node.js Distribution Index](https://nodejs.org/dist/index.json)
-- [.node-version file usage](https://github.com/shadowspawn/node-version-usage)
+- [Node.js 发布版本](https://nodejs.org/en/download/releases/)
+- [Node.js 分发索引](https://nodejs.org/dist/index.json)
+- [.node-version 文件用法](https://github.com/shadowspawn/node-version-usage)
 - [npm devEngines RFC](https://github.com/npm/rfcs/blob/main/accepted/0048-devEngines.md)
-- [Corepack (Node.js Package Manager Manager)](https://nodejs.org/api/corepack.html)
-- [fnm (Fast Node Manager)](https://github.com/Schniz/fnm)
-- [volta (JavaScript Tool Manager)](https://volta.sh/)
+- [Corepack（Node.js 包管理器管理器）](https://nodejs.org/api/corepack.html)
+- [fnm（Fast Node Manager）](https://github.com/Schniz/fnm)
+- [volta（JavaScript 工具管理器）](https://volta.sh/)

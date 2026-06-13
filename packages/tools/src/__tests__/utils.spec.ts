@@ -18,6 +18,13 @@ describe('replaceUnstableOutput()', () => {
     expect(replaceUnstableOutput(output)).toBe('line 1\nline 2\nline 3');
   });
 
+  test('strip clack spinner frames', () => {
+    const output = '│\n◒  Preparing local Git repository...\n◇  Prepared local Git repository\n';
+    expect(replaceUnstableOutput(output)).toBe('│\n◇  Prepared local Git repository\n');
+    // a frame at end-of-output without a trailing newline is stripped too
+    expect(replaceUnstableOutput('text\n◐  Working...')).toBe('text\n');
+  });
+
   test('replace unstable semver version', () => {
     const output = `
 foo v1.0.0
@@ -33,6 +40,24 @@ foo@1.0.0
 bar@v1.0.0
     `;
     expect(replaceUnstableOutput(output.trim())).toMatchSnapshot();
+  });
+
+  test('replace devEngines.packageManager pinned versions', () => {
+    // prerelease identifiers with hyphens and build metadata are normalized too
+    for (const version of ['11.5.1', '11.5.1-rc-1', '11.5.1+sha.abc']) {
+      const json = [
+        '{',
+        '  "devEngines": {',
+        '    "packageManager": {',
+        '      "name": "pnpm",',
+        `      "version": "${version}",`,
+        '      "onFail": "download"',
+        '    }',
+        '  }',
+        '}',
+      ].join('\n');
+      expect(replaceUnstableOutput(json)).toContain('"version": "<semver>"');
+    }
   });
 
   test('replace date', () => {
@@ -218,6 +243,7 @@ https://registry.yarnpkg.com/testnpm2/-/testnpm2-1.0.0.tgz
   test('replace pnpm registry request error warning log', () => {
     const output = `
  WARN  GET https://registry.npmjs.org/test-vite-plus-install error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+[WARN] GET https://registry.npmjs.org/testnpm2 error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
 Progress: resolved
 `;
     expect(replaceUnstableOutput(output.trim())).toMatchSnapshot();
@@ -227,6 +253,7 @@ Progress: resolved
     const output = `
  WARN  Tarball download average speed 29 KiB/s (size 56 KiB) is below 50 KiB/s: https://registry.npmjs.org/qs/-/qs-6.14.0.tgz (GET)
  WARN  Tarball download average speed 34 KiB/s (size 347 KiB) is below 50 KiB/s: https://registry.npmjs.org/undici/-/undici-7.16.0.tgz (GET)
+Progress: resolved
 `;
     expect(replaceUnstableOutput(output.trim())).toMatchSnapshot();
   });

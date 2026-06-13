@@ -27,7 +27,7 @@ Vite+ 提供以下内置模板：
 - `vite:monorepo` 创建一个新的单体仓库
 - `vite:application` 创建一个新的应用程序
 - `vite:library` 创建一个新的库
-- `vite:generator` 创建一个新的生成器
+- `vite:generator` 创建一个新的代码生成器（仅限单体仓库，参见 [Code Generators](#code-generators)）
 
 ## 模板来源
 
@@ -35,7 +35,7 @@ Vite+ 提供以下内置模板：
 
 - 使用简写模板，如 `vite`、`@tanstack/start`、`svelte`、`next-app`、`nuxt`、`react-router` 和 `vue`
 - 使用完整包名，如 `create-vite` 或 `create-next-app`
-- 使用本地模板，例如 `./tools/create-ui-component` 或 `@your-org/generator-*`
+- 使用在 [`create.templates`](#code-generators) 中声明的本地单体仓库模板（例如内部组件或服务生成器）
 - 使用远程模板，例如 `github:user/repo` 或 `https://github.com/user/template-repo`
 
 运行 `vp create --list` 可查看 Vite+ 识别的内置模板和常用简写模板。
@@ -43,13 +43,16 @@ Vite+ 提供以下内置模板：
 ## 选项
 
 - `--directory <dir>` 将生成的项目写入指定的目标目录
-- `--agent <name>` 在脚手架生成期间创建 agent 指令文件
-- `--editor <name>` 写入编辑器配置文件
-- `--git` 初始化一个 git 仓库
+- `--agent <name>` 在脚手架创建过程中生成 agent 指令文件
+- `--no-agent` 跳过 agent 指令设置
+- `--editor <name>` 生成编辑器配置文件
+- `--no-editor` 跳过编辑器配置设置
+- `--git` 初始化 git 仓库
 - `--no-git` 跳过 git 仓库初始化
 - `--hooks` 启用 pre-commit hook 设置
 - `--no-hooks` 跳过 hook 设置
-- `--no-interactive` 以非交互模式运行
+- `--package-manager <name>` 使用指定的包管理器（`pnpm`、`npm`、`yarn` 或 `bun`）
+- `--no-interactive` 无提示运行
 - `--verbose` 显示详细的脚手架输出
 - `--list` 打印可用的内置模板和热门模板
 
@@ -88,6 +91,96 @@ vp create create-next-app
 vp create github:user/repo
 vp create https://github.com/user/template-repo
 ```
+
+## 代码生成器
+
+单体仓库通常需要搭建它们自己的构建模块：UI 组件、服务，或遵循团队约定的内部包。Vite+ 通过由 [Bingo](https://www.create.bingo/) 模板驱动的生成器包来支持这一点。
+
+### 搭建生成器
+
+在 Vite+ 单体仓库中运行：
+
+```bash
+vp create vite:generator
+```
+
+这需要一个单体仓库工作区。如果你还没有，请先使用 `vp create vite:monorepo` 创建一个。
+
+脚手架生成器包包含：
+
+- `src/template.ts` 使用 `bingo` 中的 `createTemplate` 定义模板：一个由 [Zod](https://zod.dev/) 构建的选项 schema，以及一个返回要生成文件的 `produce()` 函数
+- `bin/index.ts` 是 CLI 入口，由 Bingo 的 `runTemplateCLI` 驱动
+
+如果单体仓库中存在名为 `generators` 或 `tools` 的父目录，新包默认会放在其中。
+
+### 注册
+
+本地生成器在单体仓库的 `vite.config.ts` 中的 [`create.templates`](/config/create#create-templates) 里声明。这是唯一的事实来源：只有已注册的模板才会出现在 `vp create` 选择器中。
+
+`vp create vite:generator` 会为你注册生成器，在根目录 `vite.config.ts` 的 `create.templates` 中添加一项：
+
+```ts
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  create: {
+    templates: [
+      { name: 'my-generator', description: '生成新组件', template: 'my-generator' },
+    ],
+  },
+});
+```
+
+重复运行是幂等的（不会出现重复条目），现有的 `create.defaultTemplate` 会被保留。你也可以手动添加条目，例如注册一个不是这样脚手架生成出来的模板。`template` 值可以是生成器工作区的包名，也可以是指向它的相对 `./path`。
+
+### 运行生成器
+
+在单体仓库中运行 `vp create` 并从模板列表中选择生成器，或者直接传入它的 `name` 条目：
+
+```bash
+# 交互模式会在内置模板旁列出已注册的本地模板
+vp create
+
+# 通过名称运行已注册模板
+vp create component
+
+# 在 -- 后向生成器传递选项
+vp create component -- --name @your-org/button
+```
+
+当生成器依赖 `bingo` 时，Vite+ 会自动附加 `--skip-requests`，以跳过 Bingo 的外向网络请求（例如 GitHub API 调用）。
+
+生成器运行后，创建的包会经过常规的单体仓库集成流程：工作区注册、依赖安装和格式化。
+
+### 自定义生成器
+
+编辑 `src/template.ts` 以定义选项和要生成的文件：
+
+```ts
+import { createTemplate } from 'bingo';
+import { z } from 'zod';
+
+export default createTemplate({
+  options: {
+    name: z.string().describe('包名'),
+  },
+  async produce({ options }) {
+    return {
+      files: {
+        'package.json': JSON.stringify({ name: options.name, version: '0.0.0' }, null, 2),
+        src: {
+          'index.ts': `export const name = '${options.name}';\n`,
+        },
+      },
+    };
+  },
+});
+```
+
+- `options` 使用 Zod schema 定义生成器的提示和标志
+- `produce()` 返回要创建的 [files](https://www.create.bingo/build/concepts/creations#files)，以及可选的生成后要运行的 [scripts](https://www.create.bingo/build/concepts/creations#scripts) 和要向用户打印的 [suggestions](https://www.create.bingo/build/concepts/creations#suggestions)
+
+完整模板 API 请参见 [Bingo 文档](https://www.create.bingo/)。
 
 ## 组织模板
 

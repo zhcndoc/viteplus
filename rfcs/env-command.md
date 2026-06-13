@@ -223,9 +223,9 @@ npm install       # 当显式配置 packageManager npm@<version> 时使用该版
 npx vitest        # 当显式配置 packageManager npm@<version> 时使用该版本，否则使用 Node 内置的 npx
 ```
 
-Package-manager shims use `packageManager` only when the invoked command matches the configured manager or one of its generated aliases. For example, `packageManager: "npm@11.14.0"` makes the `npm` and `npx` shims run npm 11.14.0, while `packageManager: "pnpm@10.19.0"` does not turn `npm install` into `pnpm install`; `npm` falls back to the npm available through the resolved Node.js runtime. Alias pairs follow the package-manager download layout: `npm`/`npx`, `pnpm`/`pnpx`, `yarn`/`yarnpkg`, and `bun`/`bunx`.
+包管理器 shim 仅在调用的命令与已配置的管理器或其生成的别名之一匹配时才使用 `packageManager`。例如，`packageManager: "npm@11.14.0"` 会让 `npm` 和 `npx` shims 运行 npm 11.14.0，而 `packageManager: "pnpm@10.19.0"` 不会把 `npm install` 变成 `pnpm install`；`npm` 会回退到已解析的 Node.js 运行时所提供的 npm。别名对遵循包管理器下载布局：`npm`/`npx`、`pnpm`/`pnpx`、`yarn`/`yarnpkg` 和 `bun`/`bunx`。
 
-## Architecture Overview
+## 架构概览
 
 ### 单二进制多角色设计
 
@@ -288,10 +288,10 @@ argv[0] = "npx"       → Shim 模式：解析版本，执行 npx
 │  │  （向上遍历目录树）          │     │  0. VITE_PLUS_NODE_VERSION  │       │
 │  └──────────────┬───────────────┘     │  1. .session-node-version   │       │
 │                 │                     │  2. .node-version           │       │
-│                 │                     │  3. package.json#engines    │       │
-│                 │                     │  4. package.json#devEngines │       │
-│                 │                     │  5. 用户默认值（配置）      │       │
-│                 │                     │  6. 最新 LTS               │       │
+│                 │                     │  3. package.json#devEngines │       │
+│                 │                     │  4. package.json#engines    │       │
+│                 │                     │  5. User default (config)   │       │
+│                 │                     │  6. Latest LTS              │       │
 │                 ▼                     └─────────────────────────────┘       │
 │  ┌──────────────────────────────┐                                           │
 │  │  确保已安装 Node.js          │                                           │
@@ -546,13 +546,13 @@ lts/-2       → 18.20.5 (第三高的 LTS)
    - 先检查当前目录，再检查父目录
    - 简单格式：每个文件一行一个版本
 
-3. **`package.json#engines.node`**
-   - 先检查当前目录，再检查父目录
-   - 标准 npm 约束字段
+3. **`package.json#devEngines.runtime`**
+   - 在当前目录检查，然后检查父目录
+   - 开发环境需求字段（见 [RFC: devEngines Support](./dev-engines.md)）
 
-4. **`package.json#devEngines.runtime`**
-   - 先检查当前目录，再检查父目录
-   - 符合 npm RFC 的开发引擎规范
+4. **`package.json#engines.node`**
+   - 在当前目录检查，然后检查父目录
+   - 面向消费者的 npm 约束字段
 
 5. **用户默认值**（`~/.vite-plus/config.json`）
    - 通过 `vp env default <version>` 设置
@@ -811,26 +811,26 @@ v22.13.0  # 回退到最新 LTS
 1. `VITE_PLUS_NODE_VERSION` 环境变量（会话覆盖）
 2. `.session-node-version` 文件（会话覆盖）
 3. 当前目录或父目录中的 `.node-version`
-4. 当前目录或父目录中的 `package.json#engines.node`
-5. 当前目录或父目录中的 `package.json#devEngines.runtime`
-6. **用户默认值**：通过 `vp env default <version>` 配置（存储在 `~/.vite-plus/config.json`）
+4. 当前目录或父目录中的 `package.json#devEngines.runtime`
+5. 当前目录或父目录中的 `package.json#engines.node`
+6. **用户默认值**：通过 `vp env default <version>` 配置（存储在 `~/.vite-plus/config.json` 中）
 7. **系统默认值**：最新 LTS 版本
 
 ### 安装失败
 
 ```bash
 $ node -v
-vp: Failed to install Node 20.18.0: Network error: connection refused
-vp: Check your network connection and try again
-vp: Or set VITE_PLUS_BYPASS=1 to use system node
+vp: 安装 Node 20.18.0 失败：网络错误：连接被拒绝
+vp: 请检查你的网络连接并重试
+vp: 或设置 VITE_PLUS_BYPASS=1 以使用系统 node
 ```
 
 ### 未找到工具
 
 ```bash
 $ npx vitest
-vp: Tool 'npx' not found in Node 14.0.0 installation
-vp: npx is available in Node 5.2.0+
+vp: 在 Node 14.0.0 安装中未找到工具 'npx'
+vp: npx 在 Node 5.2.0+ 中可用
 ```
 
 ### PATH 配置错误
@@ -846,18 +846,18 @@ Configuration
   ✓ Node.js mode      managed
 
 PATH
-  ✗ vp                not in PATH
-                      Expected: ~/.vite-plus/bin
+  ✗ vp                不在 PATH 中
+                      期望值： ~/.vite-plus/bin
 
-    Add to your shell profile (~/.zshrc, ~/.bashrc, etc.):
+    将以下内容添加到你的 shell 配置文件（~/.zshrc、~/.bashrc 等）：
 
       . "$HOME/.vite-plus/env"
 
-    Then restart your terminal.
+    然后重新启动你的终端。
 
 ...
 
-✗ Some issues found. Run the suggested commands to fix them.
+✗ 发现一些问题。请运行建议的命令进行修复。
 ```
 
 ## 用户体验
@@ -1396,7 +1396,7 @@ Run 'vp install -g typescript' to reinstall.
 
 ## Pin 命令
 
-`vp env pin` 命令通过管理 `.node-version` 文件，为每个目录提供 Node.js 版本固定功能。
+`vp env pin` 命令提供按目录的 Node.js 版本固定功能。写入目标遵循来自 [RFC: devEngines Support](./dev-engines.md) 的兼容性优先规则：如果已存在 `.node-version`，则继续更新它；否则会将固定写入 `package.json#devEngines.runtime`（当缺少时会创建 `node` 条目，并设置 `onFail: "download"`）；只有当目录没有 `package.json` 时，才会创建 `.node-version`。显式的 `--target node-version` / `--target dev-engines` 标志会覆盖默认选择。
 
 ### 行为
 
@@ -1427,12 +1427,22 @@ $ vp env pin
 固定的版本：20.18.0
   来源：/Users/user/projects/my-app/.node-version
 
-# 如果当前目录没有 .node-version，但在父目录中找到了
+# 通过当前目录 package.json 中的 devEngines.runtime 固定
+$ vp env pin
+固定的版本：24.1.0
+  来源：/Users/user/projects/my-app/package.json（devEngines.runtime）
+
+# 如果当前目录没有固定，但在父级目录中找到了（.node-version 或
+# devEngines.runtime，按每个目录的解析顺序检查）
 $ vp env pin
 当前目录未固定版本。
   继承自：/Users/user/projects/.node-version 的 22.13.0
 
-# 如果任何地方都没有 .node-version
+$ vp env pin
+当前目录未固定版本。
+  继承自：/Users/user/projects/package.json（devEngines.runtime）中的 ^24.0.0
+
+# 如果任何地方都没有固定
 $ vp env pin
 未固定版本。
   使用默认值：20.18.0（来自 ~/.vite-plus/config.json）
@@ -1449,24 +1459,29 @@ $ vp env unpin
 ✓ 已从 /Users/user/projects/my-app 移除 .node-version
 ```
 
+`vp env unpin` 会从 `vp env pin` 原本会写入的同一来源中移除固定：如果存在 `.node-version` 就删除它，否则会从 `package.json#devEngines.runtime` 中移除 `node` 条目。
+
 ### 版本格式支持
 
-| 输入      | 写入文件中       | 行为                         |
-| --------- | ---------------- | ---------------------------- |
-| `20.18.0` | `20.18.0`       | 精确版本                     |
-| `20.18`   | `20.18`         | 运行时获取最新的 20.18.x     |
-| `20`      | `20`            | 运行时获取最新的 20.x.x      |
-| `lts`     | `22.13.0`       | 在固定时解析                 |
-| `latest`  | `24.0.0`        | 在固定时解析                 |
-| `^20.0.0` | `^20.0.0`       | 在运行时解析 semver 范围     |
+| 输入      | 写入目标的内容       | 行为                                         |
+| --------- | -------------------- | -------------------------------------------- |
+| `20.18.0` | `20.18.0`            | 精确版本（会对注册表进行验证）               |
+| `20.18`   | 例如 `20.18.3`       | 在固定时解析为精确版本                       |
+| `20`      | 例如 `20.19.0`       | 在固定时解析为精确版本                       |
+| `lts`     | 例如 `22.13.0`       | 在固定时解析为精确版本                       |
+| `latest`  | 例如 `24.0.0`        | 在固定时解析为精确版本                       |
+| `^20.0.0` | 例如 `20.19.0`       | 在固定时解析为精确版本                       |
+
+两种写入目标都会获得相同的、已解析出的精确版本；devEngines 规范只允许在 `devEngines.runtime.version` 中使用 semver 范围语法，而精确版本也满足该要求。参见 [RFC: devEngines Support](./dev-engines.md)。
 
 ### 标志
 
-| 标志           | 描述                                             |
-| -------------- | ------------------------------------------------ |
-| `--unpin`      | 移除 `.node-version` 文件                         |
-| `--no-install` | 跳过预下载固定版本                                 |
-| `--force`      | 无需确认即可覆盖现有 `.node-version`              |
+| Flag                                   | Description                                                                      |
+| -------------------------------------- | -------------------------------------------------------------------------------- |
+| `--unpin`                              | Remove the pin from its current source (`.node-version` or `devEngines.runtime`) |
+| `--no-install`                         | Skip pre-downloading the pinned version                                          |
+| `--force`                              | Overwrite an existing pin without confirmation                                   |
+| `--target <node-version\|dev-engines>` | Explicitly choose the write target (overrides the default selection)             |
 
 ### 预下载行为
 
@@ -1495,6 +1510,13 @@ $ vp env pin 22.13.0
 ```bash
 $ vp env pin 22.13.0 --force
 ✓ 已将 Node.js 版本固定为 22.13.0
+```
+
+当目标已经固定为相同版本时，命令不会执行任何操作（无论是否带 `--force`）：
+
+```bash
+$ vp env pin 22.13.0
+已固定到 22.13.0
 ```
 
 ### 错误处理
@@ -1782,17 +1804,16 @@ $ vp remove -g typescript
 │  │    │  NO  → 继续进行按二进制检查                    │ │  │
 │  │    └────────────────────────────────────────────────┘ │  │
 │  │                                                       │  │
-│  │    → 对包中的每个二进制：                            │  │
-│  │        跳过核心 shims（node/npm/npx/vp）           │  │
-│  │        如果已存在于 ~/.vite-plus/bin/：             │  │
-│  │          如果 BinConfig 存在 → managed_conflicts    │  │
-│  │          跳过（不要覆盖）                           │  │
-│  │        检查源是否存在于 npm_bin_dir                 │  │
-│  │        加入 missing_bins 列表                       │  │
-│  │    → 提示受管理冲突                                 │  │
-│  │    → 交互式？提示创建链接                           │  │
-│  │      非交互式？直接创建链接                         │  │
-│  │    → 打印提示：改用 `vp install -g`                │  │
+│  │    → for each binary in package:                      │  │
+│  │        skip core shims (node/npm/npx/vp)              │  │
+│  │        if already exists in ~/.vite-plus/bin/:         │  │
+│  │          if BinConfig exists → managed_conflicts       │  │
+│  │          skip (don't overwrite)                        │  │
+│  │        check source exists in npm_bin_dir             │  │
+│  │        add to missing_bins list                       │  │
+│  │    → warn about managed conflicts                     │  │
+│  │    → interactive? prompt to create links              │  │
+│  │      non-interactive? create links directly           │  │
 │  │                                                       │  │
 │  │  return exit_code (0)                                 │  │
 │  └───────────────────────────────────────────────────────┘  │
@@ -1817,13 +1838,7 @@ $ vp remove -g typescript
 - 创建符号链接：`~/.vite-plus/bin/codex` → `~/.vite-plus/js_runtime/node/20.18.0/bin/codex`
 - 打印：`已将 'codex' 链接到 ~/.vite-plus/bin/codex`
 
-然后始终打印提示：
-
-```
-提示：使用 `vp install -g codex` 可获得在 Node.js 版本切换后仍然保留的受管理 shims。
-```
-
-**非交互模式**（管道/CI）：
+**Non-interactive mode** (piped/CI):
 
 - 直接创建符号链接（无需提示）
 - 打印：`已将 'codex' 链接到 ~/.vite-plus/bin/codex`
@@ -1852,7 +1867,7 @@ $ vp remove -g typescript
 
 #### `npm uninstall -g` 链接清理
 
-当检测到 `npm uninstall -g` 时，shim 会使用 `spawn_tool()`（与 install 类似）以便在 npm  დასრულ后继续保留控制权。在运行 npm 之前，它会从包的 `package.json` 中收集二进制名称（这些文件将被 npm 删除）。在成功卸载后，它会从 `~/.vite-plus/bin/` 中移除对应的符号链接。
+当检测到 `npm uninstall -g` 时，shim 会使用 `spawn_tool()`（与 install 类似）以便在 npm 完成后继续保留控制权。在运行 npm 之前，它会从包的 `package.json` 中收集二进制名称（这些文件将被 npm 删除）。在成功卸载后，它会从 `~/.vite-plus/bin/` 中移除对应的符号链接。
 
 **通过 BinConfig 进行链接跟踪**：当 `npm install -g` 在 `~/.vite-plus/bin/` 中创建链接时，会写入一个 `source: "npm"` 的 BinConfig 到 `~/.vite-plus/bins/{name}.json`。这用于区分 npm 创建的链接、`vp install -g` 管理的 shims（`source: "vp"`）以及用户拥有的二进制（没有 BinConfig）。
 

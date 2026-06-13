@@ -6,7 +6,16 @@
 
 默认情况下托管模式处于开启状态，因此 `node`、`npm` 和相关的 shim 会通过 Vite+ 解析，并为当前项目选择正确的 Node.js 版本。
 
-当项目在 `package.json` 中声明 `packageManager` 时，匹配的包管理器 shim 也会使用该精确的包管理器版本。例如，`packageManager: "npm@10.9.4"` 会让 `npm` 和 `npx` 都通过 npm 10.9.4 运行。别名对会遵循已安装的包管理器 shim：`npm`/`npx`、`pnpm`/`pnpx`、`yarn`/`yarnpkg`，以及 `bun`/`bunx`。Vite+ 不会转换不匹配的命令，因此即使某个项目固定为 `pnpm`，`npm` 仍会回退到与所解析的 Node.js 运行时一同提供的 npm。
+项目的 Node.js 版本按以下来源解析，优先级依次如下：
+
+1. `.node-version` 文件（当前目录或父目录）
+2. `package.json` 中的 `devEngines.runtime`（[devEngines 标准](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines)）
+3. `package.json` 中的 `engines.node`
+4. 全局默认值（`vp env default`），然后是最新的 LTS
+
+`devEngines.runtime` 的优先级高于 `engines.node`，因为它声明的是开发环境需求，而 `engines.node` 是面向使用者的支持范围。`vp env doctor` 会在声明来源冲突时发出警告。
+
+当项目在 `package.json` 中声明 `packageManager`（或 `devEngines.packageManager`）时，匹配的包管理器 shim 也会使用该包管理器版本。例如，`packageManager: "npm@10.9.4"` 会让 `npm` 和 `npx` 都通过 npm 10.9.4 运行。别名对遵循已安装的包管理器 shim：`npm`/`npx`、`pnpm`/`pnpx`、`yarn`/`yarnpkg` 和 `bun`/`bunx`。Vite+ 不会转换不匹配的命令，因此固定到 `pnpm` 的项目仍会让 `npm` 回退到解析出的 Node.js 运行时自带的 npm。
 
 默认情况下，Vite+ 会将其受管理的运行时和相关文件存储在 `~/.vite-plus` 中。如有需要，你可以使用 `VP_HOME` 覆盖该位置。
 
@@ -60,13 +69,13 @@ Invoke-Item $PROFILE
 ### 管理
 
 - `vp env default` 设置或显示全局默认 Node.js 版本
-- `vp env pin` 在当前目录中固定 Node.js 版本
-- `vp env unpin` 从当前目录中移除 `.node-version`
-- `vp env use` 为当前 shell 会话设置 Node.js 版本
-- `vp env install` 安装 Node.js 版本
-- `vp env uninstall` 卸载已安装的 Node.js 版本
+- `vp env pin` 将 Node.js 版本固定到当前目录：现有的 `.node-version` 会继续保持更新；否则会将固定内容写入 `package.json#devEngines.runtime`；只有在目录中没有 `package.json` 时才会创建 `.node-version`。使用 `--target node-version` 或 `--target dev-engines` 可显式选择。现有的 `engines.node` 永远不会被修改。
+- `vp env unpin` 从 `vp env pin` 会写入的同一来源中移除固定设置
+- `vp env use` 为当前 shell 会话设置一个 Node.js 版本
+- `vp env install` 安装一个 Node.js 版本
+- `vp env uninstall` 移除已安装的 Node.js 版本
 - `vp env exec` 使用特定的 Node.js 版本运行命令
-- `vp node` 运行 Node.js 脚本 — 等效于 `vp env exec node`
+- `vp node` 运行一个 Node.js 脚本——相当于 `vp env exec node`
 
 ### 检查
 
@@ -78,7 +87,7 @@ Invoke-Item $PROFILE
 
 ## 项目设置
 
-- 使用 `.node-version` 固定项目版本
+- 使用 `vp env pin` 固定项目版本
 - 正常使用 `vp install`、`vp dev` 和 `vp build`
 - 让 Vite+ 为项目选择正确的运行时
 

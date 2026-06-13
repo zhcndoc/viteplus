@@ -16,7 +16,42 @@ export default defineConfig({
 });
 ```
 
-这里可以使用 `vp create` 作为第一个参数所接受的任何值——`@your-org` 表示组织选择器，`@your-org:web` 表示直接的清单条目，`vite:application` 表示内置项，等等。
+`vp create` 作为第一个参数接受的任何值都可以在这里使用：`@your-org` 用于组织选择器，`@your-org:web` 用于直接的清单条目，`vite:application` 用于内置模板，或者本地 `create.templates` 条目的 `name`（见下文）。
+
+## `create.templates`
+
+在 monorepo 中声明 `vp create` 可用的本地模板。每个条目都会显示在 `vp create` 选择器中，选择它（或将其 `name` 作为模板参数传入）会运行解析后的 `template`。
+
+```ts
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  create: {
+    templates: [
+      {
+        name: 'component',
+        description: '内部 UI 组件',
+        template: './tools/create-component',
+      },
+      { name: 'service', description: '后端服务', template: 'service-generator' },
+    ],
+  },
+});
+```
+
+每个条目都有：
+
+| 字段          | 必需 | 说明                                                                                                                                                                                                                                            |
+| ------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | 是   | 在选择器中显示并可作为 `vp create <name>` 接受的标识符。在数组中必须唯一。`vite:` 前缀保留给内置模板。                                                                                                                                        |
+| `description` | 是   | 在选择器中显示的一行描述。                                                                                                                                                                                                                      |
+| `template`    | 是   | 工作区包名、本地包目录的相对 `./path`（相对于工作区根目录解析）、`vite:*` 内置模板、GitHub URL，或完整的 npm 包名（例如 `create-foo`）。它会按原样运行（不会展开为简写）。 |
+
+`create.templates` 是本地模板的事实来源：只有这里列出的条目才会出现在选择器中。Vite+ 不会从 package.json 的关键词推断模板。若 `create.templates` 中某个条目的 `template` 不匹配任何工作区包，或者解析到一个没有 `bin` 的本地包，则会报错，而不是回退到无关的 npm 包。
+
+[`vp create vite:generator`](/guide/create#code-generators) 会自动（幂等地，并保留 `defaultTemplate`）在此处添加一个条目；你也可以手动编辑该列表。
+
+`create.defaultTemplate` 可以指定本地条目的名称，因此直接运行 `vp create` 会直接打开它。
 
 ## 优先级
 

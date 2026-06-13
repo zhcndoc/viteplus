@@ -8,19 +8,38 @@
 
 Vite+ 按照以下顺序检测包管理器：
 
-1. `package.json` 中的 `packageManager`
-2. `pnpm-workspace.yaml`
-3. `pnpm-lock.yaml`
-4. `yarn.lock` 或 `.yarnrc.yml`
-5. `package-lock.json`
-6. `bun.lock` 或 `bun.lockb`
-7. `.pnpmfile.cjs` 或 `pnpmfile.cjs`
-8. `bunfig.toml`
-9. `yarn.config.cjs`
+1. `packageManager` 位于 `package.json` 中
+2. `devEngines.packageManager` 位于 `package.json` 中
+3. `pnpm-workspace.yaml`
+4. `pnpm-lock.yaml`
+5. `yarn.lock` 或 `.yarnrc.yml`
+6. `package-lock.json`
+7. `bun.lock` 或 `bun.lockb`
+8. `.pnpmfile.cjs` 或 `pnpmfile.cjs`
+9. `bunfig.toml`
+10. `yarn.config.cjs`
 
-如果以上文件都不存在，Vite+ 默认回退到 `pnpm`。Vite+ 会自动下载匹配的包管理器并用于你运行的命令。
+如果这些文件都不存在，`vp` 默认回退到 `pnpm`。Vite+ 会自动下载匹配的包管理器并将其用于你运行的命令。当检测结果来自锁文件或配置文件时，解析出的版本会写入 `devEngines.packageManager`，以便后续运行保持确定性；已经声明了 `packageManager` 或 `devEngines.packageManager` 的项目会保持原样。
 
-显式的 `packageManager` 字段也会影响匹配的包管理器 shim。如果项目中有 `packageManager: "npm@10.9.4"`，那么 `npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也有相同的行为：`pnpm`/`pnpx`、`yarn`/`yarnpkg` 以及 `bun`/`bunx`。不匹配的工具不会被转换；`pnpm` 项目中的 `npm` 仍然会被解析为 npm。
+[`devEngines.packageManager`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines) 字段接受单个对象或对象数组，其 `version` 可以是 semver 范围：
+
+```json
+{
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.0.0",
+      "onFail": "download"
+    }
+  }
+}
+```
+
+当可能时，范围会解析为已下载且满足条件的版本，否则会解析为 npm 注册表中最新的满足条件版本。该范围本身仍是唯一事实来源；Vite+ 绝不会将其冻结为精确的 `packageManager` 固定版本。当同时声明了 `packageManager` 和 `devEngines.packageManager` 时，`packageManager` 字段决定选择结果，而当它不满足 devEngines 约束时，Vite+ 会发出警告（`vp env doctor` 会显示详细信息）。
+
+Vite+ 当前会下载所声明的包管理器（即 `onFail: "download"` 的行为）；其他 `onFail` 值虽被接受，但尚未做区分处理。
+
+显式的 `packageManager` 字段（或 `devEngines.packageManager` 声明）也会影响匹配的包管理器 shim。如果项目有 `packageManager: "npm@10.9.4"`，`npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也遵循同样的规则：`pnpm`/`pnpx`、`yarn`/`yarnpkg`、以及 `bun`/`bunx`。不匹配的工具不会被转换；`pnpm` 项目中的 `npm` 仍然会按 npm 解析。
 
 ## 用法
 
