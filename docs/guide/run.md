@@ -102,7 +102,7 @@ export default defineConfig({
 
 ## 任务依赖
 
-使用 [`dependsOn`](#depends-on) 以正确的顺序运行任务。运行 `vp run deploy` 时会先执行 `build` 和 `test`。依赖项也可以使用 `package#task` 符号引用同一项目中的其他包：
+使用 [`dependsOn`](/config/run#dependson) 以正确的顺序运行任务。使用上面的配置运行 `vp run deploy` 会先运行 `build` 和 `test`。依赖关系也可以通过 `package#task` 记法指向同一项目中的其他包：
 
 ```ts [vite.config.ts]
 dependsOn: ['@my/core#build', '@my/utils#lint'];

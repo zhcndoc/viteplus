@@ -74,10 +74,10 @@ vp migrate my-app
 
 迁移完成后：
 
-- Confirm `vite` imports were rewritten to `vite-plus` where needed
-- Confirm `vitest` imports were rewritten to `vite-plus/test` where needed
-- On pnpm, keep the `vite` / `vitest` entries that `vp migrate` aliased to the Vite+ packages so the workspace override stays effective; with other package managers you can remove them once those rewrites are confirmed
-- Move remaining tool-specific config into the appropriate blocks in `vite.config.ts`
+- 确认在需要的地方，`vite` 导入已重写为 `vite-plus`
+- 确认在需要的地方，`vitest` 导入已重写为 `vite-plus/test`（`@vitest/browser*` 重写为 `vite-plus/test/browser*`）
+- 仅在确认这些重写后，再移除旧的 `vite`、`vitest` 和 `@vitest/browser*` 依赖——`vite-plus` 将它们作为直接依赖随包提供
+- 将剩余的工具特定配置移到 `vite.config.ts` 中相应的块里
 
 命令映射（需牢记）：
 
@@ -96,19 +96,29 @@ vp migrate my-app
 
 ### Vitest
 
-Vitest 通过 `vp migrate` 自动迁移。如果手动迁移，您必须将所有导入更新为 `vite-plus/test`：
+Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会将上游 `vitest@4.x` 以 `vite-plus/test*` 的形式重新导出，因此对于 node 模式测试，只需安装一次 `vite-plus` 即可——您不再需要直接安装 `vitest`。
+
+浏览器模式则更复杂一些。`vite-plus` 捆绑了基础浏览器运行时（`@vitest/browser`）和预览提供程序（`@vitest/browser-preview`），但 **Playwright** 和 **WebdriverIO** 提供程序仍需按需启用：`@vitest/browser-playwright`（及其 `playwright` peer）和 `@vitest/browser-webdriverio`（及其 `webdriverio` peer）**不会**随 `vite-plus` 一同提供，因此非浏览器项目不会拉取它们。`vp migrate` 会检测您实际使用的提供程序并将其添加进去——固定到捆绑的 vitest 版本——以及其对应框架。如果您手动迁移并使用其中一种提供程序，请自行安装该提供程序包及其框架，以便 `vite-plus/test/browser-playwright` / `vite-plus/test/browser-webdriverio` 能够解析。
+
+如果您是手动迁移，请改为将所有导入更新为 `vite-plus/test*`：
 
 ```ts
 // 之前
+import { defineConfig } from 'vitest/config';
 import { describe, expect, it, vi } from 'vitest';
+import { playwright } from '@vitest/browser-playwright';
 
 const { page } = await import('@vitest/browser/context');
 
 // 之后
+import { defineConfig } from 'vite-plus';
 import { describe, expect, it, vi } from 'vite-plus/test';
+import { playwright } from 'vite-plus/test/browser-playwright';
 
 const { page } = await import('vite-plus/test/browser/context');
 ```
+
+`declare module 'vitest'` / `declare module '@vitest/browser*'` 的模块增强**不会**被刻意重写——`vite-plus/test*` 只是上游 `vitest*` 的薄封装重新导出，因此类型增强必须指向上游模块标识才能正确合并。请保留这些 `declare module` 语句指向 `'vitest'` / `'@vitest/browser*'`。
 
 ### tsdown
 
@@ -154,4 +164,30 @@ export default defineConfig({
 });
 ```
 
-迁移完成后，从依赖项中移除 lint-staged 并删除任何 lint-staged 配置文件。详细信息请参见 [提交钩子指南](/guide/commit-hooks) 和 [staged 配置参考](/config/staged)。
+迁移后，从依赖中移除 lint-staged，并删除任何 lint-staged 配置文件。详情请参见 [提交钩子指南](/guide/commit-hooks) 和 [staged 配置参考](/config/staged)。
+
+### Git hook 工具
+
+`vp migrate` 命令可以为您设置 Vite+ 提交钩子，但它不会自动迁移所有类型的 Git hook 工具。这个自动迁移路径专门用于处理 Husky v9+ 和 lint-staged 风格的设置。使用低于 9.0.0 版本 Husky 的项目会被跳过，并且应在使用自动迁移路径之前升级到 Husky v9。
+
+如果您的项目当前使用 `lefthook`、`simple-git-hooks` 或 `yorkie`，`vp migrate` 会保留您现有的配置不变并显示警告。即使您选择在提示过程中设置钩子，或包含 `--hooks` 标志，也会如此。
+
+如果您想手动将这些工具迁移到 Vite+，可以按照以下步骤进行。首先，将您的 staged 文件命令移动到 `vite.config.ts` 中的 `staged` 块。然后，更新生命周期脚本以运行 `vp config`。您还需要在 `.vite-hooks/pre-commit` 中创建一个运行 `vp staged` 的 Vite+ 钩子。最后，在确认 Vite+ 钩子按预期工作后，您可以移除旧工具的配置和依赖。
+
+您可以在 [提交钩子指南](/guide/commit-hooks) 中找到有关完整 Vite+ 钩子设置的更多细节。
+
+## 示例
+
+```bash
+# 迁移当前项目
+vp migrate
+
+# 迁移指定目录
+vp migrate my-app
+
+# 以无提示模式运行
+vp migrate --no-interactive
+
+# 在迁移期间写入代理和编辑器设置
+vp migrate --agent claude --editor zed
+```

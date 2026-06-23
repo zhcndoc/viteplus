@@ -42,19 +42,30 @@ Vite+ 提供以下内置模板：
 
 ## 选项
 
-- `--directory <dir>` 将生成的项目写入指定的目标目录
-- `--agent <name>` 在脚手架创建过程中生成 agent 指令文件
+- `--directory <dir>` 将生成的项目写入指定目标目录
+- `--agent <name>` 在脚手架生成过程中创建 agent 指令文件
 - `--no-agent` 跳过 agent 指令设置
-- `--editor <name>` 生成编辑器配置文件
+- `--editor <name>` 写入编辑器配置文件
 - `--no-editor` 跳过编辑器配置设置
 - `--git` 初始化 git 仓库
 - `--no-git` 跳过 git 仓库初始化
 - `--hooks` 启用 pre-commit hook 设置
 - `--no-hooks` 跳过 hook 设置
 - `--package-manager <name>` 使用指定的包管理器（`pnpm`、`npm`、`yarn` 或 `bun`）
-- `--no-interactive` 无提示运行
-- `--verbose` 显示详细的脚手架输出
+- `--approve-builds` 无需提示即可批准并运行受限制的依赖构建脚本
+- `--no-interactive` 以非交互方式运行
+- `--verbose` 显示详细的脚手架生成输出
 - `--list` 打印可用的内置模板和热门模板
+
+### 依赖构建脚本
+
+出于安全考虑，pnpm、bun 和 yarn（Berry）在你批准之前，不会运行依赖的构建脚本（`install` / `postinstall`，例如像 `better-sqlite3` 这样的原生构建）。当模板直接添加了此类依赖时，`vp create` 会在安装后将其展示出来，而不是让项目停留在半构建状态：
+
+- 交互式：系统会询问你要批准并构建哪些依赖（默认不会选中任何项）。
+- 非交互式：会显示一条说明，列出这些依赖并提示使用 `vp pm approve-builds`。
+- `--approve-builds`：会自动批准并构建它们，因此非交互式运行（CI）也能生成可直接使用的项目。
+
+批准会按照各包管理器的预期方式记录：pnpm 的 `allowBuilds`、bun 的 `trustedDependencies`，或 yarn 的 `dependenciesMeta.<pkg>.built`（位于工作区根目录的清单文件中）。你没有选择的传递性构建脚本（例如 Vite 引入的 `esbuild`）会保持为包管理器的默认行为，不会被提示。npm 默认会运行构建脚本，因此无需在此批准。
 
 ## 模板选项
 

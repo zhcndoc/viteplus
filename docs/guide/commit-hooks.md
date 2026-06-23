@@ -22,7 +22,13 @@ Vite+ 支持提交钩子和暂存文件检查，无需额外工具。
 ```bash
 vp config
 vp config --hooks-dir .vite-hooks
+vp config --no-hooks
+vp config --no-agent
 ```
+
+当你希望 `vp config` 保持现有的 Git 钩子设置不变时，请使用 `--no-hooks`。当你希望它跳过对现有编码代理说明文件的更新时，请使用 `--no-agent`。当你希望 `vp config` 同时跳过这两个设置步骤时，可以同时传入这两个标志。
+
+你也可以设置 `VITE_GIT_HOOKS=0`，以便在 `prepare` 或 `postinstall` 等生命周期脚本中禁用钩子安装。
 
 ### `vp staged`
 

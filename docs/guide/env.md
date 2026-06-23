@@ -95,9 +95,9 @@ Invoke-Item $PROFILE
 
 ```bash
 # 设置
-vp env setup                  # 为 node、npm、npx 创建 shim
+vp env setup                  # 为 node、npm、npx、corepack 创建 shim
 vp env on                     # 使用 Vite+ 管理的 Node.js
-vp env print                  # 打印当前会话的 shell 片段
+vp env print                  # 打印此会话的 shell 片段
 
 # 管理
 vp env pin lts                # 将项目固定到最新的 LTS 版本
@@ -119,6 +119,25 @@ vp env exec node -v           # 使用 shim 模式并自动解析版本
 vp node script.js             # 等效：运行已解析版本的 Node.js 脚本
 vp node -e "console.log(1+1)" # 等效：传递任意 node 标志或参数
 ```
+
+## Corepack
+
+Vite+ 默认会创建一个 `corepack` shim，因此 corepack 即使没有系统安装的 Node.js 也能工作：
+
+- 在 Node.js 24 及更早版本中，shim 运行的是与已解析 Node.js 版本捆绑的 corepack。
+- 在 Node.js 25 及更高版本中，由于 corepack 不再随附，Vite+ 会在首次使用时将 corepack 作为受管理的全局包安装。只会链接 `corepack` 二进制文件；如果你还想直接暴露该包的 pnpm/yarn 启动器，请自行运行 `vp install -g corepack`。
+- 如果你通过 `vp install -g corepack` 显式安装了 corepack，则始终优先使用该安装。
+
+`corepack enable` 通常会在 corepack 二进制文件旁创建 `pnpm`/`yarn` 启动器，但在 Vite+ 下这些不会位于 `PATH` 中。shim 通过将 `--install-directory` 默认设置为 `VP_HOME/bin` 来修复这一点，因此在执行 `corepack enable` 后，这些启动器可在任何地方使用，并且仍然会解析项目的 Node.js 和包管理器版本：
+
+```bash
+corepack enable               # 现在 pnpm 和 yarn 通过 corepack 解析
+corepack disable              # 再次移除 pnpm/yarn 启动器
+```
+
+这些启动器引用的是创建它们的 corepack 副本。如果该副本之后被移除（例如卸载了其所附带的 Node.js 版本），请重新运行 `corepack enable` 以重新创建它们。
+
+Vite+ 所拥有的 shim（`npm`、`npx` 以及通过 `vp install -g` 安装的二进制文件）受保护：如果 corepack 删除或替换了它们，Vite+ 会恢复它们并打印警告。
 
 ## 自定义 Node.js 镜像
 

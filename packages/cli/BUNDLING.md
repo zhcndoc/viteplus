@@ -1,44 +1,44 @@
-# CLI Package Build Architecture
+# CLI 包构建架构
 
-This document explains how `vite-plus` is built and how it re-exports from both the core and test packages to serve as a drop-in replacement for `vite`.
+本文档说明 `vite-plus` 是如何构建的，以及它如何从 `@voidzero-dev/vite-plus-core`（打包后的 vite/rolldown/tsdown）和上游 `vitest` 进行重新导出，以作为 `vite` 的直接替代品使用。
 
-## Overview
+## 概览
 
-The CLI package uses a **4-step build process**:
+CLI 包使用一个 **4 步构建流程**：
 
-1. **tsdown Build** - Bundle all CLI entry points via tsdown
-2. **NAPI Binding Build** - Compile Rust code to native Node.js bindings
-3. **Core Package Export Sync** - Re-export `@voidzero-dev/vite-plus-core` under `./client`, `./types/*`, etc.
-4. **Test Package Export Sync** - Re-export `@voidzero-dev/vite-plus-test` under `./test/*`
+1. **tsdown 构建** - 通过 tsdown 打包所有 CLI 入口
+2. **NAPI 绑定构建** - 将 Rust 代码编译为原生 Node.js 绑定
+3. **核心包导出同步** - 将 `@voidzero-dev/vite-plus-core` 以 `./client`、`./types/*` 等路径重新导出
+4. **测试包导出同步** - 将上游 `vitest` 以 `./test/*` 路径重新导出
 
-This architecture allows users to import everything from a single package (`vite-plus`) as a drop-in replacement for `vite`, without needing to know about the separate core and test packages.
+这种架构允许用户从单个包（`vite-plus`）中导入所有内容，作为 `vite` 的直接替代品，而无需了解单独的 `@voidzero-dev/vite-plus-core` 打包产物或 `vitest`。
 
-## Build Steps
+## 构建步骤
 
-### Step 1: tsdown Build (`buildWithTsdown`)
+### 第 1 步：tsdown 构建（`buildWithTsdown`）
 
-Bundles all CLI entry points using tsdown (configured in `tsdown.config.ts`). The config defines two builds:
+使用 tsdown 打包所有 CLI 入口点（在 `tsdown.config.ts` 中配置）。该配置定义了两个构建：
 
-**ESM build** — bundles all entry points to `dist/`:
+**ESM 构建** — 将所有入口点打包到 `dist/`：
 
-- Public API entries: `bin`, `index`, `define-config`, `fmt`, `lint`, `pack`, `pack-bin`
-- Global command entries: `create`, `migrate`, `version`, `config`, `mcp`, `staged`
-- All third-party dependencies are inlined at build time
-- Only packages that must be resolved at runtime stay external (NAPI binding, `@voidzero-dev/vite-plus-core`, `@voidzero-dev/vite-plus-test`, `oxfmt`, `oxlint`)
-- Code splitting creates shared chunks for code used by multiple entries
-- DTS (`.d.ts`) files are generated for all entries
+- 公共 API 入口：`bin`、`index`、`define-config`、`fmt`、`lint`、`pack`、`pack-bin`
+- 全局命令入口：`create`、`migrate`、`version`、`config`、`mcp`、`staged`
+- 所有第三方依赖都会在构建时内联
+- 只有必须在运行时解析的包会保持 external（NAPI 绑定、`@voidzero-dev/vite-plus-core`、`vitest`、`oxfmt`、`oxlint`）
+- 代码分割会为多个入口共享的代码创建公共 chunk
+- 为所有入口生成 DTS（`.d.ts`）文件
 
-**CJS build** — produces dual-format output for:
+**CJS 构建** — 为以下内容生成双格式输出：
 
 - `define-config.ts` → `dist/define-config.cjs`
 - `index.cts` → `dist/index.cjs`
 
-**Input**: `src/**/*.ts`, `src/**/*.cts`
-**Output**: `dist/*.js`, `dist/*.cjs`, `dist/*.d.ts`, `dist/*-<hash>.js` (shared chunks)
+**输入**：`src/**/*.ts`、`src/**/*.cts`
+**输出**：`dist/*.js`、`dist/*.cjs`、`dist/*.d.ts`、`dist/*-<hash>.js`（共享 chunk）
 
-### Step 2: NAPI Binding Build (`buildNapiBinding`)
+### 第 2 步：NAPI 绑定构建（`buildNapiBinding`）
 
-Builds native Rust bindings using `@napi-rs/cli`:
+使用 `@napi-rs/cli` 构建原生 Rust 绑定：
 
 ```typescript
 const cli = new NapiCli();
@@ -51,124 +51,131 @@ await cli.build({
 });
 ```
 
-**Input**: `binding/*.rs` (Rust source)
-**Output**: `binding/*.node` (platform-specific binaries)
+**输入**：`binding/*.rs`（Rust 源码）
+**输出**：`binding/*.node`（平台相关二进制文件）
 
-The build generates platform-specific native binaries and formats the generated JavaScript wrapper with `oxfmt`.
+该构建会生成平台特定的原生二进制文件，并使用 `oxfmt` 格式化生成的 JavaScript 包装器。
 
-### Step 3: Core Package Export Sync (`syncCorePackageExports`)
+### 第 3 步：核心包导出同步（`syncCorePackageExports`）
 
-Creates shim files that re-export from `@voidzero-dev/vite-plus-core`, enabling this package to be a drop-in replacement for upstream `vite`. This is critical for compatibility with existing Vite plugins and configurations.
+创建 shim 文件，从 `@voidzero-dev/vite-plus-core` 重新导出，使该包能够作为上游 `vite` 的直接替代品。这对于与现有 Vite 插件和配置保持兼容性至关重要。
 
-**Prerequisites**: The core package must be built first (its `dist/vite/` directory must exist). See [Core Package Bundling](../core/BUNDLING.md) for details on how the core package bundles vite, rolldown, and tsdown.
+**前置条件**：核心包必须先构建完成（其 `dist/vite/` 目录必须存在）。关于核心包如何打包 vite、rolldown 和 tsdown 的详细信息，请参见 [核心包打包](../core/BUNDLING.md)。
 
-**Export paths created**:
+**创建的导出路径**：
 
-| Export Path          | Type       | Description                                                                             |
-| -------------------- | ---------- | --------------------------------------------------------------------------------------- |
-| `./client`           | Types only | Triple-slash reference for ambient type declarations (CSS modules, asset imports, etc.) |
-| `./module-runner`    | JS + Types | Re-exports the Vite module runner for SSR/environments                                  |
-| `./internal`         | JS + Types | Re-exports internal Vite APIs                                                           |
-| `./dist/client/*`    | JS         | Client runtime files (`.mjs`, `.cjs`)                                                   |
-| `./types/*`          | Types only | Type-only re-exports using `export type *`                                              |
-| `./types/internal/*` | Blocked    | Set to `null` to prevent access to internal types                                       |
+| 导出路径             | 类型       | 描述                                                                                 |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------ |
+| `./client`           | 仅类型     | 用于环境类型声明（CSS 模块、资源导入等）的三斜杠引用                                   |
+| `./module-runner`    | JS + 类型  | 重新导出 Vite module runner，用于 SSR/环境                                           |
+| `./internal`         | JS + 类型  | 重新导出 Vite 内部 API                                                             |
+| `./dist/client/*`    | JS         | 客户端运行时文件（`.mjs`、`.cjs`）                                                   |
+| `./types/*`          | 仅类型     | 使用 `export type *` 的仅类型重新导出                                                |
+| `./types/internal/*` | 被阻止     | 设为 `null` 以阻止访问内部类型                                                        |
 
-**Shim file examples**:
+**Shim 文件示例**：
 
 ```typescript
-// dist/client.d.ts (triple-slash reference for ambient types)
+// dist/client.d.ts（用于环境类型的三斜杠引用）
 /// <reference types="@voidzero-dev/vite-plus-core/client" />
 
 // dist/module-runner.js
 export * from '@voidzero-dev/vite-plus-core/module-runner';
 
-// dist/types/importMeta.d.ts (type-only export)
+// dist/types/importMeta.d.ts（仅类型导出）
 export type * from '@voidzero-dev/vite-plus-core/types/importMeta.d.ts';
 ```
 
-**Note on export ordering**: In `package.json`, the `./types/internal/*` export (set to `null`) must appear before `./types/*` for correct precedence. More specific patterns must precede wildcards.
+**关于导出顺序的说明**：在 `package.json` 中，`./types/internal/*` 导出（设为 `null`）必须出现在 `./types/*` 之前，以确保正确的优先级。更具体的模式必须排在通配符之前。
 
-### Step 4: Test Package Export Sync (`syncTestPackageExports`)
+### 第 4 步：测试包导出同步（`syncTestPackageExports`）
 
-Reads the test package's exports and creates shim files that re-export everything under `./test/*`:
+读取 vitest 的导出以及三个 `@vitest/browser-*` provider 包，并创建 shim 文件，将所有内容重新导出到 `./test/*` 下：
 
 ```typescript
-// For each test package export like "./browser-playwright"
-// Creates a shim file: dist/test/browser-playwright.js
-export * from '@voidzero-dev/vite-plus-test/browser-playwright';
+// 对于每个 vitest 导出，例如 "./node"
+// 创建一个 shim 文件：dist/test/node.js
+export * from 'vitest/node';
+
+// 对于每个 @vitest/browser-* provider，会投影出两个 shim 表面：
+//   dist/test/browser-playwright.js          （匹配旧的包装路径）
+//   dist/test/browser/providers/playwright.js（别名路径）
+export * from '@vitest/browser-playwright';
 ```
 
-**Input**: `../test/package.json` exports
-**Output**: `dist/test/*.js`, `dist/test/*.d.ts`, updated `package.json` exports
+provider 的 `.d.ts` shim **不是**简单的裸重新导出——请参见下方关于 [Provider 类型身份](#why-provider-dts-shims-are-inlined) 的说明。
+
+**输入**：通过 `createRequire` 解析得到的 `vitest/package.json` 导出，以及每个 `@vitest/browser-*` 包的导出
+**输出**：`dist/test/*.js`、`dist/test/*.d.ts`、更新后的 `package.json` 导出
 
 ---
 
-## Output Structure
+## 输出结构
 
 ```
 packages/cli/
 ├── dist/
-│   ├── bin.js                # CLI entry point (bundled)
-│   ├── index.js              # Main entry (ESM, bundled)
-│   ├── index.cjs             # Main entry (CJS)
-│   ├── index.d.ts            # Type declarations
-│   ├── define-config.js      # Config helper (ESM)
-│   ├── define-config.cjs     # Config helper (CJS)
+│   ├── bin.js                # CLI 入口点（已打包）
+│   ├── index.js              # 主入口（ESM，已打包）
+│   ├── index.cjs             # 主入口（CJS）
+│   ├── index.d.ts            # 类型声明
+│   ├── define-config.js      # 配置辅助工具（ESM）
+│   ├── define-config.cjs     # 配置辅助工具（CJS）
 │   ├── define-config.d.ts
-│   ├── fmt.js                # Re-exports oxfmt
-│   ├── lint.js               # Re-exports oxlint types
-│   ├── pack.js               # Re-exports vite-plus-core/pack
-│   ├── pack-bin.js           # tsdown CLI for `vp pack`
-│   ├── create.js             # Global command: vp create
-│   ├── migrate.js            # Global command: vp migrate
-│   ├── version.js            # Global command: vp --version
-│   ├── config.js             # Global command: vp config
-│   ├── mcp.js                # Global command: vp mcp
-│   ├── staged.js             # Global command: vp staged
-│   ├── *-<hash>.js           # Shared chunks (code splitting)
-│   ├── versions.js           # Generated tool versions
-│   ├── client.d.ts           # ./client types (triple-slash ref)
+│   ├── fmt.js                # 重新导出 oxfmt
+│   ├── lint.js               # 重新导出 oxlint 类型
+│   ├── pack.js               # 重新导出 vite-plus-core/pack
+│   ├── pack-bin.js           # `vp pack` 的 tsdown CLI
+│   ├── create.js             # 全局命令：vp create
+│   ├── migrate.js            # 全局命令：vp migrate
+│   ├── version.js            # 全局命令：vp --version
+│   ├── config.js             # 全局命令：vp config
+│   ├── mcp.js                # 全局命令：vp mcp
+│   ├── staged.js             # 全局命令：vp staged
+│   ├── *-<hash>.js           # 共享 chunk（代码分割）
+│   ├── versions.js           # 生成的工具版本
+│   ├── client.d.ts           # ./client 类型（三斜杠引用）
 │   ├── module-runner.js      # ./module-runner shim
 │   ├── internal.js           # ./internal shim
-│   ├── client/               # Synced client runtime files
-│   ├── types/                # Synced type definitions
-│   └── test/                 # Synced test exports
+│   ├── client/               # 同步后的客户端运行时文件
+│   ├── types/                # 同步后的类型定义
+│   └── test/                 # 同步后的测试导出
 ├── binding/
-│   ├── index.js              # NAPI binding JS wrapper
-│   ├── index.d.ts            # NAPI type declarations
-│   └── *.node                # Platform-specific binaries
+│   ├── index.js              # NAPI 绑定 JS 包装器
+│   ├── index.d.ts            # NAPI 类型声明
+│   └── *.node                # 平台相关二进制文件
 └── bin/
-    └── vp                    # Shell entry point
+    └── vp                    # Shell 入口点
 ```
 
 ---
 
-## NAPI Targets
+## NAPI 目标
 
-The CLI builds native bindings for the following platform targets:
+CLI 会为以下平台目标构建原生绑定：
 
-| Target                      | Platform | Architecture | Output File                       |
-| --------------------------- | -------- | ------------ | --------------------------------- |
-| `aarch64-apple-darwin`      | macOS    | ARM64        | `vite-plus.darwin-arm64.node`     |
-| `x86_64-apple-darwin`       | macOS    | x64          | `vite-plus.darwin-x64.node`       |
-| `aarch64-unknown-linux-gnu` | Linux    | ARM64        | `vite-plus.linux-arm64-gnu.node`  |
-| `x86_64-unknown-linux-gnu`  | Linux    | x64          | `vite-plus.linux-x64-gnu.node`    |
-| `aarch64-pc-windows-msvc`   | Windows  | ARM64        | `vite-plus.win32-arm64-msvc.node` |
-| `x86_64-pc-windows-msvc`    | Windows  | x64          | `vite-plus.win32-x64-msvc.node`   |
+| 目标                        | 平台     | 架构   | 输出文件                           |
+| --------------------------- | -------- | ------ | ---------------------------------- |
+| `aarch64-apple-darwin`      | macOS    | ARM64  | `vite-plus.darwin-arm64.node`     |
+| `x86_64-apple-darwin`       | macOS    | x64    | `vite-plus.darwin-x64.node`       |
+| `aarch64-unknown-linux-gnu` | Linux    | ARM64  | `vite-plus.linux-arm64-gnu.node`  |
+| `x86_64-unknown-linux-gnu`  | Linux    | x64    | `vite-plus.linux-x64-gnu.node`    |
+| `aarch64-pc-windows-msvc`   | Windows  | ARM64  | `vite-plus.win32-arm64-msvc.node` |
+| `x86_64-pc-windows-msvc`    | Windows  | x64    | `vite-plus.win32-x64-msvc.node`   |
 
-These targets are defined in `package.json` under the `napi.targets` field.
+这些目标在 `package.json` 的 `napi.targets` 字段下定义。
 
 ---
 
-## Rolldown Native Binding Integration
+## Rolldown 原生绑定集成
 
-The CLI package integrates with Rolldown at the native binding level, allowing vite-plus to ship as a self-contained package without requiring users to install separate `@rolldown/binding-*` packages.
+CLI 包在原生绑定层面集成了 Rolldown，使得 vite-plus 可以作为一个自包含的包发布，而无需用户单独安装 `@rolldown/binding-*` 包。
 
-### Conditional Compilation
+### 条件编译
 
-Rolldown bindings are **optionally** compiled into the vite-plus native module via Cargo feature flags.
+Rolldown 绑定通过 Cargo feature 标志被 **可选地** 编译进 vite-plus 原生模块。
 
-**In `binding/Cargo.toml`**:
+**在 `binding/Cargo.toml` 中**：
 
 ```toml
 [dependencies]
@@ -178,186 +185,205 @@ rolldown_binding = { workspace = true, optional = true }
 rolldown = ["dep:rolldown_binding"]
 ```
 
-**In `binding/src/lib.rs`**:
+**在 `binding/src/lib.rs` 中**：
 
 ```rust
 #[cfg(feature = "rolldown")]
 pub extern crate rolldown_binding;
 ```
 
-### Build-Time Feature Activation
+### 构建时特性激活
 
-The rolldown feature is only enabled during release builds:
+只有在发布构建期间才会启用 rolldown 特性：
 
 ```typescript
-// In build.ts
+// 在 build.ts 中
 await cli.build({
   features: process.env.RELEASE_BUILD ? ['rolldown'] : void 0,
   release: process.env.VP_CLI_DEBUG !== '1',
 });
 ```
 
-**When `RELEASE_BUILD=1`**:
+**当 `RELEASE_BUILD=1` 时**：
 
-1. Enables the `rolldown` Cargo feature
-2. Compiles `rolldown_binding` into the `.node` file
-3. Extracts `napi.dtsHeader` from rolldown's package.json for type definitions
-4. Prepends custom type definitions to the generated `.d.ts` file
+1. 启用 `rolldown` Cargo feature
+2. 将 `rolldown_binding` 编译进 `.node` 文件
+3. 从 rolldown 的 package.json 中提取 `napi.dtsHeader` 用于类型定义
+4. 将自定义类型定义前置到生成的 `.d.ts` 文件中
 
-### Why Conditional Compilation?
+### 为什么要条件编译？
 
-| Build Type                  | rolldown Feature | Use Case                                |
-| --------------------------- | ---------------- | --------------------------------------- |
-| Development (`pnpm build`)  | Disabled         | Faster builds, smaller binaries         |
-| Release (`RELEASE_BUILD=1`) | Enabled          | Full distribution with bundled rolldown |
+| 构建类型                  | rolldown 特性 | 使用场景                         |
+| ------------------------- | ------------- | -------------------------------- |
+| 开发（`pnpm build`）      | 禁用          | 更快的构建，更小的二进制文件       |
+| 发布（`RELEASE_BUILD=1`） | 启用          | 带有内置 rolldown 的完整发行版    |
 
-### Module Specifier Rewriting
+### 模块标识符重写
 
-During release builds, the core package rewrites all `@rolldown/binding-*` imports to point to `vite-plus/binding`:
+在发布构建期间，核心包会将所有 `@rolldown/binding-*` 导入重写为指向 `vite-plus/binding`：
 
 ```typescript
-// In packages/core/build.ts
+// 在 packages/core/build.ts 中
 if (process.env.RELEASE_BUILD) {
   // @rolldown/binding-darwin-arm64 → vite-plus/binding
   source = source.replace(/@rolldown\/binding-([a-z0-9-]+)/g, 'vite-plus/binding');
 }
 ```
 
-**Transformation examples**:
+**转换示例**：
 
-| Original Import                    | After Rewrite       |
+| 原始导入                          | 重写后              |
 | ---------------------------------- | ------------------- |
 | `@rolldown/binding-darwin-arm64`   | `vite-plus/binding` |
 | `@rolldown/binding-linux-x64-gnu`  | `vite-plus/binding` |
 | `@rolldown/binding-win32-x64-msvc` | `vite-plus/binding` |
 
-This means:
+这意味着：
 
-1. The bundled rolldown code in `@voidzero-dev/vite-plus-core/rolldown` resolves native bindings from `vite-plus/binding`
-2. Users don't need to install separate `@rolldown/binding-*` platform packages
-3. The single `.node` file contains both vite-plus task runner and rolldown bindings
+1. 打包后的 rolldown 代码位于 `@voidzero-dev/vite-plus-core/rolldown`，并从 `vite-plus/binding` 解析原生绑定
+2. 用户无需单独安装 `@rolldown/binding-*` 平台包
+3. 单个 `.node` 文件同时包含 vite-plus task runner 和 rolldown 绑定
 
-### Native Binding Contents
+### 原生绑定内容
 
-When compiled with `RELEASE_BUILD=1`, the `.node` file contains:
+当使用 `RELEASE_BUILD=1` 编译时，`.node` 文件包含：
 
-| Component          | Source                             | Purpose                        |
-| ------------------ | ---------------------------------- | ------------------------------ |
-| `vite_task`        | `packages/cli/binding/src/lib.rs`  | Task runner session management |
-| `rolldown_binding` | `rolldown/crates/rolldown_binding` | Rolldown bundler NAPI bindings |
+| 组件               | 来源                                   | 用途                         |
+| ------------------ | -------------------------------------- | ---------------------------- |
+| `vite_task`        | `packages/cli/binding/src/lib.rs`      | 任务运行器会话管理           |
+| `rolldown_binding` | `rolldown/crates/rolldown_binding`     | Rolldown 打包器 NAPI 绑定    |
 
-### Export Chain
+### 导出链路
 
 ```
-User imports 'vite-plus/rolldown'
-  → packages/cli re-exports from @voidzero-dev/vite-plus-core/rolldown
+用户导入 'vite-plus/rolldown'
+  → packages/cli 从 @voidzero-dev/vite-plus-core/rolldown 重新导出
     → packages/core/dist/rolldown/index.mjs
-      → Native binding: vite-plus/binding (rewritten from @rolldown/binding-*)
-        → binding/vite-plus.darwin-arm64.node (contains rolldown_binding)
+      → 原生绑定：vite-plus/binding（由 @rolldown/binding-* 重写而来）
+        → binding/vite-plus.darwin-arm64.node（包含 rolldown_binding）
 ```
 
-### Platform-Specific Publishing
+### 按平台发布
 
-Native bindings are published as separate platform packages for optimal install size:
+原生绑定会以独立的平台包形式发布，以获得最佳安装体积：
 
-| Platform    | Published Package                         |
-| ----------- | ----------------------------------------- |
+| 平台      | 发布的包                                  |
+| --------- | ----------------------------------------- |
 | macOS ARM64 | `@voidzero-dev/vite-plus-darwin-arm64`    |
 | macOS x64   | `@voidzero-dev/vite-plus-darwin-x64`      |
 | Linux ARM64 | `@voidzero-dev/vite-plus-linux-arm64-gnu` |
 | Linux x64   | `@voidzero-dev/vite-plus-linux-x64-gnu`   |
 | Windows x64 | `@voidzero-dev/vite-plus-win32-x64-msvc`  |
 
-These are automatically installed via `optionalDependencies` based on the user's platform.
+这些包会根据用户的平台，通过 `optionalDependencies` 自动安装。
 
-See `publish-native-addons.ts` for the publishing pipeline.
+有关发布流程，请参见 `publish-native-addons.ts`。
 
----
+## 核心包导出同步细节
 
-## Core Package Export Sync Details
+### 为什么要使用 Shim 文件？
 
-### Why Shim Files?
+CLI 包会创建轻量的 shim 文件，从 `@voidzero-dev/vite-plus-core` 重新导出内容，而不是打包实际代码。这样做有以下好处：
 
-The CLI package creates thin shim files that re-export from `@voidzero-dev/vite-plus-core` rather than bundling the actual code. This approach:
+1. **支持即插即用替换** - 用户可以在不修改导入语句的情况下，将 `vite` 替换为 `vite-plus`
+2. **保持包同步** - 核心包变更时无需重新构建 CLI
+3. **减少重复** - 不需要复制文件，只做重新导出
+4. **保留模块解析行为** - Node.js 会解析到实际的核心包
 
-1. **Enables drop-in replacement** - Users can replace `vite` with `vite-plus` without changing imports
-2. **Keeps packages in sync** - No need to rebuild CLI when core package changes
-3. **Reduces duplication** - No file copying, just re-exports
-4. **Preserves module resolution** - Node.js resolves to the actual core package
+**注意**：`@voidzero-dev/vite-plus-core` 包本身会打包多个上游项目（vite、rolldown、tsdown、vitepress）。详情请参见[核心包打包](../core/BUNDLING.md)。
 
-**Note**: The `@voidzero-dev/vite-plus-core` package itself bundles multiple upstream projects (vite, rolldown, tsdown, vitepress). See [Core Package Bundling](../core/BUNDLING.md) for details.
+### 导出映射（核心）
 
-### Export Mapping (Core)
+| 上游 Vite 导出        | CLI 包导出              | 描述                           |
+| --------------------- | ----------------------- | ------------------------------ |
+| `vite/client`        | `vite-plus/client`      | HMR、CSS 模块、资源的环境类型 |
+| `vite/module-runner` | `vite-plus/module-runner` | SSR/环境模块运行器             |
+| `vite/internal`      | `vite-plus/internal`    | 内部 API                        |
+| `vite/dist/client/*` | `vite-plus/dist/client/*` | 客户端运行时代码文件           |
+| `vite/types/*`       | `vite-plus/types/*`      | 类型定义                        |
 
-| Upstream Vite Export | CLI Package Export        | Description                                |
-| -------------------- | ------------------------- | ------------------------------------------ |
-| `vite/client`        | `vite-plus/client`        | Ambient types for HMR, CSS modules, assets |
-| `vite/module-runner` | `vite-plus/module-runner` | SSR/Environment module runner              |
-| `vite/internal`      | `vite-plus/internal`      | Internal APIs                              |
-| `vite/dist/client/*` | `vite-plus/dist/client/*` | Client runtime files                       |
-| `vite/types/*`       | `vite-plus/types/*`       | Type definitions                           |
+### 仅类型导出
 
-### Type-Only Exports
-
-For `./types/*` exports, shim files use `export type *` syntax (TypeScript 5.0+) to ensure only type information is re-exported:
+对于 `./types/*` 导出，shim 文件使用 `export type *` 语法（TypeScript 5.0+），以确保只重新导出类型信息：
 
 ```typescript
 // dist/types/importMeta.d.ts
 export type * from '@voidzero-dev/vite-plus-core/types/importMeta.d.ts';
 ```
 
-This is important because `./types/*` only exposes `.d.ts` files and should never include runtime code.
+这一点很重要，因为 `./types/*` 只暴露 `.d.ts` 文件，绝不应包含运行时代码。
 
-### Internal Types Blocking
+### 内部类型阻止访问
 
-The `./types/internal/*` export is set to `null` in package.json to block access to internal type definitions:
+`./types/internal/*` 导出在 package.json 中被设置为 `null`，以阻止访问内部类型定义：
 
 ```json
 "./types/internal/*": null,
 "./types/*": { "types": "./dist/types/*" }
 ```
 
-The `syncTypesDir()` helper skips the top-level `internal` directory when creating shims, since access is blocked at the exports level.
+`syncTypesDir()` 辅助函数在创建 shim 时会跳过顶层的 `internal` 目录，因为访问已在 exports 层级被阻止。
 
-### Client Types (Triple-Slash Reference)
+### 客户端类型（三斜杠引用）
 
-The `./client` export uses a triple-slash reference instead of a regular export because Vite's `client.d.ts` contains ambient type declarations (for CSS modules, assets, etc.) that should be globally available:
+`./client` 导出使用三斜杠引用，而不是普通导出，因为 Vite 的 `client.d.ts` 包含环境类型声明（例如 CSS 模块、资源等），这些声明应当全局可用：
 
 ```typescript
 // dist/client.d.ts
 /// <reference types="@voidzero-dev/vite-plus-core/client" />
 ```
 
-This allows TypeScript to pick up types like `import.meta.hot`, CSS module types, and asset imports without explicit imports.
+这使 TypeScript 能够获取诸如 `import.meta.hot`、CSS 模块类型以及资源导入等类型，而无需显式导入。
 
 ---
 
-## Test Package Export Sync Details
+## 测试包导出同步细节
 
-### Why Shim Files?
+### 为什么要使用 Shim 文件？
 
-Instead of copying the actual dist files from the test package, we create thin shim files that re-export from `@voidzero-dev/vite-plus-test`. This approach:
+我们不复制 vitest 的 dist 文件，而是创建轻量的 shim 文件，从 `vitest` 重新导出内容。这样做有以下好处：
 
-1. **Keeps packages in sync** - No need to rebuild CLI when test package changes
-2. **Reduces duplication** - No file copying, just re-exports
-3. **Preserves module resolution** - Node.js resolves to the actual test package
+1. **保持包同步** - vitest 升级时无需重新构建 CLI
+2. **减少重复** - 不需要复制文件，只做重新导出
+3. **保留模块解析行为** - Node.js 会解析到实际安装的 vitest
 
-### Export Mapping (Test)
+### 导出映射（测试）
 
-All test package exports are mapped under `./test/*`:
+vitest 自身 `exports` 下的每个入口都会在 `./test/*` 下生成 shim（会跳过通配符导出和 `./package.json`）。这些 shim 纯粹是重新导出——`vite-plus/test` 及其相关路径只是上游 `vitest` 对应子路径的别名。示例：
 
-| Test Package Export                               | CLI Package Export                  |
-| ------------------------------------------------- | ----------------------------------- |
-| `@voidzero-dev/vite-plus-test`                    | `vite-plus/test`                    |
-| `@voidzero-dev/vite-plus-test/browser`            | `vite-plus/test/browser`            |
-| `@voidzero-dev/vite-plus-test/browser-playwright` | `vite-plus/test/browser-playwright` |
-| `@voidzero-dev/vite-plus-test/plugins/runner`     | `vite-plus/test/plugins/runner`     |
+| Vitest 导出       | CLI 包导出                |
+| ----------------- | ------------------------- |
+| `vitest`          | `vite-plus/test`          |
+| `vitest/browser`  | `vite-plus/test/browser`  |
+| `vitest/node`     | `vite-plus/test/node`     |
+| `vitest/config`   | `vite-plus/test/config`   |
+| `vitest/reporters` | `vite-plus/test/reporters` |
 
-### Conditional Export Handling
+完整集合会在每次构建时根据上游 vitest 的 `package.json` 重新生成，因此精确列表会跟随 vitest 本身变化。
 
-The sync handles complex conditional exports with `import`/`require`/`node`/`types` conditions.
+除了 vitest 自身的导出外，三个 `@vitest/browser-*` provider 包也会被投射到两个并行的访问面上，以便在删除 `@voidzero-dev/vite-plus-test` 包装器后，现有用户代码仍能正常解析：
 
-**Test package's main export** (`"."`):
+| Provider 包                   | CLI 包导出                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `@vitest/browser-playwright` | `vite-plus/test/browser-playwright`, `vite-plus/test/browser/providers/playwright` |
+| `@vitest/browser-preview`    | `vite-plus/test/browser-preview`, `vite-plus/test/browser/providers/preview`     |
+| `@vitest/browser-webdriverio` | `vite-plus/test/browser-webdriverio`, `vite-plus/test/browser/providers/webdriverio` |
+
+每个 provider 自己的子路径（例如 `./context`）都会在这两个别名前缀下镜像。
+
+> **注意 — webdriverio 和 playwright 是可选安装的。** `@vitest/browser`（基础包）和 `@vitest/browser-preview` 仍作为 `vite-plus` 的捆绑式 **运行时依赖**（并在迁移时从用户的 manifests 中移除），因为它们都不携带重量级的非可选 peer 依赖。`@vitest/browser-webdriverio` 和 `@vitest/browser-playwright` 现在是 vite-plus 的 **devDependencies + optional peerDependencies**——它们保留为 devDependency，以便构建时的 shim 生成仍能输出 `./test/browser-webdriverio*` / `./test/browser-playwright*` 导出（上面的导出/shim 形态保持不变），但二者都不是捆绑式运行时依赖。它们之所以是可选 peer，是因为它们各自会带入一个非可选的框架 peer（`webdriverio` / `playwright`），而非浏览器消费者不应被迫安装这些依赖。面向某个 provider 的用户应通过 `vp migrate` 将其**保留**在自己项目的**依赖**中（固定到捆绑的 vitest 版本，并确保其框架 peer 已满足），这样他们重写后的 `vite-plus/test/browser-webdriverio` / `vite-plus/test/browser-playwright` 导入就能正常解析。
+
+#### 为什么 provider 的 d.ts shim 要内联
+
+provider 的 `.d.ts` shim **不是**简单的 `export * from '@vitest/browser-playwright'` 重新导出——它们会将上游 `.d.ts` 内容内联，并把 `vitest/node` / `vitest/browser` / `@vitest/browser*` 的裸 specifier 重写为 `dist/test/` 内的相对路径。两个私有 shim `dist/test/_at-vitest-browser.d.ts` 和 `dist/test/_at-vitest-browser/context.d.ts` 会重新导出 `@vitest/browser`/`@vitest/browser/context`，并在这些重写中被引用。
+
+这样可以避免 pnpm-edge 的类型身份分裂：当通过引用加载上游 `.d.ts`（`export * from '@vitest/browser-playwright'`）时，TypeScript 会通过 provider 包自身的 pnpm-edge 解析其中的 `import { BrowserProvider } from 'vitest/node'`，而这可能与用户 `vite.config.ts` 通过 `vite-plus` 看到的 vitest 不是同一个副本。这个不匹配会生成两个结构相同但名义上不同的 `BrowserProvider` 类型，因此 `provider: playwright()` 会导致用户的类型检查失败。通过重写 specifier，所有类型导入都会经由 vite-plus 自己的子路径 shim 路由，从而保证用户整个配置中只有一个 vitest 身份。
+
+### 条件导出处理
+
+同步逻辑会处理带有 `import`/`require`/`node`/`types` 条件的复杂条件导出。
+
+**Vitest 的主导出**（`"."`）：
 
 ```json
 ".": {
@@ -366,7 +392,7 @@ The sync handles complex conditional exports with `import`/`require`/`node`/`typ
 }
 ```
 
-**Becomes CLI package export** (`"./test"`):
+**变为 CLI 包导出**（`"./test"`）：
 
 ```json
 "./test": {
@@ -382,101 +408,99 @@ The sync handles complex conditional exports with `import`/`require`/`node`/`typ
 }
 ```
 
-For each condition, appropriate shim files are created:
+针对每种条件，都会创建相应的 shim 文件：
 
-- `.js` for ESM imports
-- `.cjs` for CommonJS requires
-- `.d.ts` / `.d.cts` for type declarations
+- `.js` 用于 ESM 导入
+- `.cjs` 用于 CommonJS require
+- `.d.ts` / `.d.cts` 用于类型声明
 
-### Shim File Contents
+### Shim 文件内容
 
-**ESM shim** (`dist/test/browser-playwright.js`):
-
-```javascript
-export * from '@voidzero-dev/vite-plus-test/browser-playwright';
-```
-
-**CJS shim** (`dist/test/index.cjs`):
+**ESM shim**（`dist/test/browser.js`）：
 
 ```javascript
-module.exports = require('@voidzero-dev/vite-plus-test');
+export * from 'vitest/browser';
 ```
 
-**Type shim** (`dist/test/browser-playwright.d.ts`):
+**CJS shim**（`dist/test/index.cjs`）：
+
+```javascript
+module.exports = require('vitest');
+```
+
+**类型 shim**（`dist/test/browser.d.ts`）：
 
 ```typescript
-import '@voidzero-dev/vite-plus-test/browser-playwright';
-export * from '@voidzero-dev/vite-plus-test/browser-playwright';
+import 'vitest/browser';
+export * from 'vitest/browser';
 ```
 
-Note: Type shims include a side-effect import to preserve module augmentations (e.g., `toMatchSnapshot` on the `Assertion` interface).
+注意：类型 shim 包含一个副作用导入，以保留模块增强（例如 `Assertion` 接口上的 `toMatchSnapshot`）。
 
 ---
 
-## Build Dependencies
+## 构建依赖
 
-| Package        | Purpose                          |
-| -------------- | -------------------------------- |
-| `@napi-rs/cli` | NAPI build toolchain for Rust    |
-| `oxfmt`        | Code formatting for generated JS |
-| `tsdown`       | TypeScript bundling              |
+| 包名            | 用途                         |
+| -------------- | ---------------------------- |
+| `@napi-rs/cli` | Rust 的 NAPI 构建工具链       |
+| `oxfmt`        | 生成的 JS 代码格式化          |
+| `tsdown`       | TypeScript 打包               |
 
 ---
 
-## Debug Mode
+## 调试模式
 
-To build with debug (unoptimized) Rust bindings:
+使用调试（未优化）的 Rust 绑定进行构建：
 
 ```bash
 VP_CLI_DEBUG=1 pnpm build
 ```
 
-This sets `release: false` in the NAPI build options, producing larger but faster-to-compile debug binaries.
+这会在 NAPI 构建选项中设置 `release: false`，生成更大但编译更快的调试二进制文件。
 
 ---
 
-## Build Commands
+## 构建命令
 
 ```bash
-# Build the CLI package (requires core package to be built first)
+# 构建 CLI 包（需要先构建核心包）
 pnpm -C packages/cli build
 
-# Build from monorepo root (builds all dependencies first)
+# 从 monorepo 根目录构建（先构建所有依赖）
 pnpm build --filter vite-plus
 
-# Debug build
+# 调试构建
 VP_CLI_DEBUG=1 pnpm -C packages/cli build
 ```
 
 ---
 
-## Package Exports
+## 包导出
 
-After building, the CLI package exports:
+构建完成后，CLI 包导出如下内容：
 
-| Export Path                 | Description                         |
-| --------------------------- | ----------------------------------- |
-| `.`                         | Main entry (CLI utilities)          |
-| `./client`                  | Client types (ambient declarations) |
-| `./module-runner`           | Vite module runner for SSR          |
-| `./internal`                | Internal Vite APIs                  |
-| `./dist/client/*`           | Client runtime files                |
-| `./types/*`                 | Type definitions                    |
-| `./bin`                     | CLI binary entry point              |
-| `./binding`                 | NAPI native binding                 |
-| `./test`                    | Test package main entry             |
-| `./test/browser`            | Browser testing utilities           |
-| `./test/browser-playwright` | Playwright integration              |
-| `./test/plugins/*`          | Plugin shims for pnpm overrides     |
-| `./package.json`            | Package metadata                    |
+| 导出路径                 | 描述                             |
+| ------------------------ | -------------------------------- |
+| `.`                      | 主入口（CLI 工具）                |
+| `./client`               | 客户端类型（环境声明）            |
+| `./module-runner`        | 用于 SSR 的 Vite 模块运行器       |
+| `./internal`             | Vite 内部 API                    |
+| `./dist/client/*`        | 客户端运行时代码文件               |
+| `./types/*`              | 类型定义                         |
+| `./bin`                  | CLI 二进制入口                    |
+| `./binding`              | NAPI 原生绑定                    |
+| `./test`                 | 测试包主入口                      |
+| `./test/browser`         | 浏览器测试工具                    |
+| `./test/browser-playwright` | Playwright 集成                |
+| `./test/plugins/*`       | 用于 pnpm 覆盖的插件 shim        |
+| `./package.json`         | 包元数据                         |
 
-See `package.json` for the complete list of exports.
+完整导出列表请参见 `package.json`。
 
----
+## 技术参考
 
-## Technical Reference
-
-### Build Flow
+### 构建流程
 
 ```
 1. buildWithTsdown()         tsdown bundle -> dist/*.js, dist/*.d.ts
@@ -493,54 +517,54 @@ See `package.json` for the complete list of exports.
    └── updateCliPackageJson()    Update exports in package.json
 ```
 
-### Key Constants
+### 关键常量
 
 ```typescript
-// Core package name for Vite compatibility exports
+// 用于 Vite 兼容导出的核心包名称
 const CORE_PACKAGE_NAME = '@voidzero-dev/vite-plus-core';
 
-// Test package name for re-exports
-const TEST_PACKAGE_NAME = '@voidzero-dev/vite-plus-test';
+// 用于重新导出的测试包名称（vitest 本身，而不是打包后的包装器）
+const TEST_PACKAGE_NAME = 'vitest';
 ```
 
-### Package.json Exports Management
+### package.json 导出管理
 
-The `exports` field in `package.json` has two categories: **manual** and **automated**.
+`package.json` 中的 `exports` 字段分为两类：**手动** 和 **自动**。
 
-#### Manual exports
+#### 手动导出
 
-All non-`./test*` exports are manually maintained in `package.json`. These fall into two groups:
+所有非 `./test*` 导出都在 `package.json` 中手动维护。这些导出分为两组：
 
-**CLI-native exports** — point to CLI's own bundled TypeScript (built by `buildWithTsdown()` via tsdown):
+**CLI 原生导出** — 指向 CLI 自身通过 tsdown 构建的 TypeScript 打包产物（由 `buildWithTsdown()` 构建）：
 
 | Export           | Description                |
 | ---------------- | -------------------------- |
-| `.`              | Main entry (CLI utilities) |
-| `./bin`          | CLI binary entry point     |
-| `./binding`      | NAPI native binding        |
-| `./lint`         | Lint utilities             |
-| `./pack`         | Pack utilities             |
-| `./package.json` | Package metadata           |
+| `.`              | 主入口（CLI 工具） |
+| `./bin`          | CLI 二进制入口点     |
+| `./binding`      | NAPI 原生绑定        |
+| `./lint`         | Lint 工具             |
+| `./pack`         | Pack 工具             |
+| `./package.json` | 包元数据           |
 
-**Core shim exports** — point to shim files auto-generated by `syncCorePackageExports()` that re-export from `@voidzero-dev/vite-plus-core`. The shim files are regenerated on each build, but the `package.json` entries themselves are manual:
+**核心 shim 导出** — 指向由 `syncCorePackageExports()` 自动生成的 shim 文件，这些文件会从 `@voidzero-dev/vite-plus-core` 重新导出。shim 文件会在每次构建时重新生成，但 `package.json` 中的条目本身是手动维护的：
 
 | Export               | Description                                                             |
 | -------------------- | ----------------------------------------------------------------------- |
-| `./client`           | Triple-slash reference for ambient type declarations (CSS modules, etc) |
-| `./module-runner`    | Vite module runner for SSR/environments                                 |
-| `./internal`         | Internal Vite APIs                                                      |
-| `./dist/client/*`    | Client runtime files                                                    |
-| `./types/internal/*` | Blocked (`null`) to prevent access to internal types                    |
-| `./types/*`          | Type-only re-exports                                                    |
+| `./client`           | 用于环境类型声明（CSS modules 等）的三斜杠引用 |
+| `./module-runner`    | 用于 SSR/环境的 Vite 模块运行器                                 |
+| `./internal`         | Vite 内部 API                                                      |
+| `./dist/client/*`    | 客户端运行时文件                                                    |
+| `./types/internal/*` | 已阻止（`null`），以防止访问内部类型                    |
+| `./types/*`          | 仅类型重新导出                                                    |
 
-**Note**: The core package's own exports (which the shims point to) are generated upstream by `packages/tools/src/sync-remote-deps.ts`. See [Core Package Bundling](../core/BUNDLING.md) for details.
+**注意**：核心包自身的导出（也就是这些 shim 指向的目标）由上游的 `packages/tools/src/sync-remote-deps.ts` 生成。详情请参见 [Core Package Bundling](../core/BUNDLING.md)。
 
-#### Automated exports (`./test/*`)
+#### 自动导出（`./test/*`）
 
-All `./test*` exports are fully managed by `syncTestPackageExports()`. The build script:
+所有 `./test*` 导出都由 `syncTestPackageExports()` 全权管理。构建脚本会：
 
-1. Reads `packages/test/package.json` exports
-2. Creates shim files in `dist/test/`
-3. Removes old `./test*` exports from `package.json`
-4. Merges in newly generated test exports
-5. Ensures `dist/test` is in the `files` array
+1. 读取 vitest 的 `package.json` 导出配置（通过 `createRequire` 解析）
+2. 在 `dist/test/` 中创建 shim 文件
+3. 从 `package.json` 中移除旧的 `./test*` 导出
+4. 合并新生成的测试导出
+5. 确保 `dist/test` 在 `files` 数组中

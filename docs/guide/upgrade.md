@@ -14,8 +14,10 @@
 ## 全局 `vp`
 
 ```bash
-vp upgrade              # 升级到最新版本
-vp upgrade --check      # 检查更新但不安装
+vp upgrade                        # 升级到最新版本
+vp upgrade --check                # 检查更新但不安装
+vp upgrade <version>              # 安装特定版本
+vp upgrade --registry <registry>  # 使用自定义 npm registry
 ```
 
 ### 回滚
@@ -40,21 +42,38 @@ vp update vite-plus
 
 ### 更新别名包
 
-Vite+ 在安装时会为其核心包设置 npm 别名：
+Vite+ 在安装期间会为其核心包设置一个 npm 别名：
 
-- `vite` 别名指向 `npm:@voidzero-dev/vite-plus-core@latest`
-- `vitest` 别名指向 `npm:@voidzero-dev/vite-plus-test@latest`
+- `vite` 别名为 `npm:@voidzero-dev/vite-plus-core@latest`
 
-`vp update vite-plus` 不会在锁文件中重新解析这些别名。若要完全升级，请单独更新它们：
+`vp update vite-plus` 不会在锁文件中重新解析此别名。要完全升级，请单独更新它：
 
 ```bash
-vp update @voidzero-dev/vite-plus-core @voidzero-dev/vite-plus-test
+vp update @voidzero-dev/vite-plus-core
 ```
 
 或者一次性更新所有包：
 
 ```bash
-vp update vite-plus @voidzero-dev/vite-plus-core @voidzero-dev/vite-plus-test
+vp update vite-plus @voidzero-dev/vite-plus-core
 ```
 
-你可以使用 `vp outdated` 验证是否没有过时的 Vite+ 包。
+你可以使用 `vp outdated` 验证没有任何 Vite+ 包仍然过时。
+
+### 更新 Vitest 固定版本
+
+如果你是通过 `vp migrate` 迁移的，项目会将 `vitest` 固定到一个精确版本，以便整个项目与内置的 `vp test` 运行器共享同一个 Vitest 副本。这个固定项位于包管理器的覆盖配置中：
+
+- **npm / Bun：** `package.json` 中 `overrides` 下的 `vitest` 条目
+- **Yarn：** `package.json` 中 `resolutions` 下的 `vitest` 条目
+- **pnpm：** `pnpm-workspace.yaml` 中 `overrides` 下的 `vitest` 条目——除非你的 `package.json` 已经有 `pnpm` 字段；在这种情况下，它会位于 `package.json` 中的 `pnpm.overrides` 下（如果 `package.json` 定义了 `pnpm.overrides`，pnpm 会忽略 `pnpm-workspace.yaml` 中的 overrides）
+
+Vite+ 的某个版本可能会提升内置的 Vitest 版本。由于这个固定版本也会应用到 `vite-plus` 自身的 `vitest` 依赖，如果固定版本过旧，即使你升级了 `vite-plus`，仍然会安装旧的运行器——这会把 Vitest 的内部实现（mocks、`expect`、运行器状态）分散到被固定的副本和 `vp test` 加载的副本之间。
+
+升级 `vite-plus` 后，请将 `vitest` 重新固定到 Vite+ 现在所内置的版本。你可以通过以下命令查看该版本：
+
+```bash
+vp --version
+```
+
+然后将 `vitest` 覆盖项设置为该精确版本，或者重新运行 `vp migrate` 让它为你更新固定版本。

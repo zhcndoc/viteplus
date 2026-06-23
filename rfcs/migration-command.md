@@ -203,12 +203,10 @@ ESLint 注释已替换
   },
   "devDependencies": {
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest",
     "@vitejs/plugin-react": "^4.2.0"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest"
   }
 }
 ```
@@ -223,7 +221,6 @@ ESLint 注释已替换
   },
   "devDependencies": {
     "vite": "catalog:",
-    "vitest": "catalog:",
     "@vitejs/plugin-react": "^4.2.0",
     "vite-plus": "catalog:"
   },
@@ -244,15 +241,12 @@ ESLint 注释已替换
 ```yaml
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
 overrides:
   vite: 'catalog:'
-  vitest: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite
-    - vitest
   allowedVersions:
     vite: '*'
     vitest: '*'
@@ -267,16 +261,14 @@ peerDependencyRules:
   "name": "my-package",
   "devDependencies": {
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest",
     "vite-plus": "latest"
   },
   "pnpm": {
     "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+      "vite": "npm:@voidzero-dev/vite-plus-core@latest"
     },
     "peerDependencyRules": {
-      "allowAny": ["vite", "vitest"],
+      "allowAny": ["vite"],
       "allowedVersions": { "vite": "*", "vitest": "*" }
     }
   }
@@ -285,7 +277,7 @@ peerDependencyRules:
 
 **重要**：
 
-- `overrides.vite` 可确保任何依赖到 `vite` 的包都会被替换为 `vite-plus`
+- `overrides.vite` 确保任何依赖到 `vite` 的包都会改为使用 `vite-plus`
 - 对于没有现有配置的 pnpm，`overrides` 和 `peerDependencyRules` 会写入 `pnpm-workspace.yaml`
 - 对于在 `package.json` 中已有 `pnpm` 配置的 pnpm，会尊重现有位置
 - 将 `import from 'vite'` 重写为 `import from 'vite-plus'`
@@ -297,6 +289,7 @@ peerDependencyRules:
 - 将 `import from '@vitest/browser/{name}'` 重写为 `import from 'vite-plus/test/browser/{name}'`，例如：将 `import from '@vitest/browser/context'` 重写为 `import from 'vite-plus/test/browser/context'`
 - 将 `import from '@vitest/browser-playwright'` 重写为 `import from 'vite-plus/test/browser-playwright'`
 - 将 `import from '@vitest/browser-playwright/{name}'` 重写为 `import from 'vite-plus/test/browser-playwright/{name}'`
+- `declare module 'vitest'`、`declare module 'vitest/{name}'` 和 `declare module '@vitest/browser*'` 有意**不**重写——`vite-plus/test*` 只是对上游 `vitest*` 的薄封装重导出，因此类型扩展必须指向上游模块标识才能正确合并
 
 **注意**：对于 Yarn，请使用 `resolutions` 而不是 `overrides`。
 
@@ -511,15 +504,12 @@ export default defineConfig({
 ```yaml
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
   vite-plus: latest
 overrides:
   vite: 'catalog:'
-  vitest: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite
-    - vitest
   allowedVersions:
     vite: '*'
     vitest: '*'
@@ -532,12 +522,10 @@ peerDependencyRules:
 ```json
 {
   "devDependencies": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest"
   }
 }
 ```
@@ -549,7 +537,6 @@ peerDependencyRules:
 ```yaml
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
 ```
 
 `package.json`
@@ -557,8 +544,7 @@ catalog:
 ```json
 {
   "resolutions": {
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite": "catalog:"
   }
 }
 ```

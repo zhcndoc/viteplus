@@ -67,9 +67,9 @@ export default defineConfig({
 
 ## 由于重型插件导致的慢速配置加载
 
-当 `vite.config.ts` 在顶层导入重型插件时，每个 `import` 都会被急切求值，即使对于像 `vp lint` 或 `vp fmt` 这样的不需要这些插件的命令也是如此。这会导致配置加载明显变慢。
+当 `vite.config.ts` 在顶层导入插件时，这些插件会在每个命令执行时被求值，包括 `vp lint`、`vp fmt`、编辑器集成以及长生命周期的后台进程。这会使配置加载变慢，并可能触发插件初始化的副作用，例如读取文件、启动监听器或连接到服务。
 
-使用 `lazyPlugins` 来包裹插件加载。仅在需要这些插件的命令（`dev`、`build`、`test`、`preview`）中才会加载插件，并在其他所有情况下跳过：
+使用 `lazyPlugins` 让插件只在 Vite 管线实际运行时才加载（`dev`、`build`、`test`、`preview`）：
 
 ```ts [vite.config.ts]
 import { defineConfig, lazyPlugins } from 'vite-plus';

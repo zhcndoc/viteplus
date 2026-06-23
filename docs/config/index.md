@@ -10,10 +10,11 @@ export default defineConfig({
   build: {},
   preview: {},
 
-  test: {},
-  lint: {},
-  fmt: {},
+  create: {},
   run: {},
+  fmt: {},
+  lint: {},
+  test: {},
   pack: {},
   staged: {},
 });
@@ -23,9 +24,10 @@ export default defineConfig({
 
 Vite+ 通过以下扩展增强了基础 Vite 配置：
 
-- [`lint`](/config/lint) 用于 Oxlint
-- [`fmt`](/config/fmt) 用于 Oxfmt
-- [`test`](/config/test) 用于 Vitest
+- [`create`](/config/create) 用于项目和模板脚手架默认值
 - [`run`](/config/run) 用于 Vite Task
+- [`fmt`](/config/fmt) 用于 Oxfmt
+- [`lint`](/config/lint) 用于 Oxlint
+- [`test`](/config/test) 用于 Vitest
 - [`pack`](/config/pack) 用于 tsdown
-- [`staged`](/config/staged) 用于 staged-file 检查
+- [`staged`](/config/staged) 用于暂存文件检查
