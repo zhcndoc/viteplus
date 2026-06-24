@@ -153,3 +153,15 @@ VP_NODE_DIST_MIRROR=https://my-mirror.example.com/nodejs/dist vp env default lts
 # 永久设置到你的 shell 配置文件（.bashrc、.zshrc 等）
 echo 'export VP_NODE_DIST_MIRROR=https://my-mirror.example.com/nodejs/dist' >> ~/.zshrc
 ```
+
+## Node.js 签名验证
+
+从官方 `nodejs.org` 发行版安装 Node.js 时，Vite+ 会下载带 PGP 签名的 `SHASUMS256.txt.asc`，并在信任任何校验和之前，使用随附的 Node.js 发布密钥对其进行验证。这可以防止 `SHASUMS256.txt` 被篡改并配套恶意压缩包的情况。下载的压缩包的 SHA-256 校验和随后始终会被验证。
+
+仅发布纯 `SHASUMS256.txt` 的自定义镜像（`VP_NODE_DIST_MIRROR`）会回退为仅校验和验证。如果镜像也发布 `.asc`，其签名仍会被验证，且无效签名会直接报错。
+
+如果未来的密钥环或证书问题阻止下载，请设置 `VP_NODE_SKIP_SIGNATURE_VERIFY` 以临时绕过 PGP 验证。SHA-256 校验和仍会被验证，并且当跳过签名检查时，Vite+ 会打印警告：
+
+```bash
+VP_NODE_SKIP_SIGNATURE_VERIFY=1 vp env install 22
+```

@@ -95,8 +95,17 @@ pub enum ArchiveFormat {
 
 /// 如何验证已下载归档的完整性
 pub enum HashVerification {
-    ShasumsFile { url: Str },  // 下载并解析 SHASUMS 文件
-    None,                       // 不进行验证
+    ShasumsFile {
+        url: Str,                          // 明文 SHASUMS 文件
+        signature: Option<ShasumsSignature>, // 当设置时，对已清签名的 SHASUMS 进行 PGP 验证
+    },
+    None,                                  // 不进行验证
+}
+
+/// SHASUMS 文件的 PGP 签名验证详情。
+pub struct ShasumsSignature {
+    pub url: Str,       // 已清签名的 SHASUMS256.txt.asc
+    pub required: bool, // 官方源为强制；镜像则尽力而为
 }
 
 /// 下载运行时所需的信息
@@ -198,8 +207,8 @@ impl NodeProvider {
 use vite_js_runtime::{JsRuntimeType, download_runtime};
 
 let runtime = download_runtime(JsRuntimeType::Node, "22.13.1").await?;
-println!("Node.js installed at: {}", runtime.get_binary_path());
-println!("Version: {}", runtime.version()); // "22.13.1"
+println!("Node.js 已安装到: {}", runtime.get_binary_path());
+println!("版本: {}", runtime.version()); // "22.13.1"
 ```
 
 **基于项目下载（读取 .node-version、devEngines.runtime 或 engines.node）：**
@@ -444,20 +453,26 @@ VP_NODE_DIST_MIRROR=https://example.com/mirrors/node vp build
 
 镜像 URL 应与官方发行版具有相同的目录结构。末尾斜杠会被自动去除。
 
-### 完整性验证
+### 完整性与真实性验证
 
-Node.js 为每个发布版本提供 SHASUMS256.txt：
+Node.js 会为每个发布版本提供 `SHASUMS256.txt` 和一个 PGP clear-signed 的 `SHASUMS256.txt.asc`
+（由 Node.js 发布者签名）：
 
 ```
 https://nodejs.org/dist/v{version}/SHASUMS256.txt
+https://nodejs.org/dist/v{version}/SHASUMS256.txt.asc
 ```
 
-实现会自动验证下载完整性：
+实现会自动验证真实性和完整性：
 
-1. 下载目标版本的 SHASUMS256.txt
-2. 解析并提取目标压缩包文件名对应的 SHA256 哈希
-3. 下载压缩包后，将其与预期哈希进行校验
-4. 如果哈希不匹配则报错失败（下载损坏）
+1. 下载 clear-signed 的 `SHASUMS256.txt.asc`，并使用内嵌的 Node.js 发布密钥副本验证其 PGP 签名，然后解析
+   已验证的明文（见 [verify-node-shasums-signature.md](./verify-node-shasums-signature.md)）
+2. 提取目标压缩包文件名对应的 SHA256 哈希
+3. 下载压缩包后，根据预期哈希进行验证
+4. 如果签名无效或哈希不匹配，则返回错误
+
+对官方 `nodejs.org` 源，签名验证是强制性的。非官方的 musl 构建和只提供 `SHASUMS256.txt`
+的自定义镜像会回退到仅哈希验证（`signature: None`，或者在 `.asc` 不存在时尽力而为）。
 
 SHASUMS256.txt 内容示例：
 
@@ -490,7 +505,7 @@ i9j0k1l2...  node-v22.13.1-linux-arm64.tar.gz
 
 5. 使用原子操作下载
    ├── 创建临时目录
-   ├── 下载 SHASUMS 文件并解析预期哈希（通过 provider）
+   ├── 下载 SHASUMS（在可用时对签名的 .asc 进行 PGP 验证）并解析预期哈希
    ├── 使用重试逻辑下载压缩包
    ├── 验证压缩包哈希
    ├── 解压压缩包（根据格式为 tar.gz 或 zip）
@@ -676,9 +691,9 @@ pub enum Error {
 
 ## 成功标准
 
-1. ✅ 可通过精确版本规范下载并缓存 Node.js
-2. ✅ 在 Linux、macOS 和 Windows（x64 和 ARM64）上可用
-3. ✅ 使用 SHASUMS256.txt 验证下载完整性
+1. ✅ 可按精确版本规格下载并缓存 Node.js
+2. ✅ 可在 Linux、macOS 和 Windows（x64 和 ARM64）上运行
+3. ✅ 验证下载的真实性和完整性（PGP 签名的 SHASUMS256.txt）
 4. ✅ 安全处理并发下载
 5. ✅ 返回版本和二进制路径
 6. ✅ 全面的测试覆盖
@@ -686,13 +701,13 @@ pub enum Error {
 8. ✅ 支持来自 package.json 的 `devEngines.runtime`
 9. ✅ 支持 semver 范围（^、~ 等）及版本解析
 10. ✅ 版本索引缓存，TTL 为 1 小时
-11. ✅ 在 devEngines 中同时支持单个 runtime 和 runtime 数组
+11. ✅ 在 devEngines 中支持单个运行时和运行时数组
 12. ~~将解析后的版本写入 `.node-version` 文件~~（已移除——`.node-version` 仅由 `vp env pin` 写入）
-13. ✅ 优化版本解析（精确版本跳过网络，范围会检查本地缓存）
-14. ✅ 多来源版本读取，优先级为：`.node-version` > `engines.node` > `devEngines.runtime`
+13. ✅ 优化版本解析（精确版本跳过网络，范围优先检查本地缓存）
+14. ✅ 多源版本读取，优先级：`.node-version` > `engines.node` > `devEngines.runtime`
 15. ✅ 支持 `.node-version` 文件格式（带/不带 v 前缀，部分版本）
 16. ✅ 支持 package.json 中的 `engines.node`
-17. ✅ 当解析后的版本与低优先级来源约束冲突时发出警告
+17. ✅ 当解析出的版本与较低优先级来源的约束冲突时发出警告
 18. ✅ 在未指定来源时使用最新缓存版本（避免网络请求）
 19. ✅ 无效版本字符串会被忽略并发出警告，继续回退到更低优先级来源
 
