@@ -1,6 +1,6 @@
 # 环境
 
-`vp env` 用于全局和每个项目地管理 Node.js 版本。
+`vp env` 用于在全局和每个项目中管理 Node.js 版本。
 
 ## 概述
 
@@ -39,10 +39,10 @@ vp env off
 
 ### 设置
 
-- `vp env setup` 会在 `VP_HOME/bin` 中创建或更新 shim，并将每个 shell 的设置脚本写入 `~/.vite-plus/`
-- `vp env on` 启用托管模式，使 shim 始终使用 Vite+ 管理的 Node.js
-- `vp env off` 启用系统优先模式，使 shim 优先使用系统 Node.js
-- `vp env print` 打印当前会话的 shell 片段
+- `vp env setup` 创建或更新 `VP_HOME/bin` 中的 shim（并将按 shell 区分的设置脚本写入 `VP_HOME`）
+- `vp env on` 启用托管模式，使 shim 始终使用 Vite+-managed 的 Node.js
+- `vp env off` 启用优先系统模式，使 shim 优先使用系统 Node.js
+- `vp env print` 输出当前会话的 shell 片段
 
 PowerShell 需要在 `vp env use` 之前，在当前 shell 中 dot-source 生成的设置脚本，才能只影响该 shell 会话：
 

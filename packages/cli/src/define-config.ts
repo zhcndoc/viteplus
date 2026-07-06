@@ -20,7 +20,7 @@ import type { CreateTemplateEntry } from './create/org-manifest.ts';
 import type { PackUserConfig } from './pack.ts';
 import type { RunConfig } from './run-config.ts';
 import type { StagedConfig } from './staged-config.ts';
-import { VITEST_VERSION } from './utils/constants.ts';
+import { CONFIG_METADATA_ENV, VITEST_VERSION } from './utils/constants.ts';
 
 declare module '@voidzero-dev/vite-plus-core' {
   interface UserConfig {
@@ -30,6 +30,26 @@ declare module '@voidzero-dev/vite-plus-core' {
     lint?: OxlintConfig;
 
     fmt?: OxfmtConfig;
+
+    /**
+     * Defaults for the `vp check` composite command. Each flag mirrors the
+     * matching CLI option (`--no-fmt` / `--no-lint`) and only affects
+     * `vp check`; standalone `vp fmt` / `vp lint` are unaffected.
+     */
+    check?: {
+      /**
+       * Run the format step in `vp check`.
+       * @default true
+       */
+      fmt?: boolean;
+
+      /**
+       * Run the lint step in `vp check`. Type-check still runs when both
+       * `lint.options.typeAware` and `lint.options.typeCheck` are enabled.
+       * @default true
+       */
+      lint?: boolean;
+    };
 
     pack?: PackUserConfig | PackUserConfig[];
 
@@ -594,7 +614,7 @@ function injectPluginIntoInlineConfig<
       vitePlusCoverageVersionGuardPlugin(),
       ...(config.plugins ?? []),
     ],
-  } as T;
+  };
 }
 
 /**
@@ -690,12 +710,12 @@ export function defineConfig(config: ViteUserConfigExport): ViteUserConfigExport
  */
 function injectPluginIntoProjectExport(config: UserProjectConfigExport): UserProjectConfigExport {
   if (typeof config === 'function') {
-    return ((env: ConfigEnv) => {
+    return (env: ConfigEnv) => {
       const result = config(env);
       return result instanceof Promise
         ? result.then(injectPluginIntoInlineConfig)
         : injectPluginIntoInlineConfig(result);
-    }) as UserProjectConfigFn;
+    };
   }
   if (config instanceof Promise) {
     return config.then(injectPluginIntoInlineConfig);
@@ -719,20 +739,60 @@ export function defineProject(config: UserProjectConfigExport): UserProjectConfi
   return viteDefineProject(injectPluginIntoProjectExport(config) as never);
 }
 
-const VITE_COMMANDS = new Set(['dev', 'build', 'test', 'preview']);
+// Number of in-flight `withConfigMetadataResolution` calls, and the marker
+// value captured before the first one set it. The marker stays set until the
+// LAST overlapping resolution finishes (e.g. several package configs resolved
+// concurrently in a monorepo), so an async config that reaches `lazyPlugins`
+// while any metadata resolution is still pending is not mistaken for a build.
+let configMetadataDepth = 0;
+let configMetadataSavedValue: string | undefined;
+
+/**
+ * Run a config-metadata resolution (a `resolveConfig` call that loads the
+ * user's config purely to read a non-plugin block) with the metadata marker
+ * set, so any `lazyPlugins` evaluated during it skips the plugin factory.
+ *
+ * The marker is scoped in time, not by command name: it is set only while at
+ * least one resolution is in flight (ref-counted so overlapping/nested
+ * resolutions compose) and the prior value is restored afterwards. By the time
+ * the task runner spawns a child (a verbatim `vp run` build, a `vp exec`
+ * child), the marker is already gone, so those builds correctly load plugins.
+ * Keying on the resolution itself — rather than guessing from the command
+ * name — also means command aliases (`vp format`) and not-yet-known commands
+ * all load plugins.
+ */
+export async function withConfigMetadataResolution<T>(fn: () => Promise<T>): Promise<T> {
+  if (configMetadataDepth === 0) {
+    configMetadataSavedValue = process.env[CONFIG_METADATA_ENV];
+    process.env[CONFIG_METADATA_ENV] = '1';
+  }
+  configMetadataDepth++;
+  try {
+    return await fn();
+  } finally {
+    configMetadataDepth--;
+    if (configMetadataDepth === 0) {
+      if (configMetadataSavedValue === undefined) {
+        delete process.env[CONFIG_METADATA_ENV];
+      } else {
+        process.env[CONFIG_METADATA_ENV] = configMetadataSavedValue;
+      }
+      configMetadataSavedValue = undefined;
+    }
+  }
+}
 
 export function lazyPlugins(cb: () => PluginOption[]): PluginOption[] | undefined;
 export function lazyPlugins(cb: () => Promise<PluginOption[]>): PluginOption[] | undefined;
 export function lazyPlugins(
   cb: () => PluginOption[] | Promise<PluginOption[]>,
 ): PluginOption[] | undefined {
-  const cmd = process.env.VP_COMMAND;
-  if (!cmd || VITE_COMMANDS.has(cmd)) {
-    const result = cb();
-    if (result instanceof Promise) {
-      return [result];
-    }
-    return result;
+  if (process.env[CONFIG_METADATA_ENV] === '1') {
+    return undefined;
   }
-  return undefined;
+  const result = cb();
+  if (result instanceof Promise) {
+    return [result];
+  }
+  return result;
 }

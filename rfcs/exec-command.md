@@ -1,443 +1,443 @@
-# RFC: `vp exec` Command
+# RFC：`vp exec` 命令
 
-## Summary
+## 摘要
 
-Add `vp exec` as a subcommand that prepends `./node_modules/.bin` to PATH and executes a command. This is the equivalent of `pnpm exec` or direct execution with `bun`.
+添加 `vp exec` 作为一个子命令，它会将 `./node_modules/.bin` 追加到 PATH 前面并执行一个命令。这相当于 `pnpm exec`，或者使用 `bun` 直接执行。
 
-The command completes the execution story alongside existing commands:
+该命令与现有命令一起完善了执行流程：
 
-| Command       | Behavior                                                       | Analogy                     |
-| ------------- | -------------------------------------------------------------- | --------------------------- |
-| `vp dlx`      | Always downloads from remote                                   | `pnpm dlx` / `bun x`        |
-| `vpx`         | Local → global → PATH → remote fallback                        | `npx`                       |
-| **`vp exec`** | **Prepend `node_modules/.bin` to PATH, then execute normally** | **`pnpm exec`** / **`bun`** |
+| 命令          | 行为                                                         | 类比                        |
+| ------------- | ------------------------------------------------------------ | --------------------------- |
+| `vp dlx`      | 始终从远程下载                                              | `pnpm dlx` / `bun x`        |
+| `vpx`         | 本地 → 全局 → PATH → 远程回退                                | `npx`                       |
+| **`vp exec`** | **将 `node_modules/.bin` 追加到 PATH 前面，然后正常执行** | **`pnpm exec`** / **`bun`** |
 
-**Note:** bun natively resolves binaries from local `node_modules/.bin`, so `bun <cmd>` or `bun x <cmd>` can serve a similar purpose to `vp exec`.
+**注意：** bun 会原生从本地 `node_modules/.bin` 解析二进制文件，因此 `bun <cmd>` 或 `bun x <cmd>` 可以起到与 `vp exec` 类似的作用。
 
-## Motivation
+## 动机
 
-Currently, to run a command with `node_modules/.bin` on PATH, developers must use `vpx` (which has global/remote fallback) or call `./node_modules/.bin/<cmd>` directly. There is no simple way to prepend the local bin directory to PATH and execute — the behavior that `pnpm exec` provides.
+目前，要在 PATH 中包含 `node_modules/.bin` 的情况下运行命令，开发者必须使用 `vpx`（它具有全局/远程回退）或者直接调用 `./node_modules/.bin/<cmd>`。没有一种简单的方法可以将本地 bin 目录预先添加到 PATH 并执行命令——这正是 `pnpm exec` 提供的行为。
 
-### Why `vp exec` Is Needed
+### 为什么需要 `vp exec`
 
-1. **No remote fallback**: Unlike `vpx`, `vp exec` never downloads from the registry — commands resolve via `node_modules/.bin` + existing PATH only
-2. **Workspace iteration**: `pnpm exec --recursive` runs a command in every workspace package — `vpx` doesn't support this
-3. **pnpm exec parity**: Projects migrating from pnpm expect `exec` to exist as a subcommand
-4. **Explicit intent**: `vp exec` means "run with local bins on PATH" vs `vpx` which means "find it anywhere, download if needed"
+1. **没有远程回退**：与 `vpx` 不同，`vp exec` 从不从注册表下载——命令仅通过 `node_modules/.bin` + 现有 PATH 进行解析
+2. **工作区迭代**：`pnpm exec --recursive` 会在每个工作区包中运行命令——`vpx` 不支持这一点
+3. **与 pnpm exec 对齐**：从 pnpm 迁移的项目期望存在 `exec` 作为子命令
+4. **意图明确**：`vp exec` 表示“使用本地 bin 并将其放入 PATH 中运行”，而 `vpx` 表示“在任何地方查找，必要时下载”
 
-### Current Pain Points
+### 当前痛点
 
 ```bash
-# Developer wants to run with node_modules/.bin on PATH, no remote fallback
-vpx eslint .                           # Has remote fallback — may download unexpectedly
-./node_modules/.bin/eslint .           # Verbose, not portable
+# 开发者希望在 PATH 中包含 node_modules/.bin 运行，不要远程回退
+vpx eslint .                           # 有远程回退——可能会意外下载
+./node_modules/.bin/eslint .           # 冗长，不够便携
 
-# Developer wants to run a command in every workspace package
-pnpm exec --recursive -- eslint .      # Works with pnpm
-# No vp equivalent exists today
+# 开发者希望在每个工作区包中运行命令
+pnpm exec --recursive -- eslint .      # 在 pnpm 中可用
+# 目前没有 vp 对应命令
 ```
 
-### Proposed Solution
+### 提议的解决方案
 
 ```bash
-# Run with node_modules/.bin on PATH (no remote fallback)
+# 使用 node_modules/.bin 运行（无远程回退）
 vp exec eslint .
 
-# Run in every workspace package
+# 在每个工作区包中运行
 vp exec --recursive -- eslint .
 
-# Shell mode
+# Shell 模式
 vp exec -c 'echo $PATH'
 ```
 
-## Command Syntax
+## 命令语法
 
 ```bash
 vp exec [OPTIONS] [--] <command> [args...]
 ```
 
-The leading `--` is optional and stripped for backward compatibility (matching pnpm exec behavior).
+前面的 `--` 是可选的，为了向后兼容会被去除（与 pnpm exec 行为一致）。
 
-**Options:**
+**选项：**
 
-- `--shell-mode, -c` — Execute within a shell environment (`/bin/sh` on UNIX, `cmd.exe` on Windows)
-- `--recursive, -r` — Run in every workspace package (local CLI only)
-- `--workspace-root, -w` — Run on the workspace root package only (local CLI only)
-- `--filter, -F <selector>` — Filter packages by name pattern or relative path (local CLI only); also accepts `--filter=<selector>` form
-- `--parallel` — Run concurrently without topological sort (local CLI only)
-- `--reverse` — Reverse topological order (local CLI only)
-- `--resume-from <pkg>` — Resume from a specific package (local CLI only); also accepts `--resume-from=<pkg>` form
-- `--report-summary` — Save results to `vp-exec-summary.json` (local CLI only)
+- `--shell-mode, -c` — 在 shell 环境中执行（UNIX 上为 `/bin/sh`，Windows 上为 `cmd.exe`）
+- `--recursive, -r` — 在每个工作区包中运行（仅限本地 CLI）
+- `--workspace-root, -w` — 仅在工作区根包中运行（仅限本地 CLI）
+- `--filter, -F <selector>` — 按名称模式或相对路径筛选包（仅限本地 CLI）；也接受 `--filter=<selector>` 形式
+- `--parallel` — 并发运行，不进行拓扑排序（仅限本地 CLI）
+- `--reverse` — 反向拓扑顺序（仅限本地 CLI）
+- `--resume-from <pkg>` — 从指定包继续执行（仅限本地 CLI）；也接受 `--resume-from=<pkg>` 形式
+- `--report-summary` — 将结果保存到 `vp-exec-summary.json`（仅限本地 CLI）
 
-### Usage Examples
+### 使用示例
 
 ```bash
-# Basic: run locally installed binary
+# 基本用法：运行本地安装的二进制文件
 vp exec eslint .
 
-# With arguments
+# 带参数
 vp exec tsc --noEmit
 
-# Shell mode (pipe commands, expand variables)
+# Shell 模式（管道命令、展开变量）
 vp exec -c 'echo $PATH'
 vp exec -c 'eslint . && prettier --check .'
 
-# Run in every workspace package
+# 在每个工作区包中运行
 vp exec -r -- eslint .
 
-# Filter to specific packages
+# 筛选特定包
 vp exec --filter 'app...' -- tsc --noEmit
 
-# Filter by relative path
+# 按相对路径筛选
 vp exec --filter ./packages/app-a -- tsc --noEmit
 
-# Braced path filter with dependency traversal
+# 带依赖遍历的大括号路径筛选
 vp exec --filter '{./packages/app-a}...' -- tsc --noEmit
 
-# Run in parallel (no topological ordering)
+# 并行运行（不进行拓扑排序）
 vp exec -r --parallel -- eslint .
 
-# Resume from a specific package (after failure)
+# 从指定包恢复执行（失败后）
 vp exec -r --resume-from @my/app -- tsc --noEmit
 
-# Run on workspace root only
-vp exec -w -- node -e "console.log(process.env.VITE_PLUS_PACKAGE_NAME)"
+# 仅在工作区根目录运行
+vp exec -w -- node -e "console.log(process.env.VP_PACKAGE_NAME)"
 
-# Save execution summary
+# 保存执行摘要
 vp exec -r --report-summary -- vitest run
 ```
 
-## Filter Selector Syntax
+## 过滤选择器语法
 
-The `--filter` flag supports pnpm-compatible selectors:
+`--filter` 标志支持与 pnpm 兼容的选择器：
 
-**Name patterns:**
+**名称模式：**
 
-- `app-a` — exact package name
-- `app-*` — glob pattern matching package names
-- `@myorg/*` — scoped package glob
+- `app-a` — 精确包名
+- `app-*` — 匹配包名的 glob 模式
+- `@myorg/*` — 带作用域的包 glob
 
-**Path selectors** (detected by leading `.` or `..`):
+**路径选择器**（通过前导 `.` 或 `..` 检测）：
 
-- `./packages/app-a` — match packages whose directory is at or under this path
-- `../other-pkg` — relative path from cwd
+- `./packages/app-a` — 匹配目录位于此路径或其下方的包
+- `../other-pkg` — 相对于 cwd 的相对路径
 
-**Braced path selectors** (pnpm-compatible syntax):
+**带花括号的路径选择器**（pnpm 兼容语法）：
 
-- `{./packages/app-a}` — equivalent to `./packages/app-a`
-- `{./packages/app-a}...` — path with dependency traversal
-- `...{./packages/app-a}` — path with dependent traversal
-- `app-*{./packages}` — combined name pattern + path filter (match by path first, then filter by name)
+- `{./packages/app-a}` — 等同于 `./packages/app-a`
+- `{./packages/app-a}...` — 带依赖遍历的路径
+- `...{./packages/app-a}` — 带依赖方遍历的路径
+- `app-*{./packages}` — 组合名称模式 + 路径过滤（先按路径匹配，再按名称过滤）
 
-**Modifiers:**
+**修饰符：**
 
-- `<selector>...` — include the package and all its transitive dependencies
-- `...<selector>` — include the package and all packages that depend on it
-- `<selector>^...` — only dependencies, exclude the matched package itself
-- `...^<selector>` — only dependents, exclude the matched package itself
-- `!<selector>` — exclude matched packages from the result set
+- `<selector>...` — 包含该包及其所有传递依赖
+- `...<selector>` — 包含该包及所有依赖它的包
+- `<selector>^...` — 仅依赖项，不包括被匹配的包本身
+- `...^<selector>` — 仅依赖方，不包括被匹配的包本身
+- `!<selector>` — 从结果集中排除匹配的包
 
-Modifiers work with name patterns (e.g., `app-a...`) and braced path selectors (e.g., `{./packages/app-a}...`). Unbraced path selectors (e.g., `./packages/app-a`) do not support traversal modifiers.
+修饰符可与名称模式（例如 `app-a...`）和带花括号的路径选择器（例如 `{./packages/app-a}...`）一起使用。不带花括号的路径选择器（例如 `./packages/app-a`）不支持遍历修饰符。
 
-**Whitespace splitting**: `--filter "a b"` is equivalent to `--filter a --filter b` (pnpm compatibility). Each `--filter` value is split by whitespace into individual filter tokens.
+**空白拆分**：`--filter "a b"` 等同于 `--filter a --filter b`（pnpm 兼容）。每个 `--filter` 值都会按空白拆分为单独的过滤标记。
 
-**Unmatched filter warning**: When an inclusion filter matches no packages, a warning is emitted to stderr (e.g., `WARN No packages matched the filter 'nonexistent'`).
+**未匹配过滤器警告**：当包含性过滤器未匹配到任何包时，会向 stderr 发出警告（例如，`WARN No packages matched the filter 'nonexistent'`）。
 
-**Exclusion-only filters**: When all selectors are exclusion-only (e.g., `--filter '!app-b'`), the result is all non-root workspace packages minus the excluded ones. This matches pnpm behavior — exclusion without an explicit inclusion implies "start with everything".
+**仅排除过滤器**：当所有选择器都仅用于排除时（例如，`--filter '!app-b'`），结果将是所有非根工作区包减去被排除的包。这与 pnpm 行为一致——在没有显式包含条件时进行排除，意味着“从全部开始”。
 
-**`-w --filter` interaction**: `-w` (workspace root) combined with `--filter` is additive — the workspace root is included alongside the filtered packages. This matches pnpm behavior.
+**`-w --filter` 交互**：`-w`（工作区根）与 `--filter` 组合时是累加的——工作区根会与被过滤的包一起包含。这与 pnpm 行为一致。
 
-**Workspace root inclusion rules**:
+**工作区根包含规则**：
 
-- `-r` (recursive) includes the workspace root along with all workspace packages
-- `-w` (workspace root) runs on the workspace root package only
-- `--filter '*'` includes the workspace root because `*` name-matches all packages including root
+- `-r`（递归）会包含工作区根以及所有工作区包
+- `-w`（工作区根）仅在工作区根包上运行
+- `--filter '*'` 会包含工作区根，因为 `*` 会按名称匹配所有包，包括根包
 
-## Core Behavior
+## 核心行为
 
-Based on pnpm exec behavior (reference: `exec/plugin-commands-script-runners/src/exec.ts`):
+基于 pnpm exec 行为（参考：`exec/plugin-commands-script-runners/src/exec.ts`）：
 
-1. **Prepend `./node_modules/.bin`** (and extra bin paths from the package manager) to `PATH`
-2. **Strip leading `--`** from the command for backward compatibility
-3. **Execute command** via process spawn with `stdio: inherit` — the command resolves through the modified PATH (local bins first, then system PATH)
-4. **Shell mode**: When `-c` is specified, pass `shell: true` to the child process
-5. **Set `VITE_PLUS_PACKAGE_NAME`** env var with the current package name (analogous to pnpm's `PNPM_PACKAGE_NAME`)
-6. **Error if no command**: `'vp exec' requires a command to run`
+1. **在 `PATH` 前追加 `./node_modules/.bin`**（以及来自包管理器的额外 bin 路径）
+2. **为向后兼容移除命令开头的 `--`**
+3. **通过进程 spawn 执行命令，使用 `stdio: inherit`** —— 命令会通过修改后的 PATH 解析（先本地 bin，再系统 PATH）
+4. **Shell 模式**：当指定 `-c` 时，向子进程传递 `shell: true`
+5. **设置 `VP_PACKAGE_NAME`** 环境变量为当前包名（类似于 pnpm 的 `PNPM_PACKAGE_NAME`）
+6. **如果没有命令则报错**：`'vp exec' requires a command to run`
 
-## Relationship Between Commands
+## 命令之间的关系
 
-| Behavior             | `vp exec`                        | `vpx`                       | `vp dlx`       |
-| -------------------- | -------------------------------- | --------------------------- | -------------- |
-| Prepend to PATH      | `./node_modules/.bin` (cwd only) | Walk up `node_modules/.bin` | No             |
-| Global vp pkg lookup | No                               | Yes                         | No             |
-| System PATH          | Yes (after `node_modules/.bin`)  | Yes                         | No             |
-| Remote download      | No                               | Yes (fallback)              | Always         |
-| Workspace iteration  | Yes (`-r`, `--filter`)           | No                          | No             |
-| Shell mode           | Yes (`-c`)                       | Yes (`-c`)                  | Yes (`-c`)     |
-| Use case             | Run with local bins on PATH      | Run any tool, find it       | Download & run |
+| 行为             | `vp exec`                        | `vpx`                       | `vp dlx`       |
+| ---------------- | -------------------------------- | --------------------------- | -------------- |
+| 追加到 PATH 前面   | `./node_modules/.bin`（仅当前工作目录） | 向上查找 `node_modules/.bin` | 否             |
+| 全局 vp 包查找     | 否                               | 是                           | 否             |
+| 系统 PATH         | 是（在 `node_modules/.bin` 之后） | 是                           | 否             |
+| 远程下载          | 否                               | 是（回退）                   | 始终           |
+| 工作区迭代        | 是（`-r`, `--filter`）           | 否                           | 否             |
+| Shell 模式        | 是（`-c`）                       | 是（`-c`）                  | 是（`-c`）     |
+| 使用场景          | 使用本地 bin 运行，并包含在 PATH 中 | 运行任意工具并自动查找       | 下载并运行      |
 
-### Key Differences from vpx
+### 与 vpx 的主要区别
 
-- `vp exec` prepends only `./node_modules/.bin` from the current directory — it does **not** walk up parent directories. Use `vpx` if you want monorepo root binaries.
-- `vp exec` never falls back to global vp packages or remote download — commands resolve through `node_modules/.bin` + system PATH only.
+- `vp exec` 只会追加当前目录下的 `./node_modules/.bin` — 它**不会**向上遍历父目录。如果你想使用 monorepo 根目录下的二进制文件，请使用 `vpx`。
+- `vp exec` 从不回退到全局 vp 包或远程下载 — 命令仅通过 `node_modules/.bin` + 系统 PATH 解析。
 
-## Implementation Architecture
+## 实现架构
 
-### Global CLI
+### 全局 CLI
 
-**File**: `crates/vite_global_cli/src/cli.rs`
+**文件**: `crates/vite_global_cli/src/cli.rs`
 
-The `Exec` variant in `Commands` enum (Category C) unconditionally delegates to the local CLI:
+`Commands` 枚举中的 `Exec` 变体（Category C）无条件委托给本地 CLI：
 
 ```rust
 // Category C: Local CLI Delegation
-/// Execute a command from local node_modules/.bin
+/// 从本地 node_modules/.bin 执行命令
 #[command(disable_help_flag = true)]
 Exec {
-    /// Additional arguments
+    /// 额外参数
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     args: Vec<String>,
 },
 ```
 
-Route in `execute_command()`:
+`execute_command()` 中的路由：
 
 ```rust
 Commands::Exec { args } => commands::delegate::execute(cwd, "exec", &args).await,
 ```
 
-The global CLI always delegates `exec` to the local CLI — there is no fallback path or direct execution in the global CLI. This follows the same unconditional delegation pattern as other Category C commands.
+全局 CLI 始终将 `exec` 委托给本地 CLI——在全局 CLI 中不存在回退路径或直接执行。这与其他 Category C 命令采用的无条件委托模式一致。
 
-### Local CLI
+### 本地 CLI
 
-**Module**: `packages/cli/binding/src/exec/`
+**模块**: `packages/cli/binding/src/exec/`
 
-The local CLI receives the `exec` command via delegation from the global CLI (same mechanism as `run`, `build`, etc.). The exec logic is organized into a dedicated module with submodules:
+本地 CLI 通过全局 CLI 的委托接收 `exec` 命令（与 `run`、`build` 等相同机制）。exec 逻辑被组织在一个专用模块中，并包含子模块：
 
 ```
 packages/cli/binding/src/exec/
-├── mod.rs       — entry point (execute), delegates to workspace.rs
-├── args.rs      — ExecArgs (clap-derived struct with #[clap(flatten)] PackageQueryArgs)
+├── mod.rs       — 入口点（execute），委托到 workspace.rs
+├── args.rs      — ExecArgs（带有 #[clap(flatten)] PackageQueryArgs 的 clap 派生结构体）
 └── workspace.rs — execute_exec_workspace(), topological_sort_packages()
 ```
 
-There is a single code path for both single-package and multi-package execution. `mod.rs` validates the command is non-empty and delegates to `execute_exec_workspace()`. When no workspace flags (`--recursive`, `--filter`, etc.) are given, `PackageQueryArgs::into_package_query()` returns a `ContainingPackage(cwd)` selector that resolves to just the current package — so the workspace path naturally handles the single-package case.
+单包和多包执行共用一条代码路径。`mod.rs` 会验证命令非空，并委托给 `execute_exec_workspace()`。当未提供任何 workspace 标志（`--recursive`、`--filter` 等）时，`PackageQueryArgs::into_package_query()` 会返回一个 `ContainingPackage(cwd)` 选择器，它只会解析到当前包——因此 workspace 路径可以自然地处理单包场景。
 
-Package filtering is delegated to `vite_workspace`'s reusable API: `PackageQueryArgs` (CLI args struct, embedded via `#[clap(flatten)]`) → `PackageQuery` (via `into_package_query()`) → `IndexedPackageGraph::resolve_query()` → `FilterResolution` (with `package_subgraph` and `unmatched_selectors`). This follows the same pattern used by `vp run` via `RunFlags`.
+包过滤委托给 `vite_workspace` 的可复用 API：`PackageQueryArgs`（通过 `#[clap(flatten)]` 内嵌的 CLI 参数结构体）→ `PackageQuery`（通过 `into_package_query()`）→ `IndexedPackageGraph::resolve_query()` → `FilterResolution`（包含 `package_subgraph` 和 `unmatched_selectors`）。这与 `vp run` 通过 `RunFlags` 使用的模式相同。
 
-The local CLI has full workspace awareness and can handle:
+本地 CLI 具备完整的 workspace 感知能力，并可以处理：
 
-- `--recursive` — iterate workspace packages with topological sort
-- `--filter, -F` — filter packages by selector
-- `--parallel` — run concurrently
-- `--reverse` — reverse topological order
-- `--resume-from` — resume from specific package
-- `--report-summary` — save results JSON
+- `--recursive` — 使用拓扑排序遍历 workspace 包
+- `--filter, -F` — 按选择器过滤包
+- `--parallel` — 并发运行
+- `--reverse` — 反转拓扑顺序
+- `--resume-from` — 从指定包继续执行
+- `--report-summary` — 保存结果 JSON
 
-For the local CLI, exec uses the workspace package graph to iterate packages, prepending each package's `node_modules/.bin` to PATH before spawning the command in that package's directory.
+对于本地 CLI，exec 会使用 workspace 包图来遍历各个包，在该包目录中启动命令之前，将每个包的 `node_modules/.bin` 追加到 PATH 前面。
 
-When only a single package is selected (whether by default or via `--filter`), the `pkg_name$ cmd` prefix is suppressed from output and command-not-found errors produce a user-friendly message with a hint to run `vp install` or use `vpx`.
+当只选择了单个包时（无论是默认情况还是通过 `--filter`），输出中的 `pkg_name$ cmd` 前缀都会被省略；如果命令未找到，则会生成一条用户友好的错误消息，并提示运行 `vp install` 或使用 `vpx`。
 
-### Reusable Code
+### 可复用代码
 
-The following existing code is reused:
+以下现有代码被复用：
 
-| Module           | Function                           | Purpose                                           |
-| ---------------- | ---------------------------------- | ------------------------------------------------- |
-| `vite_command`   | `resolve_bin()`                    | Resolve binary path via PATH lookup               |
-| `vite_command`   | `build_command()`                  | Build a `tokio::process::Command` for a binary    |
-| `vite_command`   | `build_shell_command()`            | Build a shell command for `-c` mode               |
-| `vite_install`   | `PackageManager::get_bin_prefix()` | Get package manager bin directory for PATH        |
-| `vite_workspace` | `find_workspace_root()`            | Locate workspace root from cwd                    |
-| `vite_workspace` | `load_package_graph()`             | Load workspace packages and dependency graph      |
-| `vite_workspace` | `PackageQueryArgs`                 | CLI args struct for package selection             |
-| `vite_workspace` | `IndexedPackageGraph`              | Indexed graph with `resolve_query()`              |
-| `vite_workspace` | `FilterResolution`                 | Resolution result: subgraph + unmatched selectors |
+| 模块             | 函数                           | 用途                                           |
+| ---------------- | ------------------------------ | ---------------------------------------------- |
+| `vite_command`   | `resolve_bin()`                | 通过 PATH 查找解析二进制路径                  |
+| `vite_command`   | `build_command()`              | 为二进制构建 `tokio::process::Command`        |
+| `vite_command`   | `build_shell_command()`        | 为 `-c` 模式构建 shell 命令                   |
+| `vite_install`   | `PackageManager::get_bin_prefix()` | 获取用于 PATH 的包管理器 bin 目录          |
+| `vite_workspace` | `find_workspace_root()`        | 从 cwd 定位 workspace 根目录                 |
+| `vite_workspace` | `load_package_graph()`         | 加载 workspace 包和依赖图                    |
+| `vite_workspace` | `PackageQueryArgs`             | 用于包选择的 CLI 参数结构体                  |
+| `vite_workspace` | `IndexedPackageGraph`          | 带有 `resolve_query()` 的索引图               |
+| `vite_workspace` | `FilterResolution`             | 解析结果：子图 + 未匹配的选择器               |
 
-## Design Decisions
+## 设计决策
 
-### 1. Unconditional Delegation (No Global CLI Fallback)
+### 1. 无条件委派（不使用全局 CLI 回退）
 
-**Decision**: The global CLI always delegates `exec` to the local CLI. There is no fallback path for projects without vite-plus as a dependency.
+**决策**：全局 CLI 始终将 `exec` 委派给本地 CLI。对于没有将 vite-plus 作为依赖的项目，不存在回退路径。
 
-**Rationale**:
+**理由**：
 
-- Simplifies the global CLI — no need for a direct-execution codepath
-- Consistent with how all Category C commands are dispatched
-- The local CLI has all the workspace awareness needed for `--recursive`, `--filter`, etc.
-- Projects using `vp exec` are expected to have vite-plus installed
+- 简化全局 CLI —— 不需要直接执行的代码路径
+- 与所有 C 类命令的分发方式保持一致
+- 本地 CLI 已具备 `--recursive`、`--filter` 等所需的全部工作区感知能力
+- 使用 `vp exec` 的项目预期已经安装了 vite-plus
 
-### 2. No Directory Walk-Up (Unlike vpx)
+### 2. 不向上遍历目录（不同于 vpx）
 
-**Decision**: `vp exec` only checks `./node_modules/.bin` in the current directory, not parent directories.
+**决策**：`vp exec` 只检查当前目录下的 `./node_modules/.bin`，不检查父目录。
 
-**Rationale**:
+**理由**：
 
-- Matches `pnpm exec` behavior — strict local scope
-- In workspace iteration (`-r`), each package should use its own `node_modules/.bin`
-- Walking up would blur the boundary between package-level and workspace-level binaries
-- Use `vpx` if you want walk-up behavior
+- 与 `pnpm exec` 的行为一致——严格的本地作用域
+- 在工作区迭代（`-r`）中，每个包都应使用自己的 `node_modules/.bin`
+- 向上遍历会模糊包级二进制文件与工作区级二进制文件之间的边界
+- 如果你想要向上遍历的行为，请使用 `vpx`
 
-### 3. Workspace Features Only via Local CLI
+### 3. 工作区特性仅通过本地 CLI 提供
 
-**Decision**: `--recursive`, `--workspace-root`, `--filter`, `--parallel`, `--reverse`, `--resume-from`, and `--report-summary` only work when vite-plus is a local dependency (local CLI handles them).
+**决策**：只有当 vite-plus 是本地依赖时，`--recursive`、`--workspace-root`、`--filter`、`--parallel`、`--reverse`、`--resume-from` 和 `--report-summary` 才能工作（由本地 CLI 处理）。
 
-**Rationale**:
+**理由**：
 
-- These features require workspace awareness from vite-task infrastructure
-- The global CLI fallback is for simple, single-directory exec
-- This is consistent with how `vp run` handles workspace features
+- 这些特性需要来自 vite-task 基础设施的工作区感知能力
+- 全局 CLI 的回退仅用于简单的单目录 exec
+- 这与 `vp run` 处理工作区特性的方式一致
 
-### 4. Same Env Var Convention
+### 4. 相同的环境变量约定
 
-**Decision**: Set `VITE_PLUS_PACKAGE_NAME` env var when executing in a workspace package.
+**决策**：在工作区包中执行时，设置 `VP_PACKAGE_NAME` 环境变量。
 
-**Rationale**:
+**理由**：
 
-- Follows pnpm's `PNPM_PACKAGE_NAME` convention
-- Allows scripts to know which package they're running in
-- Consistent naming with vite-plus branding
+- 遵循 pnpm 的 `PNPM_PACKAGE_NAME` 约定
+- 让脚本知道自己正在运行于哪个包中
+- 与 vite-plus 品牌保持一致的命名
 
-### 5. Strip Leading `--`
+### 5. 去除开头的 `--`
 
-**Decision**: Automatically strip a leading `--` from the command arguments.
+**决策**：自动去除命令参数开头的 `--`。
 
-**Rationale**:
+**理由**：
 
-- Matches pnpm exec backward compatibility behavior
-- `vp exec -- eslint .` and `vp exec eslint .` should behave identically
-- Reduces friction for users coming from pnpm
+- 与 pnpm exec 的向后兼容行为一致
+- `vp exec -- eslint .` 和 `vp exec eslint .` 应该表现一致
+- 降低来自 pnpm 用户的迁移摩擦
 
-### 6. Execution Ordering
+### 6. 执行顺序
 
-**Decision**: When `--recursive` or `--filter` is used, packages execute in topological order (dependencies first). The topological sort uses `petgraph::algo::toposort` on the `FilterResolution.package_subgraph` (not the original full graph), enabling future `--filter-prod` support where dev dependency edges are excluded at subgraph construction time.
+**决策**：当使用 `--recursive` 或 `--filter` 时，包按拓扑顺序执行（依赖优先）。拓扑排序使用 `FilterResolution.package_subgraph` 上的 `petgraph::algo::toposort`（而不是原始的完整图），这使得未来支持 `--filter-prod` 成为可能，因为在子图构建时会排除 dev 依赖边。
 
-**Rationale**:
+**理由**：
 
-- **Topological ordering by default**: Commands like `tsc --noEmit` or `build` need dependencies to complete before dependents. Running in dependency order ensures correctness without requiring users to specify `--topological` explicitly.
-- **No alphabetical tie-breaking**: Packages with no ordering constraint between them (e.g., two unrelated leaf packages) are ordered by petgraph's internal traversal order. This matches pnpm's behavior.
-- **`--parallel` skips ordering**: In parallel mode, all packages are spawned concurrently — topological order only affects the order of output collection.
-- **`--reverse`**: Reverses the topological order (dependents first, then dependencies). Useful for cleanup operations.
-- **Circular dependency handling**: When cycles exist, `toposort()` returns an error. The fallback uses `petgraph::algo::tarjan_scc`, which returns strongly connected components (SCCs) in reverse topological order of the condensed DAG. This preserves correct ordering for non-cyclic dependencies even when cycles are present — nodes outside a cycle are correctly placed before or after the cycle based on their dependency relationship.
+- **默认按拓扑顺序**：像 `tsc --noEmit` 或 `build` 这样的命令需要依赖先完成，才能执行依赖它们的包。按依赖顺序运行可确保正确性，而无需用户显式指定 `--topological`。
+- **不进行按字母顺序的平局裁决**：彼此之间没有顺序约束的包（例如两个互不相关的叶子包）将按照 petgraph 的内部遍历顺序排序。这与 pnpm 的行为一致。
+- **`--parallel` 跳过排序**：在并行模式下，所有包都会同时启动——拓扑顺序只影响输出收集的顺序。
+- **`--reverse`**：反转拓扑顺序（先依赖者，后依赖）。适用于清理操作。
+- **循环依赖处理**：当存在环时，`toposort()` 会返回错误。回退方案使用 `petgraph::algo::tarjan_scc`，它会以收缩后的 DAG 的逆拓扑顺序返回强连通分量（SCC）。即使存在环，这也能保留非循环依赖的正确顺序——环外的节点会根据其依赖关系被正确地放在环之前或之后。
 
-  **Example — normal dependency chain (no cycle):**
-
-  ```
-  a → b → c → d → e    (a depends on b, b depends on c, ...)
-
-  toposort produces dependencies-first order:
-  Result: [e, d, c, b, a]
-  ```
-
-  **Example — simple cycle (2 nodes):**
+  **示例 —— 正常依赖链（无环）：**
 
   ```
-  a ←→ b    (mutual dependency)
+  a → b → c → d → e    （a 依赖于 b，b 依赖于 c，依此类推）
 
-  toposort returns Err(Cycle).
-  tarjan_scc returns [{a, b}] — one SCC containing both nodes.
-  Result: [a, b] or [b, a]  (intra-SCC order is arbitrary)
+  toposort 产生依赖优先的顺序：
+  结果：[e, d, c, b, a]
   ```
 
-  **Example — 3-node cycle:**
+  **示例 —— 简单环（2 个节点）：**
 
   ```
-  a → b → c → a    (a depends on b, b depends on c, c depends on a)
+  a ←→ b    （相互依赖）
 
-  toposort returns Err(Cycle).
-  tarjan_scc returns [{a, b, c}] — all three form one SCC.
-  Result: [a, b, c] in any permutation  (intra-SCC order is arbitrary)
+  toposort 返回 Err(Cycle)。
+  tarjan_scc 返回 [{a, b}] —— 一个同时包含两个节点的 SCC。
+  结果：[a, b] 或 [b, a]  （SCC 内部顺序是任意的）
   ```
 
-  **Example — cycle with a non-cyclic dependency:**
+  **示例 —— 3 节点环：**
 
   ```
-  a ←→ b, a → c    (a↔b cycle, a depends on non-cyclic c)
+  a → b → c → a    （a 依赖于 b，b 依赖于 c，c 依赖于 a）
 
-  toposort returns Err(Cycle).
-  tarjan_scc returns [{c}, {a, b}] — c as its own SCC first, then
-  the a↔b cycle.  Dependencies-first order is preserved.
-  Result: [c, a, b] or [c, b, a]  (c always before the cycle)
+  toposort 返回 Err(Cycle)。
+  tarjan_scc 返回 [{a, b, c}] —— 三者构成一个 SCC。
+  结果：[a, b, c] 的任意排列  （SCC 内部顺序是任意的）
   ```
 
-  **Example — cycle with a non-cyclic dependent:**
+  **示例 —— 带有非循环依赖的环：**
 
   ```
-  a ←→ b ← aa    (a↔b cycle, aa depends on b)
+  a ←→ b, a → c    （a↔b 为环，a 依赖于非循环的 c）
 
-  toposort returns Err(Cycle).
-  tarjan_scc returns [{a, b}, {aa}] — the cycle SCC first, then aa.
-  Result: [a, b, aa] or [b, a, aa]  (cycle always before aa)
+  toposort 返回 Err(Cycle)。
+  tarjan_scc 返回 [{c}, {a, b}] —— c 作为单独的 SCC 先返回，然后是
+  a↔b 环。依赖优先的顺序得以保留。
+  结果：[c, a, b] 或 [c, b, a]  （c 始终在环之前）
   ```
 
-- **Platform-safe PATH construction**: PATH environment variable is constructed using `std::env::join_paths()` instead of hardcoded `:` separator, ensuring correct behavior on both Unix (`:`) and Windows (`;`).
+  **示例 —— 带有非循环依赖者的环：**
 
-## CLI Help Output
+  ```
+  a ←→ b ← aa    （a↔b 为环，aa 依赖于 b）
+
+  toposort 返回 Err(Cycle)。
+  tarjan_scc 返回 [{a, b}, {aa}] —— 先返回该环的 SCC，然后是 aa。
+  结果：[a, b, aa] 或 [b, a, aa]  （环始终在 aa 之前）
+  ```
+
+- **平台安全的 PATH 构造**：PATH 环境变量使用 `std::env::join_paths()` 构造，而不是硬编码 `:` 分隔符，从而确保在 Unix（`:`）和 Windows（`;`）上都能正确工作。
+
+## CLI 帮助输出
 
 ```bash
 $ vp exec --help
-Execute a command from local node_modules/.bin
+从本地 node_modules/.bin 执行命令
 
-Usage: vp exec [OPTIONS] [--] <command> [args...]
+用法: vp exec [OPTIONS] [--] <command> [args...]
 
-Arguments:
-  <command>  Command to execute from node_modules/.bin
-  [args...]  Arguments to pass to the command
+参数:
+  <command>  从 node_modules/.bin 执行的命令
+  [args...]  传递给该命令的参数
 
-Options:
-  -c, --shell-mode              Execute the command within a shell environment
-  -r, --recursive               Run in every workspace package
-  -w, --workspace-root          Run on the workspace root package only
-  -F, --filter <PATTERN>        Filter packages (can be used multiple times)
-      --parallel                Run concurrently without topological ordering
-      --reverse                 Reverse execution order
-      --resume-from <PACKAGE>   Resume from a specific package
-      --report-summary          Save results to vp-exec-summary.json
-  -h, --help                    Print help
+选项:
+  -c, --shell-mode              在 shell 环境中执行命令
+  -r, --recursive               在每个工作区包中运行
+  -w, --workspace-root          仅在工作区根包中运行
+  -F, --filter <PATTERN>        过滤包（可多次使用）
+      --parallel                并发运行，不进行拓扑排序
+      --reverse                 反向执行顺序
+      --resume-from <PACKAGE>   从指定包恢复
+      --report-summary          将结果保存到 vp-exec-summary.json
+  -h, --help                    打印帮助
 
-Examples:
-  vp exec eslint .                            # Run local eslint
-  vp exec tsc --noEmit                        # Run local TypeScript compiler
-  vp exec -c 'eslint . && prettier --check .' # Shell mode
-  vp exec -r -- eslint .                      # Run in all workspace packages
-  vp exec --filter 'app...' -- tsc            # Run in filtered packages
+示例:
+  vp exec eslint .                            # 运行本地 eslint
+  vp exec tsc --noEmit                        # 运行本地 TypeScript 编译器
+  vp exec -c 'eslint . && prettier --check .' # shell 模式
+  vp exec -r -- eslint .                      # 在所有工作区包中运行
+  vp exec --filter 'app...' -- tsc            # 在过滤后的包中运行
 ```
 
-## Error Handling
+## 错误处理
 
-### Missing Command
+### 缺少命令
 
 ```bash
 $ vp exec
-Error: 'vp exec' requires a command to run
+错误：'vp exec' 需要指定要运行的命令
 
-Usage: vp exec [--] <command> [args...]
+用法：vp exec [--] <command> [args...]
 
-Examples:
+示例：
   vp exec eslint .
   vp exec tsc --noEmit
 ```
 
-### Command Not Found
+### 未找到命令
 
 ```bash
 $ vp exec nonexistent-cmd
-Error: Command 'nonexistent-cmd' not found
+错误：未找到命令 'nonexistent-cmd'
 
-Hint: Run 'vp install' to install dependencies, or use 'vpx' for remote fallback.
+提示：运行 'vp install' 以安装依赖，或使用 'vpx' 作为远程回退。
 ```
 
-## Snap Tests
+## Snap 测试
 
-### Global CLI Test: `command-exec-pnpm10`
+### 全局 CLI 测试: `command-exec-pnpm10`
 
-**Location**: `packages/cli/snap-tests-global/command-exec-pnpm10/`
+**位置**: `packages/cli/snap-tests-global/command-exec-pnpm10/`
 
 ```
 command-exec-pnpm10/
 ├── package.json
 ├── steps.json
-└── snap.txt          # auto-generated
+└── snap.txt          # 自动生成
 ```
 
 **`package.json`**:
@@ -458,30 +458,30 @@ command-exec-pnpm10/
     "VITE_DISABLE_AUTO_INSTALL": "1"
   },
   "commands": [
-    "vp exec echo hello # basic exec, no vite-plus dep (global CLI handles directly)",
-    "vp exec node -e \"console.log('hi')\" # exec with args passthrough",
-    "vp exec nonexistent-cmd # command not found error",
-    "vp exec -c 'echo hello from shell' # shell mode"
+    "vp exec echo hello # 基本 exec，无 vite-plus 依赖（由全局 CLI 直接处理）",
+    "vp exec node -e \"console.log('hi')\" # 带参数透传的 exec",
+    "vp exec nonexistent-cmd # 命令未找到错误",
+    "vp exec -c 'echo hello from shell' # shell 模式"
   ]
 }
 ```
 
-**Test cases**:
+**测试用例**:
 
-1. `vp exec echo hello` — basic execution with a command found on PATH after `node_modules/.bin` prepend
-2. `vp exec node -e "console.log('hi')"` — argument passthrough to a multi-arg command
-3. `vp exec nonexistent-cmd` — command-not-found error message
-4. `vp exec -c 'echo hello from shell'` — shell mode execution
+1. `vp exec echo hello` — 基本执行，在 `node_modules/.bin` 前置后于 PATH 中找到的命令
+2. `vp exec node -e "console.log('hi')"` — 将参数透传给带多个参数的命令
+3. `vp exec nonexistent-cmd` — 命令未找到错误消息
+4. `vp exec -c 'echo hello from shell'` — shell 模式执行
 
-### Local CLI Test: `command-exec`
+### 本地 CLI 测试: `command-exec`
 
-**Location**: `packages/cli/snap-tests/command-exec/`
+**位置**: `packages/cli/snap-tests/command-exec/`
 
 ```
 command-exec/
 ├── package.json
 ├── steps.json
-└── snap.txt          # auto-generated
+└── snap.txt          # 自动生成
 ```
 
 **`package.json`**:
@@ -503,40 +503,40 @@ command-exec/
 ```json
 {
   "commands": [
-    "vp exec cowsay hello # exec with installed binary",
-    "vp exec -c 'echo $PATH' # verify PATH includes node_modules/.bin"
+    "vp exec cowsay hello # 使用已安装的二进制文件执行",
+    "vp exec -c 'echo $PATH' # 验证 PATH 包含 node_modules/.bin"
   ]
 }
 ```
 
-**Test cases**:
+**测试用例**:
 
-1. `vp exec cowsay hello` — execute locally installed binary via local CLI delegation
-2. `vp exec -c 'echo $PATH'` — verify that `node_modules/.bin` is prepended to PATH
+1. `vp exec cowsay hello` — 通过本地 CLI 委托执行本地安装的二进制文件
+2. `vp exec -c 'echo $PATH'` — 验证 `node_modules/.bin` 已前置到 PATH
 
-## Edge Cases
+## 边缘情况
 
-### Leading `--` Stripping
+### 去除前导 `--`
 
 ```bash
-# Both are equivalent
+# 两者等价
 vp exec -- eslint .
 vp exec eslint .
 ```
 
-### Shell Mode with Complex Commands
+### 复杂命令下的 Shell 模式
 
 ```bash
-# Pipes and redirects require shell mode
+# 管道和重定向需要 shell 模式
 vp exec -c 'eslint . 2>&1 | tee lint-output.txt'
 
-# Environment variable expansion
+# 环境变量展开
 vp exec -c 'echo $NODE_ENV'
 ```
 
-### Recursive with Failures
+### 递归执行时的失败
 
-When running recursively, a failure in one package stops execution (unless `--parallel` is used, in which case all packages run and failures are collected):
+递归运行时，某个包中的失败会停止执行（除非使用 `--parallel`，在这种情况下所有包都会运行，并收集失败结果）：
 
 ```bash
 $ vp exec -r -- tsc --noEmit
@@ -545,68 +545,68 @@ $ vp exec -r -- tsc --noEmit
 Error: 1 of 5 packages failed
 ```
 
-### Empty args After `--`
+### `--` 后为空参数
 
 ```bash
 $ vp exec --
 Error: 'vp exec' requires a command to run
 ```
 
-## Security Considerations
+## 安全注意事项
 
-1. **No remote fallback**: Unlike `vpx`, `vp exec` never downloads from the registry, eliminating supply chain risk from accidental remote execution
-2. **PATH behavior**: Commands resolve through `./node_modules/.bin` (prepended) + system PATH. This matches `pnpm exec` behavior — system commands like `echo`, `node`, etc. are still reachable
-3. **Shell mode risks**: Shell mode (`-c`) allows arbitrary shell commands — same considerations as pnpm exec
+1. **无远程回退**：与 `vpx` 不同，`vp exec` 从不从注册表下载，从而消除了因意外远程执行带来的供应链风险
+2. **PATH 行为**：命令通过 `./node_modules/.bin`（前置）+ 系统 PATH 进行解析。这与 `pnpm exec` 的行为一致——像 `echo`、`node` 等系统命令仍然可访问
+3. **Shell 模式风险**：Shell 模式（`-c`）允许执行任意 shell 命令——与 pnpm exec 的注意事项相同
 
-## Backward Compatibility
+## 向后兼容性
 
-This is a new feature with no breaking changes:
+这是一个没有破坏性变更的新功能：
 
-- Existing `vp dlx` and `vpx` behavior unchanged
-- New `exec` subcommand is purely additive
-- No changes to configuration format
-- Follows established delegation pattern (like `vp run`)
+- 现有的 `vp dlx` 和 `vpx` 行为保持不变
+- 新增的 `exec` 子命令只是纯粹的功能扩展
+- 配置格式没有任何变化
+- 遵循既有的委派模式（类似 `vp run`）
 
-## Comparison with pnpm exec
+## 与 pnpm exec 的比较
 
-| Behavior              | `pnpm exec`                              | `vp exec`                                |
-| --------------------- | ---------------------------------------- | ---------------------------------------- |
-| PATH modification     | Prepend `./node_modules/.bin`            | Prepend `./node_modules/.bin`            |
-| Command resolution    | Modified PATH (local bins + system PATH) | Modified PATH (local bins + system PATH) |
-| Walk-up               | No                                       | No                                       |
-| Shell mode (`-c`)     | Yes                                      | Yes                                      |
-| Recursive (`-r`)      | Yes (workspace iteration)                | Yes (via local CLI)                      |
-| Workspace root (`-w`) | Yes (root only)                          | Yes (root only)                          |
-| Filter                | `--filter`                               | `--filter`                               |
-| Path-based filter     | `--filter ./packages/app`                | `--filter ./packages/app`                |
-| Braced path filter    | `--filter {./packages/app}`              | `--filter {./packages/app}`              |
-| Name + path filter    | `--filter 'app-*{./packages}'`           | `--filter 'app-*{./packages}'`           |
-| Parallel              | `--parallel`                             | `--parallel`                             |
-| Report summary        | `--report-summary`                       | `--report-summary`                       |
-| Package name env var  | `PNPM_PACKAGE_NAME`                      | `VITE_PLUS_PACKAGE_NAME`                 |
-| Strip leading `--`    | Yes                                      | Yes                                      |
+| 行为                 | `pnpm exec`                              | `vp exec`                                |
+| -------------------- | ---------------------------------------- | ---------------------------------------- |
+| PATH 修改            | 前置 `./node_modules/.bin`               | 前置 `./node_modules/.bin`               |
+| 命令解析             | 修改后的 PATH（本地 bin + 系统 PATH）    | 修改后的 PATH（本地 bin + 系统 PATH）    |
+| 向上查找             | 否                                       | 否                                       |
+| Shell 模式（`-c`）   | 是                                       | 是                                       |
+| 递归（`-r`）         | 是（工作区迭代）                         | 是（通过本地 CLI）                       |
+| 工作区根目录（`-w`） | 是（仅根目录）                           | 是（仅根目录）                           |
+| 过滤                 | `--filter`                               | `--filter`                               |
+| 基于路径的过滤       | `--filter ./packages/app`                | `--filter ./packages/app`                |
+| 带花括号的路径过滤   | `--filter {./packages/app}`              | `--filter {./packages/app}`              |
+| 名称 + 路径过滤      | `--filter 'app-*{./packages}'`           | `--filter 'app-*{./packages}'`           |
+| 并行                 | `--parallel`                             | `--parallel`                             |
+| 汇总报告             | `--report-summary`                       | `--report-summary`                       |
+| 包名环境变量         | `PNPM_PACKAGE_NAME`                      | `VP_PACKAGE_NAME`                        |
+| 去除前导 `--`        | 是                                       | 是                                       |
 
-## Future Enhancements
+## 未来增强
 
-### 1. `--if-present` Flag
+### 1. `--if-present` 标志
 
 ```bash
-# Skip packages where the command doesn't exist (useful with -r)
+# 跳过不存在该命令的包（与 -r 一起使用时很有用）
 vp exec -r --if-present -- eslint .
 ```
 
-## Conclusion
+## 结论
 
-This RFC proposes adding `vp exec` to complete the execution command trio in Vite+:
+本 RFC 提议添加 `vp exec`，以完善 Vite+ 中的执行命令三件套：
 
-- `vp dlx` — always remote (like `pnpm dlx`)
-- `vpx` — local-first with fallback chain (like `npx`)
-- `vp exec` — prepend local bins to PATH, no remote fallback (like `pnpm exec`)
+- `vp dlx` — 始终远程（类似 `pnpm dlx`）
+- `vpx` — 以本地优先，并带有回退链（类似 `npx`）
+- `vp exec` — 将本地 bin 目录前置到 PATH，不进行远程回退（类似 `pnpm exec`）
 
-The design:
+该设计：
 
-- Matches `pnpm exec` semantics for familiar developer experience
-- Follows the established unconditional delegation pattern for global/local CLI routing
-- Reuses existing infrastructure (`vpx.rs` helpers, delegation, PATH manipulation)
-- Supports workspace features (recursive, filter, parallel) via local CLI
-- Is purely additive with no breaking changes
+- 与 `pnpm exec` 语义一致，带来熟悉的开发者体验
+- 遵循已确立的全局/本地 CLI 路由的无条件委派模式
+- 复用现有基础设施（`vpx.rs` 辅助函数、委派、PATH 操作）
+- 通过本地 CLI 支持工作区特性（recursive、filter、parallel）
+- 仅为新增功能，不会带来破坏性变更

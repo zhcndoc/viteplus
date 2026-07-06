@@ -43,27 +43,30 @@ vp migrate my-app
 `migrate` 命令旨在快速将现有项目迁移到 Vite+。以下是该命令执行的操作：
 
 - 更新项目依赖
-- 在需要的地方重写导入
-- 将特定工具配置合并到 `vite.config.ts`
-- 更新脚本到 Vite+ 命令体系
-- 可设置提交钩子
-- 可写入代理和编辑器配置文件
+- 在需要时重写导入
+- 将特定工具的配置合并到 `vite.config.ts`
+- 将脚本更新为 Vite+ 命令集
+- 可以设置提交钩子
+- 可以写入代理和编辑器配置文件
+- 格式化已迁移的项目
+
+有关确切的依赖、源码重写和包管理器行为，请参阅 [Migration Rules](./migrate-rules.md)。
 
 大多数项目在运行 `vp migrate` 后仍需要进一步手动调整。
 
-## 推荐工作流
+## Recommended workflow
 
-在运行迁移之前：
+Before running the migration:
 
-- 升级到 Vite 8+ 和 Vitest 4.1+
-- 确保您理解任何应保留的现有 lint、格式化或测试配置
+- Upgrade to Vite 8+ and Vitest 4.1+
+- Make sure you understand any existing lint, formatting, or test configurations that should be preserved
 
-运行迁移后：
+After running the migration:
 
-- 运行 `vp install`
-- 运行 `vp check`
-- 运行 `vp test`
-- 运行 `vp build`
+- Run `vp install`
+- Run `vp check`
+- Run `vp test`
+- Run `vp build`
 
 ## 迁移提示
 

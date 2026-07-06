@@ -69,7 +69,7 @@ $ node compile-legacy-app.js ✗ 未命中缓存：'legacy/index.js' 已修改�
 
 ## 任务定义
 
-Vite 任务会自动追踪你的命令使用了哪些文件。你可以在 `vite.config.ts` 中直接定义任务，以默认启用缓存或控制影响缓存行为的文件和环境的变量。
+Vite Task [自动跟踪](/guide/automatic-data-tracking) 每个任务进行缓存所需的内容。您可以直接在 `vite.config.ts` 中定义任务，以默认启用缓存，或者控制哪些文件和环境变量会影响缓存行为。
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
@@ -92,7 +92,7 @@ export default defineConfig({
 });
 ```
 
-如果你想直接运行现有的 `package.json` 脚本，请使用 `vp run <script>`。如果你需要任务级别的缓存、依赖关系或环境/输入控制，请使用显式的 `command` 定义任务。任务名称可以来自 `vite.config.ts` 或 `package.json`，但不能同时来自两者。
+如果您想直接运行现有的 `package.json` 脚本，请使用 `vp run <script>`。如果您需要任务级别的缓存、依赖关系或环境/输入控制，请使用显式的 `command` 定义任务。任务名称可以来自 `vite.config.ts` 或 `package.json`，但不能同时来自两者。
 
 ::: info
 在 `vite.config.ts` 中定义的任务默认启用缓存。`package.json` 脚本则不会。完整的解析顺序请参见 [何时启用缓存？](/guide/cache#when-is-caching-enabled)。
@@ -102,10 +102,40 @@ export default defineConfig({
 
 ## 任务依赖
 
-使用 [`dependsOn`](/config/run#dependson) 以正确的顺序运行任务。使用上面的配置运行 `vp run deploy` 会先运行 `build` 和 `test`。依赖关系也可以通过 `package#task` 记法指向同一项目中的其他包：
+使用 [`dependsOn`](/config/run#dependson) 以正确顺序运行任务。使用上面的配置运行 `vp run deploy` 时，会先运行 `build` 和 `test`。
+
+`dependsOn` 中的字符串任务名引用当前包或另一个包中的任务：
 
 ```ts [vite.config.ts]
-dependsOn: ['@my/core#build', '@my/utils#lint'];
+dependsOn: [
+  'build', // 同一包
+  '@my/core#build', // 另一个包
+];
+```
+
+当你需要引用当前包依赖项中所有具有给定名称的任务时，请使用对象形式：
+
+```ts [vite.config.ts]
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  run: {
+    tasks: {
+      test: {
+        command: 'vp test',
+        dependsOn: [{ task: 'build', from: 'dependencies' }],
+      },
+    },
+  },
+});
+```
+
+在这个示例中，`vp run test` 会检查当前包的 `dependencies`。对于每个直接的 workspace 依赖项中定义了 `build` 的包，Vite Task 会在 `test` 之前运行该依赖项的 `build` 任务。
+
+当你需要多个依赖字段时，请使用数组：
+
+```ts [vite.config.ts]
+dependsOn: [{ task: 'build', from: ['dependencies', 'devDependencies'] }];
 ```
 
 ## 在 Workspace 中运行
@@ -317,9 +347,9 @@ vp run -r --parallel dev
 vp run -r --parallel --concurrency-limit 4 dev
 ```
 
-## 额外参数
+## Additional parameters
 
-在任务名称之后的参数会传递给任务命令：
+Parameters after the task name will be passed to the task command:
 
 ```bash
 vp run test --reporter verbose

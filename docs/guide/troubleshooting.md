@@ -2,8 +2,8 @@
 
 当 Vite+ 的行为不符合预期时，请使用本页面。
 
-::: warning
-Vite+ 仍处于 Alpha 阶段。我们正在频繁更新、快速添加功能，并希望收到反馈以帮助改进。
+::: info
+Vite+ 处于 beta 阶段：稳定，但尚未完整。我们正在通往 1.0 的路上添加功能，并优先考虑社区反馈，所以如果某些内容没有按预期工作，请[联系我们](#asking-for-help)。
 :::
 
 ## 支持的工具版本
@@ -69,7 +69,7 @@ export default defineConfig({
 
 当 `vite.config.ts` 在顶层导入插件时，这些插件会在每个命令执行时被求值，包括 `vp lint`、`vp fmt`、编辑器集成以及长生命周期的后台进程。这会使配置加载变慢，并可能触发插件初始化的副作用，例如读取文件、启动监听器或连接到服务。
 
-使用 `lazyPlugins` 让插件只在 Vite 管线实际运行时才加载（`dev`、`build`、`test`、`preview`）：
+使用 `lazyPlugins` 可在 vite-plus 仅为读取元数据块而加载你的配置时跳过插件工厂（`lint`、`fmt`、`check`、`staged`、`pack`、`create`、`run`/`cache` 任务查找，以及编辑器工具）。当 Vite 真正运行时，插件仍会加载：`dev`、`build`、`test`、`preview`，以及你的脚本所启动的任何构建（例如 `vp run` 任务、`vp exec`）：
 
 ```ts [vite.config.ts]
 import { defineConfig, lazyPlugins } from 'vite-plus';

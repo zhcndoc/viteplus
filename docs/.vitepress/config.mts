@@ -15,6 +15,10 @@ const taskRunnerGuideItems = [
   {
     text: '任务缓存',
     link: '/guide/cache',
+    items: [
+      { text: 'Automatic Data Tracking', link: '/guide/automatic-data-tracking' },
+      { text: 'GitHub Actions Cache', link: '/guide/github-actions-cache' },
+    ],
   },
   {
     text: '运行二进制',
@@ -72,6 +76,7 @@ const guideSidebar = [
     items: [
       { text: 'IDE 集成', link: '/guide/ide-integration' },
       { text: 'CI', link: '/guide/ci' },
+      { text: 'Docker', link: '/guide/docker' },
       { text: '提交钩子', link: '/guide/commit-hooks' },
       { text: 'Monorepo 指南', link: '/guide/monorepo' },
       { text: '故障排查', link: '/guide/troubleshooting' },
@@ -150,7 +155,7 @@ export default extendConfig(
               { text: '版本发布', link: 'https://github.com/voidzero-dev/vite-plus/releases' },
               {
                 text: '公告',
-                link: 'https://voidzero.dev/posts/announcing-vite-plus-alpha',
+                link: 'https://voidzero.dev/posts/announcing-vite-plus-beta',
               },
               {
                 text: '贡献指南',
@@ -175,6 +180,7 @@ export default extendConfig(
                 { text: '运行', link: '/config/run' },
                 { text: '格式化', link: '/config/fmt' },
                 { text: 'Lint', link: '/config/lint' },
+                { text: 'Check', link: '/config/check' },
                 { text: '测试', link: '/config/test' },
                 { text: '构建', link: '/config/build' },
                 { text: '打包', link: '/config/pack' },

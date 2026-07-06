@@ -1,52 +1,52 @@
-# RFC: `vpx` Command
+# RFC：`vpx` 命令
 
-## Summary
+## 摘要
 
-Add `vpx` command that runs a command from a local, globally installed, or remote npm package (like `npx`), with a multi-step resolution chain before falling back to remote download.
+添加 `vpx` 命令，用于从本地、全局安装的或远程的 npm 包中运行命令（类似 `npx`），并在回退到远程下载之前使用多步骤解析链。
 
-The existing `vp dlx` command remains unchanged — it always downloads from the registry without checking local packages (like `pnpm dlx`).
+现有的 `vp dlx` 命令保持不变——它始终从注册表下载，而不会检查本地包（类似 `pnpm dlx`）。
 
-## Motivation
+## 动机
 
-Currently, `vp dlx` always downloads packages from the remote registry, even when the desired binary already exists in `node_modules/.bin`. There is no way to run a locally installed package binary with automatic remote fallback.
+目前，`vp dlx` 总是从远程注册表下载包，即使所需的二进制文件已经存在于 `node_modules/.bin` 中。现在还没有办法在本地安装的包二进制可用时自动回退到远程，来运行它。
 
-Every major package manager provides this capability:
+每个主流包管理器都提供了这种能力：
 
 ```bash
-# npm - checks local, falls back to remote
+# npm - 检查本地，回退到远程
 npx eslint .
 
-# pnpm - local only (no remote fallback)
+# pnpm - 仅本地（不回退到远程）
 pnpm exec eslint .
 
-# bun - checks local, falls back to remote
+# bun - 检查本地，回退到远程
 bunx eslint .
 ```
 
-### Current Pain Points
+### 当前痛点
 
 ```bash
-# Developer has eslint installed locally, but vp dlx always downloads it again
-vp dlx eslint .                     # Downloads from registry (slow, wasteful)
+# 开发者本地已经安装了 eslint，但 vp dlx 仍然会再次下载它
+vp dlx eslint .                     # 从注册表下载（慢、浪费）
 
-# To run local binary, developer must use full path
-./node_modules/.bin/eslint .        # Verbose, not portable
+# 要运行本地二进制文件，开发者必须使用完整路径
+./node_modules/.bin/eslint .        # 冗长，不便移植
 
-# Or use the underlying package manager
-pnpm exec eslint .                  # Defeats the purpose of vp
+# 或者使用底层包管理器
+pnpm exec eslint .                  # 背离了 vp 的目的
 ```
 
-### Proposed Solution
+### 提议的解决方案
 
 ```bash
-# Uses local eslint if installed, otherwise downloads
+# 如果已安装则使用本地 eslint，否则下载
 vpx eslint .
 
-# Always downloads from registry (unchanged)
+# 始终从注册表下载（不变）
 vp dlx eslint .
 ```
 
-## Command Syntax
+## 命令语法
 
 ```bash
 vpx <pkg>[@<version>] [args...]
@@ -54,89 +54,89 @@ vpx --package=<pkg>[@<version>] <cmd> [args...]
 vpx -c '<cmd> [args...]'
 ```
 
-All flags must come before positional arguments (like `npx`).
+所有标志必须放在位置参数之前（类似 `npx`）。
 
-**Options:**
+**选项：**
 
-- `--package, -p <name>`: Specifies which package(s) to install if not found locally. Can be specified multiple times.
-- `--shell-mode, -c`: Executes the command within a shell environment (`/bin/sh` on UNIX, `cmd.exe` on Windows).
-- `--silent, -s`: Suppresses all output except the executed command's output.
+- `--package, -p <name>`：指定如果本地未找到时要安装的包。可以多次指定。
+- `--shell-mode, -c`：在 shell 环境中执行命令（UNIX 上为 `/bin/sh`，Windows 上为 `cmd.exe`）。
+- `--silent, -s`：抑制除所执行命令输出之外的所有输出。
 
-### Usage Examples
+### 使用示例
 
 ```bash
-# Run locally installed binary (or download if not found)
+# 运行本地安装的二进制文件（如果未找到则下载）
 vpx eslint .
 
-# Run specific version (always remote — version doesn't match local)
+# 运行特定版本（始终远程 — 如果版本与本地不匹配）
 vpx typescript@5.5.4 tsc --version
 
-# Separate package and command (when binary name differs from package name)
+# 分离包名和命令（当二进制名称与包名不同）
 vpx --package @pnpm/meta-updater meta-updater --help
 
-# Multiple packages
+# 多个包
 vpx --package yo --package generator-webapp yo webapp
 
-# Shell mode (pipe commands)
+# Shell 模式（管道命令）
 vpx -p cowsay -p lolcatjs -c 'echo "hi vp" | cowsay | lolcatjs'
 
-# Silent mode
+# 静默模式
 vpx -s create-vue my-app
 ```
 
-## Lookup Order
+## 查找顺序
 
-When `vpx` is invoked:
+当 `vpx` 被调用时：
 
-1. **Walk up from cwd** looking for `node_modules/.bin/<cmd>`
-   - Check `./node_modules/.bin/<cmd>`
-   - Check `../node_modules/.bin/<cmd>`
-   - Continue until reaching the filesystem root
-2. **Check vp global packages** (installed via `vp install -g`)
-   - Uses `BinConfig` for O(1) lookup of which package provides the binary
-   - Executes with the Node.js version used at install time
-3. **Check system PATH** (excluding vite-plus bin directory)
-   - Filters out `~/.vite-plus/bin/` to avoid finding vite-plus shims
-   - Finds commands like `git`, `cargo`, etc. without downloading
-4. **Fall back to remote download** via `vp dlx` behavior (remote download via detected package manager)
+1. **从 cwd 开始向上查找** `node_modules/.bin/<cmd>`
+   - 检查 `./node_modules/.bin/<cmd>`
+   - 检查 `../node_modules/.bin/<cmd>`
+   - 一直继续，直到到达文件系统根目录
+2. **检查 vp 全局包**（通过 `vp install -g` 安装）
+   - 使用 `BinConfig` 以 O(1) 查询哪个包提供该二进制文件
+   - 使用安装时所用的 Node.js 版本执行
+3. **检查系统 PATH**（排除 vite-plus bin 目录）
+   - 过滤掉 `~/.vite-plus/bin/`，以避免找到 vite-plus 的 shim
+   - 在不下载的情况下查找 `git`、`cargo` 等命令
+4. **通过 `vp dlx` 的行为回退到远程下载**（通过检测到的包管理器进行远程下载）
 
-Before executing any found binary, `vpx` prepends all `node_modules/.bin` directories (from cwd upward) to PATH so that sub-processes also resolve local binaries first.
+在执行任何找到的二进制文件之前，`vpx` 会将所有 `node_modules/.bin` 目录（从 cwd 向上）前置到 PATH，以便子进程也优先解析本地二进制文件。
 
-### Special Cases
+### 特殊情况
 
-- When a version is specified (e.g., `vpx eslint@9`), local/global/PATH lookup is skipped — always use remote
-- When only a package name is specified without a version (e.g., `vpx eslint`), prefer local if available
-- Shell mode (`-c`) skips local/global/PATH lookup and delegates directly to `vp dlx`
-- `--package` flag skips local/global/PATH lookup and delegates directly to `vp dlx`
+- 当指定了版本时（例如 `vpx eslint@9`），会跳过本地/全局/PATH 查找——始终使用远程
+- 当只指定包名而未指定版本时（例如 `vpx eslint`），如果本地可用则优先使用本地
+- Shell 模式（`-c`）会跳过本地/全局/PATH 查找，并直接委派给 `vp dlx`
+- `--package` 标志会跳过本地/全局/PATH 查找，并直接委派给 `vp dlx`
 
-## Relationship Between Commands
+## 命令之间的关系
 
-| Command  | Local lookup | Global lookup | PATH lookup | Remote download | Use case                                          |
+| 命令  | 本地查找 | 全局查找 | PATH 查找 | 远程下载 | 使用场景                                          |
 | -------- | ------------ | ------------- | ----------- | --------------- | ------------------------------------------------- |
-| `vpx`    | Yes (1st)    | Yes (2nd)     | Yes (3rd)   | Yes (fallback)  | Run local, global, PATH, or remote package binary |
-| `vp dlx` | No           | No            | No          | Always          | Always fetch latest from registry                 |
+| `vpx`    | 是（第 1）    | 是（第 2）     | 是（第 3）   | 是（回退）      | 运行本地、全局、PATH 或远程包二进制文件 |
+| `vp dlx` | 否           | 否            | 否          | 始终          | 始终从注册表获取最新版本                 |
 
-### When to use which
+### 何时使用哪一个
 
-- **`vpx eslint .`** — "Run eslint, preferring my local version"
-- **`vp dlx create-vue my-app`** — "Download and run create-vue from the registry"
-- **`vpx create-vue my-app`** — Same as `vp dlx` in practice, since `create-vue` is never installed locally
+- **`vpx eslint .`** — “运行 eslint，优先使用我的本地版本”
+- **`vp dlx create-vue my-app`** — “从注册表下载并运行 create-vue”
+- **`vpx create-vue my-app`** — 实际上与 `vp dlx` 相同，因为 `create-vue` 从未安装到本地
 
-## Binary Implementation
+## 二进制实现
 
-### Symlink Approach
+### 符号链接方案
 
-`vpx` is delivered as a symlink to `vp`, detected via `argv[0]`:
+`vpx` 作为指向 `vp` 的符号链接分发，并通过 `argv[0]` 检测：
 
 ```
 ~/.vite-plus/bin/vpx → ~/.vite-plus/bin/vp   (symlink)
 ```
 
-This follows the same pattern already used for `node`, `npm`, and `npx` shims.
+这遵循了 `node`、`npm` 和 `npx` shim 已经使用的相同模式。
 
-### Detection
+### 检测
 
-In `shim/mod.rs`, when `argv[0]` resolves to `vpx`:
+在 `shim/mod.rs` 中，当 `argv[0]` 解析为 `vpx` 时：
 
 ```rust
 let argv0_tool = extract_tool_name(argv0);
@@ -145,7 +145,7 @@ if argv0_tool == "vpx" {
 }
 ```
 
-In `shim/dispatch.rs`, `vpx` is handled early and delegates to `commands/vpx.rs`:
+在 `shim/dispatch.rs` 中，`vpx` 会被提前处理并委托给 `commands/vpx.rs`：
 
 ```rust
 if tool == "vpx" {
@@ -155,127 +155,127 @@ if tool == "vpx" {
 
 ### Windows
 
-On Windows, `vpx.exe` is a trampoline executable (consistent with existing `node.exe`, `npm.exe`, `npx.exe` shims). It detects its tool name from its own filename (`vpx`), sets `VITE_PLUS_SHIM_TOOL=vpx`, and spawns `vp.exe`. See [RFC: Trampoline EXE for Shims](./trampoline-exe-for-shims.md).
+在 Windows 上，`vpx.exe` 是一个跳板可执行文件（与现有的 `node.exe`、`npm.exe`、`npx.exe` shim 保持一致）。它从自身文件名（`vpx`）检测工具名，设置 `VP_SHIM_TOOL=vpx`，并启动 `vp.exe`。参见 [RFC: 用于 Shims 的跳板 EXE](./trampoline-exe-for-shims.md)。
 
-### Setup
+### 设置
 
-The `vp env setup` command creates the `vpx` symlink/wrapper alongside existing shims:
+`vp env setup` 命令会在现有 shim 旁创建 `vpx` 符号链接/包装器：
 
 ```
 ~/.vite-plus/bin/
 ├── vp          → ../current/bin/vp
-├── vpx         → vp                   ← NEW
+├── vpx         → vp                   ← 新增
 ├── node        → vp
 ├── npm         → vp
 └── npx         → vp
 ```
 
-## Comparison with npx
+## 与 npx 的比较
 
-| Behavior            | `npx`                                      | `vpx`                                              |
+| 行为                | `npx`                                      | `vpx`                                              |
 | ------------------- | ------------------------------------------ | -------------------------------------------------- |
-| Local lookup        | Walk up `node_modules/.bin`                | Walk up `node_modules/.bin`                        |
-| Global lookup       | Checks npm global installs                 | Checks vp global packages (`vp install -g`)        |
-| PATH lookup         | Checks system PATH                         | Checks system PATH (excluding `~/.vite-plus/bin/`) |
-| Remote fallback     | Download to npm cache                      | Delegate to `vp dlx` (uses detected PM)            |
-| Confirmation prompt | Prompts before installing unknown packages | Auto-confirms (like `vp dlx` with `--yes`)         |
-| `--package` flag    | Specifies additional packages              | Same                                               |
-| Shell mode (`-c`)   | Runs in shell with packages in PATH        | Same                                               |
-| Cache               | npm cache                                  | Package manager's cache (via `vp dlx`)             |
+| 本地查找            | 向上查找 `node_modules/.bin`                | 向上查找 `node_modules/.bin`                        |
+| 全局查找            | 检查 npm 全局安装                           | 检查 vp 全局包（`vp install -g`）                   |
+| PATH 查找           | 检查系统 PATH                              | 检查系统 PATH（不包括 `~/.vite-plus/bin/`）         |
+| 远程回退            | 下载到 npm 缓存                             | 委托给 `vp dlx`（使用检测到的包管理器）             |
+| 确认提示            | 安装未知包前提示用户                        | 自动确认（类似带 `--yes` 的 `vp dlx`）              |
+| `--package` 标志    | 指定额外包                                 | 相同                                               |
+| Shell 模式（`-c`）  | 在 shell 中运行，包可在 PATH 中使用          | 相同                                               |
+| 缓存                | npm 缓存                                    | 包管理器的缓存（通过 `vp dlx`）                    |
 
-### Key Difference: Auto-confirm
+### 主要区别：自动确认
 
-`npx` prompts the user before downloading unknown packages. `vpx` always auto-confirms (aligns with `vp dlx` behavior and pnpm's approach). This avoids inconsistent behavior across package managers.
+`npx` 会在下载未知包之前提示用户。`vpx` 始终自动确认（与 `vp dlx` 的行为以及 pnpm 的做法一致）。这避免了不同包管理器之间出现不一致的行为。
 
-## Design Decisions
+## 设计决策
 
-### 1. Why Walk Up Directories
+### 1. 为什么向上遍历目录
 
-**Decision**: Walk up from cwd to filesystem root looking for `node_modules/.bin`, like `npx`.
+**决策**：从 cwd 开始一路向上遍历到文件系统根目录，查找 `node_modules/.bin`，行为类似 `npx`。
 
-**Rationale**:
+**理由**：
 
-- In monorepos, a command may be installed at the workspace root, not the current package
-- `npx` walks up directories — matching this behavior meets developer expectations
-- `pnpm exec` only looks in `./node_modules/.bin` — too restrictive for monorepos
+- 在 monorepo 中，命令可能安装在工作区根目录，而不是当前包下
+- `npx` 会向上遍历目录——这种行为符合开发者预期
+- `pnpm exec` 只查找 `./node_modules/.bin`——对 monorepo 来说过于受限
 
-### 2. Why `vpx` is Separate from `vp dlx`
+### 2. 为什么 `vpx` 要与 `vp dlx` 分开
 
-**Decision**: Keep `vpx` (local-first) and `vp dlx` (remote-only) as separate commands.
+**决策**：将 `vpx`（优先本地）和 `vp dlx`（仅远程）作为两个独立命令保留。
 
-**Rationale**:
+**理由**：
 
-- Different mental models: "run what I have" vs "download and run"
-- `vp dlx` already exists with well-defined remote-only behavior — changing it would break expectations
-- Explicit is better than implicit — developers should choose their intent
+- 心智模型不同：“运行我已有的” vs “下载并运行”
+- `vp dlx` 已经存在，并且具有明确的仅远程行为——更改它会破坏用户预期
+- 显式优于隐式——开发者应当自行选择意图
 
-### 3. Why `vpx` is a Symlink
+### 3. 为什么 `vpx` 是符号链接
 
-**Decision**: `vpx` is a symlink to `vp`, not a separate binary.
+**决策**：`vpx` 是指向 `vp` 的符号链接，而不是单独的二进制文件。
 
-**Rationale**:
+**理由**：
 
-- Zero additional binary size
-- Same pattern used for `node`/`npm`/`npx` shims — proven approach
-- `argv[0]` detection is already implemented in `shim/mod.rs`
-- Single binary to update when upgrading
+- 不会增加额外的二进制体积
+- 与 `node`/`npm`/`npx` 的 shim 使用相同模式——这是经过验证的方法
+- `argv[0]` 检测已在 `shim/mod.rs` 中实现
+- 升级时只需更新一个二进制文件
 
-### 4. Why Not Add `vp exec` Subcommand
+### 4. 为什么不添加 `vp exec` 子命令
 
-**Decision**: Only provide `vpx` as a standalone command, no `vp exec` subcommand for now.
+**决策**：目前只提供独立的 `vpx` 命令，不提供 `vp exec` 子命令。
 
-**Rationale**:
+**理由**：
 
-- `vpx` covers the primary use case — quick execution of local/remote binaries
-- Adding `vp exec` introduces complexity (argument parsing with `--` separator, potential confusion with `vp env exec`)
-- `vp exec` can be added later as a follow-up if needed
-- Keeps the initial implementation simple and focused
+- `vpx` 已覆盖主要用例——快速执行本地/远程二进制文件
+- 添加 `vp exec` 会引入复杂性（带 `--` 分隔符的参数解析，可能与 `vp env exec` 混淆）
+- 如果需要，之后可以作为后续功能再添加 `vp exec`
+- 保持初始实现简单且聚焦
 
-## Edge Cases
+## 边缘情况
 
-### Monorepo Sub-packages
+### Monorepo 子包
 
-When running `vpx eslint` from `packages/app/`:
+当从 `packages/app/` 运行 `vpx eslint` 时：
 
 ```
 monorepo/
-├── node_modules/.bin/eslint    ← found here (workspace root)
+├── node_modules/.bin/eslint    ← 在这里找到（工作区根目录）
 ├── packages/
 │   └── app/
-│       └── node_modules/.bin/  ← checked first (empty)
+│       └── node_modules/.bin/  ← 先检查这里（为空）
 └── package.json
 ```
 
-The walker continues up from cwd until it finds the binary or reaches the filesystem root.
+walker 会从 cwd 继续向上查找，直到找到二进制文件或到达文件系统根目录。
 
-### Native vs JS Binaries
+### 原生二进制与 JS 二进制
 
-Both native (compiled) and JS binaries in `node_modules/.bin` are supported. The lookup only checks for file existence and executability, not file type.
+`node_modules/.bin` 中的原生（已编译）二进制和 JS 二进制都受支持。查找过程只检查文件是否存在以及是否可执行，不检查文件类型。
 
-For globally installed packages, the metadata tracks whether a binary is JavaScript (`js_bins` field in `PackageMetadata`). JS binaries are executed via `node <path>`, while native binaries are executed directly.
+对于全局安装的包，元数据会跟踪某个二进制是否为 JavaScript（`PackageMetadata` 中的 `js_bins` 字段）。JS 二进制通过 `node <path>` 执行，而原生二进制则直接执行。
 
-### Platform Differences
+### 平台差异
 
-- **Unix**: `node_modules/.bin/<cmd>` is typically a symlink to the package's bin script
-- **Windows**: `node_modules/.bin/<cmd>.cmd` wrapper scripts — lookup checks for `.cmd` extension
+- **Unix**：`node_modules/.bin/<cmd>` 通常是指向包的 bin 脚本的符号链接
+- **Windows**：`node_modules/.bin/<cmd>.cmd` 包装脚本 —— 查找时会检查 `.cmd` 扩展名
 
-### Version Mismatch
+### 版本不匹配
 
 ```bash
-# Local eslint is v8, but user wants v9
+# 本地 eslint 是 v8，但用户想要 v9
 vpx eslint@9 .
-# → Version specified, so local/global/PATH lookup is skipped → delegates to vp dlx
+# → 已指定版本，因此跳过本地/全局/PATH 查找 → 委托给 vp dlx
 ```
 
-When a version is explicitly specified in the package spec, the command skips all local resolution and always uses remote download.
+当在包规范中显式指定了版本时，命令会跳过所有本地解析，并始终使用远程下载。
 
-## Implementation Architecture
+## 实现架构
 
-### 1. Shim Detection
+### 1. Shim 检测
 
-**File**: `crates/vite_global_cli/src/shim/mod.rs`
+**文件**: `crates/vite_global_cli/src/shim/mod.rs`
 
-Add `vpx` recognition to `detect_shim_tool()`:
+在 `detect_shim_tool()` 中添加对 `vpx` 的识别：
 
 ```rust
 let argv0_tool = extract_tool_name(argv0);
@@ -287,11 +287,11 @@ if argv0_tool == "vpx" {
 }
 ```
 
-### 2. Dispatch Handler
+### 2. 分发处理器
 
-**File**: `crates/vite_global_cli/src/shim/dispatch.rs`
+**文件**: `crates/vite_global_cli/src/shim/dispatch.rs`
 
-Handle `vpx` in the dispatch logic (delegates to `commands/vpx.rs`):
+在分发逻辑中处理 `vpx`（委托给 `commands/vpx.rs`）：
 
 ```rust
 if tool == "vpx" {
@@ -299,105 +299,105 @@ if tool == "vpx" {
 }
 ```
 
-The dispatch module also exposes helper functions as `pub(crate)` for vpx to reuse:
+分发模块还将以下辅助函数暴露为 `pub(crate)`，供 vpx 复用：
 
-- `find_package_for_binary()` — looks up which globally installed package provides a binary
-- `locate_package_binary()` — locates the actual binary path inside a package
-- `ensure_installed()` — ensures a Node.js version is downloaded
-- `locate_tool()` — locates a tool binary within a Node.js installation
+- `find_package_for_binary()` — 查找哪个全局安装的包提供了某个二进制文件
+- `locate_package_binary()` — 在包内定位实际的二进制路径
+- `ensure_installed()` — 确保已下载 Node.js 版本
+- `locate_tool()` — 在 Node.js 安装中定位工具二进制文件
 
-### 3. Binary Resolution (`commands/vpx.rs`)
+### 3. 二进制解析（`commands/vpx.rs`）
 
-**File**: `crates/vite_global_cli/src/commands/vpx.rs`
+**文件**: `crates/vite_global_cli/src/commands/vpx.rs`
 
-Resolution order (when no version spec, no --package flag, and not shell mode):
+解析顺序（当没有版本规格、没有 `--package` 标志且不是 shell 模式时）：
 
 ```rust
-// 1. Local node_modules/.bin — walk up from cwd
+// 1. 本地 node_modules/.bin — 从 cwd 向上遍历
 if let Some(local_bin) = find_local_binary(cwd, &cmd_name) { ... }
 
-// 2. Global vp packages — uses dispatch::find_package_for_binary()
+// 2. 全局 vp 包 — 使用 dispatch::find_package_for_binary()
 if let Some(global_bin) = find_global_binary(&cmd_name).await { ... }
 
-// 3. System PATH — uses which::which_in() with filtered PATH
+// 3. 系统 PATH — 使用经过过滤的 PATH 调用 which::which_in()
 if let Some(path_bin) = find_on_path(&cmd_name) { ... }
 
-// 4. Remote download — delegates to DlxCommand
+// 4. 远程下载 — 委托给 DlxCommand
 ```
 
-Before executing any found binary, `prepend_node_modules_bin_to_path()` walks up from cwd and prepends all existing `node_modules/.bin` directories to PATH.
+在执行任何找到的二进制文件之前，`prepend_node_modules_bin_to_path()` 会从 cwd 向上遍历，并将所有已存在的 `node_modules/.bin` 目录追加到 PATH 前面。
 
-### 4. Setup
+### 4. 设置
 
-**File**: `crates/vite_global_cli/src/commands/env/setup.rs`
+**文件**: `crates/vite_global_cli/src/commands/env/setup.rs`
 
-Add `vpx` to the shim creation:
+在创建 shim 时添加 `vpx`：
 
 ```rust
-// After creating vp symlink, also create vpx
+// 在创建 vp 符号链接后，同时创建 vpx
 create_symlink(&bin_dir.join("vpx"), &bin_dir.join("vp")).await?;
 ```
 
-### 5. Reuses Existing `DlxCommand`
+### 5. 复用现有的 `DlxCommand`
 
-The remote fallback path delegates entirely to the existing `DlxCommand`, which handles package manager detection, command resolution, and execution. No changes needed to `vp dlx` behavior.
+远程回退路径将完全委托给现有的 `DlxCommand`，它负责包管理器检测、命令解析和执行。`vp dlx` 的行为无需更改。
 
-## CLI Help Output
+## CLI 帮助输出
 
 ```bash
 $ vpx --help
-Execute a command from a local or remote npm package
+从本地或远程 npm 包中执行命令
 
-Usage: vpx [OPTIONS] <pkg[@version]> [args...]
+用法: vpx [OPTIONS] <pkg[@version]> [args...]
 
-Arguments:
-  <pkg[@version]>  Package binary to execute
-  [args...]        Arguments to pass to the command
+参数:
+  <pkg[@version]>  要执行的包二进制文件
+  [args...]        传递给命令的参数
 
-Options:
-  -p, --package <NAME>  Package(s) to install if not found locally
-  -c, --shell-mode      Execute the command within a shell environment
-  -s, --silent          Suppress all output except the command's output
-  -h, --help            Print help
+选项:
+  -p, --package <NAME>  如果本地未找到则安装的包
+  -c, --shell-mode      在 shell 环境中执行命令
+  -s, --silent          除命令输出外，抑制所有输出
+  -h, --help            打印帮助信息
 
-Examples:
-  vpx eslint .                                           # Run local eslint (or download)
-  vpx create-vue my-app                                  # Download and run create-vue
-  vpx typescript@5.5.4 tsc --version                     # Run specific version
-  vpx -p cowsay -c 'echo "hi" | cowsay'                  # Shell mode with package
+示例:
+  vpx eslint .                                           # 运行本地 eslint（或下载）
+  vpx create-vue my-app                                  # 下载并运行 create-vue
+  vpx typescript@5.5.4 tsc --version                     # 运行特定版本
+  vpx -p cowsay -c 'echo "hi" | cowsay'                  # 带包的 shell 模式
 ```
 
-## Error Handling
+## 错误处理
 
-### Missing Command
+### 缺少命令
 
 ```bash
 $ vpx
-Error: vpx requires a command to run
+错误：vpx 需要一个要运行的命令
 
-Usage: vpx <pkg[@version]> [args...]
+用法：vpx <pkg[@version]> [args...]
 
-Examples:
+示例：
   vpx eslint .
   vpx create-vue my-app
 ```
 
-### Not Found Locally or Globally (Falls Back to Remote)
+### 本地或全局未找到（回退到远程）
 
 ```bash
 $ vpx some-tool --version
-# Not found in node_modules/.bin, global packages, or PATH
-# Falls back to remote download via vp dlx
-Running: pnpm dlx some-tool --version
+# 在 node_modules/.bin、全局包或 PATH 中未找到
+# 通过 vp dlx 回退到远程下载
+正在运行：pnpm dlx some-tool --version
 some-tool v1.2.3
 ```
 
-### No package.json
+### 没有 package.json
 
 ```bash
 $ cd /tmp
 $ vpx cowsay hello
-# No package.json — vpx delegates to vp dlx, which falls back to npx
+# 没有 package.json — vpx 委托给 vp dlx，而 vp dlx 在无法检测到包管理器时会回退到 npx
  _______
 < hello >
  -------
@@ -408,69 +408,69 @@ $ vpx cowsay hello
                 ||     ||
 ```
 
-`vpx` works in directories without a `package.json` because `vp dlx` falls back to `npx` when no package manager can be detected.
+`vpx` 能在没有 `package.json` 的目录中工作，因为当无法检测到包管理器时，`vp dlx` 会回退到 `npx`。
 
-### Remote Package Not Found
+### 远程包未找到
 
 ```bash
 $ vpx non-existent-package-xyz
-# Not found anywhere, remote download also fails
-Running: pnpm dlx non-existent-package-xyz
- ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND  No package.json was found
-Exit code: 1
+# 任何地方都未找到，远程下载也失败
+正在运行：pnpm dlx non-existent-package-xyz
+ ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND  未找到 package.json
+退出代码：1
 ```
 
-## Security Considerations
+## 安全注意事项
 
-1. **Local-first is safer**: `vpx` prefers local binaries, reducing the risk of running unexpected remote code for packages that are already project dependencies.
+1. **优先使用本地更安全**：`vpx` 优先使用本地二进制文件，这降低了对已经作为项目依赖的包运行意外远程代码的风险。
 
-2. **Global packages are trusted**: Globally installed packages (via `vp install -g`) were explicitly installed by the user, so executing them is safe.
+2. **全局包是可信的**：通过 `vp install -g` 全局安装的包是用户明确安装的，因此执行它们是安全的。
 
-3. **PATH lookup excludes vite-plus shims**: The PATH search filters out `~/.vite-plus/bin/` to prevent `vpx` from finding itself or other managed shims.
+3. **PATH 查找会排除 vite-plus shim**：PATH 搜索会过滤掉 `~/.vite-plus/bin/`，以防止 `vpx` 找到它自己或其他受管理的 shim。
 
-4. **Auto-confirm for remote**: When falling back to remote download, `vpx` auto-confirms (like `vp dlx`). This means unknown packages are downloaded without prompting — consistent with `vp dlx` behavior.
+4. **远程时自动确认**：在回退到远程下载时，`vpx` 会自动确认（类似 `vp dlx`）。这意味着未知包会在不提示的情况下被下载——这与 `vp dlx` 的行为一致。
 
-5. **Version pinning**: Specifying an explicit version (e.g., `vpx eslint@9`) bypasses all local resolution and always downloads from the registry, ensuring the exact requested version is used.
+5. **版本锁定**：指定明确版本（例如 `vpx eslint@9`）会绕过所有本地解析，并始终从 registry 下载，确保使用的是请求的确切版本。
 
-## Backward Compatibility
+## 向后兼容性
 
-This is a new feature with no breaking changes:
+这是一个没有破坏性变更的新功能：
 
-- `vp dlx` behavior is completely unchanged
-- `vpx` binary is a new symlink created by `vp env setup`
-- Existing `node`/`npm`/`npx` shims are unaffected
-- No changes to configuration format
+- `vp dlx` 的行为完全没有变化
+- `vpx` 二进制文件是由 `vp env setup` 创建的新符号链接
+- 现有的 `node`/`npm`/`npx` shim 不受影响
+- 配置格式没有任何变化
 
-## Future Enhancements
+## 未来增强
 
-### 1. `vp exec` Subcommand
+### 1. `vp exec` 子命令
 
-Add `vp exec` as an alternative way to invoke `vpx` from within `vp`, using `--` separator for argument parsing (like `npm exec`).
+添加 `vp exec` 作为一种从 `vp` 内部调用 `vpx` 的替代方式，并使用 `--` 分隔符进行参数解析（类似 `npm exec`）。
 
-### 2. Workspace-aware Lookup
+### 2. 感知工作区的查找
 
 ```bash
-vpx --workspace=app eslint .    # Look in app's node_modules first
+vpx --workspace=app eslint .    # 先查找 app 的 node_modules
 ```
 
-### 3. Local-only / Remote-only Modes
+### 3. 仅本地 / 仅远程 模式
 
 ```bash
-vpx --prefer-local eslint .     # Only use local, never download
-vpx --prefer-remote eslint .    # Always download, ignore local
+vpx --prefer-local eslint .     # 只使用本地，从不下载
+vpx --prefer-remote eslint .    # 始终下载，忽略本地
 ```
 
-## Conclusion
+## 结论
 
-This RFC proposes adding `vpx` to complete the package execution story in Vite+:
+本 RFC 提议添加 `vpx`，以完善 Vite+ 中的包执行故事：
 
-- `vp dlx` — always remote (like `pnpm dlx`)
-- `vpx` — local-first with global and PATH fallback, then remote (like `npx`)
+- `vp dlx` — 始终远程（类似 `pnpm dlx`）
+- `vpx` — 先本地优先，再回退到全局和 PATH，最后远程（类似 `npx`）
 
-The design:
+该设计：
 
-- Follows established `npx` conventions for familiar developer experience
-- Reuses existing `vp dlx` infrastructure for the remote fallback path
-- Uses the proven symlink + `argv[0]` detection pattern for delivery
-- Maintains clear separation between local-first (`vpx`) and remote-only (`vp dlx`)
-- Is purely additive with no breaking changes to existing behavior
+- 遵循已建立的 `npx` 约定，提供熟悉的开发者体验
+- 复用现有的 `vp dlx` 基础设施来处理远程回退路径
+- 使用经过验证的符号链接 + `argv[0]` 检测模式进行分发
+- 保持本地优先（`vpx`）与仅远程（`vp dlx`）之间清晰的职责分离
+- 仅为新增功能，不会破坏现有行为

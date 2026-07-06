@@ -142,13 +142,13 @@ info(
 
 其中 `VITE_PLUS_VERSION` 是 vite-plus 包版本，通过以下方式注入：
 
-- 在 `vite/packages/vite/src/node/constants.ts` 中新增常量，或
-- 读取 Rust CLI 在启动 vite 前设置的环境变量（例如 `VITE_PLUS_VERSION`）
+- 在 `vite/packages/vite/src/node/constants.ts` 中新增一个常量，或
+- 由 Rust CLI 在启动 vite 前设置的环境变量读取（例如 `VP_VERSION`）
 
-**推荐方案：** 环境变量注入。`packages/cli/binding/src/cli.rs` 中的 Rust NAPI 绑定在通过 `merge_resolved_envs()` 启动子工具时，已经会合并环境变量。我们向 env map 中添加 `VITE_PLUS_VERSION`，然后在 vite 中读取它：
+**推荐做法：** 环境变量注入。`packages/cli/binding/src/cli.rs` 中的 Rust NAPI 绑定在通过 `merge_resolved_envs()` 启动子工具时已经会合并环境变量。我们向 env map 中添加 `VP_VERSION`，并在 vite 中读取它：
 
 ```javascript
-const VITE_PLUS_VERSION = process.env.VITE_PLUS_VERSION || VERSION;
+const VITE_PLUS_VERSION = process.env.VP_VERSION || VERSION;
 ```
 
 这样很干净：vite 源码改动很小（读取一个带回退值的环境变量），而版本注入则发生在本就负责这项工作的 Rust 层。
@@ -306,12 +306,12 @@ pub fn success(msg: &str) {
 
 在 `bundleVitest()` 把 vitest 文件复制到 `dist/` 之后，会执行 `brandVitest()` 步骤，对 cac chunk（`dist/chunks/cac.*.js`）进行字符串替换：
 
-1. `cac("vitest")` → `cac("vp test")` — 横幅和帮助输出中显示的 CLI 名称
-2. `var version = "<semver>"` → `var version = process.env.VITE_PLUS_VERSION || "<semver>"` — 通过 env 进行运行时版本注入
-3. `/^vitest\/\d+\.\d+\.\d+$/` 正则 → `/^vp test\/[\d.]+$/` — 这样 help 回调仍能找到横幅行
+1. `cac("vitest")` → `cac("vp test")` — CLI 名称显示在横幅和帮助输出中
+2. `var version = "<semver>"` → `var version = process.env.VP_VERSION || "<semver>"` — 通过环境变量在运行时注入版本
+3. `/^vitest\/\d+\.\d+\.\d+$/` regex → `/^vp test\/[\d.]+$/` — 这样帮助回调仍然可以找到横幅行
 4. `$ vitest --help --expand-help` → `$ vp test --help --expand-help` — 硬编码帮助文本
 
-Rust NAPI 绑定会注入 `VITE_PLUS_VERSION` 环境变量（与 vite 的 build/dev/preview 命令使用同一机制），因此 `vp test -h` 会显示 `vp test/<vite-plus-version>`。
+Rust NAPI 绑定会注入 `VP_VERSION` 环境变量（与 vite build/dev/preview 命令使用的机制相同），因此 `vp test -h` 会显示 `vp test/<vite-plus-version>`。
 
 #### 3.3 CLI 输出中剩余的 `vite` → `vp` 品牌替换
 
@@ -379,7 +379,7 @@ export function note(msg: string) {
 
 ### D3：通过环境变量注入版本
 
-**决策：** Rust CLI 在启动 vite 之前设置 `VITE_PLUS_VERSION` 环境变量。修改后的 vite 源码读取该变量，并提供回退值。
+**决策：** Rust CLI 在启动 vite 之前设置 `VP_VERSION` 环境变量。修改后的 vite 源码读取它，并在未设置时使用回退值。
 
 **理由：** 这避免了在 vite 源码中硬编码版本号（否则每次发布都要更新）。Rust CLI 已经通过 `merge_resolved_envs()` 管理子工具启动时的环境变量。使用环境变量是对 vite 的最小改动方案。
 
@@ -429,13 +429,13 @@ export function note(msg: string) {
 
 ### 阶段 1：vite 品牌重塑
 
-1. 在 `packages/cli/binding/src/cli.rs` 中为 vite 命令（build、dev、preview）注入 `VITE_PLUS_VERSION` 环境变量
-2. 修改 `vite/packages/vite/src/node/cli.ts` — 读取环境变量，修改横幅文本
-3. 修改 `vite/packages/vite/src/node/build.ts` — 修改构建横幅文本
-4. 修改 `vite/packages/vite/src/node/logger.ts` — 修改默认前缀
-5. 修改 `vite/packages/vite/src/node/build.ts:1079` — 修改错误前缀
+1. 在 `packages/cli/binding/src/cli.rs` 中为 vite 命令（build、dev、preview）添加 `VP_VERSION` 环境变量注入
+2. 修改 `vite/packages/vite/src/node/cli.ts` —— 读取环境变量，修改横幅文本
+3. 修改 `vite/packages/vite/src/node/build.ts` —— 修改构建横幅文本
+4. 修改 `vite/packages/vite/src/node/logger.ts` —— 修改默认前缀
+5. 修改 `vite/packages/vite/src/node/build.ts:1079` —— 修改错误前缀
 6. 使用 `pnpm bootstrap-cli` 重新构建并验证输出
-7. 更新受影响的 snap 测试
+7. 更新受影响的快照测试
 
 ### 阶段 2：Rust CLI 输出标准化
 

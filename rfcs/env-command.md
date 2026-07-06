@@ -1,4 +1,4 @@
-# RFC: `vp env` - 基于 Shim 的 Node 版本管理
+# RFC：`vp env` - 基于 Shim 的 Node 版本管理
 
 ## 摘要
 
@@ -22,11 +22,11 @@
 
 采用基于 shim 的方案，其中：
 
-- `VITE_PLUS_HOME/bin/` 目录被加入 PATH（系统级，确保 IDE 可靠性）
-- Shims（`node`、`npm`、`npx`、`corepack`）在 Unix 上是指向 `vp` 二进制的符号链接，在 Windows 上是 trampoline `.exe` 文件
-- `vp` CLI 本身也位于 `VITE_PLUS_HOME/bin/` 中，因此用户只需要一个 PATH 条目
-- 二进制通过 `argv[0]` 检测调用来源并分发到对应模式
-- 版本解析和安装复用现有的 `vite_js_runtime` 基础设施
+- `VP_HOME/bin/` 目录会被添加到 PATH 中（系统级，以确保 IDE 可靠）
+- Shims（`node`、`npm`、`npx`、`corepack`）是指向 `vp` 二进制文件的符号链接（Unix）或 trampoline `.exe` 文件（Windows）
+- `vp` CLI 本身也位于 `VP_HOME/bin/` 中，因此用户只需要一个 PATH 条目
+- 二进制文件通过 `argv[0]` 检测调用方式并据此分发
+- 版本解析和安装利用现有的 `vite_js_runtime` 基础设施
 
 ## 命令用法
 
@@ -124,10 +124,10 @@ vp env use --silent-if-unchanged  # 如果版本已激活则抑制输出
 **其工作方式：**
 
 1. `~/.vite-plus/env` 包含一个 `vp()` shell 函数，用于拦截 `vp env use` 调用
-2. wrapper 在调用 `command vp env use ...` 之前设置 `VITE_PLUS_ENV_USE_EVAL_ENABLE=1`
-3. 当环境变量存在（wrapper 激活）时，`vp env use` 会将 shell 命令输出到 stdout 以便 eval
-4. 当环境变量在 CI 中不存在时，`vp env use` 会改为写入一个会话文件（`~/.vite-plus/.session-node-version`）
-5. shim 的分发会先检查 `VITE_PLUS_NODE_VERSION` 环境变量，然后再检查会话文件，作为解析链的一部分
+2. 该包装器在调用 `command vp env use ...` 之前设置 `VP_ENV_USE_EVAL_ENABLE=1`
+3. 当该环境变量存在（包装器激活）时，`vp env use` 会将 shell 命令输出到 stdout 供 eval 使用
+4. 当在 CI 中该环境变量不存在时，`vp env use` 会改为写入会话文件（`~/.vite-plus/.session-node-version`）
+5. shims 的分发会在解析链中先检查 `VP_NODE_VERSION` 环境变量，然后再检查会话文件
 
 在 Windows 交互式 shell 中，`vp env use` 需要将 PowerShell 设置脚本（`~/.vite-plus/env.ps1`，由 `vp env setup` 写入）在当前 shell 中进行 dot-source，这样所选版本才能保持会话作用域：
 
@@ -144,7 +144,7 @@ Invoke-Item $PROFILE
 
 **自动会话文件（用于 CI）：**
 
-当 `vp env use` 检测到 CI 环境且 shell eval wrapper 未激活（即未设置 `VITE_PLUS_ENV_USE_EVAL_ENABLE`）时，它会自动将解析出的版本写入 `~/.vite-plus/.session-node-version`。shims 直接从磁盘读取该文件，因此 CI 作业可以在无需 shell 设置的情况下继续使用 `vp env use`。当环境变量被设置时，它仍然具有优先级，因此 shell wrapper 的体验保持不变。
+当 `vp env use` 检测到 CI 环境且 shell eval 包装器未激活（即未设置 `VP_ENV_USE_EVAL_ENABLE`）时，它会自动将解析后的版本写入 `~/.vite-plus/.session-node-version`。shims 会直接从磁盘读取该文件，因此 CI 任务可以在无需 shell 设置的情况下继续使用 `vp env use`。当该环境变量被设置时，它仍然具有优先级，因此 shell 包装器的体验保持不变。
 
 ```bash
 # GitHub Actions 示例（没有 shell wrapper，会自动写入会话文件）
@@ -155,19 +155,19 @@ Invoke-Item $PROFILE
 
 **特定 shell 的输出：**
 
-| Shell            | Set                                       | Unset                                        |
-| ---------------- | ----------------------------------------- | -------------------------------------------- |
-| POSIX (bash/zsh) | `export VITE_PLUS_NODE_VERSION=20.18.1`   | `unset VITE_PLUS_NODE_VERSION`               |
-| Fish             | `set -gx VITE_PLUS_NODE_VERSION 20.18.1`  | `set -e VITE_PLUS_NODE_VERSION`              |
-| PowerShell       | `$env:VITE_PLUS_NODE_VERSION = "20.18.1"` | `Remove-Item Env:VITE_PLUS_NODE_VERSION ...` |
-| cmd.exe          | `set VITE_PLUS_NODE_VERSION=20.18.1`      | `set VITE_PLUS_NODE_VERSION=`                |
+| Shell            | 设置                                 | 取消设置                              |
+| ---------------- | ---------------------------------- | ------------------------------------- |
+| POSIX (bash/zsh) | `export VP_NODE_VERSION=20.18.1`   | `unset VP_NODE_VERSION`               |
+| Fish             | `set -gx VP_NODE_VERSION 20.18.1`  | `set -e VP_NODE_VERSION`              |
+| PowerShell       | `$env:VP_NODE_VERSION = "20.18.1"` | `Remove-Item Env:VP_NODE_VERSION ...` |
+| cmd.exe          | `set VP_NODE_VERSION=20.18.1`      | `set VP_NODE_VERSION=`                |
 
-**shell 函数 wrapper** 包含在 `vp env setup` 创建的 env 文件中：
+**shell 函数包装器** 包含在 `vp env setup` 创建的 env 文件中：
 
 - `~/.vite-plus/env`（POSIX - bash/zsh）：`vp()` 函数
 - `~/.vite-plus/env.fish`（fish）：`function vp`
 - `~/.vite-plus/env.ps1`（PowerShell）：`function vp`
-- `~/.vite-plus/bin/vp-use.cmd`（cmd.exe）：由于 cmd.exe 没有 shell 函数，因此使用专用 wrapper
+- `~/.vite-plus/bin/vp-use.cmd`（cmd.exe）：由于 cmd.exe 没有 shell 函数，因此使用专用包装器
 
 ### Node.js 版本管理
 
@@ -287,13 +287,13 @@ argv[0] = "corepack"  → Shim 模式：解析版本，执行 corepack（Node 25
 │                 ▼                                                           │
 │  ┌──────────────────────────────┐     ┌─────────────────────────────┐       │
 │  │  版本解析                    │────▶│  优先级顺序：               │       │
-│  │  （向上遍历目录树）          │     │  0. VITE_PLUS_NODE_VERSION  │       │
+│  │  (walk up directory tree)    │     │  0. VP_NODE_VERSION  │       │
 │  └──────────────┬───────────────┘     │  1. .session-node-version   │       │
 │                 │                     │  2. .node-version           │       │
 │                 │                     │  3. package.json#devEngines │       │
 │                 │                     │  4. package.json#engines    │       │
-│                 │                     │  5. User default (config)   │       │
-│                 │                     │  6. Latest LTS              │       │
+│                 │                     │  5. 用户默认值（配置）       │       │
+│                 │                     │  6. 最新 LTS                │       │
 │                 ▼                     └─────────────────────────────┘       │
 │  ┌──────────────────────────────┐                                           │
 │  │  确保已安装 Node.js          │                                           │
@@ -312,7 +312,7 @@ argv[0] = "corepack"  → Shim 模式：解析版本，执行 corepack（Node 25
 │                         目录结构                                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ~/.vite-plus/                        (VITE_PLUS_HOME)                      │
+│  ~/.vite-plus/                        (VP_HOME)                      │
 │  ├── bin/                                                                   │
 │  │   ├── vp   ──────────────────────  指向 ../current/bin/vp 的符号链接    │
 │  │   ├── node ──────────────────────┐                                       │
@@ -356,10 +356,10 @@ argv[0] = "corepack"  → Shim 模式：解析版本，执行 corepack（Node 25
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### VITE_PLUS_HOME 目录布局
+### VP_HOME 目录布局
 
 ```
-VITE_PLUS_HOME/                              # 默认：~/.vite-plus
+VP_HOME/                              # 默认：~/.vite-plus
 ├── bin/
 │   ├── vp -> ../current/bin/vp       # 指向当前 vp 二进制的符号链接（Unix）
 │   ├── node -> ../current/bin/vp     # 指向 vp 二进制的符号链接（Unix）
@@ -538,8 +538,8 @@ lts/-2       → 18.20.5 (第三高的 LTS)
 
 在解析应使用哪个 Node.js 版本时，vite-plus 会按以下顺序检查来源：
 
-0. **`VITE_PLUS_NODE_VERSION` 环境变量**（会话覆盖，最高优先级）
-   - 通过 `vp env use` 借助 shell wrapper eval 设置
+0. **`VP_NODE_VERSION` env var** (会话覆盖，最高优先级)
+   - 由 `vp env use` 通过 shell wrapper eval 设置
    - 覆盖所有基于文件的解析
 
 1. **`.session-node-version`** 文件（会话覆盖）
@@ -553,7 +553,7 @@ lts/-2       → 18.20.5 (第三高的 LTS)
 
 3. **`package.json#devEngines.runtime`**
    - 在当前目录检查，然后检查父目录
-   - 开发环境需求字段（见 [RFC: devEngines Support](./dev-engines.md)）
+   - 开发环境需求字段（见 [RFC: devEngines 支持](./dev-engines.md)）
 
 4. **`package.json#engines.node`**
    - 在当前目录检查，然后检查父目录
@@ -607,7 +607,7 @@ lts/iron
 | actions/setup-node | ✅              | ✅       | ✅          | ✅            |
 | asdf               | ✅              | ❌       | ❌          | ❌            |
 
-**注意**：Node.js 二进制文件存储在 VITE_PLUS_HOME 中：
+**注意**：Node.js 二进制文件存储在 VP_HOME 中：
 
 - Linux/macOS：`~/.vite-plus/js_runtime/node/{version}/`
 - Windows：`%USERPROFILE%\.vite-plus\js_runtime\node\{version}\`
@@ -645,42 +645,42 @@ crates/vite_global_cli/
 
 ### Shim 分发流程
 
-1. 检查 `VITE_PLUS_BYPASS` 环境变量 → 旁路到系统工具（从 PATH 中过滤掉所有列出的目录）
-2. 检查 `VITE_PLUS_TOOL_RECURSION` → 如果已设置，则使用透传模式
+1. 检查 `VP_BYPASS` 环境变量 → 旁路到系统工具（从 PATH 中过滤掉所有列出的目录）
+2. 检查 `VP_TOOL_RECURSION` → 如果已设置，则使用透传模式
 3. 检查配置中的 shim 模式：
-   - 如果是 `system_first`：先尝试系统工具，失败后回退到受管理工具；在 exec 之前会把自身的 bin 目录追加到 `VITE_PLUS_BYPASS`，以防止多安装环境中的循环
+   - 如果是 `system_first`：先尝试系统工具，失败后回退到受管理工具；在 exec 之前将自身的 bin 目录追加到 `VP_BYPASS`，以防止多个安装之间形成循环
    - 如果是 `managed`：使用 vite-plus 管理的 Node.js
 4. 解析版本（使用基于 mtime 的缓存）
 5. 确保已安装 Node.js（如有需要则下载）
 6. 在已安装的 Node.js 中定位工具二进制文件
-7. 将真实的 node bin 目录前置到子进程的 PATH 中
-8. 设置 `VITE_PLUS_TOOL_RECURSION=1` 以防止递归
+7. 为子进程将真实的 node bin 目录前置到 PATH
+8. 设置 `VP_TOOL_RECURSION=1` 以防止递归
 9. 执行工具（Unix：`execve`，Windows：spawn）
 
 ### Shim 递归防护
 
 为防止 shim 调用其他 shim 时发生无限循环，vite-plus 使用环境变量标记：
 
-**环境变量**：`VITE_PLUS_TOOL_RECURSION`
+**环境变量**：`VP_TOOL_RECURSION`
 
 **机制：**
 
-1. 当 shim 执行真实二进制文件时，会设置 `VITE_PLUS_TOOL_RECURSION=1`
+1. 当 shim 执行真实二进制文件时，会设置 `VP_TOOL_RECURSION=1`
 2. 后续的 shim 调用会检查该变量
 3. 如果已设置，shim 会使用**透传模式**（跳过版本解析，使用当前 PATH）
-4. `vp env exec` 会显式**移除**该变量以强制重新评估
+4. `vp env exec` 会明确**移除**该变量，以强制重新评估
 
-**环境变量**：`VITE_PLUS_BYPASS`（PATH 风格列表）
+**环境变量**：`VP_BYPASS`（PATH 风格列表）
 
 **SystemFirst 循环防止：**
 
 当 PATH 中存在多个 vite-plus 安装，并且启用了 `system_first` 模式时，每个安装都可能把另一个安装的 shim 误认为“系统工具”，从而导致无限 exec 循环。为防止这种情况：
 
-1. 在 `system_first` 模式下，在 exec 找到的系统工具之前，当前安装会把自己的 bin 目录追加到 `VITE_PLUS_BYPASS`
-2. 下一个安装会看到 `VITE_PLUS_BYPASS` 已设置，并通过 `find_system_tool()` 进入旁路模式
-3. `find_system_tool()` 会从 PATH 中过滤掉 `VITE_PLUS_BYPASS` 中列出的所有目录（以及它自己的 bin 目录）
-4. 这确保搜索会跳过所有已知的 vite-plus bin 目录，并找到真实的系统二进制文件（或者干净地报错）
-5. `VITE_PLUS_BYPASS` 会在 `vp env exec` 过程中被保留，从而保持循环保护处于激活状态
+1. 在 `system_first` 模式下，在 exec 找到的系统工具之前，当前安装会把自己的 bin 目录追加到 `VP_BYPASS`
+2. 下一个安装看到 `VP_BYPASS` 已设置后，会通过 `find_system_tool()` 进入旁路模式
+3. `find_system_tool()` 会从 PATH 中过滤掉 `VP_BYPASS` 中列出的所有目录（再加上它自己的 bin 目录）
+4. 这确保搜索会跳过所有已知的 vite-plus bin 目录，并找到真正的系统二进制文件（或干净地报错）
+5. `VP_BYPASS` 会在 `vp env exec` 过程中被保留，从而保持循环防护 فعال
 
 **流程图：**
 
@@ -688,7 +688,7 @@ crates/vite_global_cli/
 用户运行：node app.js
     │
     ▼
-Shim 检查 VITE_PLUS_TOOL_RECURSION
+Shim 检查 VP_TOOL_RECURSION
     │
     ├── 未设置 → 解析版本，设置 RECURSION=1，exec 真实 node
     │
@@ -698,7 +698,7 @@ Shim 检查 VITE_PLUS_TOOL_RECURSION
 **代码示例：**
 
 ```rust
-const RECURSION_ENV_VAR: &str = "VITE_PLUS_TOOL_RECURSION";
+const RECURSION_ENV_VAR: &str = "VP_TOOL_RECURSION";
 
 fn execute_shim() {
     if env::var(RECURSION_ENV_VAR).is_ok() {
@@ -756,7 +756,7 @@ fn execute_run_command() {
 
 ### 3. 在 Windows 上使用 Trampoline 可执行文件
 
-**决策**：在 Windows 上使用轻量级的 trampoline `.exe` 文件，而不是 `.cmd` 包装器。每个 trampoline 会从自己的文件名中检测工具名称，设置 `VITE_PLUS_SHIM_TOOL`，并启动 `vp.exe`。参见 [RFC: 用于 Shims 的 Trampoline EXE](./trampoline-exe-for-shims.md)。
+**决策**：在 Windows 上使用轻量级 trampoline `.exe` 文件，而不是 `.cmd` 包装器。每个 trampoline 会从自身文件名中检测工具名称，设置 `VP_SHIM_TOOL`，并启动 `vp.exe`。参见 [RFC: 用于 Shims 的 Trampoline EXE](./trampoline-exe-for-shims.md)。
 
 **理由**：
 
@@ -775,14 +775,14 @@ fn execute_run_command() {
 - Windows 不支持 `execve` 风格的进程替换
 - 在 Windows 上使用 `spawn` 并正确传递退出码是标准做法
 
-### 5. 将 VITE_PLUS_HOME 与 Cache 分离
+### 5. 将 VP_HOME 与缓存分离
 
-**决策**：保持 VITE_PLUS_HOME（bin、config）与缓存（Node 二进制）分离。
+**决策**：保持 VP_HOME（bin、config）与缓存（Node 二进制）分离。
 
 **理由**：
 
 - 缓存使用 XDG/平台标准位置（已实现）
-- VITE_PLUS_HOME 需要用户可访问，以便进行 PATH 配置
+- VP_HOME 需要对用户可访问，以便进行 PATH 配置
 - 允许清理缓存而不破坏 shim 设置
 
 ### 6. 基于 mtime 的缓存失效
@@ -813,21 +813,21 @@ v22.13.0  # 回退到最新 LTS
 
 解析顺序如下：
 
-1. `VITE_PLUS_NODE_VERSION` 环境变量（会话覆盖）
-2. `.session-node-version` 文件（会话覆盖）
-3. 当前目录或父目录中的 `.node-version`
-4. 当前目录或父目录中的 `package.json#devEngines.runtime`
-5. 当前目录或父目录中的 `package.json#engines.node`
-6. **用户默认值**：通过 `vp env default <version>` 配置（存储在 `~/.vite-plus/config.json` 中）
-7. **系统默认值**：最新 LTS 版本
+1. `VP_NODE_VERSION` env var (session override)
+2. `.session-node-version` file (session override)
+3. `.node-version` in current or parent directories
+4. `package.json#devEngines.runtime` in current or parent directories
+5. `package.json#engines.node` in current or parent directories
+6. **用户默认值**: 通过 `vp env default <version>` 配置（存储在 `~/.vite-plus/config.json` 中）
+7. **系统默认值**: 最新 LTS 版本
 
 ### 安装失败
 
 ```bash
 $ node -v
-vp: 安装 Node 20.18.0 失败：网络错误：连接被拒绝
-vp: 请检查你的网络连接并重试
-vp: 或设置 VITE_PLUS_BYPASS=1 以使用系统 node
+vp: Failed to install Node 20.18.0: Network error: connection refused
+vp: Check your network connection and try again
+vp: Or set VP_BYPASS=1 to use system node
 ```
 
 ### 未找到工具
@@ -843,7 +843,7 @@ vp: npx 在 Node 5.2.0+ 中可用
 ```bash
 $ vp env doctor
 Installation
-  ✓ VITE_PLUS_HOME    ~/.vite-plus
+  ✓ VP_HOME    ~/.vite-plus
   ✓ Bin directory     exists
   ✓ Shims             node, npm, npx, corepack
 
@@ -942,7 +942,7 @@ $ vp env setup
 ```bash
 $ vp env doctor
 Installation
-  ✓ VITE_PLUS_HOME    ~/.vite-plus
+  ✓ VP_HOME    ~/.vite-plus
   ✓ Bin directory     exists
   ✓ Shims             node, npm, npx, corepack
 
@@ -975,11 +975,11 @@ $ vp env doctor
 Configuration
   ✓ Node.js mode      managed
   ✓ IDE integration   env sourced in ~/.zshenv
-  ⚠ 会话覆盖         VITE_PLUS_NODE_VERSION=20.18.0
-                      覆盖所有基于文件的解析。
-                      运行 'vp env use --unset' 以移除。
-  ⚠ 会话覆盖（文件）  .session-node-version=20.18.0
-                      由 'vp env use' 写入。运行 'vp env use --unset' 以移除。
+  ⚠ Session override  VP_NODE_VERSION=20.18.0
+                      Overrides all file-based resolution.
+                      Run 'vp env use --unset' to remove.
+  ⚠ Session override (file)  .session-node-version=20.18.0
+                      Written by 'vp env use'. Run 'vp env use --unset' to remove.
 
 ...
 ```
@@ -1024,7 +1024,7 @@ Configuration
 ```bash
 $ vp env doctor
 Installation
-  ✓ VITE_PLUS_HOME    ~/.vite-plus
+  ✓ VP_HOME    ~/.vite-plus
   ✗ Bin directory     does not exist
   ✗ Missing shims     node, npm, npx, corepack
                       Run 'vp env setup' to create bin directory and shims.
@@ -1353,7 +1353,7 @@ $ vp env which npm
 $ vp env which node
 /Users/user/.vite-plus/js_runtime/node/18.20.0/bin/node
   Version:    18.20.0
-  Source:     VITE_PLUS_NODE_VERSION (session)
+  Source:     VP_NODE_VERSION (session)
 ```
 
 **全局包** - 显示二进制路径以及包元数据：
@@ -1986,18 +1986,18 @@ vp env exec python --version      # 失败：非 shim 工具需要 --node
 - **匹配的包管理器工具（npm/npx、pnpm/pnpx、yarn/yarnpkg、bun/bunx）**：如果 `packageManager` 明确声明了同一工具家族，shim 会下载/运行该包管理器版本，同时将项目解析出的 Node.js 运行时保留在 PATH 上。不匹配的工具不会被翻译。
 - **全局包（tsc、eslint 等）**：使用 `vp install -g` 时所使用的 Node.js 版本
 
-两者都使用与 Unix 符号链接完全相同的代码路径（`shim::dispatch()`），确保跨平台行为一致。在 Windows 上，trampoline `.exe` shims 会设置 `VITE_PLUS_SHIM_TOOL` 以进入 shim 分发模式。
+两者都使用与 Unix 符号链接完全相同的代码路径（`shim::dispatch()`），确保在不同平台上行为一致。在 Windows 上，trampoline `.exe` shims 会设置 `VP_SHIM_TOOL` 以进入 shim 分发模式。
 
-**重要**：在分发前会清除 `VITE_PLUS_TOOL_RECURSION` 环境变量，以确保重新进行版本解析，即使是在该变量已经被设置的上下文中调用（例如 pnpm 通过 vite-plus shim 运行时）。
+**重要**：在分发前会清除 `VP_TOOL_RECURSION` 环境变量，以确保重新进行版本解析，即使在变量已经设置的上下文中调用也是如此（例如，pnpm 通过 vite-plus shim 运行时）。
 
 ### 显式版本模式行为
 
 当提供 `--node` 时：
 
-1. **版本解析**：将指定版本解析为精确版本
+1. **版本解析**：指定版本会解析为精确版本
 2. **自动安装**：如果该版本未安装，会自动下载
 3. **PATH 构建**：使用指定版本的 bin 目录构建 PATH
-4. **递归重置**：清除 `VITE_PLUS_TOOL_RECURSION` 以强制重新评估上下文
+4. **递归重置**：清除 `VP_TOOL_RECURSION` 以强制重新评估上下文
 
 ### 示例
 
@@ -2029,14 +2029,14 @@ vp env exec --node 22 -- node --inspect-brk app.js
 VERSIONS="18.20.0 20.18.0 22.13.0"
 
 for v in $VERSIONS; do
-  echo "Testing with Node $v..."
+  echo "使用 Node $v 测试..."
   vp env exec --node "$v" npm test || exit 1
 done
 
-echo "All tests passed!"
+echo "所有测试都通过了！"
 ```
 
-## List Command (Local)
+## 列表命令（本地）
 
 `vp env list`（别名 `ls`）命令显示本地已安装的 Node.js 版本。
 
@@ -2078,7 +2078,7 @@ $ vp env list
 使用以下命令安装版本：vp env install <version>
 ```
 
-## List-Remote Command
+## List-Remote 命令
 
 `vp env list-remote`（别名 `ls-remote`）命令显示注册表中可用的 Node.js 版本。
 
@@ -2132,7 +2132,7 @@ $ vp env list-remote --json
 }
 ```
 
-### Current Command (JSON)
+### 当前命令（JSON）
 
 ```bash
 $ vp env --current --json
@@ -2159,22 +2159,22 @@ $ vp env --current --json
 
 ## 环境变量
 
-| 变量                           | 描述                                                                                         | 默认值         |
-| ------------------------------ | -------------------------------------------------------------------------------------------- | -------------- |
-| `VITE_PLUS_HOME`                | bin 和配置的基础目录                                                                         | `~/.vite-plus` |
-| `VITE_PLUS_NODE_VERSION`        | Node.js 版本的会话级覆盖（由 `vp env use` 设置）                                             | 未设置         |
-| `VITE_PLUS_LOG`                 | 日志级别：debug, info, warn, error                                                            | `warn`         |
-| `VITE_PLUS_DEBUG_SHIM`          | 启用额外的 shim 诊断                                                                         | 未设置         |
-| `VITE_PLUS_BYPASS`              | 查找系统工具时跳过的 bin 目录列表（PATH 风格）；设置为 `=1` 可完全绕过 shim                 | 未设置         |
-| `VITE_PLUS_TOOL_RECURSION`      | **内部**：防止 shim 递归                                                                     | 未设置         |
-| `VITE_PLUS_ENV_USE_EVAL_ENABLE` | **内部**：由 shell 包装器设置，表示 `vp env use` 的输出将被 eval                           | 未设置         |
+| Variable                 | Description                                                                                     | Default        |
+| ------------------------ | ----------------------------------------------------------------------------------------------- | -------------- |
+| `VP_HOME`                | bin 和配置的基础目录                                                                                  | `~/.vite-plus` |
+| `VP_NODE_VERSION`        | Node.js 版本的会话覆盖（由 `vp env use` 设置）                                                     | unset          |
+| `VITE_LOG`               | 日志级别：debug、info、warn、error                                                             | `warn`         |
+| `VP_DEBUG_SHIM`          | 启用额外的 shim 诊断信息                                                                   | unset          |
+| `VP_BYPASS`              | 查找系统工具时要跳过的 bin 目录的 PATH 风格列表；设置为 `=1` 可完全绕过 shim | unset          |
+| `VP_TOOL_RECURSION`      | **内部**：防止 shim 递归                                                           | unset          |
+| `VP_ENV_USE_EVAL_ENABLE` | **内部**：由 shell 包装器设置，用于表示 `vp env use` 的输出将被 eval 执行           | unset          |
 
 ## Unix 特定注意事项
 
 ### Shim 结构
 
 ```
-VITE_PLUS_HOME/
+VP_HOME/
 ├── bin/
 │   ├── vp -> ../current/bin/vp      # 指向实际二进制文件的符号链接
 │   ├── node -> ../current/bin/vp    # 指向相同二进制文件的符号链接
@@ -2220,13 +2220,13 @@ ln -sf ../current/bin/vp ~/.vite-plus/bin/tsc
 ### Shim 结构
 
 ```
-VITE_PLUS_HOME\
+VP_HOME\
 ├── bin\
-│   ├── vp.exe       # 通过 trampoline 转发到 current\bin\vp.exe
-│   ├── node.exe     # trampoline shim（设置 VITE_PLUS_SHIM_TOOL=node）
-│   ├── npm.exe      # trampoline shim（设置 VITE_PLUS_SHIM_TOOL=npm）
-│   ├── npx.exe      # trampoline shim（设置 VITE_PLUS_SHIM_TOOL=npx）
-│   ├── corepack.exe # trampoline shim（设置 VITE_PLUS_SHIM_TOOL=corepack）
+│   ├── vp.exe       # 指向 current\bin\vp.exe 的 trampoline
+│   ├── node.exe     # trampoline shim（设置 VP_SHIM_TOOL=node）
+│   ├── npm.exe      # trampoline shim（设置 VP_SHIM_TOOL=npm）
+│   ├── npx.exe      # trampoline shim（设置 VP_SHIM_TOOL=npx）
+│   ├── corepack.exe # trampoline shim（设置 VP_SHIM_TOOL=corepack）
 │   └── tsc.exe      # 全局包的 trampoline shim
 └── current\
     └── bin\
@@ -2236,7 +2236,7 @@ VITE_PLUS_HOME\
 
 ### Trampoline 可执行文件
 
-Windows shims 使用轻量级的 trampoline `.exe` 文件（参见 [RFC: Trampoline EXE for Shims](./trampoline-exe-for-shims.md)）。每个 trampoline 都会从自己的文件名中检测工具名，设置 `VITE_PLUS_SHIM_TOOL`，并启动 `vp.exe`。这避免了 `.cmd` 包装器带来的“Terminate batch job (Y/N)?” 提示，并且可在所有 shell（cmd.exe、PowerShell、Git Bash）中工作，无需单独的包装格式。
+Windows shims 使用轻量级 trampoline `.exe` 文件（参见 [RFC: Trampoline EXE for Shims](./trampoline-exe-for-shims.md)）。每个 trampoline 都会从自身文件名中检测工具名称，设置 `VP_SHIM_TOOL`，并启动 `vp.exe`。这样可以避免 `.cmd` 包装器带来的“Terminate batch job (Y/N)?” 提示，并且无需单独的包装格式即可在所有 shell（cmd.exe、PowerShell、Git Bash）中工作。
 
 #### 为什么不使用符号链接？
 
@@ -2251,7 +2251,7 @@ Windows shims 使用轻量级的 trampoline `.exe` 文件（参见 [RFC: Trampol
 
 1. 用户运行 `npm install`
 2. Windows 在 PATH 中找到 `~/.vite-plus/bin/npm.exe`
-3. Trampoline 设置 `VITE_PLUS_SHIM_TOOL=npm` 并启动 `vp.exe`
+3. Trampoline 设置 `VP_SHIM_TOOL=npm` 并启动 `vp.exe`
 4. `vp env exec` 命令处理版本解析和执行
 
 **这种方法的好处**：
@@ -2311,27 +2311,27 @@ env-doctor/
 
 ## 安全考虑
 
-1. **路径验证**：确认执行的二进制文件位于 VITE_PLUS_HOME/cache 路径下
-2. **禁止路径穿越**：在构建路径前清理版本字符串
+1. **路径验证**：验证执行的二进制文件位于 VP_HOME/cache 路径下
+2. **避免路径遍历**：在构造路径之前清理版本字符串
 3. **原子安装**：使用临时目录 + 重命名模式（已实现）
-4. **日志清理**：不要记录敏感环境变量
+4. **日志清理**：不要记录敏感的环境变量
 
 ## 实现计划
 
 ### 第一阶段：核心基础设施（P0）
 
-1. 在 CLI 中添加 `vp env` 命令结构
+1. 向 CLI 添加 `vp env` 命令结构
 2. 在 main.rs 中实现 argv[0] 检测
 3. 为 `node` 实现 shim 分发逻辑
 4. 实现 `vp env setup`（Unix 符号链接、Windows trampoline `.exe` shims）
 5. 实现 `vp env doctor` 基础诊断
 6. 添加解析缓存（跨升级持久化，并带版本字段）
-7. 实现 `vp env default [version]`，用于设置/显示全局默认 Node.js 版本
-8. 实现 `vp env on` 和 `vp env off`，用于控制 shim 模式
-9. 实现 `vp env pin [version]`，用于按目录固定版本
+7. 实现 `vp env default [version]` 以设置/显示全局默认 Node.js 版本
+8. 实现 `vp env on` 和 `vp env off` 用于 shim 模式控制
+9. 实现 `vp env pin [version]` 用于按目录版本固定
 10. 实现 `vp env unpin`，作为 `pin --unpin` 的别名
 11. 实现 `vp env list`（本地）和 `vp env list-remote`（远程）以显示版本
-12. 实现递归防护（`VITE_PLUS_TOOL_RECURSION`）
+12. 实现递归防护（`VP_TOOL_RECURSION`）
 13. 实现 `vp env exec --node <version>` 命令
 
 ### 第二阶段：完整工具支持（P1）
@@ -2353,9 +2353,9 @@ env-doctor/
 
 ### 第三阶段：完善体验（P2）
 
-1. 实现 `vp env --print`，用于仅对当前会话生效的环境变量
-2. 添加 VITE_PLUS_BYPASS 逃生开关
-3. 改进错误信息
+1. 实现 `vp env --print` 用于仅当前会话的环境
+2. 添加 VP_BYPASS 逃生口
+3. 改进错误消息
 4. 添加 IDE 特定的设置指南
 5. 文档
 
@@ -2385,9 +2385,9 @@ env-doctor/
 
 已做出以下决策：
 
-1. **VITE_PLUS_HOME 默认位置**：`~/.vite-plus` - 简单、易记的路径，方便用户查找和配置。
+1. **VP_HOME 默认位置**: `~/.vite-plus` - 简单、易记的路径，用户容易查找和配置。
 
-2. **Windows Shim 策略**：使用 trampoline `.exe` 文件设置 `VITE_PLUS_SHIM_TOOL` 并启动 `vp.exe` - 避免 “Terminate batch job?” 提示，可在所有 shell 中工作。参见 [RFC: Trampoline EXE for Shims](./trampoline-exe-for-shims.md)。
+2. **Windows Shim 策略**：使用会设置 `VP_SHIM_TOOL` 并启动 `vp.exe` 的 Trampoline `.exe` 文件 - 避免出现“Terminate batch job?”提示，可在所有 shell 中工作。参见 [RFC: Trampoline EXE for Shims](./trampoline-exe-for-shims.md)。
 
 3. **Corepack 处理**：将其作为默认 shim 包含在内（在 [#1309](https://github.com/voidzero-dev/vite-plus/issues/1309) 中重新审视，最初被排除）。该 shim 优先使用 vp 管理的全局 corepack，然后回退到 Node 自带的二进制文件（Node.js ≤ 24），并在 Node.js 25+ 上自动安装受管副本，因为 corepack 不再随 Node 捆绑。参见 [Corepack Shim](#corepack-shim)。
 

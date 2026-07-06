@@ -32,33 +32,13 @@ vp upgrade --rollback
 
 ## 本地 `vite-plus`
 
-使用 Vite+ 的包管理命令更新项目依赖：
+升级现有 Vite+ 项目的推荐方式是使用 `vp migrate`：
 
 ```bash
-vp update vite-plus
+vp migrate
 ```
 
-如果你想将依赖显式地移动到最新版本，也可以使用 `vp add vite-plus@latest`。
-
-### 更新别名包
-
-Vite+ 在安装期间会为其核心包设置一个 npm 别名：
-
-- `vite` 别名为 `npm:@voidzero-dev/vite-plus-core@latest`
-
-`vp update vite-plus` 不会在锁文件中重新解析此别名。要完全升级，请单独更新它：
-
-```bash
-vp update @voidzero-dev/vite-plus-core
-```
-
-或者一次性更新所有包：
-
-```bash
-vp update vite-plus @voidzero-dev/vite-plus-core
-```
-
-你可以使用 `vp outdated` 验证没有任何 Vite+ 包仍然过时。
+对于已经使用 Vite+ 的项目，`migrate` 仅执行工具链版本升级：它会在每个工作区包中，将 `vite-plus`、`vite` -> `@voidzero-dev/vite-plus-core` 别名，以及 `vitest` 的固定版本，重新锁定到当前全局 `vp` 所捆绑的版本。它会跳过首次设置步骤（git hooks、编辑器和 agent 文件、lint 迁移），因此版本升级不会重新改动你已经配置好的内容。传入 `--full` 以同时执行这些设置。
 
 ### 更新 Vitest 固定版本
 
@@ -77,3 +57,45 @@ vp --version
 ```
 
 然后将 `vitest` 覆盖项设置为该精确版本，或者重新运行 `vp migrate` 让它为你更新固定版本。
+
+## 预览构建
+
+一些 Vite+ 拉取请求会在 npm 发布之前发布临时包用于测试。可将其视为夜间构建或前沿构建：当你需要验证某个特定修复、测试新的上游依赖升级，或在下一个版本发布前确认某项更改时，它们很有用。日常工作中，建议优先使用已发布的 `latest` 版本。
+
+每个符合条件的拉取请求中的每次提交都会发布到 [pkg.pr.new](https://pkg.pr.new)，并通过 [registry bridge](https://registry-bridge.viteplus.dev/) 注册。该桥接服务会将这些构建作为普通的 npm 版本提供，格式为 `0.0.0-commit.<sha>`，并将其他所有包代理到 npm 注册表。这意味着你可以使用常规版本规格来安装预览版，而不是可变 URL，并且在 CI 中也会解析到相同的版本。
+
+`vite-plus` 和 `@voidzero-dev/vite-plus-core` 都以相同的 `0.0.0-commit.<sha>` 版本发布。每个拉取请求都会附带一条评论，列出其最新提交对应的确切版本，并提供可直接复制的安装步骤。
+
+你可以在自动更新上游依赖的拉取请求中找到预览构建。示例可在已合并的拉取请求中搜索 [upstream dependency updates](https://github.com/voidzero-dev/vite-plus/pulls?q=is%3Apr+is%3Amerged+upgrade+upstream+dependencies)。
+
+预览构建通过拉取请求编号或提交 SHA 来指定。它们不是稳定的版本范围，除非维护者要求，否则你应避免将其保留在长期存在的分支中。
+
+### 全局 `vp` 预览版
+
+通过向安装器传递 `VP_PR_VERSION` 来安装全局 CLI 的预览构建。传入拉取请求编号或提交 SHA：
+
+```bash
+curl -fsSL https://vite.plus | VP_PR_VERSION=<pr-or-sha> bash
+```
+
+在 Windows 上：
+
+```powershell
+$env:VP_PR_VERSION = "<pr-or-sha>"
+irm https://vite.plus/ps1 | iex
+Remove-Item Env:\VP_PR_VERSION
+```
+
+安装器会通过 registry bridge 将该引用解析为其 `0.0.0-commit.<sha>` 构建，并像安装其他版本一样进行安装。之后运行 `vp --version` 以确认当前启用的是哪个构建以及捆绑的工具版本。测试完成后，可通过运行 `vp upgrade --force`，或在不设置 `VP_PR_VERSION` 的情况下重新运行安装器，恢复到已发布版本。
+
+### 本地 `vite-plus` 预览版
+
+在安装了上述预览版全局 CLI 之后，在项目中运行 migrate，将其本地 `vite-plus` 切换到同一构建：
+
+```bash
+vp migrate
+```
+
+Migrate 会将项目指向桥接注册表（写入 `.npmrc`，或者在 Yarn Berry 中写入 `.yarnrc.yml`），并将 `vite-plus` 以及 `vite` -> `@voidzero-dev/vite-plus-core` 别名固定到匹配的 `0.0.0-commit.<sha>` 版本。正是这条注册表配置使得项目自己的 CI 也能解析到相同版本，因此如果你希望 CI 也测试该预览版，就把它提交上去。
+
+安装后，请用 `vp --version` 检查捆绑版本。测试完成后，恢复到已发布版本：将 `vite-plus` 改回 `latest`，从 `.npmrc`（或 `.yarnrc.yml`）中移除 bridge 的 `registry` 行，然后使用 `vp install` 重新安装。

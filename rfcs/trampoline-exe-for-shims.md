@@ -74,14 +74,14 @@ PowerShell `.ps1` 脚本可以避免 Ctrl+C 问题，但有关键限制：
 
 ```
 ~/.vite-plus/bin/
-├── vp.exe       # Trampoline → 启动 current\bin\vp.exe
-├── node.exe     # Trampoline → 设置 VITE_PLUS_SHIM_TOOL=node，启动 vp.exe
-├── npm.exe      # Trampoline → 设置 VITE_PLUS_SHIM_TOOL=npm，启动 vp.exe
-├── npx.exe      # Trampoline → 设置 VITE_PLUS_SHIM_TOOL=npx，启动 vp.exe
-├── corepack.exe # Trampoline → 设置 VITE_PLUS_SHIM_TOOL=corepack，启动 vp.exe
-├── vpx.exe      # Trampoline → 设置 VITE_PLUS_SHIM_TOOL=vpx，启动 vp.exe
-├── vpr.exe      # Trampoline → 设置 VITE_PLUS_SHIM_TOOL=vpr，启动 vp.exe
-└── tsc.exe      # Trampoline → 设置 VITE_PLUS_SHIM_TOOL=tsc，启动 vp.exe（包 shim）
+├── vp.exe       # 启动器 → 生成 current\bin\vp.exe
+├── node.exe     # 启动器 → 设置 VP_SHIM_TOOL=node，生成 vp.exe
+├── npm.exe      # 启动器 → 设置 VP_SHIM_TOOL=npm，生成 vp.exe
+├── npx.exe      # 启动器 → 设置 VP_SHIM_TOOL=npx，生成 vp.exe
+├── corepack.exe # 启动器 → 设置 VP_SHIM_TOOL=corepack，生成 vp.exe
+├── vpx.exe      # 启动器 → 设置 VP_SHIM_TOOL=vpx，生成 vp.exe
+├── vpr.exe      # 启动器 → 设置 VP_SHIM_TOOL=vpr，生成 vp.exe
+└── tsc.exe      # 启动器 → 设置 VP_SHIM_TOOL=tsc，生成 vp.exe（包 shim）
 ```
 
 每个 trampoline 都是 `vp-shim.exe` 的副本（与 `vp.exe` 一起分发的模板二进制文件）。
@@ -124,11 +124,11 @@ fn main() {
     // 4. 使用环境变量启动 vp.exe
     let mut cmd = Command::new(&vp_exe);
     cmd.args(env::args_os().skip(1));
-    cmd.env("VITE_PLUS_HOME", vp_home);
+    cmd.env("VP_HOME", vp_home);
 
     if tool_name != "vp" {
-        cmd.env("VITE_PLUS_SHIM_TOOL", tool_name);
-        cmd.env_remove("VITE_PLUS_TOOL_RECURSION");
+        cmd.env("VP_SHIM_TOOL", tool_name);
+        cmd.env_remove("VP_TOOL_RECURSION");
     }
 
     // 5. 传播退出码（错误消息通过 write_all 输出，而不是 eprintln!）
@@ -170,11 +170,11 @@ fn install_ctrl_handler() {
 
 在启动 `vp.exe` 之前，trampoline 会设置三个环境变量：
 
-| 变量                       | 何时                     | 作用                                                               |
-| -------------------------- | ------------------------ | ------------------------------------------------------------------ |
-| `VITE_PLUS_HOME`           | 始终                     | 告诉 vp.exe 安装目录（从 `bin_dir.parent()` 推导）                |
-| `VITE_PLUS_SHIM_TOOL`      | 仅工具 shims（不包括 "vp"） | 告诉 vp.exe 以指定工具名进入 shim 分发模式                         |
-| `VITE_PLUS_TOOL_RECURSION` | 对工具 shims 移除         | 清除递归标记，以便在嵌套调用中进行新的版本解析                    |
+| Variable            | When                       | Purpose                                                                        |
+| ------------------- | -------------------------- | ------------------------------------------------------------------------------ |
+| `VP_HOME`           | Always                     | 告诉 vp.exe 安装目录（由 `bin_dir.parent()` 推导）                            |
+| `VP_SHIM_TOOL`      | 仅工具 shim（不是 "vp"）   | 告诉 vp.exe 为指定工具进入 shim 分发模式                                       |
+| `VP_TOOL_RECURSION` | 为工具 shim 移除            | 清除递归标记，以便在嵌套调用中进行全新的版本解析                                |
 
 ### Ctrl+C 处理
 
@@ -190,13 +190,13 @@ trampoline 安装一个返回 `TRUE`（1）的控制台控制处理器：
 
 ### 与 Shim 检测的集成
 
-`shim/mod.rs` 中的 `detect_shim_tool()` 会在 `argv[0]` 之前检查 `VITE_PLUS_SHIM_TOOL` 环境变量：
+`detect_shim_tool()` in `shim/mod.rs` 在 `argv[0]` 之前检查 `VP_SHIM_TOOL` 环境变量：
 
 ```
 Trampoline (node.exe)
-  → 设置 VITE_PLUS_SHIM_TOOL=node、VITE_PLUS_HOME=...，移除 VITE_PLUS_TOOL_RECURSION
-  → 使用原始参数启动 current/bin/vp.exe
-    → detect_shim_tool() 读取环境变量 → "node"
+  → sets VP_SHIM_TOOL=node, VP_HOME=..., removes VP_TOOL_RECURSION
+  → spawns current/bin/vp.exe with original args
+    → detect_shim_tool() reads env var → "node"
     → dispatch("node", args)
     → 解析 Node.js 版本，执行真实的 node
 ```

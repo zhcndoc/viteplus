@@ -65,8 +65,17 @@ vp install -w
 
 - `vp install -g <pkg>` 全局安装一个包
 - `vp uninstall -g <pkg>` 移除一个全局包
-- `vp update -g [pkg]` 更新一个全局包或所有全局包
+- `vp update -g [pkg]` 更新一个全局包或全部全局包
 - `vp list -g [pkg]` 列出全局包
+- `vp outdated -g [pkg]` 打印过期的包
+
+::: warning
+这些命令**不会**与底层包管理器的全局安装目录交互。
+
+相反，Vite+ 会在 `VP_HOME/packages` 下管理自己的全局包，使其能够在不同的 Node.js 版本之间保持可用。
+
+因此，诸如 `vp link` 之类的命令不会影响 Vite+ 的全局包，并且不会出现在 `vp list -g` 中。
+:::
 
 ## 管理依赖
 
@@ -109,6 +118,7 @@ Vite+ 提供了所有熟悉的包管理命令：
 - `vp uninstall -g typescript`
 - `vp update -g`
 - `vp list -g`
+- `vp outdated -g`
 
 #### 添加和移除
 
@@ -167,8 +177,8 @@ vp rebuild -- --update-binary
 
 ```bash
 vp pm config get registry
-vp pm cache clean --force
-vp pm exec tsc --version
+vp pm cache clean -- --force
+vp pm audit --json
 ```
 
 #### 分阶段发布

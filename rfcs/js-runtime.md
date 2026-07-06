@@ -227,7 +227,7 @@ let runtime = download_runtime_for_project(&project_path).await?;
 遵循 PackageManager 模式：
 
 ```
-$VITE_PLUS_HOME/js_runtime/{runtime}/{version}/
+$VP_HOME/js_runtime/{runtime}/{version}/
 ```
 
 示例：
@@ -241,7 +241,7 @@ $VITE_PLUS_HOME/js_runtime/{runtime}/{version}/
 Node.js 版本索引会被本地缓存，以避免重复网络请求：
 
 ```
-$VITE_PLUS_HOME/js_runtime/node/index_cache.json
+$VP_HOME/js_runtime/node/index_cache.json
 ```
 
 缓存结构：
@@ -427,7 +427,7 @@ warning: invalid version 'latest' in .node-version, ignoring
 
 **注意：** `.node-version` 仅通过 `vp env pin` 显式写入。
 
-## 下载源
+## 下载来源
 
 ### Node.js
 

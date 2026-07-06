@@ -30,13 +30,13 @@
 
 **此命令会迁移的内容**：
 
-- ✅ **依赖**：vite、vitest、oxlint、oxfmt → vite-plus
-- ✅ **覆盖项**：强制将 vite → vite-plus（适用于所有依赖）
-  - pnpm（没有现有的 `pnpm` 配置）：将 `overrides`、`peerDependencyRules` 和 `catalog` 写入 `pnpm-workspace.yaml`
-  - pnpm（已有 `pnpm` 配置）：在 `package.json` 中添加 `pnpm.overrides` 和 `pnpm.peerDependencyRules`
+- ✅ **Dependencies**: vite, vitest, oxlint, oxfmt → vite-plus
+- ✅ **Overrides**: 强制 vite → vite-plus（适用于所有依赖）
+  - pnpm（工作区设置）：将 `overrides` 和 `peerDependencyRules` 写入 `pnpm-workspace.yaml`；复用现有的受管理/默认 catalog，若不存在则创建顶级 `catalog`
+  - pnpm（现有 `pnpm` 配置）：在 `package.json` 中添加 `pnpm.overrides` 和 `pnpm.peerDependencyRules`
   - npm/bun：在 `package.json` 中添加 `overrides.vite` 映射
   - yarn：在 `package.json` 中添加 `resolutions.vite` 映射
-  - **收益**：代码继续使用 `import from 'vite'` —— 会自动解析到 vite-plus
+  - **Benefit**: 代码保持 `import from 'vite'` - 会自动解析到 vite-plus
 - ✅ **配置文件**：
   - .oxlintrc → vite.config.ts（lint 部分）
   - .oxfmtrc → vite.config.ts（format 部分）
@@ -202,16 +202,18 @@ ESLint 注释已替换
     "react": "^18.2.0"
   },
   "devDependencies": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>",
     "@vitejs/plugin-react": "^4.2.0"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>"
   }
 }
 ```
 
-**迁移后（pnpm，没有现有 `pnpm` 配置）-- `package.json`：**
+`<vite-plus-version>` 是随执行迁移的 CLI 一起捆绑的具体版本；迁移不会持久化可变的 `latest` 标签。
+
+**迁移后（pnpm，无现有 `pnpm` 配置）-- `package.json`：**
 
 ```json
 {
@@ -234,14 +236,14 @@ ESLint 注释已替换
 }
 ```
 
-> 已经声明顶层 `packageManager` 字段的项目会改为保持该字段更新（兼容优先规则，见 [RFC: devEngines Support](./dev-engines.md)）。
+> 已经声明顶层 `packageManager` 字段的项目会改为保持该字段更新（兼容优先规则，见 [RFC: devEngines 支持](./dev-engines.md)）。
 
 **迁移后（pnpm，没有现有 `pnpm` 配置）-- `pnpm-workspace.yaml`：**
 
 ```yaml
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vite-plus: latest
+  vite: npm:@voidzero-dev/vite-plus-core@<vite-plus-version>
+  vite-plus: <vite-plus-version>
 overrides:
   vite: 'catalog:'
 peerDependencyRules:
@@ -252,7 +254,9 @@ peerDependencyRules:
     vitest: '*'
 ```
 
-**迁移后（pnpm，已有 `pnpm` 配置）-- `package.json`：**
+此示例展示了回退的顶层默认 catalog。如果工作区已经使用 `catalogs.default`，迁移会保留该形式。如果现有命名 catalog 负责 Vite+ 工具链，迁移会保留该命名 catalog 上的包引用和受管覆盖，而不会引入默认 catalog。
+
+**迁移后（pnpm，存在现有 `pnpm` 配置）-- `package.json`：**
 
 已经在 `package.json` 中有 `pnpm` 字段的项目（例如包含 `overrides` 或 `onlyBuiltDependencies`）会继续使用 `package.json` 作为 pnpm 配置位置：
 
@@ -260,12 +264,12 @@ peerDependencyRules:
 {
   "name": "my-package",
   "devDependencies": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-    "vite-plus": "latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>",
+    "vite-plus": "<vite-plus-version>"
   },
   "pnpm": {
     "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@latest"
+      "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>"
     },
     "peerDependencyRules": {
       "allowAny": ["vite"],
@@ -277,7 +281,7 @@ peerDependencyRules:
 
 **重要**：
 
-- `overrides.vite` 确保任何依赖到 `vite` 的包都会改为使用 `vite-plus`
+- `overrides.vite` 确保任何依赖于 `vite` 的包都会改为使用 `vite-plus`
 - 对于没有现有配置的 pnpm，`overrides` 和 `peerDependencyRules` 会写入 `pnpm-workspace.yaml`
 - 对于在 `package.json` 中已有 `pnpm` 配置的 pnpm，会尊重现有位置
 - 将 `import from 'vite'` 重写为 `import from 'vite-plus'`
@@ -497,14 +501,14 @@ export default defineConfig({
 
 ### 针对 pnpm
 
-对于单仓库项目以及在 `package.json` 中没有现有 `pnpm` 配置的独立项目，`overrides`、`peerDependencyRules` 和 `catalog` 会写入 `pnpm-workspace.yaml`。对于在 `package.json` 中已有 `pnpm` 配置的项目，则继续使用 `package.json`。
+对于 monorepo 项目以及 `package.json` 中没有现有 `pnpm` 配置的独立项目，`overrides` 和 `peerDependencyRules` 会写入 `pnpm-workspace.yaml`。基于 catalog 的项目会复用其现有的受管理/默认 catalog 布局；只有在不存在合适的 catalog 时，迁移才会创建顶层 `catalog`。对于 `package.json` 中已有 `pnpm` 配置的项目，则继续使用 `package.json`。
 
 `pnpm-workspace.yaml`
 
 ```yaml
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vite-plus: latest
+  vite: npm:@voidzero-dev/vite-plus-core@<vite-plus-version>
+  vite-plus: <vite-plus-version>
 overrides:
   vite: 'catalog:'
 peerDependencyRules:
@@ -522,10 +526,10 @@ peerDependencyRules:
 ```json
 {
   "devDependencies": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@latest"
+    "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>"
   }
 }
 ```
@@ -536,7 +540,7 @@ peerDependencyRules:
 
 ```yaml
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vite: npm:@voidzero-dev/vite-plus-core@<vite-plus-version>
 ```
 
 `package.json`
@@ -567,6 +571,23 @@ catalog:
 8. ✅ 高效处理单仓库迁移
 9. ✅ 安全且透明地说明所做的更改
 
+## Bunx 脚本重写
+
+常规脚本规则会将 `vite`、`vitest`、`oxlint`、`oxfmt`、`tsdown`
+和 `lint-staged` 重写为它们对应的 `vp` 命令。当这些工具中的某一个通过
+`bunx` 启动时，迁移会保留 `bunx` 及其 `--bun` 运行时
+覆盖选项，只重写内部命令。例如，
+`bunx --bun vite build` 会变成 `bunx --bun vp build`，而
+`bunx --bun vitest run` 会变成 `bunx --bun vp test run`。
+
+当 `eslint` 和 `prettier` 的可选
+迁移运行时，也适用相同的行为。像
+`portless --tailscale run bunx --bun vite` 这样的嵌套启动器形式也会被处理。其他包执行器保持不变，可另行处理。
+
+## 迁移后格式化
+
+在成功安装后，迁移仅对迁移过程中更改的文件运行格式化工具，排除在 Git 工作区中已经处于脏状态的路径。Oxfmt 会选择受支持的格式。这会格式化清单、生成的配置和重写后的源代码，而不会在大型项目中重新格式化无关文件。非 Git 项目会保留全项目格式化。仍然使用 Prettier 的项目不会自动格式化。
+
 ## ESLint 迁移
 
 当检测到 ESLint flat config（`eslint.config.{js,mjs,cjs,ts,mts,cts}`）和 `eslint` 依赖时，`vp migrate` 会提供将 ESLint 配置通过 [`@oxlint/migrate`](https://www.npmjs.com/package/@oxlint/migrate) 转换为 oxlint 的选项。
@@ -585,15 +606,16 @@ catalog:
 
 **脚本重写**（由 [brush-parser](https://github.com/reubeno/brush) 提供 shell AST 解析支持）：
 
-| 之前                                     | 之后                                        |
-| ---------------------------------------- | ------------------------------------------- |
-| `eslint .`                               | `vp lint .`                                 |
-| `eslint --cache --ext .ts --fix .`       | `vp lint --fix .`                           |
-| `NODE_ENV=test eslint --cache .`         | `NODE_ENV=test vp lint .`                   |
-| `cross-env NODE_ENV=test eslint --cache .` | `cross-env NODE_ENV=test vp lint .`         |
-| `eslint . && vite build`                 | `vp lint . && vite build`                   |
-| `if [ -f .eslintrc ]; then eslint .; fi` | `if [ -f .eslintrc ]; then vp lint . fi`    |
-| `npx eslint .`                           | `npx eslint .`（保留 npx/bunx 包装器）      |
+| Before                                     | After                                    |
+| ------------------------------------------ | ---------------------------------------- |
+| `eslint .`                                 | `vp lint .`                              |
+| `eslint --cache --ext .ts --fix .`         | `vp lint --fix .`                        |
+| `NODE_ENV=test eslint --cache .`           | `NODE_ENV=test vp lint .`                |
+| `cross-env NODE_ENV=test eslint --cache .` | `cross-env NODE_ENV=test vp lint .`      |
+| `eslint . && vite build`                   | `vp lint . && vite build`                |
+| `if [ -f .eslintrc ]; then eslint .; fi`   | `if [ -f .eslintrc ]; then vp lint . fi` |
+| `bunx --bun eslint .`                      | `bunx --bun vp lint .`                   |
+| `npx eslint .`                             | `npx eslint .` (未改变)                  |
 
 已移除的仅 ESLint 标志：`--cache`、`--ext`、`--parser`、`--parser-options`、`--plugin`、`--rulesdir`、`--resolve-plugins-relative-to`、`--output-file`、`--env`、`--no-eslintrc`、`--no-error-on-unmatched-pattern`、`--debug`、`--no-inline-config`
 
@@ -636,19 +658,20 @@ catalog:
 
 **脚本重写**（由 [brush-parser](https://github.com/reubeno/brush) 提供 shell AST 解析支持）：
 
-| 之前                                            | 之后                                                  |
-| ------------------------------------------------- | ------------------------------------------------------ |
-| `prettier .`                                      | `vp fmt .`                                             |
-| `prettier --write .`                              | `vp fmt .`                                             |
-| `prettier --check .`                              | `vp fmt --check .`                                     |
-| `prettier --list-different .`                     | `vp fmt --check .`                                     |
-| `prettier -l .`                                   | `vp fmt --check .`                                     |
-| `prettier --write --single-quote --tab-width 4 .` | `vp fmt .`                                             |
-| `prettier --config .prettierrc --write .`         | `vp fmt .`                                             |
-| `prettier --plugin prettier-plugin-tailwindcss .` | `vp fmt .`                                             |
-| `cross-env NODE_ENV=test prettier --write .`      | `cross-env NODE_ENV=test vp fmt .`                     |
-| `prettier --write . && eslint --fix .`            | `vp fmt . && eslint --fix .`                           |
-| `npx prettier --write .`                          | `npx prettier --write .`（保留 npx/bunx 包装器）       |
+| Before                                            | After                                |
+| ------------------------------------------------- | ------------------------------------ |
+| `prettier .`                                      | `vp fmt .`                           |
+| `prettier --write .`                              | `vp fmt .`                           |
+| `prettier --check .`                              | `vp fmt --check .`                   |
+| `prettier --list-different .`                     | `vp fmt --check .`                   |
+| `prettier -l .`                                   | `vp fmt --check .`                   |
+| `prettier --write --single-quote --tab-width 4 .` | `vp fmt .`                           |
+| `prettier --config .prettierrc --write .`         | `vp fmt .`                           |
+| `prettier --plugin prettier-plugin-tailwindcss .` | `vp fmt .`                           |
+| `cross-env NODE_ENV=test prettier --write .`      | `cross-env NODE_ENV=test vp fmt .`   |
+| `prettier --write . && eslint --fix .`            | `vp fmt . && eslint --fix .`         |
+| `bunx --bun prettier --write .`                   | `bunx --bun vp fmt .`                |
+| `npx prettier --write .`                          | `npx prettier --write .` (未更改) |
 
 **已移除的仅 Prettier 标志**：
 

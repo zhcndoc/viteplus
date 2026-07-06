@@ -716,23 +716,23 @@ execFileSync(binaryPath, process.argv.slice(2), {
 #!/bin/bash
 # https://vite.plus
 #
-# 环境变量：
-#   VITE_PLUS_VERSION - 要安装的版本（默认：latest）
-#   VITE_PLUS_INSTALL_DIR - 安装目录（默认：~/.vite-plus）
-#   NPM_CONFIG_REGISTRY - 自定义 npm registry URL（默认：https://registry.npmjs.org）
+# Environment variables:
+#   VP_VERSION - Version to install (default: latest)
+#   VP_HOME - Installation directory (default: ~/.vite-plus)
+#   NPM_CONFIG_REGISTRY - Custom npm registry URL (default: https://registry.npmjs.org)
 
 set -e
 
-VITE_PLUS_VERSION="${VITE_PLUS_VERSION:-latest}"
-INSTALL_DIR="${VITE_PLUS_INSTALL_DIR:-$HOME/.vite-plus}"
+VP_VERSION="${VP_VERSION:-latest}"
+INSTALL_DIR="${VP_HOME:-$HOME/.vite-plus}"
 NPM_REGISTRY="${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org}"
 NPM_REGISTRY="${NPM_REGISTRY%/}"
 
 # 检测平台并获取版本...
 # （为简洁起见省略平台检测代码）
 
-# 设置按版本区分的目录
-VERSION_DIR="$INSTALL_DIR/$VITE_PLUS_VERSION"
+# Set up version-specific directories
+VERSION_DIR="$INSTALL_DIR/$VP_VERSION"
 BIN_DIR="$VERSION_DIR/bin"
 DIST_DIR="$VERSION_DIR/dist"
 CURRENT_LINK="$INSTALL_DIR/current"
@@ -740,16 +740,16 @@ CURRENT_LINK="$INSTALL_DIR/current"
 # 创建目录
 mkdir -p "$BIN_DIR" "$DIST_DIR"
 
-# 下载平台包（二进制 + .node 文件）
-platform_url="${NPM_REGISTRY}/${package_name}/-/vite-plus-cli-${package_suffix}-${VITE_PLUS_VERSION}.tgz"
-# 解压到临时目录，复制二进制到 BIN_DIR，复制 .node 文件到 DIST_DIR
+# Download platform package (binary + .node files)
+platform_url="${NPM_REGISTRY}/${package_name}/-/vite-plus-cli-${package_suffix}-${VP_VERSION}.tgz"
+# Extract to temp dir, copy binary to BIN_DIR, copy .node files to DIST_DIR
 
-# 下载主包（JS 脚本 + package.json）
-main_url="${NPM_REGISTRY}/vite-plus-cli/-/vite-plus-cli-${VITE_PLUS_VERSION}.tgz"
-# 解压 dist/* 到 DIST_DIR，将 package.json 复制到 VERSION_DIR
+# Download main package (JS scripts + package.json)
+main_url="${NPM_REGISTRY}/vite-plus-cli/-/vite-plus-cli-${VP_VERSION}.tgz"
+# Extract dist/* to DIST_DIR, copy package.json to VERSION_DIR
 
-# 创建/更新 current 符号链接
-ln -sfn "$VITE_PLUS_VERSION" "$CURRENT_LINK"
+# Create/update current symlink
+ln -sfn "$VP_VERSION" "$CURRENT_LINK"
 
 # Cleanup old versions (keep max 3)
 cleanup_old_versions
@@ -767,15 +767,15 @@ cleanup_old_versions
 ```powershell
 # https://vite.plus/ps1
 #
-# 环境变量：
-#   VITE_PLUS_VERSION - 要安装的版本（默认：latest）
-#   VITE_PLUS_INSTALL_DIR - 安装目录（默认：$env:USERPROFILE\.vite-plus）
-#   NPM_CONFIG_REGISTRY - 自定义 npm registry URL（默认：https://registry.npmjs.org）
+# Environment variables:
+#   VP_VERSION - Version to install (default: latest)
+#   VP_HOME - Installation directory (default: $env:USERPROFILE\.vite-plus)
+#   NPM_CONFIG_REGISTRY - Custom npm registry URL (default: https://registry.npmjs.org)
 
 $ErrorActionPreference = "Stop"
 
-$ViteVersion = if ($env:VITE_PLUS_VERSION) { $env:VITE_PLUS_VERSION } else { "latest" }
-$InstallDir = if ($env:VITE_PLUS_INSTALL_DIR) { $env:VITE_PLUS_INSTALL_DIR } else { "$env:USERPROFILE\.vite-plus" }
+$ViteVersion = if ($env:VP_VERSION) { $env:VP_VERSION } else { "latest" }
+$InstallDir = if ($env:VP_HOME) { $env:VP_HOME } else { "$env:USERPROFILE\.vite-plus" }
 $NpmRegistry = if ($env:NPM_CONFIG_REGISTRY) { $env:NPM_CONFIG_REGISTRY.TrimEnd('/') } else { "https://registry.npmjs.org" }
 
 # 检测架构并获取版本...

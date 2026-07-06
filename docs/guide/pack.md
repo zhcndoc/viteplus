@@ -1,4 +1,4 @@
-# Pack
+# 打包
 
 `vp pack` 使用 [tsdown](https://tsdown.dev/guide/) 构建生产环境库。
 
@@ -58,4 +58,12 @@ export default defineConfig({
 });
 ```
 
-有关配置自定义文件名、嵌入式资产和跨平台目标的详细信息，请参阅官方 [tsdown 可执行文件文档](https://tsdown.dev/options/exe#executable)。
+可执行文件支持已内置于 Vite+ 中，因此你无需单独安装 `@tsdown/exe`。
+
+构建可执行文件使用了 Node 的 [Single Executable Applications](https://nodejs.org/api/single-executable-applications.html) 支持，并且需要 Node.js 25.7.0 或更高版本。如果 `vp pack --exe` 报告不受支持的版本，请使用 `vp env use 26` 切换当前运行时。
+
+有关配置自定义文件名、嵌入资源以及跨平台目标的详细信息，请参阅官方 [tsdown 可执行文件文档](https://tsdown.dev/options/exe#executable)。
+
+## CSS 打包
+
+`vp pack` 可以转换并打包 CSS（包括 CSS Modules 和 [Lightning CSS](https://lightningcss.dev/) 优化），用于你的入口点。此支持已内置到 Vite+ 中，因此你无需单独安装 `@tsdown/css` 或 `lightningcss`，即可开箱即用。

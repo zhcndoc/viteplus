@@ -47,3 +47,19 @@ export default defineConfig({
   },
 });
 ```
+
+### 默认禁用某个步骤
+
+如果想让 `vp check` 在不每次都传入标志的情况下跳过格式化或 linting，可以在 `vite.config.ts` 中设置 [`check`](/config/check) 块。当项目需要工具链的其他部分，但不需要例如格式化时，这很方便：
+
+```ts [vite.config.ts]
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  check: {
+    fmt: false, // `vp check` 会进行 lint（以及类型检查），但不会格式化
+  },
+});
+```
+
+这些选项只影响 `vp check`；单独运行的 `vp fmt` 和 `vp lint` 仍会正常执行。如果在配置中禁用了某个步骤，或者传入了匹配的 `--no-fmt` / `--no-lint` 标志，则该步骤会被跳过。由于这些默认值会应用于每次 `vp check` 运行，因此调用 `vp check` 的 pre-commit hook 也会跳过被禁用的步骤。完整参考请参阅 [Check config](/config/check)。

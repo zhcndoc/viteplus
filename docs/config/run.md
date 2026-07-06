@@ -120,10 +120,12 @@ tasks: {
 
 ### `dependsOn`
 
-- **类型:** `string[]`
+- **类型:** `Array<string | { task: string, from: DependsOnFrom }>`
 - **默认值:** `[]`
 
-在此任务开始之前必须成功完成的任务。
+`from` 接受依赖类型 `"dependencies"`、`"devDependencies"`、`"peerDependencies"`，或者这些值的数组，例如 `["dependencies", "devDependencies"]`。
+
+这些依赖项必须在此任务开始前成功完成。
 
 ```ts [vite.config.ts]
 tasks: {
@@ -140,7 +142,20 @@ tasks: {
 dependsOn: ['@my/core#build', '@my/utils#lint'];
 ```
 
-关于显式依赖和拓扑依赖如何交互的详细信息，请参见[任务依赖](/guide/run#task-dependencies)。
+使用对象形式 `{ task: string, from: DependsOnFrom }` 引用所有依赖中的任务：
+
+```ts [vite.config.ts]
+tasks: {
+  test: {
+    command: 'vp test',
+    dependsOn: [{ task: 'build', from: ['dependencies', 'devDependencies'] }],
+  },
+}
+```
+
+对于上面的示例，Vite Task 会读取声明包的直接 `dependencies` 和 `devDependencies`，并在每个定义了 `build` 任务的依赖中运行该任务。没有 `build` 的包会被跳过。
+
+有关显式依赖和拓扑依赖如何交互的详细信息，请参见[任务依赖](/guide/run#task-dependencies)。
 
 ### `cache`
 
@@ -168,17 +183,19 @@ tasks: {
 ```ts [vite.config.ts]
 tasks: {
   build: {
-    command: 'vp build',
+    command: 'node build.mjs',
     env: ['NODE_ENV'],
   },
 }
 ```
 
-支持通配符模式：`VITE_*` 匹配所有以 `VITE_` 开头的变量。
+支持通配符模式和 `!` 排除模式：`VITE_*` 匹配所有以 `VITE_` 开头的变量，`!VITE_SECRET` 会将 `VITE_SECRET` 变量从匹配中排除。
+
+对于 `vp build`，Vite 会通过[自动跟踪](/guide/automatic-data-tracking#cooperative-tracking)报告 Vite 环境变量。除非你的项目有 Vite 无法报告的额外构建行为，否则标准 Vite 构建不要在这里添加 `VITE_*` 或 `NODE_ENV`。
 
 ```bash
 $ NODE_ENV=development vp run build    # 首次运行
-$ NODE_ENV=production vp run build     # 缓存未命中：变量已更改
+$ NODE_ENV=production vp run build     # 缓存未命中：`NODE_ENV` 已更改
 ```
 
 ### `untrackedEnv`
@@ -191,13 +208,17 @@ $ NODE_ENV=production vp run build     # 缓存未命中：变量已更改
 ```ts [vite.config.ts]
 tasks: {
   build: {
-    command: 'vp build',
+    command: 'node build.mjs',
     untrackedEnv: ['CI', 'GITHUB_ACTIONS'],
   },
 }
 ```
 
-一组常见的环境变量会自动传递给所有任务：
+`untrackedEnv` 接受与 [`env`](#env) 相同的通配符和 `!` 排除模式。
+
+如果某个变量的值会改变任务结果，就不要把它放入 `untrackedEnv`。如果某个缓存报告工具已通过[自动跟踪](/guide/automatic-data-tracking#cooperative-tracking)覆盖了该变量，请不要将其放入 `env` 和 `untrackedEnv` 中。
+
+Vite Task 会向所有任务传递一组常见环境变量：
 
 - **系统:** `HOME`, `USER`, `PATH`, `SHELL`, `LANG`, `TZ`
 - **Node.js:** `NODE_OPTIONS`, `COREPACK_HOME`, `PNPM_HOME`
@@ -209,7 +230,7 @@ tasks: {
 - **类型:** `Array<string | { auto: boolean } | { pattern: string, base: "workspace" | "package" }>`
 - **默认值:** `[{ auto: true }]`（自动推断）
 
-Vite Task 会自动检测命令使用了哪些文件（参见[自动文件跟踪](/guide/cache#automatic-file-tracking)）。`input` 选项可用于显式包含或排除特定文件。
+Vite Task 会自动检测命令使用了哪些文件。有关详细信息以及何时添加手动配置，请参见[自动数据跟踪](/guide/automatic-data-tracking)。
 
 **从自动跟踪中排除文件**：
 
@@ -270,26 +291,41 @@ tasks: {
 
 ### `output`
 
-- **类型:** `Array<string | { pattern: string, base: "workspace" | "package" }>`
-- **默认值:** `[]`（不归档任何内容）
+- **类型:** `Array<string | { auto: boolean } | { pattern: string, base: "workspace" | "package" }>`
+- **默认值:** 自动写入跟踪
 
-任务生成的文件。它们会在成功运行后归档，并在缓存命中时恢复，因此你无需重新构建它们。留空（或省略）则不会归档任何内容。
+Vite Task 会自动归档成功任务运行生成的文件，并在缓存命中时恢复这些文件。
+
+如果你省略 `output`，Vite Task 会使用自动写入跟踪来选择这些文件。当你需要覆盖要恢复的文件时，请添加显式的 `output` 条目。
 
 ```ts [vite.config.ts]
 tasks: {
   build: {
-    command: 'vp build',
+    command: 'node build.mjs',
     output: ['dist/**', '!dist/cache/**'],
   },
 }
 ```
 
-如果任务会写入其自身包之外的位置，请使用带有 `base: "workspace"` 的对象形式：
+使用 `{ auto: true }` 可以在添加显式输出 glob 的同时保留自动写入跟踪。
+
+这在任务会写入不应从缓存恢复的文件时很有用。例如，可排除 TypeScript 的 `.tsbuildinfo` 文件：
+
+```ts [vite.config.ts]
+tasks: {
+  typecheck: {
+    command: 'tsc --build',
+    output: [{ auto: true }, '!*.tsbuildinfo'],
+  },
+}
+```
+
+如果任务写入到了其自身包之外，请使用带有 `base: "workspace"` 的对象形式：
 
 ```ts [vite.config.ts]
 tasks: {
   build: {
-    command: 'vp build',
+    command: 'node build.mjs',
     output: [
       'dist/**',
       { pattern: 'shared-artifacts/**', base: 'workspace' },
@@ -297,6 +333,19 @@ tasks: {
   },
 }
 ```
+
+将 `output: []` 设为空数组，可为缓存任务禁用输出恢复：
+
+```ts [vite.config.ts]
+tasks: {
+  report: {
+    command: 'node scripts/report.mjs',
+    output: [],
+  },
+}
+```
+
+与 `cache: false` 不同，`output: []` 仍然允许 Vite Task 对任务进行指纹识别。在缓存命中时，Vite Task 会跳过命令并回放其终端输出。当任务的输出文件已经存在且不需要恢复时，可在本地缓存场景中使用此配置。
 
 ### `cwd`
 

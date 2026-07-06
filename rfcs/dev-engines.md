@@ -1,4 +1,4 @@
-# RFC: `devEngines` 支持运行时和包管理器选择
+# RFC：`devEngines` 支持运行时和包管理器选择
 
 ## 摘要
 
@@ -36,9 +36,9 @@ interface DevEngines {
 }
 
 interface DevEngineDependency {
-  name: string; // required
-  version?: string; // semver range, same syntax as engines.node; absent = any
-  onFail?: 'ignore' | 'warn' | 'error' | 'download'; // default: error
+  name: string; // 必需
+  version?: string; // semver 范围，与 engines.node 语法相同；缺省 = 任意
+  onFail?: 'ignore' | 'warn' | 'error' | 'download'; // 默认：error
 }
 ```
 
@@ -53,13 +53,13 @@ interface DevEngineDependency {
 
 **Node.js 解析链**（`crates/vite_global_cli/src/commands/env/config.rs`、`crates/vite_js_runtime/src/runtime.rs`）：
 
-1. `VITE_PLUS_NODE_VERSION` 环境变量（会话）
-2. `~/.vite-plus/.session-node-version`（会话）
-3. `.node-version`（向上查找）
-4. `package.json#engines.node`（向上查找）
-5. `package.json#devEngines.runtime[name="node"]`（向上查找）
-6. 用户默认值（`~/.vite-plus/config.json`）
-7. 最新 LTS
+1. `VP_NODE_VERSION` env var (session)
+2. `~/.vite-plus/.session-node-version` (session)
+3. `.node-version` (walk up)
+4. `package.json#engines.node` (walk up)
+5. `package.json#devEngines.runtime[name="node"]` (walk up)
+6. User default (`~/.vite-plus/config.json`)
+7. Latest LTS
 
 **包管理器检测链**（`crates/vite_install/src/package_manager.rs`；[rfcs/package-manager-detection.md](./package-manager-detection.md) 已随本 RFC 更新，并记录了新的链路）：
 
@@ -127,13 +127,13 @@ pub struct DevEngines {
 
 建议链路（变更已标出）：
 
-1. `VITE_PLUS_NODE_VERSION` 环境变量（会话）
-2. `.session-node-version`（会话）
-3. `.node-version`（向上查找）
-4. **`package.json#devEngines.runtime[name="node"]`（向上查找）**（移到 `engines.node` 之上）
-5. `package.json#engines.node`（向上查找）
-6. 用户默认值
-7. 最新 LTS
+1. `VP_NODE_VERSION` env var (session)
+2. `.session-node-version` (session)
+3. `.node-version` (walk up)
+4. **`package.json#devEngines.runtime[name="node"]` (walk up)** (moved above `engines.node`)
+5. `package.json#engines.node` (walk up)
+6. User default
+7. Latest LTS
 
 交换第 4 和第 5 的理由：`engines.node` 是面向使用者的支持范围（通常较宽，例如 `>=18`），而 `devEngines.runtime` 按定义是开发环境需求，也是 npm/pnpm 对开发工具实际生效的字段。当二者并存时，开发专用字段应该驱动开发运行时。这个问题在 #864 中被提出，也与 pnpm 的行为一致。
 
@@ -364,10 +364,10 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 
 ## 非目标
 
-- 通过 `devEngines.runtime` 管理非 Node runtime（例如 `deno`，或把 `bun` 作为 runtime）。
-- 校验 `devEngines.os` / `cpu` / `libc`。
-- 作为一个通用强制层，处理除 pnpm / yarn / npm / bun 之外的任意包管理器名称。
-- 更改 session 覆盖行为（`vp env use`、`VITE_PLUS_NODE_VERSION`）。
+- 通过 `devEngines.runtime` 管理非 Node 运行时（`deno`，`bun` 作为运行时）。
+- 验证 `devEngines.os` / `cpu` / `libc`。
+- 作为针对 pnpm / yarn / npm / bun 之外任意包管理器名称的通用强制执行层。
+- 更改会话覆盖行为（`vp env use`，`VP_NODE_VERSION`）。
 
 ## 延后 / 未来工作
 
@@ -397,41 +397,41 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 | 在有 `package.json` 但没有 `.node-version` 的目录里执行 `vp env pin` | 创建 `.node-version`                                      | 写入 `devEngines.runtime`                                     |
 | `.nvmrc` / Volta pin 的 `vp migrate`                                   | 创建 `.node-version`                                      | 写入 `devEngines.runtime`（会把别名转换为 semver）            |
 
-## 实现计划
+## Implementation Plan
 
-### 阶段 1：共享解析与 JSON 编辑
+### Phase 1: Shared parsing and JSON editing
 
-1. 将 `crates/vite_shared/src/package_json.rs` 泛化为符合规范的 `DevEngineDependency` / `DevEngineField` / `OnFail` 类型；为 `DevEngines` 增加 `package_manager`；实现宽松解析规则；实现生效的 `onFail` 计算；为每种规范形态编写单元测试（单个、数组、缺失 version、缺失 onFail、格式错误的条目）。
-2. 将保留格式的 package.json 编辑辅助工具添加到 `vite_shared`。
+1. Generalize `crates/vite_shared/src/package_json.rs` to match the spec’s `DevEngineDependency` / `DevEngineField` / `OnFail` types; add `package_manager` to `DevEngines`; implement loose parsing rules; implement effective `onFail` calculation; write unit tests for each spec shape (single item, array, missing version, missing `onFail`, malformed entries).
+2. Add a package.json editing helper that preserves formatting to `vite_shared`.
 
-### 阶段 2：包管理器检测
+### Phase 2: Package manager detection
 
-1. 将 `devEngines.packageManager` 插入 `get_package_manager_type_and_version()`（替换 `crates/vite_install/src/package_manager.rs:288` 处的 TODO）；进行名称校验；处理数组；处理 `onFail`。
-2. 针对已下载版本进行范围解析，并通过 npm 的精简元数据文档进行 registry 回退。
-3. 当来源是 `devEngines.packageManager` 时抑制自动写入；当两个字段都不存在时，将自动 pin 重定向到 `devEngines.packageManager`。
-4. 当 `packageManager` 和 `devEngines.packageManager` 不一致时给出一致性警告（先警告，后错误的过渡提示）。
-5. 通过 NAPI 绑定和 `vp env --current --json` 暴露新的来源。
+1. Insert `devEngines.packageManager` into `get_package_manager_type_and_version()` (replacing the TODO at `crates/vite_install/src/package_manager.rs:288`); validate names; handle arrays; handle `onFail`.
+2. Parse ranges against downloaded versions and fall back to the registry via npm’s abbreviated metadata document.
+3. Suppress automatic writes when the source is `devEngines.packageManager`; when neither field exists, redirect automatic pinning to `devEngines.packageManager`.
+4. Emit a consistency warning when `packageManager` and `devEngines.packageManager` disagree (warning first, then an error in the transition period).
+5. Expose the new source through the NAPI binding and `vp env --current --json`.
 
-### 阶段 3：`vp env` 命令
+### Phase 3: `vp env` command
 
-1. `vp env pin` 的目标选择、`--target` 标志、值规则、同步提示（TTY）/ 警告（非交互式）；`vp env unpin` 对称地移除。
-2. 调整 runtime 读取优先级顺序。
-3. ~~shim 分发和 `vp env use` / system-first 路径中的 `onFail` 矩阵。~~ 延后：runtime `onFail` 已解析，但尚未生效（见 [延后 / 未来工作](#deferred--future-work)）。
-4. 所有新的 `vp env doctor` 检查。
+1. `vp env pin` target selection, `--target` flag, value rules, sync prompt (TTY) / warning (non-interactive); `vp env unpin` removes symmetrically.
+2. Adjust the runtime read priority order.
+3. ~~`onFail` matrix for shim distribution and `vp env use` / system-first paths.~~ Deferred: runtime `onFail` is parsed, but not yet enforced (see [Deferred / Future Work](#deferred--future-work)).
+4. All new `vp env doctor` checks.
 
-### 阶段 4：create / migrate
+### Phase 4: create / migrate
 
-1. 模板化 `devEngines` 块（并保留现有的 `engines.node`，其保持不变）；重定向 `setPackageManager()`。
-2. 将 `.nvmrc` / Volta 迁移到 `devEngines.runtime`，包括别名到 semver 的转换表。
+1. Template the `devEngines` block (while preserving the existing `engines.node`, which remains unchanged); redirect `setPackageManager()`.
+2. Migrate `.nvmrc` / Volta to `devEngines.runtime`, including conversion from aliases to semver.
 
-### 阶段 5：文档和测试
+### Phase 5: Documentation and testing
 
-1. 按需更新 `docs/guide/env.md`、`docs/guide/install.md`、`docs/config/*`。
-2. ~~更新 [rfcs/package-manager-detection.md](./package-manager-detection.md)（将 `devEngines.packageManager` 从 Future Enhancements 移到算法中）以及 [rfcs/env-command.md](./env-command.md)（解析链）。~~ 已与本 RFC 一并完成，同时还包括 [rfcs/js-runtime.md](./js-runtime.md) 和 [rfcs/migration-command.md](./migration-command.md)。
-3. 增加快照测试（本地和全局），覆盖：pin 到 devEngines、在已有 `.node-version` 的情况下 pin、从 devEngines 取消 pin、使用 `devEngines.packageManager` 进行安装（精确值、范围、数组、不支持的名称、与 `packageManager` 字段冲突）、doctor 冲突输出、create/migrate 输出。
-4. 在 `package_manager.rs` 和 `package_json.rs` 现有测试套件旁增加 Rust 单元测试。
+1. Update `docs/guide/env.md`, `docs/guide/install.md`, `docs/config/*` as needed.
+2. ~~Update [rfcs/package-manager-detection.md](./package-manager-detection.md) (move `devEngines.packageManager` from Future Enhancements into the algorithm) and [rfcs/env-command.md](./env-command.md) (resolution chain).~~ Completed together with this RFC, and also includes [rfcs/js-runtime.md](./js-runtime.md) and [rfcs/migration-command.md](./migration-command.md).
+3. Add snapshot tests (local and global) covering: pin to devEngines, pin with an existing `.node-version`, unpin from devEngines, installs using `devEngines.packageManager` (exact value, range, array, unsupported names, conflict with `packageManager` field), doctor conflict output, create/migrate output.
+4. Add Rust unit tests alongside the existing test suites in `package_manager.rs` and `package_json.rs`.
 
-阶段 1 到 3 是核心；4 和 5 可以在后续 PR 中落地。
+Phases 1 to 3 are the core; 4 and 5 can land in later PRs.
 
 ## 已解决的问题
 

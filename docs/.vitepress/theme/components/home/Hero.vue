@@ -21,7 +21,7 @@
           开始使用
         </a>
         <a
-          href="https://voidzero.dev/posts/announcing-vite-plus-alpha"
+          href="https://voidzero.dev/posts/announcing-vite-plus-beta"
           target="_blank"
           rel="noopener noreferrer"
           class="button"

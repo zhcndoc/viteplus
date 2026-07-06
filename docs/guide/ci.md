@@ -23,6 +23,10 @@
 
 当 `cache: true` 时，`setup-vp` 会自动为你处理依赖缓存。
 
+::: tip
+`setup-vp` 会缓存包管理器数据。要在 CI 运行之间复用 Vite Task 结果，请添加单独的 [GitHub Actions cache for Vite Task](/guide/github-actions-cache)。
+:::
+
 ## 简化现有工作流
 
 如果你正在迁移现有的 GitHub Actions 工作流，可以用单个 `setup-vp` 步骤替换大量的 Node、包管理器和缓存设置。

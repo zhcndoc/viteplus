@@ -4,33 +4,20 @@ Vite 任务可以自动跟踪依赖关系，并缓存通过 `vp run` 执行的�
 
 ## 概述
 
-当任务成功运行（退出代码为 0）时，其终端输出（标准输出/标准错误）会被保存。下一次运行时，Vite 任务会检查是否有任何变化：
+当一个任务成功运行（退出代码 0）时，其终端输出（stdout/stderr）和所有写入的文件（输出文件）都会被保存。在下一次运行时，Vite Task 会检查是否有任何变化：
 
-1. **参数：** 传递给任务的[附加参数](/guide/run#附加参数)是否发生变化？
-2. **环境变量：** 任何[指纹识别的环境变量](/config/run#env)是否变化？
-3. **输入文件：** 命令读取的任何文件是否变化？
+1. **参数：** 传递给任务的[附加参数](/guide/run#additional-arguments)是否发生了变化？
+2. **环境变量：** 任何[指纹化的环境变量](/config/run#env)是否发生了变化？
+3. **输入：** 命令读取的任何输入文件是否发生了变化？
 
-如果所有内容都匹配，缓存的输出会立即重放，命令不会实际执行。
-
-::: info
-默认情况下，只有终端输出会被缓存并重放。若要缓存任务生成的文件，请配置 [`output`](/config/run#output) glob。匹配到的文件会在成功运行后归档，并在缓存命中时恢复。
-:::
-
-```ts [vite.config.ts]
-tasks: {
-  build: {
-    command: 'vp build',
-    output: ['dist/**'],
-  },
-}
-```
+当所有检查都匹配时，Vite Task 会重放缓存的终端输出，恢复已保存的输出文件，并跳过该命令。
 
 当发生缓存未命中时，Vite Task 会准确告诉你原因：
 
 ```
-$ vp lint ✗ 缓存未命中：'src/utils.ts' 已修改，正在执行
-$ vp build ✗ 缓存未命中：环境变量已更改，正在执行
-$ vp test ✗ 缓存未命中：参数已更改，正在执行
+$ vp lint ✗ cache miss: 'src/utils.ts' modified, executing
+$ vp build ✗ cache miss: env 'VITE_GREETING' changed, executing
+$ vp test ✗ cache miss: args changed, executing
 ```
 
 ## 何时启用缓存？
@@ -45,7 +32,7 @@ $ vp test ✗ 缓存未命中：参数已更改，正在执行
 
 ### 2. CLI 标志
 
-`--no-cache` 禁用所有缓存。`--cache` 启用任务和脚本的缓存，相当于为本次调用设置 [`run.cache: true`](/config/run#run-cache)。
+`--no-cache` 会为该次运行中的每个任务和脚本禁用缓存。`--cache` 会为任务和脚本都启用缓存，这等同于在该次调用中设置 [`run.cache: true`](/config/run#run-cache)。
 
 ### 3. 工作区配置
 
@@ -56,29 +43,21 @@ $ vp test ✗ 缓存未命中：参数已更改，正在执行
 | `cache.tasks` | `true` | 缓存 `vite.config.ts` 中定义的任务 |
 | `cache.scripts` | `false` | 缓存 `package.json` 脚本 |
 
-## 自动文件跟踪
+## 自动数据追踪
 
-Vite 任务会在执行过程中跟踪每个命令读取了哪些文件。当任务运行时，它会记录进程打开了哪些文件，例如你的 `.ts` 源文件、`vite.config.ts` 和 `package.json`，并记录它们的内容哈希。下一次运行时，它会重新检查这些哈希值以确定是否发生了变化。
+Vite Task 使用[自动数据追踪](/guide/automatic-data-tracking)来了解每个任务进行缓存时所需的内容，因此你无需手动配置。自动数据追踪分为两个层级：
 
-这意味着大多数命令无需任何配置即可开箱即用地支持缓存。Vite 任务还会记录：
+- **文件系统追踪：** Vite Task 会记录每个启用缓存的任务的文件读取、缺失文件探测、目录列表以及写入的输出文件。
+- **协作式追踪：** 缓存报告工具可以报告文件系统追踪无法推断的元数据。Vite+ 目前已支持 `vp build`。
 
-- **缺失的文件：**如果命令在解析模块时探测到不存在的文件（例如 `utils.ts`），后续创建该文件会正确使缓存失效。
-- **目录列表：**当命令扫描目录（例如测试运行器查找 `*.test.ts`）时，向该目录添加或删除文件会使缓存失效。
-
-### 避免过度宽泛的输入跟踪
-
-自动跟踪有时会包含比必要更多的文件，导致不必要的缓存未命中：
-
-- **工具缓存文件：**某些工具会维护自己的缓存，例如 TypeScript 的 `.tsbuildinfo` 或 Cargo 的 `target/`。这些文件可能在源代码未变更时发生改变，导致不必要的缓存失效。
-- **目录列表：**当命令扫描目录（例如使用通配符 `**/*.js`）时，Vite 任务会看到目录读取，但看不到通配模式。该目录中添加或删除的任何文件（即使无关）都会使缓存失效。
-
-使用 [`input`](/config/run#input) 选项可排除文件或用显式文件模式替换自动跟踪：
+当任务需要手动追踪规则时，请使用[`input`](/config/run#input)或[`output`](/config/run#output)。`input` 控制什么会使缓存失效。`output` 控制 Vite Task 在缓存命中时恢复哪些文件。
 
 ```ts [vite.config.ts]
 tasks: {
   build: {
-    command: 'tsc',
-    input: [{ auto: true }, '!**/*.tsbuildinfo'],
+    command: 'node build.mjs',
+    input: [{ auto: true }, '!dist/**'],
+    output: ['dist/**'],
   },
 }
 ```
@@ -98,7 +77,7 @@ tasks: {
 }
 ```
 
-若要将变量传递给任务**而不影响**缓存行为，请使用 [`untrackedEnv`](/config/run#untracked-env)。这对于 `CI` 或 `GITHUB_ACTIONS` 等变量很有用，这些变量应可在任务中使用，但通常不会影响缓存行为。
+要在**不**影响缓存行为的情况下将变量传递给任务，请使用 [`untrackedEnv`](/config/run#untrackedenv)。这对于像 `CI` 或 `GITHUB_ACTIONS` 这样的变量很有用，它们应该在任务中可用，但不应影响缓存行为。
 
 有关通配符模式和自动传递变量的完整列表，请参见 [运行配置](/config/run#env)。
 

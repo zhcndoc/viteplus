@@ -34,7 +34,7 @@ Rust 二进制 `vp`（`crates/vite_global_cli/`）充当入口点，转发到 `p
 ```
 packages/cli/
 ├── bin/vp                    # Node.js 入口脚本
-├── binding/                  # 统一的 NAPI 绑定 crate（migration、package_manager、utils）
+├── binding/                  # 统一的 NAPI 绑定 crate（迁移、包管理器、工具）
 ├── src/
 │   ├── bin.ts                # 本地与全局命令的统一入口
 │   ├── create/               # vp create 命令（来自全局）
@@ -94,7 +94,7 @@ packages/cli/
   生成 wrapper `package.json`，运行 `vp install --silent`，由此通过 npm 安装 `vite-plus` + 所有传递依赖。
 
 - **升级**（`vp upgrade`）：
-  从 `@voidzero-dev/vite-plus-cli-{platform}` 下载 CLI 平台 tarball（二进制 בלבד），
+  从 `@voidzero-dev/vite-plus-cli-{platform}` 下载 CLI 平台 tarball（仅二进制），
   生成 wrapper `package.json`，运行 `vp install --silent`。无需下载主 tarball。
 
 - **本地开发**（`pnpm bootstrap-cli`）：
@@ -114,8 +114,8 @@ Rust 的 `vp` 二进制（`crates/vite_global_cli/`）将命令分为两类：
               │                            │
               ▼                            ▼
      ┌────────────────┐         ┌────────────────┐
-     │   Category A   │         │   Category B   │
-     │    Pkg Mgr     │         │   JavaScript   │
+     │   类别 A       │         │   类别 B       │
+     │   包管理器     │         │   JavaScript   │
      │    (Rust)      │         │   (Node.js)    │
      └───────┬────────┘         └───────┬────────┘
              │                          │
@@ -129,7 +129,7 @@ Rust 的 `vp` 二进制（`crates/vite_global_cli/`）将命令分为两类：
      │ remove         │             ╱     ╲
      │ update         │            ▼       ▼
      │ ...            │      ┌────────┐ ┌────────┐
-     └────────────────┘      │ local  │ │ global │
+     └────────────────┘      │ 本地   │ │ 全局   │
                              │ bin.js │ │ bin.js │
                              └───┬────┘ └───┬────┘
                                  └─────┬────┘
@@ -137,7 +137,7 @@ Rust 的 `vp` 二进制（`crates/vite_global_cli/`）将命令分为两类：
                                        ▼
                               ┌────────────────┐
                               │     bin.ts      │
-                              │   routes to:    │
+                              │   路由到：      │
                               ├────────────────┤
                               │ build, test,    │
                               │ lint, fmt, run  │
@@ -275,8 +275,8 @@ if (command === 'create') {
 ## 验证
 
 - `cargo test -p vite_global_cli` — Rust 单元测试通过
-- `pnpm -F vite-plus snap-test-local` — 本地 CLI snap 测试通过
-- `pnpm -F vite-plus snap-test-global` — 全局 CLI snap 测试通过
+- `pnpm -F vite-plus snap-test-local` — 本地 CLI 快照测试通过
+- `pnpm -F vite-plus snap-test-global` — 全局 CLI 快照测试通过
 - `pnpm bootstrap-cli` — 完整构建和全局安装成功
-- `VITE_PLUS_VERSION=test bash packages/cli/install.sh` — 从 npm 的生产安装可正常工作
+- `VP_VERSION=test bash packages/cli/install.sh` — 从 npm 进行生产安装可用
 - 手动测试：`vp create`、`vp migrate`、`vp --version`、`vp build`、`vp test` 均可正常工作

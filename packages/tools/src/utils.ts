@@ -48,7 +48,10 @@ export function replaceUnstableOutput(output: string, cwd?: string) {
       // semver version
       // e.g.: ` v1.0.0` -> ` <semver>`
       // e.g.: `/1.0.0` -> `/<semver>`
-      .replaceAll(/([@/\s]v?)\d+\.\d+\.\d+(?:-.*)?/g, '$1<semver>')
+      // The prerelease is bounded to version characters so a long
+      // `@0.0.0-commit.<sha>` npm alias inside JSON does not greedily swallow the
+      // closing quote/comma (e.g. `"npm:...core@0.0.0-commit.<sha>",`).
+      .replaceAll(/([@/\s]v?)\d+\.\d+\.\d+(?:-[\w.+-]*)?/g, '$1<semver>')
       // vitest-family pins written as JSON values (catalog blocks, devDependencies,
       // overrides/resolutions) all track the bundled VITEST_VERSION and so change on
       // every daily upgrade-deps bump. The quote-preceded value is not caught by the
@@ -73,6 +76,14 @@ export function replaceUnstableOutput(output: string, cwd?: string) {
         /("(?:vitest|@vitest\/(?!coverage-)[\w-]+)": ")(?:[4-9]|[1-9]\d+)\.\d+\.\d+(?:-[\w.]+)?(")/g,
         '$1<semver>$2',
       )
+      // Vite+ and its core package are written as exact lockstep versions by
+      // create/migrate. Mask JSON dependency values so release bumps do not
+      // create unrelated snapshot churn (YAML values and npm aliases are
+      // already covered by the generic semver normalization above).
+      .replaceAll(
+        /("(?:vite-plus|@voidzero-dev\/vite-plus-core)": ")\d+\.\d+\.\d+(?:-[\w.]+)?(")/g,
+        '$1<semver>$2',
+      )
       // devEngines.packageManager auto-pin writes the exact resolved version
       // e.g.: `"name": "pnpm",\n  "version": "11.5.1"` -> `"version": "<semver>"`
       // (the optional suffix covers prerelease and build metadata: -rc-1, +sha.abc)
@@ -94,6 +105,11 @@ export function replaceUnstableOutput(output: string, cwd?: string) {
       .replaceAll(/\d{4}-\d{2}-\d{2}/g, '<date>')
       // time only (HH:MM:SS)
       .replaceAll(/\d{2}:\d{2}:\d{2}/g, '<date>')
+      // managed global package install ID
+      .replaceAll(
+        /#[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/g,
+        '<install-id>',
+      )
       // duration
       .replaceAll(/\d+(?:\.\d+)?(?:s|ms|µs|ns)/g, '<variable>ms')
       // parenthesized thread counts in CLI summaries
