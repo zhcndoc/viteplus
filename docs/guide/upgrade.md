@@ -62,7 +62,7 @@ vp --version
 
 一些 Vite+ 拉取请求会在 npm 发布之前发布临时包用于测试。可将其视为夜间构建或前沿构建：当你需要验证某个特定修复、测试新的上游依赖升级，或在下一个版本发布前确认某项更改时，它们很有用。日常工作中，建议优先使用已发布的 `latest` 版本。
 
-每个符合条件的拉取请求中的每次提交都会发布到 [pkg.pr.new](https://pkg.pr.new)，并通过 [registry bridge](https://registry-bridge.viteplus.dev/) 注册。该桥接服务会将这些构建作为普通的 npm 版本提供，格式为 `0.0.0-commit.<sha>`，并将其他所有包代理到 npm 注册表。这意味着你可以使用常规版本规格来安装预览版，而不是可变 URL，并且在 CI 中也会解析到相同的版本。
+每个符合条件的拉取请求中的每次提交都会发布到 [registry bridge](https://registry-bridge.viteplus.dev/)。该桥接服务将这些构建作为普通的 npm 版本提供，格式为 `0.0.0-commit.<sha>`，并将其他所有包代理到 npm 注册表。这意味着你可以使用常规的版本规格而不是可变 URL 来安装预览版，并且相同版本在 CI 中也会解析为一致结果。
 
 `vite-plus` 和 `@voidzero-dev/vite-plus-core` 都以相同的 `0.0.0-commit.<sha>` 版本发布。每个拉取请求都会附带一条评论，列出其最新提交对应的确切版本，并提供可直接复制的安装步骤。
 

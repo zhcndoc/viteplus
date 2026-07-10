@@ -189,11 +189,13 @@ RUN curl -fsSL https://vite.plus | VP_VERSION="${VP_VERSION}" bash
 
 ### 发布前验证（预览镜像）
 
-为了在真正发布前验证镜像，`pkg.pr.new` 工作流（`publish-to-pkg.pr.new.yml`）也会构建多架构
-镜像，但使用该 PR 的 pkg.pr.new 构建产物（`VP_PR_VERSION`），并将其推送为
-`ghcr.io/voidzero-dev/vite-plus:pr-<number>`（绝不使用 `latest`）。这复用了与发布版完全相同的
-`docker/Dockerfile`，因此给 PR 添加 `pkg.pr.new` 标签即可生成一个可拉取的预览镜像，
-从而走通真实的构建路径。
+为在正式发布前验证镜像，预览发布工作流
+（`publish-preview.yml`，由 `preview-build` 标签触发）也会构建
+多架构镜像，但来源是该 PR 的 registry bridge build（`VP_PR_VERSION`），
+并将其推送为 `ghcr.io/voidzero-dev/vite-plus:pr-<number>`
+（绝不使用 `latest`）。这复用了与发布完全相同的 `docker/Dockerfile`，
+因此给 PR 打上 `preview-build` 标签后，会生成一个可拉取的预览镜像，
+并走真实的构建路径。
 
 ### 文档示例验证
 

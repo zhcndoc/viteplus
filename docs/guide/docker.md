@@ -26,9 +26,7 @@ Node.js 二进制文件、构建产物和生产依赖复制到更小的运行时
 | `ghcr.io/voidzero-dev/vite-plus:<major>.<minor>`         | 最新次版本    |
 | `ghcr.io/voidzero-dev/vite-plus:<major>.<minor>.<patch>` | 精确版本      |
 
-示例使用 `:latest` 来跟踪最新发布；如果你需要可复现的构建，请固定为某个精确标签或
-摘要。该镜像为 `linux/amd64`
-和 `linux/arm64` 发布，默认以非 root 用户运行。
+这些示例使用 `:latest` 来跟踪最新发布版本；如果你需要可复现的构建，请固定到确切的标签或摘要。该镜像为 `linux/amd64` 和 `linux/arm64` 发布，并且默认以非 root 的 `vp` 用户运行。该用户拥有免密码的 `sudo`，因此需要 root 权限的构建/CI 步骤（额外的 apt 包、`playwright install --with-deps`）无需更改镜像用户即可正常工作。
 
 在 [GitHub 包页面](https://github.com/voidzero-dev/vite-plus/pkgs/container/vite-plus) 浏览所有已发布的版本和摘要。
 
@@ -45,8 +43,8 @@ Node.js 二进制文件、构建产物和生产依赖复制到更小的运行时
 FROM ghcr.io/voidzero-dev/vite-plus:latest AS build
 WORKDIR /app
 
-# 先安装依赖，这样当源码变更时，这一层可以被缓存。
-COPY --chown=vp:vp package.json pnpm-lock.yaml .node-version* ./
+# 先安装依赖，这样当源代码变更时，这一层可以被缓存。
+COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml .node-version* ./
 RUN vp install --frozen-lockfile
 
 # 构建。vp 会读取 .node-version，并自动提供那个确切版本的 Node.js。
@@ -62,7 +60,7 @@ RUN cp "$(vp env which node | head -1)" /tmp/node
 # 已经安装好的 devDependencies 不会被清理掉。
 FROM ghcr.io/voidzero-dev/vite-plus:latest AS deps
 WORKDIR /app
-COPY --chown=vp:vp package.json pnpm-lock.yaml .node-version* ./
+COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml .node-version* ./
 RUN vp install --frozen-lockfile --prod
 
 # --- runtime stage: small, glibc, no vp ---
@@ -106,7 +104,7 @@ CMD ["node", "dist/server.js"]
 ```dockerfile [Dockerfile]
 FROM ghcr.io/voidzero-dev/vite-plus:latest AS build
 WORKDIR /app
-COPY --chown=vp:vp package.json pnpm-lock.yaml .node-version* ./
+COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml .node-version* ./
 RUN vp install --frozen-lockfile
 COPY --chown=vp:vp . .
 RUN vp build
@@ -132,9 +130,45 @@ build:
 
 在 GitHub Actions 中，建议使用 [`setup-vp`](./ci) 而不是该镜像。
 
+## 浏览器模式测试（Vitest / Playwright）
+
+以非 root 的 `vp` 用户运行是浏览器所需要的：Chromium 会保留
+其沙箱（以 root 运行浏览器会禁用它）。在作业中安装浏览器及其
+系统库。`playwright install --with-deps` 需要 root 来
+`apt-get install` 这些库。`vp` 用户拥有免密码的 `sudo`，因此
+Playwright 会使用它来安装这些库，而无需更改镜像用户：
+
+```yaml [.gitlab-ci.yml]
+test:
+  image: ghcr.io/voidzero-dev/vite-plus:latest
+  script:
+    - vp install --frozen-lockfile
+    - vp exec playwright install --with-deps chromium
+    - vp test
+```
+
+`vp exec` 运行的是项目自己的 Playwright（来自你的 lockfile），因此它会安装
+你的测试所期望的浏览器版本。优先使用它，而不是 `vpx playwright install`，
+后者会下载最新的 Playwright，并且可能获取不同的
+浏览器版本。
+
+如果想把浏览器及其库构建进派生镜像，而不是在每次运行时都安装它们，
+请先安装项目依赖，这样构建进去的浏览器就会与你的 lockfile 匹配，然后使用项目的 Playwright 进行安装（可通过 `sudo` 使用 root）：
+
+```dockerfile [Dockerfile]
+FROM ghcr.io/voidzero-dev/vite-plus:latest
+WORKDIR /app
+COPY --chown=vp:vp package.json pnpm-lock.yaml pnpm-workspace.yaml .node-version* ./
+RUN vp install --frozen-lockfile
+RUN vp exec playwright install --with-deps chromium
+```
+
+如果 Chromium 在 CI 负载下崩溃，请使用
+`--ipc=host` 为容器提供更多共享内存；请参阅 [Playwright Docker 文档](https://playwright.dev/docs/docker)。
+
 ## Devcontainers
 
-将该镜像作为即用型开发容器使用，工具链已预装：
+Use this image as a ready-to-use development container, with the toolchain preinstalled:
 
 ```jsonc [.devcontainer/devcontainer.json]
 {
@@ -152,16 +186,19 @@ docker run --rm -it -v "$PWD:/app" -w /app ghcr.io/voidzero-dev/vite-plus vp bui
 
 ## 备注
 
-- **Node.js 版本**：在构建时根据 `.node-version`、`engines.node` 或
-  `devEngines.runtime` 提供，因此没有 Node.js 专用的镜像标签。依赖项的
+- **Node.js 版本**：在构建时从 `.node-version`、`engines.node` 或
+  `devEngines.runtime` 提供，因此没有特定于 Node.js 的镜像标签。依赖项的
   `COPY` 使用 `.node-version*` 通配符，所以该文件是可选的：通过
-  `engines.node`/`devEngines.runtime` 锁定版本的项目不需要 `.node-version`，
-  而使用该文件的项目则可以在每个阶段中访问它。
-- **非 root 用户**：镜像以非 root 的 `vp` 用户运行，因此请如示例所示使用
-  `COPY --chown=vp:vp ...` 来复制源文件。否则，`COPY` 会写入 root 所有的文件，
-  而 `vp install` 无法更新这些文件（权限被拒绝）。
-- **原生插件**：镜像包含 C/C++ 构建工具链（`build-essential`、`python3`），
-  因此像 `better-sqlite3` 这样的原生依赖会在 `vp install` 期间编译。
+  `engines.node`/`devEngines.runtime` 固定版本的项目不需要 `.node-version`，
+  而使用该文件的项目在每个阶段都可以使用它。
+- **非 root 用户**：镜像以非 root 的 `vp` 用户运行，因此请像示例中那样使用
+  `COPY --chown=vp:vp ...` 复制源代码。否则，`COPY` 会写入由 root 拥有的文件，
+  而 `vp install` 无法更新这些文件（权限被拒绝）。`vp` 用户拥有无密码的 `sudo`，
+  以便在偶尔需要 root 的步骤中使用（安装额外的 apt 包或 `playwright install --with-deps`），
+  因此你很少需要切换镜像用户。生产运行时阶段是一个独立的、没有 vp 的基础镜像，
+  所以这种便利不会出现在你部署后的镜像中。
+- **原生插件**：镜像包含 C/C++ 构建工具链（`build-essential`、`python3`），因此像
+  `better-sqlite3` 这样的原生依赖会在 `vp install` 期间编译。
 - **glibc**：该镜像基于 glibc，因此使用官方、经过签名验证的 Node.js 构建版本。
-- **自定义基础镜像**：如果要在自己的基础镜像中添加 `vp`，请运行安装器：
+- **自定义基础镜像**：如果要向你自己的基础镜像中添加 `vp`，请运行安装器：
   `curl -fsSL https://vite.plus | bash`（设置 `VP_VERSION` 以固定版本）。

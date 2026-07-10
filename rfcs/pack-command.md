@@ -241,7 +241,7 @@ tsdown 被打包在 `@voidzero-dev/vite-plus-core/pack` 中：
 如果 Node.js 版本过旧：
 
 ```
-Node.js version v22.22.0 does not support `exe` option. Please upgrade to Node.js 25.7.0 or later.
+Node.js 版本 v22.22.0 不支持 `exe` 选项。请升级到 Node.js 25.7.0 或更高版本。
 ```
 
 ## 与 `vp pm pack` 的关系
@@ -279,7 +279,7 @@ Node.js version v22.22.0 does not support `exe` option. Please upgrade to Node.j
 
 ### 3. 将 tsdown 打包进核心
 
-**决策**：tsdown 被打包进 `@voidzero-dev/vite-plus-core/pack`，而不是作为直接依赖使用。其 `@tsdown/exe` 和 `@tsdown/css` 扩展也以相同方式打包（见 [tsdown Extensions](#bundled-tsdown-extensions)）。
+**决策**：tsdown 被打包进 `@voidzero-dev/vite-plus-core/pack`，而不是作为直接依赖使用。其 `@tsdown/exe` 和 `@tsdown/css` 扩展也以相同方式打包（见 [tsdown 扩展](#bundled-tsdown-extensions)）。
 
 **理由**：
 
@@ -403,9 +403,7 @@ export default {
   pack: {
     entry: 'src/cli.ts',
     exe: {
-      seaConfig: {
-        /* Node.js SEA 配置覆盖项 */
-      },
+      seaConfig: {/* Node.js SEA 配置覆盖 */},
       fileName: 'my-cli',
       targets: [
         { platform: 'linux', arch: 'x64', nodeVersion: '25.7.0' },
