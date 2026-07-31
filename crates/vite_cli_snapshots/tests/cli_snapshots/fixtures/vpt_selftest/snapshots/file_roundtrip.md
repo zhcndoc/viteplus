@@ -51,11 +51,11 @@ touch-file 创建缺失的文件
 
 ## `vpt stat-file created-by-touch.txt notes`
 
-stat-file 报告条目类型：file、dir 或 missing
+stat-file 报告条目类型：文件、目录、符号链接或缺失
 
 ```
-created-by-touch.txt: file
-notes: dir
+created-by-touch.txt: 文件
+notes: 目录
 ```
 
 ## `vpt rm -f never-existed.txt`

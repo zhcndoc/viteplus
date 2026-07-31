@@ -2,12 +2,12 @@
 
 ## `vp create vite:monorepo --no-interactive --package-manager bun --git`
 
-create monorepo with bun
+使用 bun 创建 monorepo
 
 
 ## `vpt list-dir vite-plus-monorepo`
 
-check files created
+检查已创建的文件
 
 ```
 AGENTS.md
@@ -21,7 +21,7 @@ vite.config.ts
 
 ## `vpt print-file vite-plus-monorepo/package.json`
 
-check package.json with catalog
+使用 catalog 检查 package.json
 
 ```
 {
@@ -65,7 +65,7 @@ check package.json with catalog
 
 ## `vpt stat-file vite-plus-monorepo/pnpm-workspace.yaml --assert-not file`
 
-verify no pnpm config
+验证不存在 pnpm 配置
 
 ```
 vite-plus-monorepo/pnpm-workspace.yaml: missing
@@ -73,7 +73,7 @@ vite-plus-monorepo/pnpm-workspace.yaml: missing
 
 ## `vpt stat-file vite-plus-monorepo/.yarnrc.yml --assert-not file`
 
-verify no yarn config
+验证不存在 yarn 配置
 
 ```
 vite-plus-monorepo/.yarnrc.yml: missing
@@ -81,7 +81,7 @@ vite-plus-monorepo/.yarnrc.yml: missing
 
 ## `vpt stat-file vite-plus-monorepo/.git --assert dir`
 
-check git init
+检查 git init
 
 ```
 vite-plus-monorepo/.git: dir
@@ -89,7 +89,7 @@ vite-plus-monorepo/.git: dir
 
 ## `vpt list-dir vite-plus-monorepo/apps`
 
-check apps directory
+检查 apps 目录
 
 ```
 website
@@ -97,7 +97,7 @@ website
 
 ## `vpt print-file vite-plus-monorepo/apps/website/package.json`
 
-check website uses catalog:
+检查网站是否使用 catalog：
 
 ```
 {
@@ -111,7 +111,7 @@ check website uses catalog:
     "preview": "vp preview"
   },
   "devDependencies": {
-    "typescript": "~6.0.2",
+    "typescript": "^7.0.2",
     "vite-plus": "catalog:"
   }
 }
@@ -119,7 +119,7 @@ check website uses catalog:
 
 ## `vpt print-file vite-plus-monorepo/packages/utils/package.json`
 
-check utils normalizes vite-plus to catalog:
+检查 utils 是否将 vite-plus 规范化为 catalog：
 
 ```
 {
@@ -155,10 +155,9 @@ check utils normalizes vite-plus to catalog:
     "prepublishOnly": "vp run build"
   },
   "devDependencies": {
-    "@types/node": "^25.6.2",
-    "@typescript/native-preview": "7.0.0-dev.20260509.2",
+    "@types/node": "^26.1.1",
     "bumpp": "^11.1.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite-plus": "catalog:"
   }
 }

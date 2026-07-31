@@ -3,7 +3,7 @@
 //! Fixtures live in `tests/cli_snapshots/fixtures/<name>/`; each declares
 //! cases in `snapshots.toml` (see `rfcs/interactive-snapshot-tests.md`).
 //! Every step runs in a real pseudo-terminal backed by a vt100 emulator;
-//! interactive steps synchronize on OSC 8 milestones emitted by the child.
+//! interactive steps synchronize on window-title milestones emitted by the child.
 //! Snapshots are Markdown files compared with real pass/fail semantics
 //! (`UPDATE_SNAPSHOTS=1` accepts changes).
 //!
@@ -38,6 +38,8 @@ const STEP_TIMEOUT: Duration =
 
 /// Screen size for the PTY terminal. Large enough to avoid line wrapping.
 const SCREEN_SIZE: ScreenSize = ScreenSize { rows: 500, cols: 500 };
+
+const VP_BINARY_NAME: &str = if cfg!(windows) { "vp.exe" } else { "vp" };
 
 /// Raw serde shape for a step: bare argv array or full table.
 #[derive(serde::Deserialize, Debug)]
@@ -87,7 +89,7 @@ struct StepTable {
 ///   visible (`\x1b[…m`) so colour/style attributes are asserted.
 /// - `timeout`: per-step override in ms (default `STEP_TIMEOUT`).
 /// - `snapshot = false`: omit the screen while the step succeeds; failures
-///   always keep their output (legacy `ignoreOutput` semantics).
+///   always keep their output.
 /// - `tty = false`: piped stdio instead of a PTY, for non-TTY assertions;
 ///   interactions require a PTY.
 /// - `continue_on_failure`: on failure, execution skips past the next step
@@ -346,6 +348,12 @@ struct Case {
     /// provisioning tests set false to start from a genuinely empty home.
     #[serde(default = "default_true", rename = "seed-runtime")]
     seed_runtime: bool,
+    /// Expose the run-root node_modules as the workspace's parent-dir
+    /// node_modules for fixtures that address the linked checkout packages by path (`node
+    /// ../node_modules/vite-plus/bin/oxlint`) rather than by specifier
+    /// through Node's upward walk.
+    #[serde(default, rename = "link-node-modules")]
+    link_node_modules: bool,
     /// Case-wide environment additions on top of the runner baseline.
     #[serde(default)]
     env: BTreeMap<String, String>,
@@ -423,6 +431,50 @@ struct CaseHome {
     home: PathBuf,
 }
 
+struct CaseInstall {
+    path_env: OsString,
+    tool_dirs: Vec<PathBuf>,
+    vpt: PathBuf,
+}
+
+impl CaseInstall {
+    /// Resolve a step program from the case-owned Vite+ installation. `vpt`
+    /// stays runner-owned so a fixture cannot shadow the assertion helper.
+    fn resolve_program(
+        &self,
+        program: &str,
+        case_path: &std::ffi::OsStr,
+        cwd: &Path,
+    ) -> Result<PathBuf, String> {
+        if program == "vpt" {
+            return Ok(self.vpt.clone());
+        }
+
+        // An explicit `./`-prefixed program runs a file the case itself
+        // produced inside the staged workspace (a packed executable); the
+        // prefix keeps bare names on the PATH rule below. The prefix is
+        // dropped from the joined path: a `/./` component would survive into
+        // output that records the executable's own path (`vp env setup`
+        // writes shim targets from it).
+        if let Some(rel) = program.strip_prefix("./") {
+            let candidate = cwd.join(rel);
+            if candidate.is_file() {
+                return Ok(candidate);
+            }
+            return Err(format!("`{program}` does not exist relative to the step cwd"));
+        }
+
+        let found = which::which_in(program, Some(case_path), cwd)
+            .map_err(|e| format!("`{program}` not found on the case PATH: {e}"))?;
+        // Git is a fixture dependency in real create/migrate flows, so steps may
+        // invoke the system installation directly as the sole PATH exception.
+        if program == "git" || self.tool_dirs.iter().any(|dir| found.starts_with(dir)) {
+            return Ok(found);
+        }
+        Err(format!("`{program}` resolved outside the case-owned tool dirs: {}", found.display()))
+    }
+}
+
 impl CaseHome {
     fn provision(root: &Path, seed_runtime: bool) -> Self {
         let this = Self { home: root.join("home") };
@@ -436,6 +488,172 @@ impl CaseHome {
         this
     }
 
+    fn provision_vite_plus(
+        &self,
+        flavor: Flavor,
+        runtime: &FlavorRuntime,
+    ) -> Result<CaseInstall, String> {
+        let current_bin = self.vp_home().join("current").join("bin");
+        std::fs::create_dir_all(&current_bin)
+            .map_err(|e| format!("failed to create current/bin dir: {e}"))?;
+
+        let vp = current_bin.join(VP_BINARY_NAME);
+        flavor::install_file(&vp, &runtime.global_vp, "global vp")?;
+
+        #[cfg(windows)]
+        {
+            let shim = runtime
+                .global_vp
+                .parent()
+                .ok_or("global vp source has no parent dir")?
+                .join("vp-shim.exe");
+            if !shim.is_file() {
+                return Err(format!(
+                    "global vp trampoline template not found at {}; run `cargo build -p vite_trampoline`",
+                    shim.display()
+                ));
+            }
+            flavor::install_file(&current_bin.join("vp-shim.exe"), &shim, "global vp-shim.exe")?;
+        }
+
+        let package_dir = self.vp_home().join("current").join("node_modules").join("vite-plus");
+        Self::install_case_package(&runtime.cli_package_dir, &package_dir)?;
+        let local_bin_dir = local_package_bin_dir(&package_dir);
+        #[cfg(windows)]
+        if flavor == Flavor::Local {
+            self.write_local_package_cmd_shims(&package_dir, &local_bin_dir)?;
+        }
+        self.run_env_setup(&vp)?;
+
+        let vp_bin_dir = self.vp_home().join("bin");
+        let mut tool_dirs = match flavor {
+            Flavor::Global => vec![vp_bin_dir],
+            Flavor::Local => vec![local_bin_dir, vp_bin_dir],
+        };
+        let mut path_dirs = vec![runtime.runner_bin_dir.clone()];
+        path_dirs.extend(tool_dirs.iter().cloned());
+        // The whole case root is case-owned for resolution (not PATH): a
+        // fixture that runs `vp env setup` against an isolated
+        // `VP_HOME=${workspace}/home` then invokes the shims it created
+        // through a per-step PATH prefix.
+        if let Some(case_root) = self.home.parent() {
+            tool_dirs.push(case_root.to_path_buf());
+        }
+
+        Ok(CaseInstall {
+            path_env: compose_path_env(&path_dirs),
+            tool_dirs,
+            vpt: runtime.vpt.clone(),
+        })
+    }
+
+    fn install_case_package(source: &Path, package_dir: &Path) -> Result<(), String> {
+        let parent = package_dir.parent().ok_or("case package dir has no parent")?;
+        std::fs::create_dir_all(parent)
+            .map_err(|e| format!("failed to create case package parent: {e}"))?;
+
+        #[cfg(windows)]
+        {
+            junction::create(source, package_dir)
+                .map_err(|e| format!("failed to junction case vite-plus package: {e}"))?;
+        }
+
+        #[cfg(not(windows))]
+        {
+            flavor::link_dir(source, package_dir);
+            if package_dir.join("package.json").is_file() {
+                return Ok(());
+            }
+            CopyOptions::new()
+                .copy_tree(source, package_dir)
+                .map_err(|e| format!("failed to copy case vite-plus package: {e}"))?;
+        }
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    fn write_local_package_cmd_shims(
+        &self,
+        package_dir: &Path,
+        shim_dir: &Path,
+    ) -> Result<(), String> {
+        let bin_dir = package_dir.join("bin");
+        std::fs::create_dir_all(shim_dir)
+            .map_err(|e| format!("failed to create local package shim dir: {e}"))?;
+        for name in ["vp", "vpr", "oxfmt", "oxlint"] {
+            let script = bin_dir.join(name);
+            if !script.is_file() {
+                continue;
+            }
+            let content = format!(
+                "@echo off\r\nnode \"{}\" %*\r\nexit /b %ERRORLEVEL%\r\n",
+                script.display()
+            );
+            std::fs::write(shim_dir.join(format!("{name}.cmd")), content)
+                .map_err(|e| format!("failed to write local package {name}.cmd: {e}"))?;
+        }
+        Ok(())
+    }
+
+    fn run_env_setup(&self, vp: &Path) -> Result<(), String> {
+        let env = self.base_env(compose_path_env(&[]));
+        let output = std::process::Command::new(vp)
+            .args(["env", "setup", "--refresh"])
+            .env_clear()
+            .envs(&env)
+            .output()
+            .map_err(|e| format!("failed to run `vp env setup`: {e}"))?;
+        if output.status.success() {
+            return Ok(());
+        }
+
+        Err(format!(
+            "`vp env setup` failed with status {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    }
+
+    fn base_env(&self, path_env: OsString) -> BTreeMap<String, OsString> {
+        let mut env = BTreeMap::new();
+        env.insert("PATH".into(), path_env);
+        // xterm-256color keeps anstream from stripping the OSC 8 milestone
+        // sequences used by test steps. It is harmless during env setup.
+        env.insert("TERM".into(), "xterm-256color".into());
+        env.insert("VP_CLI_TEST".into(), "1".into());
+        env.insert("NODE_NO_WARNINGS".into(), "1".into());
+        env.insert("VP_HOME".into(), self.vp_home().into_os_string());
+        if cfg!(windows) {
+            env.insert("USERPROFILE".into(), self.home.clone().into_os_string());
+            env.insert(
+                "PATHEXT".into(),
+                ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC".into(),
+            );
+            for name in [
+                "TMP",
+                "TEMP",
+                "APPDATA",
+                "LOCALAPPDATA",
+                "PROGRAMDATA",
+                "HOMEDRIVE",
+                "HOMEPATH",
+                "WINDIR",
+                "SYSTEMROOT",
+                "SYSTEMDRIVE",
+                "ProgramFiles",
+                "ProgramFiles(x86)",
+            ] {
+                if let Some(value) = std::env::var_os(name) {
+                    env.insert(name.into(), value);
+                }
+            }
+        } else {
+            env.insert("HOME".into(), self.home.clone().into_os_string());
+        }
+        env
+    }
+
     fn vp_home(&self) -> PathBuf {
         self.home.join(flavor::VP_HOME_DIR)
     }
@@ -443,36 +661,59 @@ impl CaseHome {
     fn npm_prefix(&self) -> PathBuf {
         self.home.parent().unwrap().join("npm-global")
     }
+
+    /// The machine-specific directories this case owns, paired with their
+    /// snapshot labels. Owned by the type that creates the directories so a
+    /// new case-owned dir cannot be added without deciding its redaction:
+    /// the npm prefix is a sibling of `home`, which the `<home>` pair never
+    /// matches, and it leaked raw temp paths into snapshots until it was
+    /// paired here.
+    fn redaction_paths(&self) -> [(String, &'static str); 3] {
+        let root = self.home.parent().unwrap();
+        [
+            (self.home.to_str().unwrap().to_owned(), "<home>"),
+            (self.npm_prefix().to_str().unwrap().to_owned(), "<npm-prefix>"),
+            // Last, so the specific dirs above win: fixtures may create
+            // siblings of the workspace (`vpt mkdir -p ../test-lib`), whose
+            // paths tools then echo back (a yarn portal resolution).
+            (root.to_str().unwrap().to_owned(), "<case>"),
+        ]
+    }
+}
+
+fn local_package_bin_dir(package_dir: &Path) -> PathBuf {
+    if cfg!(windows) {
+        return package_dir.parent().unwrap().join(".vite-plus-bin");
+    }
+    package_dir.join("bin")
+}
+
+fn compose_path_env(tool_dirs: &[PathBuf]) -> OsString {
+    let mut entries = tool_dirs.to_vec();
+    if cfg!(windows) {
+        if let Some(path) = std::env::var_os("PATH") {
+            entries.extend(std::env::split_paths(&path));
+        }
+    } else {
+        for dir in ["/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
+            entries.push(PathBuf::from(dir));
+        }
+    }
+    std::env::join_paths(entries).unwrap()
 }
 
 /// The environment every step starts from. Deliberately small and fully
 /// controlled: no ambient variables survive except through the composed PATH.
 /// Notably absent: `CI` and `NO_COLOR`; the PTY makes real interactive
 /// behaviour the default, and grid rendering strips styling from snapshots.
-fn baseline_env(rt: &FlavorRuntime, case_home: &CaseHome) -> BTreeMap<String, OsString> {
-    let mut env: BTreeMap<String, OsString> = BTreeMap::new();
-    // The case's VP_HOME/bin comes first so `vp env setup` shims take
-    // precedence over the runner-provided tools once a case creates them.
-    let mut path_entries = vec![case_home.vp_home().join("bin")];
-    path_entries.extend(std::env::split_paths(&rt.path_env));
-    env.insert("PATH".into(), std::env::join_paths(path_entries).unwrap());
-    // xterm-256color keeps anstream from stripping the OSC 8 milestone
-    // sequences the runner synchronizes on.
-    env.insert("TERM".into(), "xterm-256color".into());
-    env.insert("VP_CLI_TEST".into(), "1".into());
+fn baseline_env(case_home: &CaseHome, install: &CaseInstall) -> BTreeMap<String, OsString> {
+    let mut env = case_home.base_env(install.path_env.clone());
     env.insert("VP_EMIT_MILESTONES".into(), "1".into());
-    env.insert("NODE_NO_WARNINGS".into(), "1".into());
     // Legacy-runner parity: `vp migrate` fixtures skip real dependency
     // installs (slow, network-bound). Cases that want real installs unset
     // this via `unset-env`.
     env.insert("VP_SKIP_INSTALL".into(), "1".into());
-    env.insert("VP_HOME".into(), case_home.vp_home().into_os_string());
     env.insert("NPM_CONFIG_PREFIX".into(), case_home.npm_prefix().into_os_string());
-    if cfg!(windows) {
-        env.insert("USERPROFILE".into(), case_home.home.clone().into_os_string());
-    } else {
-        env.insert("HOME".into(), case_home.home.clone().into_os_string());
-    }
     for (key, value) in [
         ("GIT_AUTHOR_NAME", "vite-plus-test"),
         ("GIT_AUTHOR_EMAIL", "test@vite-plus.invalid"),
@@ -480,38 +721,6 @@ fn baseline_env(rt: &FlavorRuntime, case_home: &CaseHome) -> BTreeMap<String, Os
         ("GIT_COMMITTER_EMAIL", "test@vite-plus.invalid"),
     ] {
         env.insert(key.into(), value.into());
-    }
-    if let Some(js_scripts_dir) = &rt.js_scripts_dir {
-        env.insert(
-            "VITE_GLOBAL_CLI_JS_SCRIPTS_DIR".into(),
-            js_scripts_dir.clone().into_os_string(),
-        );
-    }
-    if cfg!(windows) {
-        env.insert(
-            "PATHEXT".into(),
-            ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC".into(),
-        );
-        // Forward the Windows env vars Node and Git need for temp dirs and
-        // profile discovery.
-        for name in [
-            "TMP",
-            "TEMP",
-            "APPDATA",
-            "LOCALAPPDATA",
-            "PROGRAMDATA",
-            "HOMEDRIVE",
-            "HOMEPATH",
-            "WINDIR",
-            "SYSTEMROOT",
-            "SYSTEMDRIVE",
-            "ProgramFiles",
-            "ProgramFiles(x86)",
-        ] {
-            if let Some(value) = std::env::var_os(name) {
-                env.insert(name.into(), value);
-            }
-        }
     }
     env
 }
@@ -599,23 +808,59 @@ fn wait_with_deadline(
 
 /// Effective env, cwd, and resolved program for one step; shared by the
 /// main and cleanup loops so their semantics cannot drift.
+/// Expands `${NAME}` references in a step env value. `${workspace}` resolves
+/// to the step's working directory and any other name to the case env, so a
+/// fixture can express the shell forms `VP_HOME="$(pwd)/home"` and
+/// `PATH="$(pwd)/home/bin:$PATH"` without a shell. Unknown names stay
+/// verbatim, like vpt's argument expansion.
+fn expand_env_value(value: &str, cwd: &Path, case_env: &BTreeMap<String, OsString>) -> OsString {
+    let mut out = OsString::new();
+    let mut rest = value;
+    while let Some(start) = rest.find("${") {
+        let (before, from_ref) = rest.split_at(start);
+        out.push(before);
+        let Some(end) = from_ref.find('}') else {
+            rest = from_ref;
+            break;
+        };
+        let name = &from_ref[2..end];
+        if name == "workspace" {
+            out.push(cwd.as_os_str());
+        } else if let Some(resolved) = case_env.get(name) {
+            out.push(resolved);
+        } else {
+            out.push(&from_ref[..=end]);
+        }
+        rest = &from_ref[end + 1..];
+    }
+    out.push(rest);
+    out
+}
+
 fn step_context<'a>(
     step: &Step,
     case_env: &'a BTreeMap<String, OsString>,
     case_path: &OsString,
     stage: &Path,
     case_cwd: &str,
-    runtime: &FlavorRuntime,
+    install: &CaseInstall,
 ) -> Result<(std::borrow::Cow<'a, BTreeMap<String, OsString>>, PathBuf, PathBuf), String> {
     use std::borrow::Cow;
     assert!(!step.argv.is_empty(), "step argv must not be empty");
+    // The empty relative dir maps to the stage itself rather than through
+    // `join("")`, whose trailing separator would leak into `${workspace}`
+    // expansions (`<stage>//home`).
+    let rel_cwd = step.cwd.as_deref().unwrap_or(case_cwd);
+    let cwd = if rel_cwd.is_empty() { stage.to_path_buf() } else { stage.join(rel_cwd) };
     // Most steps add no env of their own; borrow the case env then.
     let env: Cow<'a, BTreeMap<String, OsString>> = if step.envs.is_empty() {
         Cow::Borrowed(case_env)
     } else {
         let mut env = case_env.clone();
         for (k, v) in &step.envs {
-            env.insert(k.clone(), v.into());
+            // References resolve against the case env, never a sibling step
+            // env, so the entries stay order-independent.
+            env.insert(k.clone(), expand_env_value(v, &cwd, case_env));
         }
         Cow::Owned(env)
     };
@@ -623,8 +868,7 @@ fn step_context<'a>(
     // (relative PATH entries resolve as the child would see them), so shim
     // and custom-prefix steps run exactly the child's tool.
     let path = env.get("PATH").cloned().unwrap_or_else(|| case_path.clone());
-    let cwd = stage.join(step.cwd.as_deref().unwrap_or(case_cwd));
-    let program = runtime.resolve_program(&step.argv[0], &path, &cwd)?;
+    let program = install.resolve_program(&step.argv[0], &path, &cwd)?;
     Ok((env, cwd, program))
 }
 
@@ -658,15 +902,13 @@ struct RegistryHandle {
 impl Drop for RegistryHandle {
     fn drop(&mut self) {
         // Graceful first: SIGTERM the server so its handler removes the
-        // throwaway yarn/bun caches. Signal both the process itself and its
-        // group (whether the child ended up a group leader can vary), so the
-        // handler reliably runs regardless.
+        // throwaway yarn/bun caches. Keep this scoped to the direct child:
+        // process-group SIGTERM can leak past the case boundary on
+        // ubuntu-latest PTY runs and interrupt the Actions runner itself.
         #[cfg(unix)]
         {
             let pid = self.child.id();
-            let _ = std::process::Command::new("kill")
-                .args(["-TERM", &pid.to_string(), &format!("-{pid}")])
-                .output();
+            let _ = std::process::Command::new("kill").args(["-TERM", &pid.to_string()]).output();
         }
         #[cfg(windows)]
         {
@@ -717,6 +959,8 @@ fn start_local_registry(
     let mut cmd = std::process::Command::new(node);
     cmd.arg(&script)
         .arg("--serve")
+        // The server discovers the fixture's own packages relative to the
+        // staged workspace, so it must run from there.
         .current_dir(stage)
         .env_clear()
         .envs(case_env)
@@ -823,6 +1067,9 @@ fn run_case(
     let case_root = tmpdir.join(format!("{fixture_name}_case_{case_index}_{}", flavor.as_str()));
     let stage = case_root.join("workspace");
     std::fs::create_dir_all(&stage).unwrap();
+    if case.link_node_modules {
+        flavor::link_dir(&tmpdir.join("node_modules"), &case_root.join("node_modules"));
+    }
     // The case definition and recorded snapshots are runner metadata, not
     // part of the workspace under test, so they are never copied in.
     CopyOptions::new()
@@ -831,8 +1078,9 @@ fn run_case(
         .unwrap();
 
     let case_home = CaseHome::provision(&case_root, case.seed_runtime);
+    let case_install = case_home.provision_vite_plus(flavor, runtime)?;
 
-    let mut case_env = baseline_env(runtime, &case_home);
+    let mut case_env = baseline_env(&case_home, &case_install);
     for key in &case.unset_env {
         case_env.remove(key);
     }
@@ -843,7 +1091,7 @@ fn run_case(
     // Real tools resolve through the case's PATH (may be overridden by the
     // case's own env table).
     let case_path: OsString =
-        case_env.get("PATH").cloned().unwrap_or_else(|| runtime.path_env.clone());
+        case_env.get("PATH").cloned().unwrap_or_else(|| case_install.path_env.clone());
 
     // local-registry cases: stand up a per-case npm registry (serving the
     // packed checkout packages plus this fixture's mock-manifest/tarballs) and
@@ -853,8 +1101,14 @@ fn run_case(
     let _registry = if case.local_registry {
         let pack_dir = local_registry_pack
             .ok_or("internal error: local-registry case reached run_case without a packed dir")?;
-        let node = runtime.resolve_program("node", &case_path, &stage)?;
-        let (registry_env, handle) = start_local_registry(&node, &stage, pack_dir, &case_env)?;
+        // Prefer the seed runtime's real node binary over the case's node
+        // shim: the shim resolves the project's pinned runtime from its cwd,
+        // and a fixture pinning an older Node (a `.node-version` under test)
+        // must not pick the runtime executing this TypeScript helper.
+        let registry_node = flavor::seed_runtime_node()
+            .map_or_else(|| case_install.resolve_program("node", &case_path, &stage), Ok)?;
+        let (registry_env, handle) =
+            start_local_registry(&registry_node, &stage, pack_dir, &case_env)?;
         for (key, value) in registry_env {
             case_env.insert(key, value);
         }
@@ -864,20 +1118,18 @@ fn run_case(
     };
 
     // Installs through the local registry are slower than pure vp commands, so
-    // local-registry steps get the legacy 120s default (still overridable
-    // per step); everything else keeps the standard per-step default.
+    // local-registry steps get a 120s default (still overridable per step);
+    // everything else keeps the standard per-step default.
     let step_default_timeout =
         if case.local_registry { Duration::from_secs(120) } else { STEP_TIMEOUT };
 
     let stage_str = stage.to_str().unwrap().to_owned();
-    let home_str = case_home.home.to_str().unwrap().to_owned();
+    let case_dirs = case_home.redaction_paths();
     let repo_root = flavor::repo_root();
     let repo_str = repo_root.to_str().unwrap().to_owned();
-    let redactions = [
-        (stage_str.as_str(), "<workspace>"),
-        (home_str.as_str(), "<home>"),
-        (repo_str.as_str(), "<repo>"),
-    ];
+    let mut redactions = vec![(stage_str.as_str(), "<workspace>")];
+    redactions.extend(case_dirs.iter().map(|(path, label)| (path.as_str(), *label)));
+    redactions.push((repo_str.as_str(), "<repo>"));
 
     let mut doc = String::new();
     doc.push_str(&format!("# {}\n", case.name));
@@ -902,7 +1154,7 @@ fn run_case(
         let step = &case.steps[step_index];
         let argv = &step.argv;
         let (step_env, step_cwd, program) =
-            step_context(step, &case_env, &case_path, &stage, &case.cwd, runtime)?;
+            step_context(step, &case_env, &case_path, &stage, &case.cwd, &case_install)?;
         let step_env: &BTreeMap<String, OsString> = &step_env;
         let timeout = step.timeout(step_default_timeout);
 
@@ -1075,19 +1327,27 @@ fn run_case(
         }
 
         // `snapshot = false` suppresses the screen only on success; failures
-        // always keep their output for diagnosis (legacy ignoreOutput
-        // semantics).
+        // always keep their output for diagnosis.
         let succeeded = matches!(termination_state, TerminationState::Exited(0));
         if step.snapshot || !succeeded {
-            let redacted = redact_output(raw_output, &redactions, !step.formatted_snapshot);
+            let mut redacted = redact_output(raw_output, &redactions, !step.formatted_snapshot);
+            // A version-probe step's output is a bare semver that varies by
+            // environment (the managed Node's bundled npm or a
+            // corepack-resolved pin); mask it. Scoped by argv so
+            // fixture-controlled bare versions elsewhere (a printed
+            // `.node-version` file) stay assertable.
+            let version_probe = matches!(argv.first().map(String::as_str), Some("npm" | "npx"))
+                && argv[1..] == ["--version"];
+            if version_probe {
+                redacted = redact::redact_version_probe_output(redacted);
+            }
             doc.push_str(&redacted);
         }
 
         // Shell-like `&&` semantics with line boundaries: a failing step
         // skips the rest of its line, up to and including the next
-        // continue-on-failure step (the line terminator in migrated
-        // fixtures), and the following line resumes, exactly the legacy
-        // model. Hand-written cases without markers stop here entirely.
+        // continue-on-failure step, then the following line resumes.
+        // Cases without markers stop here entirely.
         if !succeeded && !step.continue_on_failure {
             match case.steps[step_index + 1..].iter().position(|s| s.continue_on_failure) {
                 Some(offset) => {
@@ -1115,7 +1375,7 @@ fn run_case(
     // the step it tears down.
     for step in &case.after {
         let Ok((after_env, after_cwd, program)) =
-            step_context(step, &case_env, &case_path, &stage, &case.cwd, runtime)
+            step_context(step, &case_env, &case_path, &stage, &case.cwd, &case_install)
         else {
             continue;
         };

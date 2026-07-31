@@ -281,32 +281,9 @@ fn warn_dropped_pass_through(extras: Option<&[String]>) {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::{TempDir, tempdir};
-    use vite_path::AbsolutePathBuf;
-    use vite_str::Str;
 
     use super::*;
-
-    fn create_temp_dir() -> TempDir {
-        tempdir().expect("Failed to create temp directory")
-    }
-
-    fn create_mock_package_manager(pm_type: PackageManagerType, version: &str) -> PackageManager {
-        let temp_dir = create_temp_dir();
-        let temp_dir_path = AbsolutePathBuf::new(temp_dir.path().to_path_buf()).unwrap();
-        let install_dir = temp_dir_path.join("install");
-
-        PackageManager {
-            client: pm_type,
-            package_name: pm_type.to_string().into(),
-            version: Str::from(version),
-            hash: None,
-            bin_name: pm_type.to_string().into(),
-            workspace_root: temp_dir_path.clone(),
-            is_monorepo: false,
-            install_dir,
-        }
-    }
+    use crate::package_manager::create_mock_package_manager_with_version as create_mock_package_manager;
 
     #[test]
     fn pnpm_no_args_interactive() {
@@ -565,7 +542,7 @@ mod tests {
             .expect("resolves");
         // Still classified as a deny (starts with !), but the displayed name
         // in the warning retains the second `!`. We can only assert no-op here;
-        // visual inspection of the warn is captured in snap-tests.
+        // visual inspection of the warning is captured in PTY snapshots.
         assert!(result.is_none());
     }
 
@@ -855,6 +832,6 @@ mod tests {
             })
             .expect("resolves");
         assert!(result.is_none()); // still a no-op
-        // Visual inspection of the warn text is captured in snap-tests.
+        // Visual inspection of the warning is captured in PTY snapshots.
     }
 }

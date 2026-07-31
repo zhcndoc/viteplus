@@ -38,6 +38,21 @@ $ node compile-legacy-app.js
     test: jest
 ```
 
+## 内置命令与脚本
+
+`vp dev` 是内置命令。`vp run dev` 是你的 `dev` 脚本。内置命令无法被覆盖，因此添加 `dev` 脚本不会改变 `vp dev` 的行为：
+
+| 命令                       | 执行内容                                                                  |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `vp dev`                   | 内置的 Vite 开发服务器                                                    |
+| `vp run dev` / `vpr dev`   | `package.json` 中的 `dev` 脚本，或 `vite.config.ts` 中的 `dev` 任务        |
+| `vp test`                  | 内置的 Vitest 命令                                                         |
+| `vp run test` / `vpr test` | `package.json` 中的 `test` 脚本，或 `vite.config.ts` 中的 `test` 任务      |
+
+`build`、`preview`、`lint`、`fmt`、`check` 和 `pack` 的工作方式相同。
+
+如果项目定义了相应的脚本或任务，请使用 `vp run <name>` 运行它。例如，对于 `"dev": "astro dev"` 脚本，`vp run dev` 会启动 Astro，而 `vp dev` 会忽略该脚本并启动 Vite。
+
 ## 缓存
 
 默认情况下不会缓存 `package.json` 脚本。使用 `--cache` 启用缓存：
@@ -69,7 +84,7 @@ $ node compile-legacy-app.js ✗ 未命中缓存：'legacy/index.js' 已修改�
 
 ## 任务定义
 
-Vite Task [自动跟踪](/guide/automatic-data-tracking) 每个任务进行缓存所需的内容。您可以直接在 `vite.config.ts` 中定义任务，以默认启用缓存，或者控制哪些文件和环境变量会影响缓存行为。
+Vite 任务 [自动跟踪](/guide/automatic-data-tracking) 每个任务进行缓存所需的内容。您可以直接在 `vite.config.ts` 中定义任务，以默认启用缓存，或者控制哪些文件和环境变量会影响缓存行为。
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
@@ -347,9 +362,9 @@ vp run -r --parallel dev
 vp run -r --parallel --concurrency-limit 4 dev
 ```
 
-## Additional parameters
+## 附加参数
 
-Parameters after the task name will be passed to the task command:
+任务名称之后的参数将传递给任务命令：
 
 ```bash
 vp run test --reporter verbose

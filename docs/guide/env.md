@@ -40,7 +40,7 @@ vp env off
 ### 设置
 
 - `vp env setup` 创建或更新 `VP_HOME/bin` 中的 shim（并将按 shell 区分的设置脚本写入 `VP_HOME`）
-- `vp env on` 启用托管模式，使 shim 始终使用 Vite+-managed 的 Node.js
+- `vp env on` 启用托管模式，使 shim 始终使用 Vite+ 托管的 Node.js
 - `vp env off` 启用优先系统模式，使 shim 优先使用系统 Node.js
 - `vp env print` 输出当前会话的 shell 片段
 
@@ -64,18 +64,29 @@ if (-not (Test-Path $PROFILE)) { New-Item $PROFILE -Force }
 Invoke-Item $PROFILE
 ```
 
-在 CI 中，`vp env use` 仍然可以在没有 shell 初始化的情况下运行。它会在 `VP_HOME` 下写入一个临时会话文件，以便同一作业中后续的 shim 调用可以解析所选的 Node.js 版本。
+Windows 命令提示符（`cmd.exe`）无法定义 `vp env use` 更新当前 shell 会话所需的包装函数。请改用生成的 `vp-use.cmd` 命令：
+
+```batch
+vp-use 20
+node --version
+vp-use --unset
+```
+
+只有 `vp env use` 需要使用此替代命令。其他 `vp env` 命令在命令提示符中可以正常运行。在 Windows 上，`vp env setup` 会在 `VP_HOME/bin` 下创建 `vp-use.cmd`。
+
+在 CI 中，即使未初始化 shell，`vp env use` 仍然可以运行。它会在 `VP_HOME` 下写入临时会话文件，以便同一作业中后续的 shim 调用能够解析所选的 Node.js 版本。
 
 ### 管理
 
 - `vp env default` 设置或显示全局默认 Node.js 版本
-- `vp env pin` 将 Node.js 版本固定到当前目录：现有的 `.node-version` 会继续保持更新；否则会将固定内容写入 `package.json#devEngines.runtime`；只有在目录中没有 `package.json` 时才会创建 `.node-version`。使用 `--target node-version` 或 `--target dev-engines` 可显式选择。现有的 `engines.node` 永远不会被修改。
-- `vp env unpin` 从 `vp env pin` 会写入的同一来源中移除固定设置
-- `vp env use` 为当前 shell 会话设置一个 Node.js 版本
-- `vp env install` 安装一个 Node.js 版本
+- `vp env pin` 在当前目录中固定 Node.js 版本：如果已有 `.node-version`，则继续更新它；否则将固定版本写入 `package.json#devEngines.runtime`；仅当目录中没有 `package.json` 时才会创建 `.node-version`。使用 `--target node-version` 或 `--target dev-engines` 可显式选择目标。现有的 `engines.node` 永远不会被修改。
+- `vp env unpin` 从 `vp env pin` 将写入的同一来源中移除版本固定
+- `vp env use` 为当前 shell 会话设置 Node.js 版本
+- `vp env install` 安装 Node.js 版本
 - `vp env uninstall` 移除已安装的 Node.js 版本
-- `vp env exec` 使用特定的 Node.js 版本运行命令
-- `vp node` 运行一个 Node.js 脚本——相当于 `vp env exec node`
+- `vp env clean` 移除未使用的托管 Node.js 运行时、所有已下载的包管理器以及 Corepack 缓存。
+- `vp env exec` 使用指定的 Node.js 版本运行命令
+- `vp node` 运行 Node.js 脚本——`vp env exec node` 的简写
 
 ### 检查
 
@@ -89,7 +100,7 @@ Invoke-Item $PROFILE
 
 - 使用 `vp env pin` 固定项目版本
 - 正常使用 `vp install`、`vp dev` 和 `vp build`
-- 让 Vite+ 为项目选择正确的运行时
+- 让 Vite+ 为项目选择正确的运行时。
 
 ## 示例
 
@@ -101,10 +112,11 @@ vp env print                  # 打印此会话的 shell 片段
 
 # 管理
 vp env pin lts                # 将项目固定到最新的 LTS 版本
-vp env install                # 从 .node-version 或 package.json 安装版本
+vp env install                # 安装 .node-version 或 package.json 中指定的版本
 vp env default lts            # 设置全局默认版本
-vp env use 20                 # 为当前 shell 会话使用 Node.js 20
+vp env use 20                 # 在当前 shell 会话中使用 Node.js 20
 vp env use --unset            # 移除会话覆盖
+vp env clean                  # 移除未使用的托管缓存
 
 # 检查
 vp env current                # 显示当前已解析的环境

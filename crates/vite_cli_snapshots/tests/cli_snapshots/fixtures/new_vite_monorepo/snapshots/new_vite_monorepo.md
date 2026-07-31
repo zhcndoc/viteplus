@@ -89,7 +89,7 @@ catalogMode: prefer
 
 catalog:
   "@types/node": ^24
-  typescript: ^5
+  typescript: ^7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
@@ -127,7 +127,7 @@ vite-plus-monorepo/.git: dir
 
 ## `vp create vite:monorepo --interactive --verbose --no-git --no-hooks --no-agent --no-editor --package-manager pnpm --directory verbose-no-git-monorepo`
 
-显式的 --no-git 应跳过 verbose monorepo 的 git 提示
+显式的 --no-git 应跳过 verbose monorepo 的 git 提示。
 
 
 ## `vpt stat-file verbose-no-git-monorepo/.git --assert-not dir`
@@ -180,7 +180,7 @@ website
 
 ## `vpt print-file vite-plus-monorepo/apps/website/package.json`
 
-检查 website 为 pnpm 保持了 vite 的别名（workspace 覆盖仍然有效）
+Verify that website keeps the vite alias for pnpm (the workspace override remains effective)
 
 ```
 {
@@ -194,7 +194,7 @@ website
     "preview": "vp preview"
   },
   "devDependencies": {
-    "typescript": "~6.0.2",
+    "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   }
@@ -239,10 +239,9 @@ website
     "prepublishOnly": "vp run build"
   },
   "devDependencies": {
-    "@types/node": "^25.6.2",
-    "@typescript/native-preview": "7.0.0-dev.20260509.2",
+    "@types/node": "^26.1.1",
     "bumpp": "^11.1.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   }
@@ -251,7 +250,7 @@ website
 
 ## `cd vite-plus-monorepo && vp create --no-interactive vite:application`
 
-以非交互模式创建应用
+以非交互模式创建应用。
 
 
 ## `vpt list-dir vite-plus-monorepo/apps`
@@ -294,12 +293,12 @@ vite-plus-monorepo/apps/no-editor/.vscode: missing
 
 ## `cd vite-plus-monorepo && vp create --no-interactive vite:application --directory apps/editor-opt-in --editor vscode`
 
-在 monorepo 中创建显式选择编辑器的应用
+在 monorepo 中创建显式选择编辑器的应用。
 
 
 ## `vpt stat-file vite-plus-monorepo/apps/editor-opt-in/.vscode/settings.json --assert file`
 
-显式指定 --editor 应写入 VS Code 设置
+显式指定 `--editor` 应写入 VS Code 设置
 
 ```
 vite-plus-monorepo/apps/editor-opt-in/.vscode/settings.json: file
@@ -307,7 +306,7 @@ vite-plus-monorepo/apps/editor-opt-in/.vscode/settings.json: file
 
 ## `vpt stat-file vite-plus-monorepo/apps/editor-opt-in/.vscode/extensions.json --assert file`
 
-显式的 --editor 应该写入 VS Code 扩展
+显式的 --editor 应写入 VS Code 扩展
 
 ```
 vite-plus-monorepo/apps/editor-opt-in/.vscode/extensions.json: file
@@ -315,7 +314,7 @@ vite-plus-monorepo/apps/editor-opt-in/.vscode/extensions.json: file
 
 ## `cd vite-plus-monorepo && vp create --no-interactive vite:library`
 
-以非交互模式创建库
+以非交互模式创建库。
 
 
 ## `vpt list-dir vite-plus-monorepo/packages/vite-plus-library/package.json`
@@ -336,7 +335,7 @@ vite-plus-monorepo/packages/vite-plus-library/.vscode: 缺失
 
 ## `cd vite-plus-monorepo && vp create --no-interactive vite:generator`
 
-以非交互模式创建生成器
+以非交互模式创建生成器。
 
 
 ## `vpt list-dir vite-plus-monorepo/tools`

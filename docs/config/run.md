@@ -2,6 +2,7 @@
 
 你可以在 `vite.config.ts` 中的 `run` 字段下配置 Vite Task。查看 [`vp run`](/guide/run) 以了解有关运行脚本和任务（使用 Vite+）的更多信息。
 
+<!-- prettier-ignore -->
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 

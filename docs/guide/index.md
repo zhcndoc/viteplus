@@ -28,7 +28,9 @@ irm https://vite.plus/ps1 | iex
 `vp-setup.exe` 尚未进行代码签名。下载时浏览器可能会显示警告。点击 **“…”** → **“保留”** → **“无论如何保留”** 继续。如果 Windows Defender SmartScreen 在你运行文件时阻止它，请点击 **“更多信息”** → **“仍要运行”**。
 :::
 
-安装完成后，打开一个新的终端并运行：
+安装脚本和 `vp-setup.exe` 会读取 [环境变量](/guide/installer-env-vars)，例如 `VP_VERSION` 和 `VP_HOME`。
+
+安装完成后，打开一个新的 shell 并运行：
 
 ```bash
 vp help
@@ -75,7 +77,7 @@ apk add libstdc++
 vp create # 创建一个新项目
 vp install # 安装依赖项
 vp dev # 启动开发服务器
-vp check # 格式化、Lint、类型检查
+vp check # 格式化、代码检查、类型检查
 vp test # 运行 JavaScript 测试
 vp build # 构建生产版本
 ```
@@ -118,8 +120,8 @@ Vite+ 可以从启动项目、开发、检查与测试，一直到构建生产�
 
 ### 管理依赖项
 
-- [`vp add`](/guide/install), [`vp remove`](/guide/install), [`vp update`](/guide/install), [`vp dedupe`](/guide/install), [`vp outdated`](/guide/install), [`vp list`](/guide/install), [`vp why`](/guide/install), and [`vp info`](/guide/install) 封装包管理器工作流。
-- [`vp link`](/guide/install), [`vp unlink`](/guide/install), and [`vp rebuild`](/guide/install) 涵盖本地包链接和原生模块重建。
+- [`vp add`](/guide/install)、[`vp remove`](/guide/install)、[`vp update`](/guide/install)、[`vp dedupe`](/guide/install)、[`vp outdated`](/guide/install)、[`vp list`](/guide/install)、[`vp why`](/guide/install) 和 [`vp info`](/guide/install) 封装包管理器工作流。
+- [`vp link`](/guide/install)、[`vp unlink`](/guide/install) 和 [`vp rebuild`](/guide/install) 涵盖本地包链接和原生模块重建。
 - [`vp pm <command>`](/guide/install) 直接调用其他包管理器命令。
 
 ### 维护

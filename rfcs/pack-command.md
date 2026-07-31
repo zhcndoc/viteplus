@@ -73,8 +73,8 @@ vp pack src/cli.ts --exe
 - `-f, --format <format>` — 打包格式：`esm`、`cjs`、`iife`、`umd`（默认：`esm`）
 - `-d, --out-dir <dir>` — 输出目录（默认：`dist`）
 - `--clean` — 清理输出目录，使用 `--no-clean` 可禁用
-- `--sourcemap` — 生成 source map（默认：`false`）
-- `--shims` — 启用 CJS 和 ESM shims（默认：`false`）
+- `--sourcemap` — 生成源映射（默认：`false`）
+- `--shims` — 启用 CJS 和 ESM shim（默认：`false`）
 - `--minify` — 压缩输出
 
 ### 声明文件
@@ -89,7 +89,7 @@ vp pack src/cli.ts --exe
 ### 依赖
 
 - `--deps.never-bundle <module>` — 将依赖标记为 external
-- `--treeshake` — 对 bundle 进行 tree-shake（默认：`true`）
+- `--treeshake` — 对 bundle 进行 tree-shaking（默认：`true`）
 
 ### 质量检查
 
@@ -134,11 +134,11 @@ vp pack src/cli.ts --exe
   - 需要 Node.js >= 25.7.0
   - 仅支持单入口点
   - 默认使用 ESM 格式，默认禁用 DTS 生成
-  - 在 macOS 上会自动应用临时代码签名
+  - 在 macOS 上会自动应用临时代码签名。
 
 ## 配置
 
-Config 在 `vite.config.ts` 的 `pack` 键下指定：
+配置在 `vite.config.ts` 的 `pack` 键下指定：
 
 ```ts
 // 单个配置
@@ -296,7 +296,7 @@ Node.js 版本 v22.22.0 不支持 `exe` 选项。请升级到 Node.js 25.7.0 或
 
 - Pack 需要项目上下文（配置文件、依赖等）
 - 遵循与 `build`、`test`、`lint` 相同的模式
-- 对于打包而言，没有有意义的仅全局行为
+- 对于打包而言，没有有意义的仅全局行为。
 
 ## CLI 帮助输出
 
@@ -304,28 +304,28 @@ Node.js 版本 v22.22.0 不支持 `exe` 选项。请升级到 Node.js 25.7.0 或
 $ vp pack -h
 vp pack
 
-Usage:
+用法：
   $ vp pack [...files]
 
-Commands:
+命令：
   [...files]  打包文件
 
-Options:
+选项：
   --config-loader <loader>  要使用的配置加载器：auto、native、unrun（默认：auto）
   --no-config               禁用配置文件
   -f, --format <format>     打包格式：esm、cjs、iife、umd（默认：esm）
   --clean                   清理输出目录，使用 --no-clean 可禁用
   --deps.never-bundle <module>  将依赖标记为外部依赖
   --minify                  压缩输出
-  --devtools                启用 devtools 集成
+  --devtools                启用开发者工具集成
   --debug [feat]            显示调试日志
   --target <target>         打包目标，例如 "es2015"、"esnext"
   -l, --logLevel <level>    设置日志级别：info、warn、error、silent
   --fail-on-warn            遇到警告时失败（默认：true）
-  --no-write                禁止将文件写入磁盘，与 watch 模式不兼容
+  --no-write                禁止将文件写入磁盘，与监视模式不兼容
   -d, --out-dir <dir>       输出目录（默认：dist）
   --treeshake               树摇打包（默认：true）
-  --sourcemap               生成 source map（默认：false）
+  --sourcemap               生成源映射（默认：false）
   --shims                   启用 cjs 和 esm shims（默认：false）
   --platform <platform>     目标平台（默认：node）
   --dts                     生成 dts 文件
@@ -398,6 +398,7 @@ Options:
 
 `exe` 选项接受一个对象用于高级配置：
 
+<!-- prettier-ignore -->
 ```ts
 export default {
   pack: {

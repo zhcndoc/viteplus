@@ -9,7 +9,19 @@
 #[path = "cli_snapshots/redact.rs"]
 mod redact;
 
-use redact::redact_output;
+use redact::{redact_output, redact_version_probe_output};
+
+#[test]
+fn masks_bare_version_block_only_for_version_probe_steps() {
+    // `npm --version` / `npx --version` print a bare semver alone in the
+    // step's code fence; the runner masks it via the probe-scoped helper.
+    let probe = "```\n10.9.4\n```\n".to_owned();
+    assert_eq!(redact_version_probe_output(probe), "```\n<version>\n```\n");
+    // The generic pass leaves the same shape verbatim: a printed
+    // `.node-version` file is a fixture-controlled assertion.
+    let node_version_file = "```\n25.8.2\n```\n".to_owned();
+    assert_eq!(redact_output(node_version_file.clone(), &[], true), node_version_file);
+}
 
 #[test]
 fn trims_trailing_row_padding_on_every_platform() {
@@ -48,10 +60,66 @@ fn masks_only_v_prefixed_versions() {
 #[test]
 fn masks_bare_runtime_tool_versions_by_name_context() {
     // vp create prints these without the v prefix.
-    let input = "Node 24.18.0  pnpm 10.34.4 (agent npm/11.4.2)\n".to_owned();
+    let input = "Node 24.18.0  pnpm 10.34.4 (agents npm/11.4.2 vp/0.2.4)\n".to_owned();
     assert_eq!(
         redact_output(input, &[], true),
-        "Node <version>  pnpm <version> (agent npm/<version>)\n"
+        "Node <version>  pnpm <version> (agents npm/<version> vp/<version>)\n"
+    );
+}
+
+#[test]
+fn masks_managed_node_versions_in_environment_output() {
+    let input = concat!(
+        "Node: 24.18.1\n",
+        "\"nodeVersion\": \"24.18.1\"\n",
+        "✓ Default Node.js version set to lts (currently 24.18.1)\n",
+        "just-a-normal-package@0.0.0   24.18.1        just-a-normal-package\n",
+        "fixture pin: 22.18.0\n",
+    )
+    .to_owned();
+    assert_eq!(
+        redact_output(input, &[], true),
+        concat!(
+            "Node: <version>\n",
+            "\"nodeVersion\": \"<version>\"\n",
+            "✓ Default Node.js version set to lts (currently <version>)\n",
+            "just-a-normal-package@0.0.0   <version>        just-a-normal-package\n",
+            "fixture pin: 22.18.0\n",
+        )
+    );
+}
+
+#[test]
+fn strips_pnpm_store_location_diagnostics() {
+    let input = concat!(
+        "✓ Lockfile passes supply-chain policies\n",
+        "Packages are cloned from the content-addressable store to the virtual store.\n",
+        "  Content-addressable store is at: /Users/runner/Library/pnpm/store/v11\n",
+        "  Virtual store is at:             node_modules/.pnpm\n",
+        "\n",
+        "devDependencies:\n",
+        " testnpm2 1.0.1\n",
+    )
+    .to_owned();
+    assert_eq!(
+        redact_output(input, &[], true),
+        "✓ Lockfile passes supply-chain policies\n\ndevDependencies:\n testnpm2 1.0.1\n"
+    );
+}
+
+#[test]
+fn masks_current_vite_plus_version_in_upgrade_check_output() {
+    let input = concat!(
+        "info: found vite-plus@0.1.21-alpha.7 (current: 0.2.4)\n",
+        "Update available: 0.2.4 → 0.1.21-alpha.7\n",
+    )
+    .to_owned();
+    assert_eq!(
+        redact_output(input, &[], true),
+        concat!(
+            "info: found vite-plus@0.1.21-alpha.7 (current: <version>)\n",
+            "Update available: <version> → 0.1.21-alpha.7\n",
+        )
     );
 }
 
@@ -123,6 +191,81 @@ fn masks_scaffolded_dev_engines_pins_by_name_context() {
             "  \"version\": \"0.0.0\",\n",
             "  \"packageManager\": \"bun@1.3.11\",\n",
             "  \"core-js\": \"3.39.0\"\n",
+        )
+    );
+}
+
+#[test]
+fn masks_vp_migrate_banner_version_but_not_the_header() {
+    // The `vp migrate` banner prints the CLI's own version bare; it bumps on
+    // every release and must be masked, while the all-caps toolchain header
+    // (no version) and user semver on the same screen stay verbatim.
+    let input = concat!(
+        "VITE+ - The Unified Toolchain for the Web\n",
+        "◇ Migrated . to Vite+ 0.2.4\n",
+        "◇ Migrated foo to Vite+ 0.0.0-commit.0c515e3\n",
+        "  \"core-js\": \"3.39.0\"\n",
+    )
+    .to_owned();
+    assert_eq!(
+        redact_output(input, &[], true),
+        concat!(
+            "VITE+ - The Unified Toolchain for the Web\n",
+            "◇ Migrated . to Vite+ <version>\n",
+            "◇ Migrated foo to Vite+ <version>\n",
+            "  \"core-js\": \"3.39.0\"\n",
+        )
+    );
+}
+
+#[test]
+fn masks_migrate_upgrade_table_managed_targets_keeping_sources() {
+    // Every managed-toolchain row (vite-plus/vite/vitest/@vitest/*) upgrades to
+    // a CLI/bundled version that bumps on release, so all targets are masked;
+    // the installed sources are fixture-controlled and stay assertable, and a
+    // row with no source column (a newly added dep) is still handled.
+    let input = concat!(
+        "    vite-plus            latest → 0.2.4\n",
+        "    vite                 8.0.0  → 8.1.3\n",
+        "    vitest               3.2.4  → 4.1.10\n",
+        "    @vitest/coverage-v8         → 4.1.10\n",
+    )
+    .to_owned();
+    assert_eq!(
+        redact_output(input, &[], true),
+        concat!(
+            "    vite-plus            latest → <version>\n",
+            "    vite                 8.0.0  → <version>\n",
+            "    vitest               3.2.4  → <version>\n",
+            "    @vitest/coverage-v8         → <version>\n",
+        )
+    );
+}
+
+#[test]
+fn masks_vitest_ecosystem_versions_but_not_unrelated_deps() {
+    // The vitest ecosystem (`vitest`, `@vitest/*`) is a managed toolchain
+    // version and is masked by key context wherever it carries a bare semver
+    // (YAML catalogs and JSON overrides/deps alike), matching the vite-plus
+    // treatment. `catalog:` refs and unrelated deps (`typescript`) stay verbatim.
+    let input = concat!(
+        "  vitest: 4.1.10\n",
+        "  '@vitest/browser-playwright': 4.1.10\n",
+        "  vitest: 'catalog:'\n",
+        "    \"@vitest/coverage-v8\": \"4.1.10\",\n",
+        "    \"vitest\": \"4.0.13\",\n",
+        "    \"typescript\": \"5.4.0\"\n",
+    )
+    .to_owned();
+    assert_eq!(
+        redact_output(input, &[], true),
+        concat!(
+            "  vitest: <version>\n",
+            "  '@vitest/browser-playwright': <version>\n",
+            "  vitest: 'catalog:'\n",
+            "    \"@vitest/coverage-v8\": \"<version>\",\n",
+            "    \"vitest\": \"<version>\",\n",
+            "    \"typescript\": \"5.4.0\"\n",
         )
     );
 }

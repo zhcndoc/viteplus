@@ -31,15 +31,18 @@ Vite+ 期望使用现代的上游工具版本。
 
 - 确认扩展正在使用正确的工作区。
 
-## `vp build` 未运行我的构建脚本
+## `vp dev` 或 `vp build` 不会运行我的脚本
 
-与包管理器不同，内置命令无法被覆盖。如果你试图运行 `package.json` 中的脚本，请使用 `vp run build` 替代。
+与包管理器不同，内置命令无法被覆盖。如果你想运行 `package.json` 脚本，请改用 `vp run <script>`。
 
 例如：
 
-- `vp build` 始终运行内置的 Vite 构建
+- `vp dev` 始终启动内置的 Vite 开发服务器
+- `vp build` 始终运行内置的 Vite 构建命令
 - `vp test` 始终运行内置的 Vitest 命令
-- `vp run build` 和 `vp run test` 则运行 `package.json` 中的脚本
+- `vp run dev`、`vp run build` 和 `vp run test` 会运行相应的 `package.json` 脚本
+
+关于何时优先选择这两种方式，请参阅[内置命令与脚本](/guide/run#built-in-commands-vs-scripts)。
 
 ::: info
 你还可以在 `vite.config.ts` 中定义自定义任务，并完全迁移出 `package.json` 脚本。
@@ -105,4 +108,4 @@ export default defineConfig({
 - `vp env current` 和 `vp --version` 的完整输出
 - 项目使用的包管理器
 - 复现问题的具体步骤以及你的 `vite.config.ts`
-- 最小的可重现仓库或可运行沙箱
+- 最小的可重现仓库或可运行沙箱。

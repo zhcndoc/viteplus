@@ -1,24 +1,24 @@
 # create_generator_monorepo
 
-Scaffolds a generator, installs its deps (so its `bin/index.ts` can import
-`bingo`), then runs it through the registered `create.templates` entry. The
-`vp install` step is what lets a scaffolded artifact run in the isolated
-runner without the legacy symlink-all-node_modules behavior.
+搭建一个生成器，安装其依赖（这样其 `bin/index.ts` 就可以导入
+`bingo`），然后通过已注册的 `create.templates` 条目运行它。
+`vp install` 步骤使搭建出的产物能够在隔离运行器中运行，而无需采用旧版的
+symlink-all-node_modules 行为。
 
 ## `vp create vite:generator --no-interactive --directory tools/my-generator`
 
-scaffold a generator; auto-registers it in create.templates
+构建一个生成器；自动将其注册到 create.templates
 
 ```
-◇ Scaffolded tools/my-generator with generator scaffold
+◇ 已使用生成器脚手架构建 tools/my-generator
 • Node <version>  pnpm <version>
-✓ Dependencies installed in <duration>
-→ Next: cd tools/my-generator && vp run
+✓ 已在 <duration> 内安装依赖
+→ 下一步：cd tools/my-generator && vp run
 ```
 
 ## `vpt print-file vite.config.ts`
 
-create.templates entry appended, existing defaultTemplate preserved
+已追加 create.templates 条目，保留现有的 defaultTemplate
 
 ```
 import { defineConfig } from "vite-plus";
@@ -39,7 +39,7 @@ export default defineConfig({
 
 ## `vpt print-file tools/my-generator/package.json`
 
-generator package (bingo dependency is the run hint; no marker keyword)
+生成器包（bingo 依赖是运行提示；没有标记关键字）
 
 ```
 {
@@ -72,54 +72,52 @@ generator package (bingo dependency is the run hint; no marker keyword)
 
 ## `vp install`
 
-install workspace deps so the generator's bin can import bingo
+安装工作区依赖，以便生成器的 bin 可以导入 bingo
 
 
 ## `vp create my-generator --no-interactive -- --name demo-pkg --directory demo-pkg --offline`
 
-resolve via the registered create.templates entry
+通过已注册的 create.templates 条目解析
 
 ```
 
-Generating project…
+正在生成项目……
 
-Running: node <workspace>/tools/my-generator/bin/index.ts --name demo-pkg --directory demo-pkg --offline --skip-requests
-┌  ✨ my-generator@0.0.0 ✨
+运行：node <workspace>/tools/my-generator/bin/index.ts --name demo-pkg --directory demo-pkg --offline --skip-requests
+┌  my-generator@0.0.0 │
+◇  以 --setup 模式运行
 │
-◇  Running with mode --setup
+│  已启用 --offline。你需要手动 git push 任何更改。
 │
-│  --offline enabled. You'll need to git push any changes manually.
+◇  从系统推断默认选项
 │
-◇  Inferred default options from system
+◇  已运行 my-generator 模板
 │
-◇  Ran the my-generator template
+◇  已准备本地 Git 仓库
 │
-◇  Prepared local Git repository
+●  在 ./demo-pkg 中运行 npx index.ts --remote
+│  以在 GitHub 上创建并同步远程仓库。
 │
-●  Run npx index.ts --remote in ./demo-pkg
-│  to create and sync a remote repository on GitHub.
-│
-└  Thanks for using my-generator! 💝
+└  感谢使用 my-generator！💝
 
+Monorepo 集成中……
 
-Monorepo integration...
+正在安装依赖……
 
-Installing dependencies...
+依赖已安装
 
-Dependencies installed
+正在格式化代码……
 
-Formatting code...
-
-Code formatted
-◇ Scaffolded tools/demo-pkg
+代码已格式化
+◇ 已搭建 tools/demo-pkg
 • Node <version>  pnpm <version>
-✓ Dependencies installed in <duration>
-→ Next: cd tools/demo-pkg && vp run
+✓ 依赖已安装（耗时 <duration>）
+→ 下一步：cd tools/demo-pkg && vp run
 ```
 
 ## `vpt print-file tools/demo-pkg/package.json`
 
-generated next to the generator under tools/, not the apps/ parent
+生成在 tools/ 下生成器旁边，而不是 apps/ 父目录中
 
 ```
 {

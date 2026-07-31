@@ -32,9 +32,14 @@ const guideSidebar = [
     items: [
       { text: '开始使用', link: '/guide/' },
       { text: '创建项目', link: '/guide/create' },
-      { text: '迁移到 Vite+', link: '/guide/migrate' },
+      {
+        text: '迁移到 Vite+',
+        link: '/guide/migrate',
+        items: [{ text: '迁移规则', link: '/guide/migrate-rules' }],
+      },
       { text: '安装依赖', link: '/guide/install' },
       { text: '环境', link: '/guide/env' },
+      { text: '安装程序环境变量', link: '/guide/installer-env-vars' },
       { text: '为什么选择 Vite+', link: '/guide/why' },
     ],
   },

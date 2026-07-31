@@ -4,7 +4,6 @@
 
 ```
 $ vp build
-vite <version> 正在为生产环境构建客户端环境...
 transforming...✓ 4 modules transformed.
 rendering chunks...
 computing gzip size...
@@ -19,18 +18,17 @@ dist/assets/index-<hash>.js  <size> kB │ gzip: <size> kB
 应命中缓存
 
 ```
-$ vp build ◉ 缓存命中，正在回放
-vite <version> building client environment for production...
-transforming...✓ 4 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                <size> kB │ gzip: <size> kB
-dist/assets/index-<hash>.js  <size> kB │ gzip: <size> kB
+$ vp build ◉ 缓存命中，正在重放
+正在转换...✓ 已转换 4 个模块。
+正在渲染代码块...
+正在计算 gzip 大小...
+dist/index.html                <大小> kB │ gzip: <大小> kB
+dist/assets/index-<哈希>.js  <大小> kB │ gzip: <大小> kB
 
-✓ built in <duration>
+✓ 构建完成，用时 <时长>
 
 ---
-vp run: 缓存命中，节省了 <duration>。
+vp run：缓存命中，节省了 <时长>。
 ```
 
 ## `VITE_MY_VAR=2 vp run build`
@@ -39,7 +37,6 @@ vp run: 缓存命中，节省了 <duration>。
 
 ```
 $ vp build ○ cache miss: env 'VITE_MY_VAR' changed, executing
-vite <version> building client environment for production...
 transforming...✓ 4 modules transformed.
 rendering chunks...
 computing gzip size...

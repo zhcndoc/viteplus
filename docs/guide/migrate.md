@@ -36,7 +36,7 @@ vp migrate my-app
 - `--no-editor` 跳过编辑器配置设置
 - `--hooks` 设置预提交钩子
 - `--no-hooks` 跳过钩子设置
-- `--no-interactive` 在无提示模式下运行迁移
+- `--no-interactive` 在无提示模式下运行迁移。
 
 ## 迁移流程
 
@@ -50,30 +50,30 @@ vp migrate my-app
 - 可以写入代理和编辑器配置文件
 - 格式化已迁移的项目
 
-有关确切的依赖、源码重写和包管理器行为，请参阅 [Migration Rules](./migrate-rules.md)。
+有关确切的依赖、源码重写和包管理器行为，请参阅 [迁移规则](./migrate-rules.md)。
 
 大多数项目在运行 `vp migrate` 后仍需要进一步手动调整。
 
-## Recommended workflow
+## 推荐工作流程
 
-Before running the migration:
+运行迁移之前：
 
-- Upgrade to Vite 8+ and Vitest 4.1+
-- Make sure you understand any existing lint, formatting, or test configurations that should be preserved
+- 升级到 Vite 8+ 和 Vitest 4.1+
+- 确保了解任何应予以保留的现有 lint、格式化或测试配置
 
-After running the migration:
+运行迁移之后：
 
-- Run `vp install`
-- Run `vp check`
-- Run `vp test`
-- Run `vp build`
+- 运行 `vp install`
+- 运行 `vp check`
+- 运行 `vp test`
+- 运行 `vp build`
 
 ## 迁移提示
 
 如果您想将此工作交给编码代理（或阅读者是编码代理！），请使用以下迁移提示：
 
 ```md
-将此项目迁移到 Vite+。Vite+ 取代了围绕运行时管理、包管理、开发/构建/测试命令、Linting、格式化 和 打包 的当前拆分工具链。运行 `vp help` 了解 Vite+ 能力，并在修改前运行 `vp help migrate`。在工作区根目录使用 `vp migrate --no-interactive`。确保项目在迁移前使用 Vite 8+ 和 Vitest 4.1+。
+将此项目迁移到 Vite+。Vite+ 取代了围绕运行时管理、包管理、开发/构建/测试命令、代码检查、格式化和打包的当前拆分工具链。运行 `vp help` 了解 Vite+ 的能力，并在修改前运行 `vp help migrate`。在工作区根目录使用 `vp migrate --no-interactive`。确保项目在迁移前使用 Vite 8+ 和 Vitest 4.1+。
 
 迁移完成后：
 
@@ -85,12 +85,12 @@ After running the migration:
 命令映射（需牢记）：
 
 - `vp run <script>` 等价于 `pnpm run <script>`
-- `vp test` 运行内置测试命令，而 `vp run test` 运行 `package.json` 中的 `test` 脚本
-- `vp install`、`vp add` 和 `vp remove` 通过 `packageManager` 声明的包管理器委托
-- `vp dev`、`vp build`、`vp preview`、`vp lint`、`vp fmt`、`vp check` 和 `vp pack` 替换对应的独立工具
+- `vp dev` 和 `vp test` 始终运行内置命令；`vp run dev` 和 `vp run test` 运行 `package.json` 中的 `dev` 和 `test` 脚本
+- `vp install`、`vp add` 和 `vp remove` 通过 `packageManager` 声明的包管理器执行
+- `vp dev`、`vp build`、`vp preview`、`vp lint`、`vp fmt`、`vp check` 和 `vp pack` 取代相应的独立工具
 - 优先使用 `vp check` 进行验证循环
 
-最后，通过运行验证迁移：`vp install`、`vp check`、`vp test` 和 `vp build`
+最后，通过运行以下命令验证迁移：`vp install`、`vp check`、`vp test` 和 `vp build`
 
 最后总结迁移并报告仍需手动跟进的事项。
 ```

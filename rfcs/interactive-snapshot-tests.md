@@ -42,10 +42,10 @@ vite-task 仓库已经实现了与此设计完全相同的可用方案，如今�
 
 | Crate                      | 角色                                                                                                                                                                                                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pty_terminal`             | 在 PTY 中启动子进程（`portable-pty`），通过 `vt100` 模拟器传递输出，响应光标位置查询，处理窗口大小调整和 ctrl-c。包含平台绕过方案：Windows 上的 ConPTY、为避免 musl PTY 崩溃而设置的全局锁、macOS 上用于避免 EIO 截断的 slave-fd 生命周期处理。 |
-| `pty_terminal_test`        | `TestTerminal` 包装器以及 `Reader::expect_milestone(name)`：阻塞直到子进程发出指定名称的里程碑，然后返回渲染后的屏幕内容。                                                                                                                                   |
-| `pty_terminal_test_client` | 子进程侧辅助工具，使用 OSC 8 超链接（`https://milestone.invalid/<hex(name)>`，带一个零宽空格锚点）对里程碑进行编码；这些标记可以同时穿过 Unix PTY 和 Windows ConPTY，并与其所标记的输出一起按行内方式到达。                                            |
-| `snapshot_test`            | 最小化的快照存储：通过 `UPDATE_SNAPSHOTS=1` 进行比较或更新，在不匹配时写入 `<name>.new`，并将统一 diff 作为失败消息返回。                                                                                                                               |
+| `pty_terminal`             | Spawns a child in a PTY (`portable-pty`), feeds output through a `vt100` emulator, answers cursor-position queries, handles resize and ctrl-c. Encodes platform workarounds: ConPTY on Windows, a global lock for musl PTY crashes, macOS slave-fd lifetime for EIO truncation. |
+| `pty_terminal_test`        | `TestTerminal` wrapper plus `Reader::expect_milestone(name)`: block until the child emits a named milestone, then return the rendered screen.                                                                                                                                   |
+| `pty_terminal_test_client` | Child-side helper that encodes milestones as window-title updates (`OSC 2 ; pty-terminal-test:<32-hex-id>:<base64url(name)>`, a fresh id per emission), which survive both Unix PTYs and Windows ConPTY and arrive in-order with the output they mark.                          |
+| `snapshot_test`            | Minimal snapshot store: compare or update via `UPDATE_SNAPSHOTS=1`, write `<name>.new` on mismatch, return a unified diff as the failure message.                                                                                                                               |
 
 在此基础上，`vite_task_bin/tests/e2e_snapshots` 实现了一个 `libtest-mimic` 自定义测试目标：fixture 在 `snapshots.toml` 中声明用例，步骤采用 argv 数组（不使用 shell），交互步骤携带有序的 `interactions` 列表，并且每个用例都会生成一个 Markdown 快照，其中包含命令行、交互日志，以及在每个里程碑和退出时捕获的带围栏终端截图。
 
@@ -237,14 +237,14 @@ steps = [
 
 ## 里程碑协议和 CLI 仪器化
 
-里程碑是 CLI 在其输出流中于确定性的渲染点写入的一个不可见标记。其编码与 vite-task 协议保持不变：一个 OSC 8 超链接，URI 为 `https://milestone.invalid/<hex(name)>`，锚定在一个零宽空格上。它可以穿过 Unix PTY 和 Windows ConPTY，按顺序与其标记的输出一同到达，并且在真实终端中不显示任何内容。
+里程碑是 CLI 在确定性的渲染点写入其输出流中的不可见标记。其编码采用 vite-task 协议：更新窗口标题（`OSC 2 ; pty-terminal-test:<32-hex-id>:<base64url(name)>`），每次发出时使用一个全新的随机 id，因此重复的名称仍可作为不同的标题变更被观察到。它可在 Unix PTY 和 Windows ConPTY 中传递，与其标记的输出按顺序到达，并且在真实终端的屏幕内容中不会渲染出任何内容。
 
 只有在 `VP_EMIT_MILESTONES=1` 时才会发出该标记，而只有 runner 会设置这个变量。vp 是一个广泛分发的 CLI，其输出会被管道传递到日志和其他工具中，因此像 vite-task 那样无条件发出并不适合这里。
 
 仪器化点：
 
-- **Rust prompts** (`crates/vite_global_cli`, `crates/vite_shared`)：通过 `pty_terminal_test_client` 发出（一个新的 git 依赖，来源与现有的 vite-task crates 相同）。计划中的交互式包选择器基于 `vite_select`，其 `after_render(RenderState)` 钩子正是为此设计的；选择器每次渲染都会发出 `select:app-target:<index>`。
-- **TS prompts** (`packages/prompts`)：一个小型辅助函数（`emitMilestone(name)`）写入相同的字节序列，并接入每个 prompt 组件的渲染循环。命名约定：`<kind>:<id>:<state>`，例如 `text:project-name:my-app`、`select:template:1`、`confirm:approve-builds:yes`、`spinner:install:stop`。prompt 调用点会获得一个稳定的 `id`（组件种类加上一个在有歧义时显式指定的名称）。
+- **Rust 提示**（`crates/vite_global_cli`、`crates/vite_shared`）：通过 `pty_terminal_test_client` 发出（一个新的 git 依赖，来源与现有的 vite-task crates 相同）。计划中的交互式包选择器基于 `vite_select`，其 `after_render(RenderState)` 钩子正是为此设计的；选择器每次渲染都会发出 `select:app-target:<index>`。
+- **TS 提示**（`packages/prompts`）：一个小型辅助函数（`emitMilestone(name)`）写入相同的字节序列，并接入每个 prompt 组件的渲染循环。命名约定：`<kind>:<id>:<state>`，例如 `text:project-name:my-app`、`select:template:1`、`confirm:approve-builds:yes`、`spinner:install:stop`。prompt 调用点会获得一个稳定的 `id`（组件种类加上一个在有歧义时显式指定的名称）。
 - **非 prompt 的同步点**：长时间运行的命令可以标记稳定的生命周期点（`dev-server:ready`、`watch:rebuilt`），这样服务器和 watch 模式的测试在发送下一个按键或 ctrl-c 之前就有东西可等待。这就是解除搁置的 `command-pack-watch-restart` 用例的关键。
 
 里程碑名称会刻意编码渲染后的状态（查询文本、光标索引、选择项），而不只是一个事件名。在按下 `down` 后等待 `select:template:1`，意味着屏幕截图不会与渲染发生竞争。
@@ -309,7 +309,7 @@ steps = [
 - 注册表主机（npmjs 与 mirror）。
 - 无序的诊断块（按排序处理，就像 vite-task 对多线程 lint 输出所做的那样）。
 
-相对于目前大约 50 个正则表达式，应该缩减或消失的内容包括：spinner 帧遮罩（网格显示的是渲染后的最终状态，而不是动画帧）、ANSI 清理（普通捕获会去除样式）、包管理器进度行遮罩（进度是在网格上原地渲染，而不是在字节流中累积）、以及 stdout/stderr 交错处理的技巧（两者都输入同一个终端，这本来就是用户看到的效果）。脱敏模块应从最小集合开始，只在确有需要时才增长；每新增一个正则，都是一个值得先弄清楚的确定性问题。
+相对于目前大约 50 个正则表达式，应该缩减或消失的内容包括：spinner 帧遮罩（网格显示的是渲染后的最终状态，而不是动画帧）、ANSI 清理（普通捕获会去除样式）、包管理器进度行遮罩（进度是在网格上原地渲染，而不是在字节流中累积），以及 stdout/stderr 交错处理的技巧（两者都输入同一个终端，这本来就是用户看到的效果）。脱敏模块应从最小集合开始，只在确有需要时才增长；每新增一个正则，都是一个值得先弄清楚的确定性问题。
 
 ## vpt 测试工具
 
@@ -418,7 +418,7 @@ tool migrate-snap-tests packages/cli/snap-tests-global --vp global [name-filter]
 1. `tool migrate-snap-tests <old-dir> --vp <flavor> <filter>`
 2. `UPDATE_SNAPSHOTS=1 just snapshot-test <filter>` 记录基线
 3. 将新的 `.md` 与旧的 `snap.txt` 逐个审查对比（这一步很适合由 agent 执行：相同的命令、相同的 fixture、“新的快照是否断言了旧的快照所断言的一切”）
-4. 在同一个 PR 中删除已迁移的旧 case 目录，这样任何时刻每个 case 都只存在于一棵目录树中
+4. 在同一个 PR 中删除已迁移的旧 case 目录，这样任何时刻每个 case 都只存在于一棵目录树中。
 
 ## 决策
 
@@ -461,7 +461,7 @@ global/local 的拆分重复了 fixture，并让两个表面逐渐漂移（PR #2
 - **`expect`/`expectrl` 风格的模式等待。** 基于字节流的模式匹配本质上就是带额外步骤的文本等待；同样存在非确定性，而且没有渲染后的屏幕快照。
 - **保留两棵树，只为新用例增加交互性。** 会无限期保留 fixture 的重复和漂移，并让旧语料继续停留在重试循环模型上；而迁移工具已经足够便宜，不值得这样做。
 
-## Rollout plan
+## 发布计划
 
 阶段 1，runner：添加 git 依赖（`pty_terminal_test`、`pty_terminal_test_client`、`snapshot_test`）、包含其 `cli_snapshots` 测试目标和 `vpt` bin 的 `crates/vite_cli_snapshots` crate、flavor 供应、脱敏、`just snapshot-test` 配方，以及 CI 集成。先提交一些手写用例，覆盖两种 flavor、一个交互式用例和一个 `local-registry` 用例。
 
@@ -471,7 +471,7 @@ global/local 的拆分重复了 fixture，并让两个表面逐渐漂移（PR #2
 
 阶段 4，移除：删除 `snap-test.ts`、重试脚本、`snap-test*` 包脚本、旧的 CI 任务，以及 `snap-tests*/` 目录树。更新 `AGENTS.md` 和 `CONTRIBUTING.md`。
 
-从 Phase 1 落地的那一刻起，新测试就会以新格式编写。
+从阶段 1 落地的那一刻起，新测试就会以新格式编写。
 
 ## 未决问题
 

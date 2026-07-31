@@ -49,11 +49,18 @@ impl PackageManager {
             }
             PackageManagerType::Yarn => {
                 bin_name = "yarn".into();
-                args.push("dedupe".into());
+                if self.is_yarn_berry() {
+                    args.push("dedupe".into());
 
-                // yarn@2+ supports --check
-                if options.check {
-                    args.push("--check".into());
+                    // yarn@2+ supports --check
+                    if options.check {
+                        args.push("--check".into());
+                    }
+                } else {
+                    output::warn(
+                        "Yarn Classic dedupes during install, falling back to yarn install",
+                    );
+                    args.push("install".into());
                 }
             }
             PackageManagerType::Npm => {
@@ -82,32 +89,9 @@ impl PackageManager {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::{TempDir, tempdir};
-    use vite_path::AbsolutePathBuf;
-    use vite_str::Str;
 
     use super::*;
-
-    fn create_temp_dir() -> TempDir {
-        tempdir().expect("Failed to create temp directory")
-    }
-
-    fn create_mock_package_manager(pm_type: PackageManagerType, version: &str) -> PackageManager {
-        let temp_dir = create_temp_dir();
-        let temp_dir_path = AbsolutePathBuf::new(temp_dir.path().to_path_buf()).unwrap();
-        let install_dir = temp_dir_path.join("install");
-
-        PackageManager {
-            client: pm_type,
-            package_name: pm_type.to_string().into(),
-            version: Str::from(version),
-            hash: None,
-            bin_name: pm_type.to_string().into(),
-            workspace_root: temp_dir_path.clone(),
-            is_monorepo: false,
-            install_dir,
-        }
-    }
+    use crate::package_manager::create_mock_package_manager_with_version as create_mock_package_manager;
 
     #[test]
     fn test_pnpm_dedupe_basic() {
@@ -148,6 +132,14 @@ mod tests {
         let pm = create_mock_package_manager(PackageManagerType::Yarn, "4.0.0");
         let result = pm.resolve_dedupe_command(&DedupeCommandOptions { ..Default::default() });
         assert_eq!(result.args, vec!["dedupe"]);
+        assert_eq!(result.bin_path, "yarn");
+    }
+
+    #[test]
+    fn test_yarn_classic_dedupe_falls_back_to_install() {
+        let pm = create_mock_package_manager(PackageManagerType::Yarn, "1.22.22");
+        let result = pm.resolve_dedupe_command(&DedupeCommandOptions { ..Default::default() });
+        assert_eq!(result.args, vec!["install"]);
         assert_eq!(result.bin_path, "yarn");
     }
 

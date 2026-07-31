@@ -7,7 +7,7 @@
 `vp build` 通过 Vite+ 运行标准的 Vite 生产构建。因为它是直接基于 Vite 的，所以构建管线和配置模型与 Vite 相同。有关 Vite 生产构建如何工作的更多信息，请参阅 [Vite 指南](https://vite.dev/guide/build)。请注意，Vite+ 使用 Vite 8 和 [Rolldown](https://rolldown.rs/) 进行构建。
 
 ::: info
-`vp build` 始终运行内置的 Vite 生产构建。如果你的项目在 `package.json` 中也有一个 `build` 脚本，当你想运行该脚本时，请运行 `vp run build`。
+`vp build` 始终运行内置的 Vite 生产构建。如果你的项目在 `package.json` 中也有一个 `build` 脚本，并且你希望运行该脚本，请运行 `vp run build`。请参阅[内置命令与脚本](/guide/run#built-in-commands-vs-scripts)。
 :::
 
 ## 用法
@@ -28,7 +28,7 @@ vp build --sourcemap
 - [别名](https://vite.dev/config/shared-options#resolve-alias)
 - [`build`](https://vite.dev/config/build-options)
 - [`preview`](https://vite.dev/config/preview-options)
-- [环境模式](https://vite.dev/guide/env-and-mode)
+- [环境模式](https://vite.dev/guide/env-and-mode)。
 
 ## 预览
 

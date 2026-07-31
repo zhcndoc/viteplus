@@ -48,7 +48,7 @@ export default defineConfig({
 });
 ```
 
-本指南假设每个任务在本地已经能够命中缓存。如果某个任务没有命中，请在添加 GitHub Actions 缓存步骤之前，先修复它在 `vite.config.ts` 中的跟踪配置。参见 [自动数据跟踪](/guide/automatic-data-tracking) 和 [`run.tasks`](/config/run#tasks)。
+本指南假设每个任务在本地运行时都能命中缓存。如果某个任务未命中，请先在添加 GitHub Actions 缓存步骤之前，修复 `vite.config.ts` 中的跟踪配置。请参阅[自动数据跟踪](/guide/automatic-data-tracking)和[`run.tasks`](/config/run#run-tasks)。
 
 将每个任务运行两次：
 
@@ -115,7 +115,7 @@ jobs:
 
 ## 3. 在日志中验证
 
-在第一次运行时，restore 步骤应该会提示未找到缓存，而 save 步骤会创建一个缓存。来自 fork 的拉取请求可能只能恢复，因为 GitHub 可以给缓存令牌提供只读访问权限。在这种情况下，save 步骤会发出警告，并在不写入缓存条目的情况下成功退出。
+在第一次运行时，恢复步骤应该会提示未找到缓存，而保存步骤会创建一个缓存。来自派生仓库的拉取请求可能只能恢复缓存，因为 GitHub 可以为缓存令牌提供只读访问权限。在这种情况下，保存步骤会发出警告，并在不写入缓存条目的情况下成功退出。
 
 在后续运行中，请同时查找以下两层：
 
@@ -129,7 +129,7 @@ vp run: cache hit, 1.10s saved.
 
 ## 保持任务跟踪稳定
 
-如果 GitHub 恢复了缓存，但 `vp run` 打印缓存未命中，请在更改 Actions 缓存键之前修复任务指纹。请参见[自动数据跟踪](/guide/automatic-data-tracking)和[`run.tasks`](/config/run#tasks)。
+如果 GitHub 恢复了缓存，但 `vp run` 显示缓存未命中，请先修复任务指纹，再修改 Actions 缓存键。请参阅[自动数据跟踪](/guide/automatic-data-tracking)和[`run.tasks`](/config/run#run-tasks)。
 
 ## 选择一个缓存键
 

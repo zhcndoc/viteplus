@@ -54,4 +54,53 @@ export default defineConfig({
 });
 ```
 
-这是 Vite+ 的默认方法，应该在大多数项目中取代单独的 `lint-staged` 配置。因为 `vp staged` 从 `vite.config.ts` 读取配置，所以你的暂存文件检查与你的 lint、格式化、测试、构建和任务运行器配置保持在同一位置。
+这是 Vite+ 的默认方式，在大多数项目中应替代单独的 `lint-staged` 配置。由于 `vp staged` 会读取 `vite.config.ts`，你的暂存文件检查就能与 lint、格式化、测试、构建和任务运行器配置统一放在同一处。
+
+## 在特定环境中禁用钩子
+
+已安装的钩子会在每次运行时检查环境，因此你可以按机器或进程禁用它们，而无需卸载任何内容。当提交发生在开发环境之外时（例如通过扁平文件 CMS 或其他进程），这会非常有用。
+
+### 环境变量
+
+在运行 `git commit` 的进程环境中设置 `VITE_GIT_HOOKS=0`，每个 Vite+ 钩子都会立即退出而不运行：
+
+```bash
+VITE_GIT_HOOKS=0 git commit -m "content update"
+```
+
+出于生态系统工具兼容性的考虑，`HUSKY=0` 也会以相同方式生效。在某个环境中设置 `VITE_GIT_HOOKS=0` 后，当生命周期脚本（例如 `prepare`）运行时，`vp config` 也不会在该环境中重新安装钩子。
+
+### 初始化脚本
+
+在检查环境变量之前，每个钩子都会加载一个初始化脚本（如果存在）：
+
+1. `$XDG_CONFIG_HOME/vite-plus/hooks-init.sh`（默认为 `~/.config/vite-plus/hooks-init.sh`）
+2. `$XDG_CONFIG_HOME/husky/init.sh` 作为备用选项
+
+要为整台机器禁用钩子，请创建初始化脚本，并在其中导出该变量：
+
+```sh [~/.config/vite-plus/hooks-init.sh]
+export VITE_GIT_HOOKS=0
+```
+
+由于钩子本身会读取此文件，即使执行提交的进程没有继承你的 shell 环境，它也能正常工作，例如由守护进程或 Web 服务器执行提交时。
+
+## 移除提交钩子
+
+要完全移除 Vite+ 提交钩子，请撤销 `vp config` 设置的每一项内容：
+
+1. 取消指向 Vite+ 分发器的 Git 钩子路径：
+
+```bash
+git config --unset core.hooksPath
+```
+
+2. 删除钩子目录（如果修改过目录，请使用你的 `--hooks-dir` 值）：
+
+```bash
+rm -rf .vite-hooks
+```
+
+3. 从 `package.json` 的 `prepare` 脚本中移除 `vp config`。否则下一次安装时会重新运行 `vp config` 并重新安装钩子。
+
+4. 如果 `vite.config.ts` 中存在 `staged` 块，请将其移除
