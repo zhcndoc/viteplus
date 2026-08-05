@@ -2,10 +2,10 @@
 
 ## `vp remove -g corepack`
 
-**Exit code:** 1
+**退出代码：** 1
 
 ```
-Failed to uninstall corepack: Package corepack is not installed
+卸载 corepack 失败：未安装 corepack 软件包
 ```
 
 ## `vp env exec node --version`
@@ -57,7 +57,7 @@ VITE+ - Web 的统一工具链
 核心工具 - 与解析后的 Node.js 捆绑的 corepack
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 的统一工具链
 
 <home>/.vite-plus/js_runtime/node/<version>/bin/corepack
   Version:    20.18.0
@@ -83,11 +83,11 @@ VITE+ - Web 的统一工具链
 ```
 VITE+ - Web 统一工具链
 
-<home>/.vite-plus/packages/cowsay#<uuid>/lib/node_modules/cowsay/./cli.js
-  软件包：    cowsay@1.6.0
-  二进制文件： cowsay, cowthink
-  Node：       <version>
-  安装时间：   <date>
+<home>/.vite-plus/packages/cowsay/<uuid>/lib/node_modules/cowsay/./cli.js
+  Package:    cowsay@1.6.0
+  Binaries:   cowsay, cowthink
+  Node:       <version>
+  Installed:  <date>
 ```
 
 ## `vp remove -g cowsay`
@@ -95,7 +95,7 @@ VITE+ - Web 统一工具链
 清理
 
 ```
-Uninstalled cowsay
+已卸载 cowsay
 ```
 
 ## `vp env which unknown-tool`

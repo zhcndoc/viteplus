@@ -69,6 +69,8 @@ vp install -w
 - `vp list -g [pkg]` 列出全局包
 - `vp outdated -g [pkg]` 打印过期的包
 
+更新会保留安装包时使用的版本规范：从 dist-tag（例如 `vp install -g some-pkg@nightly`）安装的包会更新到该标签的最新版本，而版本范围则会保持在该范围内。使用不同的规范重新安装（例如 `vp update -g some-pkg@latest`）即可切换，或者向 `vp update -g` 传入 `--latest`，将包切换到 `latest` 标签并清除其记录的规范。`vp outdated -g` 会同时报告与记录的规范匹配的最新版本（`Wanted`），以及 `latest` 标签上的最新版本。
+
 ::: warning
 这些命令**不会**与底层包管理器的全局安装目录交互。
 

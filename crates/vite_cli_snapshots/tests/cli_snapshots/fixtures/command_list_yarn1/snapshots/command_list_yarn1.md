@@ -5,20 +5,20 @@
 应该先安装软件包
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 的统一工具链
 
 yarn install <version>
-warning package.json: No license field
-info No lockfile found.
-warning command-list-yarn1@1.0.0: No license field
-[1/4] Resolving packages...
-[2/4] Fetching packages...
-[3/4] Linking dependencies...
-[4/4] Building fresh packages...
+警告 package.json：未设置许可证字段
+信息 未找到锁文件。
+警告 command-list-yarn1@1.0.0：未设置许可证字段
+[1/4] 正在解析软件包...
+[2/4] 正在获取软件包...
+[3/4] 正在链接依赖...
+[4/4] 正在构建全新软件包...
 
-success Saved lockfile.
+成功保存锁文件。
 
-Done in <duration>.
+耗时 <duration>。
 ```
 
 ## `vp pm list`
@@ -27,12 +27,12 @@ Done in <duration>.
 
 ```
 yarn list <version>
-warning package.json: No license field
-warning command-list-yarn1@1.0.0: No license field
+警告 package.json：没有 license 字段
+警告 command-list-yarn1@1.0.0：没有 license 字段
 ├─ test-vite-plus-package@1.0.0
 └─ testnpm2@1.0.1
 
-Done in <duration>.
+已在 <duration> 内完成。
 ```
 
 ## `vp pm list testnpm2`
@@ -82,7 +82,7 @@ Done in <duration>.
 应显示警告，说明 yarn@1 不支持 --prod
 
 ```
-警告：yarn@1 不支持 --prod，正在忽略 --prod 标志
+warn: yarn does not support --prod.
 yarn list <version>
 警告 package.json：未设置许可证字段
 警告 command-list-yarn1@1.0.0：未设置许可证字段
@@ -97,7 +97,7 @@ yarn list <version>
 应显示警告，说明 yarn@1 不支持 --dev
 
 ```
-警告：yarn@1 不支持 --dev，忽略 --dev 标志
+警告：yarn 不支持 --dev。
 yarn list <version>
 警告 package.json：没有许可证字段
 警告 command-list-yarn1@1.0.0：没有许可证字段
@@ -112,7 +112,7 @@ yarn list <version>
 应显示警告，说明 yarn@1 不支持 --no-optional
 
 ```
-警告：yarn@1 不支持 --no-optional，忽略 --no-optional 标志
+warn: yarn does not support --no-optional.
 yarn list <version>
 警告 package.json：没有许可证字段
 警告 command-list-yarn1@1.0.0：没有许可证字段
@@ -127,7 +127,7 @@ yarn list <version>
 应显示警告，说明 yarn@1 不支持 --exclude-peers
 
 ```
-警告：yarn@1 不支持 --exclude-peers，忽略此标志
+warn: yarn does not support --exclude-peers.
 yarn list <version>
 警告 package.json：没有许可证字段
 警告 command-list-yarn1@1.0.0：没有许可证字段
@@ -142,10 +142,10 @@ yarn list <version>
 应显示警告，说明 yarn@1 不支持 --only-projects
 
 ```
-警告：yarn@1 不支持 --only-projects，忽略该标志
-yarn list <版本>
-警告 package.json：没有许可证字段
-警告 command-list-yarn1@1.0.0：没有许可证字段
+warn: yarn does not support --only-projects.
+yarn list <version>
+warning package.json: No license field
+warning command-list-yarn1@1.0.0: No license field
 ├─ test-vite-plus-package@1.0.0
 └─ testnpm2@1.0.1
 
@@ -157,7 +157,7 @@ yarn list <版本>
 应显示警告，说明 yarn@1 不支持 --find-by
 
 ```
-警告：yarn@1 不支持 --find-by，忽略该标志
+警告：yarn 不支持 --find-by。
 yarn list <version>
 警告 package.json：未设置许可证字段
 警告 command-list-yarn1@1.0.0：未设置许可证字段
@@ -172,7 +172,7 @@ yarn list <version>
 应显示警告，说明 yarn@1 不支持 --recursive
 
 ```
-警告：yarn@1 不支持 --recursive，忽略 --recursive 标志
+warn: yarn does not support --recursive.
 yarn list <version>
 警告 package.json：无许可证字段
 警告 command-list-yarn1@1.0.0：无许可证字段
@@ -187,7 +187,7 @@ yarn list <version>
 应显示警告，说明 yarn@1 不支持 --filter
 
 ```
-warn: yarn@1 does not support --filter, ignoring --filter flag
+warn: yarn does not support --filter.
 yarn list <version>
 warning package.json: No license field
 warning command-list-yarn1@1.0.0: No license field

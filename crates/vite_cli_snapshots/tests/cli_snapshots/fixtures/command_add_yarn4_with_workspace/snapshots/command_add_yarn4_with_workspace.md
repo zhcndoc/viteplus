@@ -46,6 +46,7 @@
 应将 @vite-plus-test/utils 添加到工作区根目录
 
 ```
+warn: yarn does not support --workspace.
 ➤ YN0000: · Yarn <version>
 ➤ YN0000: ┌ Resolution step
 ➤ YN0000: └ Completed
@@ -140,16 +141,17 @@ Done in <duration> <duration>
 应将 @vite-plus-test/utils 添加到 packages/app
 
 ```
-[app]: 进程已启动
-[app]: ➤ YN0000: · Yarn <version>
-[app]: ➤ YN0000: ┌ 解析步骤
-[app]: ➤ YN0000: └ 已完成
-[app]: ➤ YN0000: ┌ 获取步骤
-[app]: ➤ YN0000: └ 已完成
-[app]: ➤ YN0000: ┌ 链接步骤
-[app]: ➤ YN0000: └ 已完成
-[app]: ➤ YN0000: · 用时 <duration> <duration>
-[app]: 进程已退出（退出代码 0），用时 <duration> <duration>
+警告：yarn 不支持 --workspace。
+[app]：进程已启动
+[app]：➤ YN0000：· Yarn <version>
+[app]：➤ YN0000：┌ 解析步骤
+[app]：➤ YN0000：└ 已完成
+[app]：➤ YN0000：┌ 获取步骤
+[app]：➤ YN0000：└ 已完成
+[app]：➤ YN0000：┌ 链接步骤
+[app]：➤ YN0000：└ 已完成
+[app]：➤ YN0000：· 用时 <duration> <duration>
+[app]：进程已退出（退出代码 0），用时 <duration> <duration>
 
 用时 <duration> <duration>
 ```

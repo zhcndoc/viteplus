@@ -8,9 +8,9 @@
 从 node_modules/.bin 执行二进制文件
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - 面向 Web 的统一工具链
 
-hello from test-bin
+来自 test-bin 的问候
 ```
 
 ## `vp exec echo hello`
@@ -28,7 +28,7 @@ hello
 显式 -- 分隔符
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 统一工具链
 
 with-separator
 ```
@@ -88,17 +88,18 @@ VITE+ - Web 的统一工具链
   [命令]...  要执行的命令及参数
 
 选项：
-  -r, --recursive              选择工作区中的所有包
-  -t, --transitive             选择当前包及其传递依赖
-  -w, --workspace-root         选择工作区根包
-  -F, --filter <FILTERS>       按名称、目录或 glob 模式匹配包
-  --fail-if-no-match           如果筛选器未匹配任何包，则以非零状态退出
-  -c, --shell-mode             在 shell 环境中执行命令
-  --parallel                   并发运行，不遵循拓扑顺序
-  --reverse                    反转执行顺序
-  --resume-from <RESUME_FROM>  从指定包恢复执行
-  --report-summary             将结果保存到 vp-exec-summary.json
-  -h, --help                   打印帮助（使用 '--help' 查看更多内容）
+  -r, --recursive          选择工作区中的所有包
+  -t, --transitive         选择当前包及其传递依赖
+  -w, --workspace-root     选择工作区根包
+  -F, --filter <FILTERS>   按名称、目录或 glob 模式匹配包
+  --fail-if-no-match       如果 `--filter` 表达式未匹配任何包，则以非零状态退出
+                           不使用此标志时，未匹配的筛选条件只会发出警告并成功退出
+  -c, --shell-mode         在 Shell 环境中执行命令
+  --parallel               并发运行，不遵循拓扑顺序
+  --reverse                反转执行顺序
+  --resume-from <PACKAGE>  从指定的包继续执行
+  --report-summary         将结果保存到 vp-exec-summary.json
+  -h, --help               显示帮助
 
 筛选模式：
   --filter <pattern>        按包名称选择（例如 foo、@scope/*）

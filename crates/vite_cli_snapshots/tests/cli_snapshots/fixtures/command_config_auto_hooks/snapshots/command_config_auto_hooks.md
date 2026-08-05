@@ -1,11 +1,11 @@
-# command_config_auto_hooks
+# 命令配置自动钩子
 
 ## `git init`
 
 
 ## `vp config`
 
-应在不提示的情况下自动安装钩子（暂存配置已存在）
+prepare 应安装调度器，但不应更改项目钩子策略
 
 ```
 
@@ -19,10 +19,11 @@
 
 ## `vpt print-file .vite-hooks/pre-commit`
 
-应包含 vp staged
+项目拥有的钩子应保持不变
 
 ```
-vp staged
+vp run lint
+vp exec tsc --noEmit
 ```
 
 ## `vpt print-file vite.config.ts`
@@ -32,9 +33,5 @@ vp staged
 ```
 import { defineConfig } from 'vite-plus';
 
-export default defineConfig({
-  staged: {
-    '*': 'vp check --fix',
-  },
-});
+export default defineConfig({});
 ```

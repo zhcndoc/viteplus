@@ -12,13 +12,11 @@ VITE+ - 面向 Web 的统一工具链
 
 ◇ 已将 . 迁移到 Vite+ <version>
 • Node <version>  pnpm <version>
+• Git hooks 已配置
 ! 警告：
-  - 将暂存配置合并到 vite.config.ts 失败
-  - 未配置 Git 钩子 — 将暂存配置合并到 vite.config.ts 失败
-
-请手动将暂存配置添加到 vite.config.ts，请参阅 https://viteplus.dev/guide/migrate#lint-staged
+  - 将暂存的配置合并到 vite.config.ts 失败
 → 手动后续操作：
-  - 请手动将暂存配置添加到 vite.config.ts，请参阅 https://viteplus.dev/guide/migrate#lint-staged
+  - 请手动将暂存的配置添加到 vite.config.ts，请参阅 https://viteplus.dev/guide/migrate#lint-staged
 ```
 
 ## `vpt print-file package.json`
@@ -86,9 +84,6 @@ module.exports = config;
 
 合并失败时没有 pre-commit 钩子
 
-**退出代码：** 1
-
 ```
-.vite-hooks/pre-commit: file
-stat-file assertion failed
+.vite-hooks/pre-commit: missing
 ```

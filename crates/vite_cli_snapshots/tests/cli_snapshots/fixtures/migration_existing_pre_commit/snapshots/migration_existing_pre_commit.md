@@ -27,24 +27,31 @@ secret-scan
 
 ## `vp migrate --no-interactive`
 
-迁移应保留现有的 pre-commit 内容
+迁移应保持现有的 Husky 钩子不变
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 的统一工具链
 
-◇ Migrated . to Vite+ <version>
+⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。启用 Vite+ 钩子前，请手动迁移 Husky。
+◇ 已将 . 迁移到 Vite+ <version>
 • Node <version>  pnpm <version>
-• 2 config updates applied
-• Git hooks configured
+• 已应用 1 项配置更新
 ```
 
-## `vpt print-file .vite-hooks/pre-commit`
+## `vpt print-file .husky/pre-commit`
 
-检查 pre-commit 钩子是否保留现有命令
+原始的 hook 路径和命令应保持不变
 
 ```
 #!/usr/bin/env sh
 npm test
 secret-scan
-vp staged
+```
+
+## `vpt stat-file .vite-hooks --assert-not dir`
+
+不应创建 Vite+ hook 树
+
+```
+.vite-hooks: 缺失
 ```

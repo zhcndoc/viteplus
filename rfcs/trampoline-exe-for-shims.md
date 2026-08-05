@@ -2,7 +2,7 @@
 
 ## 状态
 
-已实现
+已实现。
 
 ## 摘要
 
@@ -133,7 +133,7 @@ fn main() {
 
     // 5. 传播退出码（错误消息通过 write_all 输出，而不是 eprintln!）
     match cmd.status() {
-        Ok(s) => process::exit(s.code().unwrap_or(1)),
+        Ok(status) => process::exit(exit_code_from_status(status)),
         Err(_) => {
             use std::io::Write;
             let mut stderr = std::io::stderr().lock();
@@ -170,9 +170,9 @@ fn install_ctrl_handler() {
 
 在启动 `vp.exe` 之前，trampoline 会设置三个环境变量：
 
-| Variable            | When                       | Purpose                                                                        |
+| 变量                | 适用时机                   | 用途                                                                         |
 | ------------------- | -------------------------- | ------------------------------------------------------------------------------ |
-| `VP_HOME`           | Always                     | 告诉 vp.exe 安装目录（由 `bin_dir.parent()` 推导）                            |
+| `VP_HOME`           | 始终                       | 告诉 vp.exe 安装目录（由 `bin_dir.parent()` 推导）                            |
 | `VP_SHIM_TOOL`      | 仅工具 shim（不是 "vp"）   | 告诉 vp.exe 为指定工具进入 shim 分发模式                                       |
 | `VP_TOOL_RECURSION` | 为工具 shim 移除            | 清除递归标记，以便在嵌套调用中进行全新的版本解析                                |
 
@@ -190,7 +190,7 @@ trampoline 安装一个返回 `TRUE`（1）的控制台控制处理器：
 
 ### 与 Shim 检测的集成
 
-`detect_shim_tool()` in `shim/mod.rs` 在 `argv[0]` 之前检查 `VP_SHIM_TOOL` 环境变量：
+`shim/mod.rs` 中的 `detect_shim_tool()` 会在检查 `argv[0]` 之前检查 `VP_SHIM_TOOL` 环境变量：
 
 ```
 Trampoline (node.exe)
@@ -298,4 +298,4 @@ vite-plus trampoline 之所以显著更简单，是因为它不需要将数据�
 - [Issue #835](https://github.com/voidzero-dev/vite-plus/issues/835)：带视频复现的原始功能请求
 - [uv-trampoline](https://github.com/astral-sh/uv/tree/main/crates/uv-trampoline)：astral-sh 的参考实现（使用 nightly Rust，约 40KB）
 - [RFC: env-command](./env-command.md)：shim 架构文档
-- [RFC: upgrade-command](./upgrade-command.md)：升级/回滚流程
+- [RFC: upgrade-command](./upgrade-command.md)：升级/回滚流程。

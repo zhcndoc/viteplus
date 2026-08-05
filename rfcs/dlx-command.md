@@ -1,12 +1,12 @@
-# RFC: Vite+ dlx Command
+# RFC：Vite+ dlx 命令
 
-## Summary
+## 摘要
 
-Add `vp dlx` command that fetches a package from the registry without installing it as a dependency, hotloads it, and runs whatever default command binary it exposes. This provides a unified interface across pnpm, npm, yarn, and bun for executing remote packages temporarily.
+添加 `vp dlx` 命令，从注册表获取软件包，而无需将其作为依赖项安装，动态加载该软件包，并运行其提供的默认命令二进制文件。这为 pnpm、npm、yarn 和 bun 提供了一个统一的接口，用于临时执行远程软件包。
 
-## Motivation
+## 动机
 
-Currently, developers must use package manager-specific commands for executing remote packages:
+目前，开发者必须使用特定于包管理器的命令来执行远程包：
 
 ```bash
 # pnpm
@@ -17,168 +17,168 @@ pnpm dlx typescript tsc --version
 npx create-react-app my-app
 npm exec -- create-react-app my-app
 
-# yarn (v2+ only)
+# yarn（仅限 v2+）
 yarn dlx create-react-app my-app
 ```
 
-This creates several issues:
+这带来了以下几个问题：
 
-1. **Cognitive Load**: Developers must remember different commands for each package manager
-2. **Context Switching**: When working across projects with different package managers, developers need to switch mental models
-3. **Script Portability**: Scripts that use dlx-like commands are tied to a specific package manager
-4. **Yarn 1.x Incompatibility**: Yarn Classic doesn't have a `dlx` command at all, requiring fallback to `npx`
+1. **认知负担**：开发者必须记住每个包管理器对应的不同命令
+2. **上下文切换**：在使用不同包管理器的项目之间工作时，开发者需要切换思维模式
+3. **脚本可移植性**：使用类似 dlx 命令的脚本与特定包管理器绑定
+4. **Yarn 1.x 不兼容**：Yarn Classic 完全没有 `dlx` 命令，因此必须退回使用 `npx`
 
-### Current Pain Points
+### 当前痛点
 
 ```bash
-# Developer needs to know which package manager is used
-pnpm dlx create-vue my-app          # pnpm project
-npx create-vue my-app               # npm project
-yarn dlx create-vue my-app          # yarn@2+ project (doesn't work in yarn@1)
+# 开发者需要知道使用的是哪个包管理器
+pnpm dlx create-vue my-app          # pnpm 项目
+npx create-vue my-app               # npm 项目
+yarn dlx create-vue my-app          # yarn@2+ 项目（在 yarn@1 中无法运行）
 
-# Different syntax for specifying packages
+# 指定包时使用不同的语法
 pnpm --package=typescript dlx tsc --version
 npm exec --package=typescript -- tsc --version
 yarn dlx -p typescript tsc --version
 
-# Shell mode has different flags
+# Shell 模式使用不同的选项
 pnpm dlx -c 'echo "hello" | cowsay'
 npm exec -c 'echo "hello" | cowsay'
-yarn dlx -c 'echo "hello" | cowsay'  # Not supported in yarn
+yarn dlx -c 'echo "hello" | cowsay'  # Yarn 不支持
 ```
 
-### Proposed Solution
+### 提议的解决方案
 
 ```bash
-# Works for all package managers
+# 适用于所有包管理器
 vp dlx create-vue my-app
 vp dlx typescript tsc --version
 vp dlx --package yo --package generator-webapp yo webapp
 vp dlx -c 'echo "hello" | cowsay'
 ```
 
-## Proposed Solution
+## 提议的解决方案
 
-### Command Syntax
+### 命令语法
 
 ```bash
 vp dlx [OPTIONS] <package[@version]> [args...]
 ```
 
-**Options:**
+**选项：**
 
-- `--package, -p <name>`: Specifies which package(s) to install before running the command. Can be specified multiple times.
-- `--shell-mode, -c`: Executes the command within a shell environment (`/bin/sh` on UNIX, `cmd.exe` on Windows).
-- `--silent, -s`: Suppresses all output except the executed command's output.
+- `--package, -p <name>`：指定在运行命令前要安装的软件包。可以多次指定。
+- `--shell-mode, -c`：在 shell 环境中执行命令（UNIX 上为 `/bin/sh`，Windows 上为 `cmd.exe`）。
+- `--silent, -s`：除所执行命令的输出外，抑制所有输出。
 
-### Usage Examples
+### 使用示例
 
 ```bash
-# Basic usage - run a package's default binary
+# 基本用法 - 运行软件包的默认二进制文件
 vp dlx create-vue my-app
 
-# Specify version
+# 指定版本
 vp dlx create-vue@3.10.0 my-app
 vp dlx typescript@5.5.4 tsc --version
 
-# Separate package and command (when binary name differs from package name)
+# 分离软件包和命令（当二进制文件名称与软件包名称不同时）
 vp dlx --package @pnpm/meta-updater meta-updater --help
 
-# Multiple packages
+# 多个软件包
 vp dlx --package yo --package generator-webapp yo webapp --skip-install
 
-# Shell mode (pipe commands)
+# Shell 模式（管道命令）
 vp dlx --package cowsay --package lolcatjs -c 'echo "hi vite" | cowsay | lolcatjs'
 
-# Silent mode
+# 静默模式
 vp dlx -s create-vue my-app
 
-# Combine options
+# 组合选项
 vp dlx -p typescript -p @types/node -c 'tsc --init && node -e "console.log(123)"'
 ```
 
-### Command Mapping
+### 命令映射
 
-**References:**
+**参考：**
 
 - pnpm: https://pnpm.io/cli/dlx
 - npm: https://docs.npmjs.com/cli/v10/commands/npm-exec
 - yarn: https://yarnpkg.com/cli/dlx
 - bun: https://bun.sh/docs/pm/bunx
 
-| Vite+ Flag                      | pnpm               | npm                 | yarn@1      | yarn@2+          | bun                | Description                |
-| ------------------------------- | ------------------ | ------------------- | ----------- | ---------------- | ------------------ | -------------------------- |
-| `vp dlx <pkg>`                  | `pnpm dlx <pkg>`   | `npm exec <pkg>`    | `npx <pkg>` | `yarn dlx <pkg>` | `bun x <pkg>`      | Execute package binary     |
-| `--package <name>`, `-p <name>` | `--package <name>` | `--package=<name>`  | N/A         | `-p <name>`      | `--package <name>` | Specify package to install |
-| `--shell-mode`, `-c`            | `-c`               | `-c`                | N/A         | N/A              | N/A                | Execute in shell           |
-| `--silent`, `-s`                | `--silent`         | `--loglevel silent` | `--quiet`   | `--quiet`        | N/A                | Suppress output            |
+| Vite+ 标志                   | pnpm               | npm                 | yarn@1      | yarn@2+          | bun                | 描述                   |
+| ---------------------------- | ------------------ | ------------------- | ----------- | ---------------- | ------------------ | ---------------------- |
+| `vp dlx <pkg>`                | `pnpm dlx <pkg>`   | `npm exec <pkg>`    | `npx <pkg>` | `yarn dlx <pkg>` | `bun x <pkg>`      | 执行软件包二进制文件   |
+| `--package <name>`、`-p <name>` | `--package <name>` | `--package=<name>`  | 不适用      | `-p <name>`      | `--package <name>` | 指定要安装的软件包     |
+| `--shell-mode`、`-c`          | `-c`               | `-c`                | 不适用      | 不适用           | 不适用             | 在 shell 中执行         |
+| `--silent`、`-s`              | `--silent`         | `--loglevel silent` | `--quiet`   | `--quiet`        | 不适用             | 抑制输出               |
 
-**Notes:**
+**注意：**
 
-- **yarn@1 (Classic)**: Does not have a native `dlx` command. Falls back to using `npx` which comes bundled with npm.
-- **npm exec vs npx**: `npx` is essentially an alias for `npm exec --` with some convenience features. We use `npm exec` for consistency.
-- **Shell mode**: Yarn 2+ does not support shell mode (`-c`), command will print a warning and try to execute anyway.
-- **--package flag position**: For pnpm, `--package` comes before `dlx`. For npm, `--package` can be anywhere. For yarn, `-p` comes after `dlx`.
-- **Auto-confirm prompts**: For npm and npx (yarn@1 fallback), `--yes` is automatically added to align with pnpm's behavior which doesn't require confirmation.
-- **bun**: Uses `bun x` subcommand (preferred over the `bunx` standalone binary for better cross-platform compatibility). It supports `--package` but does not support `--shell-mode` or `--silent` flags. The `--package` flag must come before the package spec.
+- **yarn@1（Classic）**：没有原生的 `dlx` 命令。会回退到使用随 npm 一起提供的 `npx`。
+- **npm exec 与 npx**：`npx` 本质上是带有一些便利功能的 `npm exec --` 别名。为保持一致性，我们使用 `npm exec`。
+- **Shell 模式**：Yarn 2+ 不支持 shell 模式（`-c`），命令会打印警告并尝试继续执行。
+- **`--package` 标志的位置**：对于 pnpm，`--package` 位于 `dlx` 之前。对于 npm，`--package` 可以位于任意位置。对于 yarn，`-p` 位于 `dlx` 之后。
+- **自动确认提示**：对于 npm 和 npx（yarn@1 回退方案），会自动添加 `--yes`，以与无需确认的 pnpm 行为保持一致。
+- **bun**：使用 `bun x` 子命令（相比独立的 `bunx` 二进制文件，它具有更好的跨平台兼容性）。它支持 `--package`，但不支持 `--shell-mode` 或 `--silent` 标志。`--package` 标志必须位于软件包说明符之前。
 
-### Argument Handling
+### 参数处理
 
-The `dlx` command has specific argument parsing requirements:
+`dlx` 命令具有特定的参数解析要求：
 
 ```bash
-# Everything after the package spec is passed to the executed command
+# 软件包说明符之后的所有内容都会传递给所执行的命令
 vp dlx typescript tsc --version --help
 
-# This runs: tsc --version --help
-# NOT: typescript with vp dlx options --version --help
+# 这将运行：tsc --version --help
+# 而不是：使用 vp dlx 选项 --version --help 运行 typescript
 ```
 
-**Implementation approach:**
+**实现方式：**
 
-1. Parse known vp dlx options (`--package`, `-c`, `-s`)
-2. First non-option argument is the package spec (with optional @version)
-3. All remaining arguments are passed through to the executed command
+1. 解析已知的 vp dlx 选项（`--package`、`-c`、`-s`）
+2. 第一个非选项参数是软件包说明符（可选带有 @version）
+3. 所有剩余参数都会原样传递给所执行的命令
 
-## Implementation Architecture
+## 实现架构
 
-### 1. Command Structure
+### 1. 命令结构
 
-**File**: `crates/vite_command/src/lib.rs`
+**文件**：`crates/vite_command/src/lib.rs`
 
-Add new command:
+添加新命令：
 
 ```rust
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    // ... existing commands
+    // ... 现有命令
 
-    /// Execute a package binary without installing it as a dependency
+    /// 在不将其安装为依赖项的情况下执行包二进制文件
     #[command(disable_help_flag = true)]
     Dlx {
-        /// Package(s) to install before running the command
-        /// Can be specified multiple times
+        /// 在运行命令前要安装的包
+        /// 可以多次指定
         #[arg(long, short = 'p', value_name = "NAME")]
         package: Vec<String>,
 
-        /// Execute the command within a shell environment
+        /// 在 shell 环境中执行命令
         #[arg(long = "shell-mode", short = 'c')]
         shell_mode: bool,
 
-        /// Suppress all output except the executed command's output
+        /// 除被执行命令的输出外，抑制所有输出
         #[arg(long, short = 's')]
         silent: bool,
 
-        /// Package to execute (with optional @version) and arguments
+        /// 要执行的包（可选带有 @version）及其参数
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
 }
 ```
 
-### 2. Package Manager Adapter
+### 2. 包管理器适配器
 
-**File**: `crates/vite_install/src/commands/dlx.rs` (new file)
+**文件**：`crates/vite_install/src/commands/dlx.rs`（新文件）
 
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
@@ -190,22 +190,22 @@ use crate::package_manager::{
     PackageManager, PackageManagerType, ResolveCommandResult, format_path_env, run_command,
 };
 
-/// Options for the dlx command
+/// dlx 命令的选项
 pub struct DlxCommandOptions<'a> {
-    /// Additional packages to install
+    /// 要安装的附加包
     pub packages: &'a [String],
-    /// The package to execute (first positional arg)
+    /// 要执行的包（第一个位置参数）
     pub package_spec: &'a str,
-    /// Arguments to pass to the executed command
+    /// 传递给被执行命令的参数
     pub args: &'a [String],
-    /// Execute in shell mode
+    /// 在 shell 模式下执行
     pub shell_mode: bool,
-    /// Suppress output
+    /// 抑制输出
     pub silent: bool,
 }
 
 impl PackageManager {
-    /// Resolve the dlx command for the detected package manager
+    /// 为检测到的包管理器解析 dlx 命令
     #[must_use]
     pub fn resolve_dlx_command(&self, options: &DlxCommandOptions) -> ResolveCommandResult {
         let envs = HashMap::from([("PATH".to_string(), format_path_env(self.get_bin_prefix()))]);
@@ -215,7 +215,7 @@ impl PackageManager {
             PackageManagerType::Npm => self.resolve_npm_dlx(options, envs),
             PackageManagerType::Yarn => {
                 if self.version.starts_with("1.") {
-                    // Yarn 1.x doesn't have dlx, fall back to npx
+                    // Yarn 1.x 没有 dlx，因此回退到 npx
                     self.resolve_npx_fallback(options, envs)
                 } else {
                     self.resolve_yarn_dlx(options, envs)
@@ -231,7 +231,7 @@ impl PackageManager {
     ) -> ResolveCommandResult {
         let mut args = Vec::new();
 
-        // Add --package flags before dlx
+        // 在 dlx 前添加 --package 标志
         for pkg in options.packages {
             args.push("--package".into());
             args.push(pkg.clone());
@@ -239,20 +239,20 @@ impl PackageManager {
 
         args.push("dlx".into());
 
-        // Add shell mode flag
+        // 添加 shell 模式标志
         if options.shell_mode {
             args.push("-c".into());
         }
 
-        // Add silent flag
+        // 添加静默标志
         if options.silent {
             args.push("--silent".into());
         }
 
-        // Add package spec
+        // 添加包规格
         args.push(options.package_spec.into());
 
-        // Add command arguments
+        // 添加命令参数
         args.extend(options.args.iter().cloned());
 
         ResolveCommandResult {
@@ -269,34 +269,34 @@ impl PackageManager {
     ) -> ResolveCommandResult {
         let mut args = vec!["exec".into()];
 
-        // Add package flags
+        // 添加包标志
         for pkg in options.packages {
             args.push(format!("--package={}", pkg));
         }
 
-        // Add the main package as well
+        // 同时添加主包
         if !options.packages.is_empty() || options.package_spec.contains('@') {
             args.push(format!("--package={}", options.package_spec));
         }
 
-        // Add shell mode flag
+        // 添加 shell 模式标志
         if options.shell_mode {
             args.push("-c".into());
         }
 
-        // Always add --yes to auto-confirm prompts (align with pnpm behavior)
+        // 始终添加 --yes 以自动确认提示（与 pnpm 的行为保持一致）
         args.push("--yes".into());
 
-        // Add silent flag
+        // 添加静默标志
         if options.silent {
             args.push("--loglevel".into());
             args.push("silent".into());
         }
 
-        // Add separator and command
+        // 添加分隔符和命令
         args.push("--".into());
 
-        // For npm exec, we need to extract the command name from package spec
+        // 对于 npm exec，需要从包规格中提取命令名称
         let command = if options.packages.is_empty() {
             extract_command_from_spec(options.package_spec)
         } else {
@@ -304,7 +304,7 @@ impl PackageManager {
         };
         args.push(command);
 
-        // Add command arguments
+        // 添加命令参数
         args.extend(options.args.iter().cloned());
 
         ResolveCommandResult {
@@ -321,26 +321,26 @@ impl PackageManager {
     ) -> ResolveCommandResult {
         let mut args = vec!["dlx".into()];
 
-        // Add package flags
+        // 添加包标志
         for pkg in options.packages {
             args.push("-p".into());
             args.push(pkg.clone());
         }
 
-        // Add quiet flag for silent mode
+        // 为静默模式添加 quiet 标志
         if options.silent {
             args.push("--quiet".into());
         }
 
-        // Warn about unsupported shell mode
+        // 警告不支持 shell 模式
         if options.shell_mode {
             eprintln!("Warning: yarn dlx does not support shell mode (-c)");
         }
 
-        // Add package spec
+        // 添加包规格
         args.push(options.package_spec.into());
 
-        // Add command arguments
+        // 添加命令参数
         args.extend(options.args.iter().cloned());
 
         ResolveCommandResult {
@@ -359,29 +359,29 @@ impl PackageManager {
 
         let mut args = Vec::new();
 
-        // Add package flags
+        // 添加包标志
         for pkg in options.packages {
             args.push("--package".into());
             args.push(pkg.clone());
         }
 
-        // Add shell mode flag
+        // 添加 shell 模式标志
         if options.shell_mode {
             args.push("-c".into());
         }
 
-        // Add quiet flag for silent mode
+        // 为静默模式添加 quiet 标志
         if options.silent {
             args.push("--quiet".into());
         }
 
-        // Always add --yes to auto-confirm prompts (align with pnpm behavior)
+        // 始终添加 --yes 以自动确认提示（与 pnpm 的行为保持一致）
         args.push("--yes".into());
 
-        // Add package spec
+        // 添加包规格
         args.push(options.package_spec.into());
 
-        // Add command arguments
+        // 添加命令参数
         args.extend(options.args.iter().cloned());
 
         ResolveCommandResult {
@@ -391,7 +391,7 @@ impl PackageManager {
         }
     }
 
-    /// Run the dlx command
+    /// 运行 dlx 命令
     pub async fn run_dlx_command(
         &self,
         options: &DlxCommandOptions<'_>,
@@ -408,12 +408,12 @@ impl PackageManager {
     }
 }
 
-/// Extract command name from package spec
-/// e.g., "create-vue@3.10.0" -> "create-vue"
+/// 从包规格中提取命令名称
+/// 例如："create-vue@3.10.0" -> "create-vue"
 fn extract_command_from_spec(spec: &str) -> String {
-    // Handle scoped packages: @scope/pkg@version -> pkg
+    // 处理作用域包：@scope/pkg@version -> pkg
     if spec.starts_with('@') {
-        // Find the second @ (version separator) or use the whole thing
+        // 查找第二个 @（版本分隔符），或使用整个字符串
         if let Some(slash_pos) = spec.find('/') {
             let after_slash = &spec[slash_pos + 1..];
             if let Some(at_pos) = after_slash.find('@') {
@@ -423,7 +423,7 @@ fn extract_command_from_spec(spec: &str) -> String {
         }
     }
 
-    // Non-scoped: pkg@version -> pkg
+    // 非作用域包：pkg@version -> pkg
     if let Some(at_pos) = spec.find('@') {
         return spec[..at_pos].to_string();
     }
@@ -432,9 +432,9 @@ fn extract_command_from_spec(spec: &str) -> String {
 }
 ```
 
-### 3. Command Handler
+### 3. 命令处理器
 
-**File**: `crates/vite_task/src/dlx.rs` (new file)
+**文件**：`crates/vite_task/src/dlx.rs`（新文件）
 
 ```rust
 use vite_error::Error;
@@ -464,7 +464,7 @@ impl DlxCommand {
             ));
         }
 
-        // First arg is the package spec, rest are command args
+        // 第一个参数是包规格，其余参数是命令参数
         let package_spec = &args[0];
         let command_args = &args[1..];
 
@@ -480,113 +480,113 @@ impl DlxCommand {
 
         let exit_status = package_manager.run_dlx_command(&options, &self.cwd).await?;
 
-        Ok(exit_status.code().unwrap_or(1))
+        Ok(vite_shared::exit_code_from_status(exit_status))
     }
 }
 ```
 
-## Design Decisions
+## 设计决策
 
-### 1. Fallback to npx for Yarn 1.x
+### 1. Yarn 1.x 回退到 npx
 
-**Decision**: When using yarn@1, fall back to `npx` instead of failing.
+**决策**：使用 yarn@1 时，回退到 `npx`，而不是直接失败。
 
-**Rationale**:
+**理由**：
 
-- Yarn Classic doesn't have a `dlx` command
-- `npx` comes bundled with npm and is almost always available
-- Provides a working solution rather than an error
-- Users are informed via a note that fallback is being used
+- Yarn Classic 没有 `dlx` 命令
+- `npx` 随 npm 一起提供，几乎总是可用
+- 提供可行的解决方案，而不是直接报错
+- 通过提示告知用户正在使用回退方案
 
-### 2. Package Flag Position
+### 2. Package 标志的位置
 
-**Decision**: Accept `--package` flags anywhere before the package spec.
+**决策**：接受位于 package spec 之前任意位置的 `--package` 标志。
 
-**Rationale**:
+**理由**：
 
-- pnpm requires `--package` before `dlx`
-- npm allows `--package` anywhere
-- yarn requires `-p` after `dlx`
-- Our unified interface accepts it anywhere and maps accordingly
+- pnpm 要求 `--package` 位于 `dlx` 之前
+- npm 允许 `--package` 位于任意位置
+- yarn 要求 `-p` 位于 `dlx` 之后
+- 我们的统一接口接受任意位置的参数，并根据实际情况进行映射
 
-### 3. Shell Mode Warning for Yarn
+### 3. Yarn 的 Shell 模式警告
 
-**Decision**: Warn but proceed when shell mode is used with yarn.
+**决策**：当 yarn 使用 shell 模式时发出警告，但继续执行。
 
-**Rationale**:
+**理由**：
 
-- Yarn 2+ doesn't support shell mode
-- Better to warn and try than to fail entirely
-- Users can see the warning and adjust if needed
-- Some commands might work without shell mode
+- Yarn 2+ 不支持 shell 模式
+- 发出警告并尝试执行，比完全失败更好
+- 用户可以看到警告，并在需要时进行调整
+- 某些命令即使不使用 shell 模式也可能正常工作
 
-### 4. Silent Mode Mapping
+### 4. 静默模式映射
 
-**Decision**: Map `--silent` to equivalent flags for each PM.
+**决策**：将 `--silent` 映射为各包管理器对应的标志。
 
-**Rationale**:
+**理由**：
 
-- pnpm uses `--silent`
-- npm uses `--loglevel silent`
-- yarn uses `--quiet`
-- Provides consistent UX across package managers
+- pnpm 使用 `--silent`
+- npm 使用 `--loglevel silent`
+- yarn 使用 `--quiet`
+- 为不同包管理器提供一致的用户体验
 
-### 5. Command Extraction from Package Spec
+### 5. 从 Package Spec 中提取命令
 
-**Decision**: Automatically extract command name from package spec for npm.
+**决策**：针对 npm，自动从 package spec 中提取命令名称。
 
-**Rationale**:
+**理由**：
 
-- `npm exec` requires explicit command name after `--`
-- `pnpm dlx` and `yarn dlx` infer command from package
-- Automation provides consistent UX
-- Handles scoped packages correctly
+- `npm exec` 要求在 `--` 后显式指定命令名称
+- `pnpm dlx` 和 `yarn dlx` 会从 package 中推断命令
+- 自动处理可提供一致的用户体验
+- 能够正确处理作用域包
 
-### 6. Fallback to npx Without package.json
+### 6. 没有 package.json 时回退到 npx
 
-**Decision**: When no `package.json` is found anywhere up the directory tree, fall back to `npx` directly instead of erroring.
+**决策**：当沿目录树向上查找也找不到 `package.json` 时，直接回退到 `npx`，而不是报错。
 
-**Rationale**:
+**理由**：
 
-- `npx` doesn't require a `package.json` — `vp dlx` shouldn't either
-- Users may run `vp dlx` or `vpx` from directories outside any project (e.g., `/tmp`, home directory)
-- Without a `package.json`, there is no package manager to detect, so `npx` is the universal fallback
-- `prepend_js_runtime_to_path_env()` already handles the no-package.json case (uses CLI runtime), so `npx` is on PATH
+- `npx` 不要求存在 `package.json` —— `vp dlx` 也不应该要求
+- 用户可能会在任何项目之外的目录中运行 `vp dlx` 或 `vpx`（例如 `/tmp`、主目录）
+- 没有 `package.json` 时，就没有可供检测的包管理器，因此 `npx` 是通用的回退方案
+- `prepend_js_runtime_to_path_env()` 已经处理了没有 package.json 的情况（使用 CLI runtime），因此 `npx` 位于 PATH 中
 
-### 7. Auto-confirm Prompts for npm/npx
+### 7. 自动确认 npm/npx 的提示
 
-**Decision**: Always add `--yes` flag for npm and npx (yarn@1 fallback).
+**决策**：始终为 npm 和 npx（yarn@1 回退方案）添加 `--yes` 标志。
 
-**Rationale**:
+**理由**：
 
-- pnpm doesn't require confirmation prompts by default
-- yarn dlx doesn't require confirmation prompts
-- npm and npx prompt for confirmation when running packages not in cache
-- Auto-adding `--yes` ensures consistent behavior across all package managers
-- Removes npm-specific `--yes/-y` and `--no/-n` options from the CLI
-- Users expect `vp dlx` to behave the same regardless of underlying package manager
+- pnpm 默认不需要确认提示
+- yarn dlx 不需要确认提示
+- npm 和 npx 在运行缓存中不存在的包时会提示确认
+- 自动添加 `--yes` 可确保所有包管理器的行为一致
+- 从 CLI 中移除 npm 专用的 `--yes/-y` 和 `--no/-n` 选项
+- 用户希望无论底层使用哪种包管理器，`vp dlx` 的行为都保持一致
 
-## Error Handling
+## 错误处理
 
-### Missing Package Spec
+### 缺少软件包规范
 
 ```bash
 $ vp dlx
-Error: dlx requires a package name
+错误：dlx 需要一个软件包名称
 
-Usage: vp dlx [OPTIONS] <package[@version]> [args...]
+用法：vp dlx [选项] <软件包[@版本]> [参数...]
 
-Examples:
+示例：
   vp dlx create-vue my-app
   vp dlx typescript tsc --version
 ```
 
-### No package.json
+### 没有 package.json
 
 ```bash
 $ cd /tmp
 $ vp dlx cowsay hello
-# No package.json found — falls back to npx directly
+# 未找到 package.json — 直接回退到 npx
  _______
 < hello >
  -------
@@ -597,30 +597,30 @@ $ vp dlx cowsay hello
                 ||     ||
 ```
 
-### Package Not Found
+### 找不到软件包
 
 ```bash
 $ vp dlx non-existent-package-xyz
-Detected package manager: pnpm@10.15.0
-Running: pnpm dlx non-existent-package-xyz
- ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND  No package.json was found for "non-existent-package-xyz"
-Exit code: 1
+检测到的软件包管理器：pnpm@10.15.0
+正在运行：pnpm dlx non-existent-package-xyz
+ ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND  未找到 "non-existent-package-xyz" 的 package.json
+退出代码：1
 ```
 
-### Network Error
+### 网络错误
 
 ```bash
 $ vp dlx create-vue my-app
-Detected package manager: npm@11.0.0
-Running: npm exec create-vue -- my-app
-npm error code ENOTFOUND
-npm error network request to https://registry.npmjs.org/create-vue failed
-Exit code: 1
+检测到的软件包管理器：npm@11.0.0
+正在运行：npm exec create-vue -- my-app
+npm 错误代码 ENOTFOUND
+npm 错误：向 https://registry.npmjs.org/create-vue 发起的网络请求失败
+退出代码：1
 ```
 
-## User Experience
+## 用户体验
 
-### Basic Execution
+### 基本执行
 
 ```bash
 $ vp dlx create-vue my-app
@@ -634,7 +634,7 @@ Vue.js - The Progressive JavaScript Framework
 ...
 ```
 
-### Version Specific
+### 指定版本
 
 ```bash
 $ vp dlx typescript@5.5.4 tsc --version
@@ -643,7 +643,7 @@ Running: pnpm dlx typescript@5.5.4 tsc --version
 Version 5.5.4
 ```
 
-### Multiple Packages
+### 多个软件包
 
 ```bash
 $ vp dlx --package yo --package generator-webapp yo webapp
@@ -653,7 +653,7 @@ Running: npm exec --package=yo --package=generator-webapp -- yo webapp
 ...
 ```
 
-### Shell Mode
+### Shell 模式
 
 ```bash
 $ vp dlx --package cowsay --package lolcatjs -c 'echo "Hello Vite+" | cowsay | lolcatjs'
@@ -669,7 +669,7 @@ Running: pnpm --package cowsay --package lolcatjs dlx -c 'echo "Hello Vite+" | c
                 ||     ||
 ```
 
-### Yarn 1.x Fallback
+### Yarn 1.x 回退
 
 ```bash
 $ vp dlx create-vue my-app
@@ -679,85 +679,85 @@ Running: npx create-vue my-app
 ...
 ```
 
-## Alternative Designs Considered
+## 已考虑的替代设计
 
-### Alternative 1: Always Use npx
+### 替代方案 1：始终使用 npx
 
 ```bash
-# Simply wrap npx for all package managers
+# 为所有包管理器简单封装 npx
 vp dlx → npx
 ```
 
-**Rejected because**:
+**不予采用的原因**：
 
-- Loses integration with pnpm's store and caching
-- Doesn't respect yarn 2+ project settings
-- Inconsistent with other vite commands that use detected PM
-- npx may not be available (though rare)
+- 失去与 pnpm 存储和缓存的集成
+- 不遵循 yarn 2+ 项目设置
+- 与其他使用检测到的包管理器的 vite 命令不一致
+- npx 可能不可用（尽管这种情况很少见）
 
-### Alternative 2: Top-Level Aliases
+### 替代方案 2：顶层别名
 
 ```bash
-vp create-vue my-app    # Implicit dlx
+vp create-vue my-app    # 隐式使用 dlx
 ```
 
-**Rejected because**:
+**不予采用的原因**：
 
-- Conflicts with potential future commands
-- Less explicit about what's happening
-- Harder to discover and document
-- Deviates from pnpm/npm/yarn conventions
+- 可能与未来的命令冲突
+- 对实际发生的操作说明不够明确
+- 更难发现和编写文档
+- 偏离 pnpm/npm/yarn 的约定
 
-Note: A short alias `x` was initially considered but rejected for the same reasons - it's not explicit about what's happening and could conflict with future commands.
+注意：最初曾考虑使用简短别名 `x`，但由于相同原因而放弃——它没有明确说明实际发生的操作，并且可能与未来的命令冲突。
 
-### Alternative 3: No Fallback for Yarn 1.x
+### 替代方案 3：不为 Yarn 1.x 提供回退方案
 
 ```bash
 $ vp dlx create-vue
 Error: yarn@1.22.19 does not support dlx command
 ```
 
-**Rejected because**:
+**不予采用的原因**：
 
-- Frustrating user experience
-- npx fallback works well and is available
-- Other tools (like `bun x`) also provide fallbacks
-- Users shouldn't need to switch package managers for dlx
+- 用户体验令人沮丧
+- npx 回退方案运行良好且可用
+- 其他工具（如 `bun x`）也提供回退方案
+- 用户不应该为了使用 dlx 而切换包管理器
 
-## Implementation Plan
+## 实施计划
 
-### Phase 1: Core Infrastructure
+### 阶段 1：核心基础设施
 
-1. Add `Dlx` variant to `Commands` enum in `vite_command`
-2. Create `DlxCommandOptions` struct
-3. Implement `resolve_dlx_command` for each package manager
-4. Add `run_dlx_command` execution method
+1. 在 `vite_command` 中向 `Commands` 枚举添加 `Dlx` 变体
+2. 创建 `DlxCommandOptions` 结构体
+3. 为每个包管理器实现 `resolve_dlx_command`
+4. 添加 `run_dlx_command` 执行方法
 
-### Phase 2: Package Manager Support
+### 阶段 2：包管理器支持
 
-1. Implement pnpm dlx resolution
-2. Implement npm exec resolution
-3. Implement yarn dlx resolution (v2+)
-4. Implement npx fallback for yarn v1
+1. 实现 pnpm dlx 解析
+2. 实现 npm exec 解析
+3. 实现 yarn dlx 解析（v2+）
+4. 为 yarn v1 实现 npx 回退
 
-### Phase 3: Testing
+### 阶段 3：测试
 
-1. Unit tests for command resolution
-2. Test package spec parsing
-3. Test option mapping for each PM
-4. Integration tests with mock package managers
-5. Test yarn v1 fallback behavior
+1. 为命令解析编写单元测试
+2. 测试包规范解析
+3. 测试每个包管理器的选项映射
+4. 使用模拟包管理器进行集成测试
+5. 测试 yarn v1 的回退行为
 
-### Phase 4: Documentation
+### 阶段 4：文档
 
-1. Update CLI help text
-2. Add usage examples
-3. Document package manager compatibility
-4. Add troubleshooting guide
+1. 更新 CLI 帮助文本
+2. 添加使用示例
+3. 记录包管理器兼容性
+4. 添加故障排除指南
 
-## Testing Strategy
+## 测试策略
 
-### Unit Tests
+### 单元测试
 
 ```rust
 #[test]
@@ -804,7 +804,7 @@ fn test_npm_exec_basic() {
     };
     let result = pm.resolve_dlx_command(&options);
     assert_eq!(result.bin_path, "npm");
-    // --yes is always added to auto-confirm prompts
+    // 始终添加 --yes 以自动确认提示
     assert_eq!(result.args, vec!["exec", "--yes", "--", "create-vue", "my-app"]);
 }
 
@@ -820,7 +820,7 @@ fn test_yarn_v1_fallback_to_npx() {
     };
     let result = pm.resolve_dlx_command(&options);
     assert_eq!(result.bin_path, "npx");
-    // --yes is always added to auto-confirm prompts
+    // 始终添加 --yes 以自动确认提示
     assert_eq!(result.args, vec!["--yes", "create-vue", "my-app"]);
 }
 
@@ -862,96 +862,96 @@ fn test_shell_mode() {
 }
 ```
 
-## CLI Help Output
+## CLI 帮助输出
 
 ```bash
 $ vp dlx --help
-Execute a package binary without installing it as a dependency
+执行软件包二进制文件，而无需将其作为依赖项安装
 
-Usage: vp dlx [OPTIONS] <package[@version]> [args...]
+用法：vp dlx [选项] <package[@version]> [args...]
 
-Arguments:
-  <package[@version]>  Package to execute (with optional version)
-  [args...]            Arguments to pass to the executed command
+参数：
+  <package[@version]>  要执行的软件包（可选版本）
+  [args...]            要传递给所执行命令的参数
 
-Options:
-  -p, --package <NAME>  Package(s) to install before running (can be used multiple times)
-  -c, --shell-mode      Execute the command within a shell environment
-  -s, --silent          Suppress all output except the executed command's output
-  -h, --help            Print help
+选项：
+  -p, --package <NAME>  运行前要安装的软件包（可多次使用）
+  -c, --shell-mode      在 shell 环境中执行命令
+  -s, --silent          除所执行命令的输出外，禁止所有输出
+  -h, --help            显示帮助
 
-Examples:
-  vp dlx create-vue my-app                              # Create a new Vue project
-  vp dlx typescript@5.5.4 tsc --version                 # Run specific version
-  vp dlx -p yo -p generator-webapp yo webapp            # Multiple packages
-  vp dlx -c 'echo "hello" | cowsay'                     # Shell mode
-  vp dlx -s create-vue my-app                           # Silent mode
+示例：
+  vp dlx create-vue my-app                              # 创建新的 Vue 项目
+  vp dlx typescript@5.5.4 tsc --version                 # 运行指定版本
+  vp dlx -p yo -p generator-webapp yo webapp            # 多个软件包
+  vp dlx -c 'echo "hello" | cowsay'                     # Shell 模式
+  vp dlx -s create-vue my-app                           # 静默模式
 ```
 
-## Package Manager Compatibility
+## 包管理器兼容性
 
-| Feature           | pnpm    | npm     | yarn@1  | yarn@2+ | bun        | Notes                     |
-| ----------------- | ------- | ------- | ------- | ------- | ---------- | ------------------------- |
-| Basic execution   | ✅ Full | ✅ Full | ⚠️ npx  | ✅ Full | ✅ `bun x` | yarn@1 uses npx fallback  |
-| Version specifier | ✅ Full | ✅ Full | ⚠️ npx  | ✅ Full | ✅ Full    |                           |
-| --package flag    | ✅ Full | ✅ Full | ⚠️ npx  | ✅ Full | ✅ Full    |                           |
-| Shell mode (-c)   | ✅ Full | ✅ Full | ⚠️ npx  | ❌ N/A  | ❌ N/A     | yarn@2+/bun don't support |
-| Silent mode       | ✅ Full | ✅ Full | ⚠️ npx  | ✅ Full | ❌ N/A     | `bun x` doesn't support   |
-| Auto-confirm      | ✅ N/A  | ✅ Auto | ⚠️ Auto | ✅ N/A  | ✅ N/A     | --yes added for npm/npx   |
+| 功能             | pnpm    | npm     | yarn@1  | yarn@2+ | bun        | 备注                       |
+| ---------------- | ------- | ------- | ------- | ------- | ---------- | -------------------------- |
+| 基本执行         | ✅ 完整 | ✅ 完整 | ⚠️ npx  | ✅ 完整 | ✅ `bun x` | yarn@1 使用 npx 回退       |
+| 版本指定符       | ✅ 完整 | ✅ 完整 | ⚠️ npx  | ✅ 完整 | ✅ 完整    |                            |
+| `--package` 标志 | ✅ 完整 | ✅ 完整 | ⚠️ npx  | ✅ 完整 | ✅ 完整    |                            |
+| Shell 模式（-c） | ✅ 完整 | ✅ 完整 | ⚠️ npx  | ❌ 不适用 | ❌ 不适用 | yarn@2+/bun 不支持         |
+| 静默模式         | ✅ 完整 | ✅ 完整 | ⚠️ npx  | ✅ 完整 | ❌ 不适用 | `bun x` 不支持             |
+| 自动确认         | ✅ 不适用 | ✅ 自动 | ⚠️ 自动 | ✅ 不适用 | ✅ 不适用 | 已为 npm/npx 添加 --yes    |
 
-## Security Considerations
+## 安全注意事项
 
-1. **Remote Code Execution**: `dlx` inherently executes remote code. Users should:
-   - Verify package names before execution
-   - Use version specifiers for reproducibility
-   - Review package contents when uncertain
+1. **远程代码执行**：`dlx` 本质上会执行远程代码。用户应：
+   - 在执行前验证包名称
+   - 使用版本限定符以确保可复现性
+   - 不确定时检查包内容
 
-2. **No Permanent Installation**: Packages are installed to a temporary cache, not project dependencies.
-   - Reduces supply chain attack surface
-   - No changes to package.json or lockfiles
+2. **不会永久安装**：包会安装到临时缓存中，而不是项目依赖中。
+   - 减少供应链攻击面
+   - 不会修改 package.json 或锁文件
 
-3. **Shell Mode Risks**: Shell mode (`-c`) allows arbitrary shell commands.
-   - Use with caution in scripts
-   - Avoid interpolating untrusted input
+3. **Shell 模式风险**：Shell 模式（`-c`）允许执行任意 Shell 命令。
+   - 在脚本中谨慎使用
+   - 避免插入不受信任的输入
 
-4. **Build Scripts**: pnpm's `--allow-build` controls postinstall scripts.
-   - By default, dlx packages can run build scripts
-   - Consider security implications for untrusted packages
+4. **构建脚本**：pnpm 的 `--allow-build` 控制 postinstall 脚本。
+   - 默认情况下，dlx 包可以运行构建脚本
+   - 对不受信任的包，应考虑相关安全影响
 
-## Backward Compatibility
+## 向后兼容性
 
-This is a new feature with no breaking changes:
+这是一个不会引入破坏性变更的新功能：
 
-- Existing commands unaffected
-- New command is purely additive
-- No changes to configuration format
-- No changes to caching behavior
+- 不影响现有命令
+- 新命令仅为新增功能
+- 不改变配置格式
+- 不改变缓存行为
 
-## Future Enhancements
+## 未来增强功能
 
-### 1. Cache Management
+### 1. 缓存管理
 
 ```bash
-vp dlx --clear-cache                # Clear dlx cache
-vp dlx --cache-dir                  # Show cache location
+vp dlx --clear-cache                # 清除 dlx 缓存
+vp dlx --cache-dir                  # 显示缓存位置
 ```
 
-### 2. Offline Mode
+### 2. 离线模式
 
 ```bash
-vp dlx --offline create-vue my-app  # Use cached version only
+vp dlx --offline create-vue my-app  # 仅使用缓存版本
 ```
 
-### 3. Registry Override
+### 3. 注册表覆盖
 
 ```bash
 vp dlx --registry https://custom.registry.com create-vue my-app
 ```
 
-### 4. Trust Configuration
+### 4. 信任配置
 
 ```bash
-# In vite-task.json
+# 在 vite-task.json 中
 {
   "dlx": {
     "trustedPackages": ["create-vue", "typescript"],
@@ -960,19 +960,19 @@ vp dlx --registry https://custom.registry.com create-vue my-app
 }
 ```
 
-### 5. Execution History
+### 5. 执行历史
 
 ```bash
-vp dlx --history                    # Show recent dlx executions
-vp dlx --replay 3                   # Re-run 3rd most recent command
+vp dlx --history                    # 显示最近的 dlx 执行记录
+vp dlx --replay 3                   # 重新运行最近第 3 次执行的命令
 ```
 
-## Real-World Usage Examples
+## 实际使用示例
 
-### Project Scaffolding
+### 项目脚手架
 
 ```bash
-# Create new projects with various frameworks
+# 使用各种框架创建新项目
 vp dlx create-vue my-vue-app
 vp dlx create-react-app my-react-app
 vp dlx create-next-app my-next-app
@@ -980,23 +980,23 @@ vp dlx create-svelte my-svelte-app
 vp dlx @angular/cli ng new my-angular-app
 ```
 
-### One-off Tools
+### 一次性工具
 
 ```bash
-# Format JSON
+# 格式化 JSON
 vp dlx prettier --write package.json
 
-# Check TypeScript
+# 检查 TypeScript
 vp dlx typescript tsc --noEmit
 
-# Run ESLint
+# 运行 ESLint
 vp dlx eslint src/
 
-# Generate licenses
+# 生成许可证信息
 vp dlx license-checker --json
 ```
 
-### CI/CD Pipelines
+### CI/CD 流水线
 
 ```yaml
 # GitHub Actions
@@ -1010,34 +1010,34 @@ vp dlx license-checker --json
   run: vp dlx np --no-tests
 ```
 
-### Development Utilities
+### 开发实用工具
 
 ```bash
-# Quick HTTP server
+# 快速 HTTP 服务器
 vp dlx serve dist/
 
-# JSON server for mocking
+# 用于模拟的 JSON 服务器
 vp dlx json-server db.json
 
-# Bundle analyzer
+# 打包分析器
 vp dlx source-map-explorer dist/*.js
 
-# Dependency visualization
+# 依赖可视化
 vp dlx madge --image deps.svg src/
 ```
 
-## Conclusion
+## 结论
 
-This RFC proposes adding `vp dlx` command to provide unified remote package execution across pnpm/npm/yarn/bun. The design:
+本 RFC 提议添加 `vp dlx` 命令，以在 pnpm/npm/yarn/bun 之间提供统一的远程包执行功能。该设计：
 
-- ✅ Unified interface for all package managers
-- ✅ Intelligent fallback for yarn@1
-- ✅ Pass-through for advanced options
-- ✅ Shell mode for complex commands
-- ✅ Silent mode for CI/scripting
-- ✅ Version specifiers for reproducibility
-- ✅ Multiple package support
-- ✅ Follows existing pnpm dlx conventions
-- ✅ Simple implementation leveraging existing infrastructure
+- ✅ 为所有包管理器提供统一接口
+- ✅ 针对 yarn@1 进行智能回退
+- ✅ 透传高级选项
+- ✅ 为复杂命令提供 Shell 模式
+- ✅ 为 CI/脚本提供静默模式
+- ✅ 支持版本说明符，确保可复现性
+- ✅ 支持多个包
+- ✅ 遵循现有的 pnpm dlx 约定
+- ✅ 利用现有基础设施实现，简单易行
 
-The command provides the convenience of `npx`/`pnpm dlx`/`yarn dlx` with automatic package manager detection, ensuring consistent developer experience regardless of the project's package manager choice.
+该命令通过自动检测包管理器，提供 `npx`/`pnpm dlx`/`yarn dlx` 的便利性，无论项目选择哪种包管理器，都能确保一致的开发者体验。

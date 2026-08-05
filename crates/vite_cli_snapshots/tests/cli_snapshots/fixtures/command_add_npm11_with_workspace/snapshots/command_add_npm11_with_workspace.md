@@ -1,4 +1,4 @@
-# command_add_npm11_with_workspace
+# 使用工作区添加 npm11 命令
 
 ## `vp add testnpm2 -D -w -- --no-audit`
 
@@ -6,7 +6,7 @@
 
 ```
 
-added 3 packages in <duration>
+在 <duration> 内添加了 3 个软件包
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -38,6 +38,7 @@ added 3 packages in <duration>
 应将 @vite-plus-test/utils 添加到工作区根目录
 
 ```
+警告：npm 不支持 --workspace。
 
 已是最新状态，用时 <duration>
 ```
@@ -114,6 +115,7 @@ added 3 packages in <duration>
 应将 @vite-plus-test/utils 添加到 packages/app
 
 ```
+警告：npm 不支持 --workspace。
 
 在 <duration> 内已是最新
 ```

@@ -16,7 +16,7 @@
 pub const VP_HOME: &str = "VP_HOME";
 
 /// Log filter string for `tracing_subscriber` (e.g. `"debug"`, `"vite_task=trace"`).
-pub const VITE_LOG: &str = "VITE_LOG";
+pub const VP_LOG: &str = "VP_LOG";
 
 /// NPM registry URL (lowercase form, highest priority).
 pub const NPM_CONFIG_REGISTRY: &str = "npm_config_registry";
@@ -44,10 +44,10 @@ pub const VP_ENV_USE_EVAL_ENABLE: &str = "VP_ENV_USE_EVAL_ENABLE";
 pub const VP_SHELL: &str = "VP_SHELL";
 
 /// Filter for update task types.
-pub const VITE_UPDATE_TASK_TYPES: &str = "VITE_UPDATE_TASK_TYPES";
+pub const VP_UPDATE_TASK_TYPES: &str = "VP_UPDATE_TASK_TYPES";
 
 /// Override directory for global CLI JS scripts.
-pub const VITE_GLOBAL_CLI_JS_SCRIPTS_DIR: &str = "VITE_GLOBAL_CLI_JS_SCRIPTS_DIR";
+pub const VP_GLOBAL_CLI_JS_SCRIPTS_DIR: &str = "VP_GLOBAL_CLI_JS_SCRIPTS_DIR";
 
 // ── Runtime: set/removed during shim dispatch for child processes ────────
 
@@ -67,6 +67,14 @@ pub const VP_RESOLVE_SOURCE: &str = "VP_RESOLVE_SOURCE";
 
 /// Set by shell wrapper scripts to indicate which tool is being shimmed.
 pub const VP_SHIM_TOOL: &str = "VP_SHIM_TOOL";
+
+/// Set (to `1`) only by the PTY snapshot runner to enable render-milestone
+/// emission (invisible window-title updates the tests synchronize on).
+///
+/// The value is a cross-process contract: the runner and the JS prompts
+/// package (`packages/prompts/src/milestone.ts`) spell the literal
+/// independently.
+pub const VP_EMIT_MILESTONES: &str = "VP_EMIT_MILESTONES";
 
 /// Set by Windows shim wrappers that route through `vp env exec`.
 ///

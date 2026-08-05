@@ -1,4 +1,4 @@
-# 内置脚本注释
+# 内置脚本注释。
 
 ## `vp dev --port 12312312312`
 
@@ -91,14 +91,20 @@ VITE+ - Web 的统一工具链
   [ROOT]  项目根目录（默认：当前目录）
 
 选项：
-  --host [HOST]        指定主机名
-  --port <PORT>        指定端口
-  --open [PATH]        启动时打开浏览器
-  --strictPort         如果指定端口已被占用则退出
-  -c, --config <FILE>  使用指定的配置文件
-  --base <PATH>        公共基础路径
-  -m, --mode <MODE>    设置环境模式
-  -h, --help           打印帮助信息
+  --host [HOST]           指定主机名
+  --port <PORT>           指定端口
+  --open [PATH]           启动时打开浏览器
+  --cors                  启用 CORS
+  --strictPort            如果指定的端口已被占用则退出
+  --force                 忽略优化器缓存并重新打包
+  --experimentalBundle    使用实验性的完整打包模式
+  --base <PATH>           公共基础路径
+  -l, --logLevel <LEVEL>  设置日志级别
+  --clearScreen           允许或禁止清屏
+  -d, --debug [FEAT]      显示调试日志
+  -f, --filter <FILTER>   筛选调试日志
+  -m, --mode <MODE>       设置环境模式
+  -h, --help              打印帮助信息
 
 示例：
   vp dev

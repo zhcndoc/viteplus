@@ -30,6 +30,7 @@ VITE+ - Web 的统一工具链
   install    安装所有依赖项，或在提供包名称时添加包
 
 选项：
+  -C <DIR>    在 <DIR> 中运行 vp，就像从该目录而非当前工作目录启动 vp
   -h, --help  打印帮助信息
 ```
 
@@ -38,43 +39,40 @@ VITE+ - Web 的统一工具链
 vp run 应显示帮助
 
 ```
-运行任务
+VITE+ - Web 的统一工具链
 
 用法：vp run [选项] [任务说明符] [附加参数]...
 
+运行任务。
+
 参数：
-  [任务说明符] [附加参数]...
-          要运行的任务，格式为 `packageName#taskName` 或仅使用 `taskName`。
-          任务名称之后的任何参数都会传递给任务进程。
-          不带任务名称运行 `vp run` 将显示交互式任务选择器。
+  [TASK_SPECIFIER]      `packageName#taskName` 或 `taskName`。如果省略，则显示任务选择器
+  [ADDITIONAL_ARGS]...  要传递给任务的附加参数
 
 选项：
-  -r, --recursive
-          选择工作区中的所有软件包
-  -t, --transitive
-          选择当前软件包及其传递依赖项
-  -w, --workspace-root
-          选择工作区根软件包
-  -F, --filter <FILTERS>
-          按名称、目录或 glob 模式匹配软件包
-      --fail-if-no-match
-          如果 `--filter` 表达式未匹配任何软件包，则以非零状态退出
-      --ignore-depends-on
-          不运行 `dependsOn` 字段中指定的依赖项
-  -v, --verbose
-          执行后显示完整的详细摘要
-      --cache
-          强制为所有任务和脚本启用缓存
-      --no-cache
-          强制为所有任务和脚本禁用缓存
-      --log <LOG>
-          任务输出的显示方式 [默认：interleaved] [可选值：interleaved、labeled、grouped]
-      --concurrency-limit <CONCURRENCY_LIMIT>
-          可同时运行的最大任务数。默认为 4
-      --parallel
-          在不考虑依赖顺序的情况下运行任务。除非同时指定 `--concurrency-limit`，否则将并发数设置为无限
-      --last-details
-          显示上次运行的详细摘要
-  -h, --help
-          打印帮助（使用“--help”查看更多内容）
+  -r, --recursive          选择工作区中的所有包
+  -t, --transitive         选择当前包及其传递依赖
+  -w, --workspace-root     选择工作区根包
+  -F, --filter <FILTERS>   按名称、目录或 glob 模式匹配包
+  --fail-if-no-match       如果筛选器未匹配到任何包，则以非零状态退出
+  --ignore-depends-on      不运行 `dependsOn` 字段中指定的依赖项
+  -v, --verbose            执行后显示完整的详细摘要
+  --cache                  强制为所有任务和脚本启用缓存
+  --no-cache               强制为所有任务和脚本禁用缓存
+  --log <MODE>             设置输出模式：交错（默认）、带标签或分组
+  --concurrency-limit <N>  可同时运行的任务的最大数量（默认：4）
+  --parallel               在不遵循依赖顺序的情况下运行任务；除非指定 `--concurrency-limit`，否则并发数不受限制
+  --last-details           显示上次运行的详细摘要
+  -h, --help               显示帮助
+
+筛选模式：
+  --filter <pattern>        按包名称选择（例如 foo、@scope/*）
+  --filter ./<dir>          选择目录下的包
+  --filter {<dir>}          与 ./<dir> 相同，但允许使用遍历后缀
+  --filter <pattern>...     选择包及其依赖项
+  --filter ...<pattern>     选择包及其依赖者
+  --filter <pattern>^...    仅选择依赖项（排除包自身）
+  --filter !<pattern>       排除与模式匹配的包
+
+文档：https://viteplus.dev/guide/run
 ```

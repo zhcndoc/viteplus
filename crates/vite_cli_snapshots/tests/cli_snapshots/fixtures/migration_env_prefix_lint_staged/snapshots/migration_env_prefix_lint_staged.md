@@ -5,30 +5,35 @@
 
 ## `vp migrate --no-interactive`
 
-迁移应替换 pre-commit 中带环境变量前缀的 lint-staged
+迁移应保留现有的 Husky 设置
 
 ```
 VITE+ - Web 的统一工具链
 
+⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。请在启用 Vite+ 钩子之前手动迁移 Husky。
 ◇ 已将 . 迁移到 Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已配置 Git 钩子
+• 已应用 1 项配置更新
 ```
 
 ## `vpt print-file package.json`
 
-检查 husky/lint-staged 是否已移除，配置是否已暂存于 vite.config.ts
+检查 Husky prepare、依赖项和 lint-staged 配置是否得到保留
 
 ```
 {
   "name": "migration-env-prefix-lint-staged",
   "scripts": {
-    "prepare": "vp config"
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "lint-staged": {
+    "*.js": "oxlint --fix"
   },
   "devEngines": {
     "packageManager": {
@@ -59,7 +64,7 @@ peerDependencyRules:
 
 ## `vpt print-file vite.config.ts`
 
-检查 staged 配置是否已迁移到 vite.config.ts
+检查暂存的配置是否尚未迁移，同时 Husky 持有该钩子
 
 ```
 import { defineConfig } from 'vite-plus';
@@ -67,16 +72,13 @@ import { defineConfig } from 'vite-plus';
 export default defineConfig({
   fmt: {},
   lint: {"jsPlugins":[{"name":"vite-plus","specifier":"vite-plus/oxlint-plugin"}],"rules":{"vite-plus/prefer-vite-plus-imports":"error"},"options":{"typeAware":true,"typeCheck":true}},
-  staged: {
-    "*.js": "vp lint --fix"
-  },
 });
 ```
 
-## `vpt print-file .vite-hooks/pre-commit`
+## `vpt print-file .husky/pre-commit`
 
-检查使用 vp staged 时环境变量前缀是否保留
+检查带环境变量前缀的 Husky 钩子未发生变化
 
 ```
-NODE_OPTIONS=--max-old-space-size=4096 vp staged
+NODE_OPTIONS=--max-old-space-size=4096 npx lint-staged
 ```

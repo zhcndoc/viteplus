@@ -167,11 +167,13 @@ export default defineConfig({
 });
 ```
 
-迁移后，从依赖中移除 lint-staged，并删除任何 lint-staged 配置文件。详情请参见 [提交钩子指南](/guide/commit-hooks) 和 [staged 配置参考](/config/staged)。
+当没有现有的钩子策略负责该工作流时，`vp migrate` 可以迁移受支持的 lint-staged 规则，并移除旧配置和依赖。如果保留了现有的钩子工具，请先继续使用 lint-staged，直到您手动转换该钩子策略。详情请参见[提交钩子指南](/guide/commit-hooks)和 [Staged 配置参考](/config/staged)。
 
-### Git hook 工具
+### Git 钩子工具
 
-`vp migrate` 命令可以为您设置 Vite+ 提交钩子，但它不会自动迁移所有类型的 Git hook 工具。这个自动迁移路径专门用于处理 Husky v9+ 和 lint-staged 风格的设置。使用低于 9.0.0 版本 Husky 的项目会被跳过，并且应在使用自动迁移路径之前升级到 Husky v9。
+`vp migrate` 命令不会自动转换 Husky 配置。检测到 Husky 时，Vite+ 会保留其钩子、生命周期脚本、配置和依赖不变，并显示警告。您可以按照[提交钩子指南](/guide/commit-hooks)手动迁移项目。
+
+项目现有的 Vite+ 钩子也会被保留。仅当未发现现有的钩子策略时，才会引入默认的 staged 工作流。
 
 如果您的项目当前使用 `lefthook`、`simple-git-hooks` 或 `yorkie`，`vp migrate` 会保留您现有的配置不变并显示警告。即使您选择在提示过程中设置钩子，或包含 `--hooks` 标志，也会如此。
 

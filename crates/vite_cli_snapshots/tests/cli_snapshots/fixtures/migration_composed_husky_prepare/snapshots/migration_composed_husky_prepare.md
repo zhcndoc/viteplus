@@ -5,28 +5,29 @@
 
 ## `vp migrate --no-interactive`
 
-迁移应替换组合式 prepare 脚本中的 husky
+迁移应保留组合后的 Husky prepare 脚本
 
 ```
 VITE+ - Web 的统一工具链
 
-◇ 已将 . 迁移至 Vite+ <version>
+⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
+◇ 已将 . 迁移到 Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已配置 Git hooks
+• 已应用 1 项配置更新
 ```
 
 ## `vpt print-file package.json`
 
-检查 prepare 是否变为 `vp config --hooks-dir .husky && npm run build`，且没有遗留的 husky
+prepare 脚本和 Husky 依赖应当保留
 
 ```
 {
   "name": "migration-composed-husky-prepare",
   "scripts": {
-    "prepare": "vp config && npm run build"
+    "prepare": "husky && npm run build"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },

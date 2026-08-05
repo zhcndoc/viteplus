@@ -57,6 +57,7 @@ VITE+ - 面向 Web 的统一工具链
 文档：https://viteplus.dev/guide/
 
 选项：
-  -V, --version  输出版本
-  -h, --help     输出帮助
+  -V, --version  打印版本
+  -C <DIR>       如同在 <DIR> 中启动 vp，而不是在当前工作目录中启动
+  -h, --help     打印帮助信息
 ```

@@ -12,7 +12,7 @@ VITE+ - Web 的统一工具链
 为当前 Shell 会话使用指定的 Node.js 版本
 
 参数：
-  [版本]  要使用的版本（例如 “20”、“20.18.0”、“lts”、“latest”）。如果省略，则从 .node-version 或 package.json 中读取
+  [VERSION]  要使用的版本（例如 “20”、“20.18.0”、“lts”、“latest”）。如果省略，则从 .node-version、package.json 或 .nvmrc 中读取
 
 选项：
   --unset                移除会话覆盖（恢复基于文件的解析）
@@ -33,7 +33,7 @@ VITE+ - Web 的统一工具链
 
 ```
 export VP_NODE_VERSION=20.18.0
-Using Node.js <version> (resolved from 20.18.0)
+正在使用 Node.js <version>（由 20.18.0 解析）
 ```
 
 ## `vp env use --unset`
@@ -52,9 +52,9 @@ Reverted to file-based Node.js version resolution
 **退出代码：** 1
 
 ```
-error: Invalid Node.js version: "d"
+错误：无效的 Node.js 版本：“d”
 
-Valid examples:
+有效示例：
   vp env use 20          # 最新的 Node.js 20.x
   vp env use 20.18.0     # 精确版本
   vp env use lts         # 最新的 LTS 版本

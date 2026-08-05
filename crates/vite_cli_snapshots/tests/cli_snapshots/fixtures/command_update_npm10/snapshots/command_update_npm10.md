@@ -33,7 +33,7 @@ added 3 packages in <duration>
 应更新到绝对最新版本
 
 ```
-警告：npm 不支持 --latest 标志。仅在 semver 范围内更新。
+警告：npm 不支持 --latest。
 
 已是最新版本，耗时 <duration>
 ```
@@ -134,11 +134,11 @@ found 0 vulnerabilities
 ## `vp update --no-optional --latest -- --no-audit`
 
 ```
-警告：npm 不支持 --latest 标志。仅在 semver 范围内更新。
-npm 警告 config optional 使用 `--omit=optional` 排除可选依赖，或
-npm 警告 config 使用 `--include=optional` 包含可选依赖。
-npm 警告 config
-npm 警告 config       默认值会安装可选依赖，除非另行省略。
+warn: npm does not support --latest.
+npm warn config optional Use `--omit=optional` to exclude optional dependencies, or
+npm warn config `--include=optional` to include them.
+npm warn config
+npm warn config       Default value does install optional deps unless otherwise omitted.
 
 在 <duration> 内更改了 1 个软件包
 ```
@@ -166,7 +166,7 @@ npm 警告 config       默认值会安装可选依赖，除非另行省略。
 
 ```
 
-added 2 packages in <duration>
+已添加 2 个软件包，耗时 <duration>
 ```
 
 ## `vpt print-file package.json`

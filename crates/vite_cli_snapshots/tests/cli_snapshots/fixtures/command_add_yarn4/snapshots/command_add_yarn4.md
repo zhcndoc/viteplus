@@ -70,6 +70,7 @@ VITE+ - Web 统一工具链
 应将软件包添加到依赖项中
 
 ```
+warn: yarn does not support --allow-build.
 ➤ YN0000: · Yarn <version>
 ➤ YN0000: ┌ Resolution step
 ➤ YN0085: │ + test-vite-plus-install@npm:1.0.0

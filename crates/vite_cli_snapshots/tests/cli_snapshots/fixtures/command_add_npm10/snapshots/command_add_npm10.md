@@ -62,6 +62,7 @@ VITE+ - Web 统一工具链
 应将软件包添加到依赖项中
 
 ```
+警告：npm 不支持 --allow-build。
 
 已添加 1 个软件包，用时 <duration>
 ```
@@ -117,7 +118,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ```
 
-added 1 package in <duration>
+在 <duration> 内添加了 1 个软件包
 ```
 
 ## `vpt print-file package.json`

@@ -2,13 +2,13 @@
 
 ## `vp migrate --no-interactive`
 
-应警告 husky v8，并保留所有 lint-staged 配置
+应警告 Husky v8，并保留所有 lint-staged 配置
 
 ```
 VITE+ - Web 统一工具链
 
-⚠ 检测到 husky <9.0.0 — 请先升级到 husky v9+，然后重新运行迁移。
-◇ 已将 . 迁移到 Vite+ <version>
+⚠ 已检测到 Husky — 保持其钩子、配置和依赖不变。请先手动迁移 Husky，然后再启用 Vite+ 钩子。
+◇ 已将 . 迁移至 Vite+ <version>
 • Node <version>  pnpm <version>
 • 已应用 1 项配置更新
 ```

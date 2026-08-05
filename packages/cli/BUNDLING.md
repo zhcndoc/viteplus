@@ -154,14 +154,16 @@ packages/cli/
 
 CLI 会为以下平台目标构建原生绑定：
 
-| 目标                        | 平台     | 架构   | 输出文件                           |
-| --------------------------- | -------- | ------ | ---------------------------------- |
-| `aarch64-apple-darwin`      | macOS    | ARM64  | `vite-plus.darwin-arm64.node`     |
-| `x86_64-apple-darwin`       | macOS    | x64    | `vite-plus.darwin-x64.node`       |
-| `aarch64-unknown-linux-gnu` | Linux    | ARM64  | `vite-plus.linux-arm64-gnu.node`  |
-| `x86_64-unknown-linux-gnu`  | Linux    | x64    | `vite-plus.linux-x64-gnu.node`    |
-| `aarch64-pc-windows-msvc`   | Windows  | ARM64  | `vite-plus.win32-arm64-msvc.node` |
-| `x86_64-pc-windows-msvc`    | Windows  | x64    | `vite-plus.win32-x64-msvc.node`   |
+| Target                       | Platform | Architecture | Output File                       |
+| ---------------------------- | -------- | ------------ | --------------------------------- |
+| `aarch64-apple-darwin`       | macOS    | ARM64        | `vite-plus.darwin-arm64.node`     |
+| `x86_64-apple-darwin`        | macOS    | x64          | `vite-plus.darwin-x64.node`       |
+| `aarch64-unknown-linux-gnu`  | Linux    | ARM64 glibc  | `vite-plus.linux-arm64-gnu.node`  |
+| `aarch64-unknown-linux-musl` | Linux    | ARM64 musl   | `vite-plus.linux-arm64-musl.node` |
+| `x86_64-unknown-linux-gnu`   | Linux    | x64 glibc    | `vite-plus.linux-x64-gnu.node`    |
+| `x86_64-unknown-linux-musl`  | Linux    | x64 musl     | `vite-plus.linux-x64-musl.node`   |
+| `aarch64-pc-windows-msvc`    | Windows  | ARM64        | `vite-plus.win32-arm64-msvc.node` |
+| `x86_64-pc-windows-msvc`     | Windows  | x64          | `vite-plus.win32-x64-msvc.node`   |
 
 这些目标在 `package.json` 的 `napi.targets` 字段下定义。
 
@@ -220,29 +222,21 @@ await cli.build({
 
 ### 模块标识符重写
 
-在发布构建期间，核心包会将所有 `@rolldown/binding-*` 导入重写为指向 `vite-plus/binding`：
-
-```typescript
-// 在 packages/core/build.ts 中
-if (process.env.RELEASE_BUILD) {
-  // @rolldown/binding-darwin-arm64 → vite-plus/binding
-  source = source.replace(/@rolldown\/binding-([a-z0-9-]+)/g, 'vite-plus/binding');
-}
-```
+在发布构建期间，核心包会将每个受支持的 `@rolldown/binding-*` 导入重写为匹配的 Vite+ 平台包（参见 `packages/core/build-support/rewrite-rolldown-binding.ts`）：
 
 **转换示例**：
 
-| 原始导入                          | 重写后              |
-| ---------------------------------- | ------------------- |
-| `@rolldown/binding-darwin-arm64`   | `vite-plus/binding` |
-| `@rolldown/binding-linux-x64-gnu`  | `vite-plus/binding` |
-| `@rolldown/binding-win32-x64-msvc` | `vite-plus/binding` |
+| 原始导入                           | 重写后                                      |
+| ---------------------------------- | ------------------------------------------- |
+| `@rolldown/binding-darwin-arm64`   | `@voidzero-dev/vite-plus-darwin-arm64`     |
+| `@rolldown/binding-linux-x64-gnu`  | `@voidzero-dev/vite-plus-linux-x64-gnu`    |
+| `@rolldown/binding-win32-x64-msvc` | `@voidzero-dev/vite-plus-win32-x64-msvc`   |
 
 这意味着：
 
-1. 打包后的 rolldown 代码位于 `@voidzero-dev/vite-plus-core/rolldown`，并从 `vite-plus/binding` 解析原生绑定
-2. 用户无需单独安装 `@rolldown/binding-*` 平台包
-3. 单个 `.node` 文件同时包含 vite-plus task runner 和 rolldown 绑定
+1. `@voidzero-dev/vite-plus-core/rolldown` 中捆绑的 rolldown 代码通过核心包自身声明的可选依赖解析原生绑定（由 `publish-native-addons.ts` 在发布时注入）
+2. 用户无需安装单独的 `@rolldown/binding-*` 平台包
+3. 平台 `.node` 文件同时包含 vite-plus 任务运行器和 rolldown 绑定
 
 ### 原生绑定内容
 
@@ -259,23 +253,27 @@ if (process.env.RELEASE_BUILD) {
 用户导入 'vite-plus/rolldown'
   → packages/cli 从 @voidzero-dev/vite-plus-core/rolldown 重新导出
     → packages/core/dist/rolldown/index.mjs
-      → 原生绑定：vite-plus/binding（由 @rolldown/binding-* 重写而来）
-        → binding/vite-plus.darwin-arm64.node（包含 rolldown_binding）
+      → 原生绑定：@voidzero-dev/vite-plus-darwin-arm64
+        （从 @rolldown/binding-darwin-arm64 重写而来）
+        → vite-plus.darwin-arm64.node（包含 rolldown_binding）
 ```
 
 ### 按平台发布
 
 原生绑定会以独立的平台包形式发布，以获得最佳安装体积：
 
-| 平台      | 发布的包                                  |
-| --------- | ----------------------------------------- |
-| macOS ARM64 | `@voidzero-dev/vite-plus-darwin-arm64`    |
-| macOS x64   | `@voidzero-dev/vite-plus-darwin-x64`      |
-| Linux ARM64 | `@voidzero-dev/vite-plus-linux-arm64-gnu` |
-| Linux x64   | `@voidzero-dev/vite-plus-linux-x64-gnu`   |
-| Windows x64 | `@voidzero-dev/vite-plus-win32-x64-msvc`  |
+| 平台              | 发布包                                      |
+| ----------------- | ------------------------------------------ |
+| macOS ARM64       | `@voidzero-dev/vite-plus-darwin-arm64`     |
+| macOS x64         | `@voidzero-dev/vite-plus-darwin-x64`       |
+| Linux ARM64 glibc | `@voidzero-dev/vite-plus-linux-arm64-gnu`  |
+| Linux ARM64 musl  | `@voidzero-dev/vite-plus-linux-arm64-musl` |
+| Linux x64 glibc   | `@voidzero-dev/vite-plus-linux-x64-gnu`    |
+| Linux x64 musl    | `@voidzero-dev/vite-plus-linux-x64-musl`   |
+| Windows ARM64     | `@voidzero-dev/vite-plus-win32-arm64-msvc` |
+| Windows x64       | `@voidzero-dev/vite-plus-win32-x64-msvc`   |
 
-这些包会根据用户的平台，通过 `optionalDependencies` 自动安装。
+这些包会根据用户的平台通过 `optionalDependencies` 自动安装。`publish-native-addons.ts` 会在发布期间将精确锁定版本的条目注入 `vite-plus`（通过 napi-rs prePublish）和 `@voidzero-dev/vite-plus-core`；已提交的 package.json 文件中不包含这些条目。
 
 有关发布流程，请参见 `publish-native-addons.ts`。
 
@@ -503,18 +501,18 @@ VP_CLI_DEBUG=1 pnpm -C packages/cli build
 ### 构建流程
 
 ```
-1. buildWithTsdown()         tsdown bundle -> dist/*.js, dist/*.d.ts
-2. buildNapiBinding()        Rust -> binding/*.node (per platform)
-3. syncCorePackageExports()  Read core pkg dist -> dist/client/, dist/types/
-   ├── createClientShim()        Triple-slash reference for ./client
-   ├── createModuleRunnerShim()  JS + types for ./module-runner
-   ├── createInternalShim()      JS + types for ./internal
-   ├── syncClientDir()           Shims for ./dist/client/*
-   └── syncTypesDir()            Type-only shims for ./types/*
-4. syncTestPackageExports()  Read test pkg exports -> dist/test/*
-   ├── createShimForExport()     Generate shim files
-   ├── createConditionalShim()   Handle import/require conditions
-   └── updateCliPackageJson()    Update exports in package.json
+1. buildWithTsdown()         tsdown 打包 -> dist/*.js, dist/*.d.ts
+2. buildNapiBinding()        Rust -> binding/*.node（每个平台）
+3. syncCorePackageExports()  读取核心包 dist -> dist/client/, dist/types/
+   ├── createClientShim()        为 ./client 创建三斜线引用
+   ├── createModuleRunnerShim()  为 ./module-runner 创建 JS + 类型文件
+   ├── createInternalShim()      为 ./internal 创建 JS + 类型文件
+   ├── syncClientDir()           为 ./dist/client/* 创建 shim
+   └── syncTypesDir()            为 ./types/* 创建仅类型 shim
+4. syncTestPackageExports()  读取测试包导出 -> dist/test/*
+   ├── createShimForExport()     生成 shim 文件
+   ├── createConditionalShim()   处理 import/require 条件
+   └── updateCliPackageJson()    更新 package.json 中的导出
 ```
 
 ### 关键常量
@@ -537,27 +535,27 @@ const TEST_PACKAGE_NAME = 'vitest';
 
 **CLI 原生导出** — 指向 CLI 自身通过 tsdown 构建的 TypeScript 打包产物（由 `buildWithTsdown()` 构建）：
 
-| Export           | Description                |
-| ---------------- | -------------------------- |
+| 导出             | 描述             |
+| ---------------- | ---------------- |
 | `.`              | 主入口（CLI 工具） |
-| `./bin`          | CLI 二进制入口点     |
-| `./binding`      | NAPI 原生绑定        |
-| `./lint`         | Lint 工具             |
-| `./pack`         | Pack 工具             |
-| `./package.json` | 包元数据           |
+| `./bin`          | CLI 二进制入口点 |
+| `./binding`      | NAPI 原生绑定 |
+| `./lint`         | Lint 工具 |
+| `./pack`         | Pack 工具 |
+| `./package.json` | 包元数据 |
 
 **核心 shim 导出** — 指向由 `syncCorePackageExports()` 自动生成的 shim 文件，这些文件会从 `@voidzero-dev/vite-plus-core` 重新导出。shim 文件会在每次构建时重新生成，但 `package.json` 中的条目本身是手动维护的：
 
-| Export               | Description                                                             |
-| -------------------- | ----------------------------------------------------------------------- |
+| 导出                 | 描述                                                             |
+| -------------------- | ---------------------------------------------------------------- |
 | `./client`           | 用于环境类型声明（CSS modules 等）的三斜杠引用 |
-| `./module-runner`    | 用于 SSR/环境的 Vite 模块运行器                                 |
-| `./internal`         | Vite 内部 API                                                      |
-| `./dist/client/*`    | 客户端运行时文件                                                    |
-| `./types/internal/*` | 已阻止（`null`），以防止访问内部类型                    |
-| `./types/*`          | 仅类型重新导出                                                    |
+| `./module-runner`    | 用于 SSR/环境的 Vite 模块运行器 |
+| `./internal`         | Vite 内部 API |
+| `./dist/client/*`    | 客户端运行时文件 |
+| `./types/internal/*` | 已阻止（`null`），以防止访问内部类型 |
+| `./types/*`          | 仅类型重新导出 |
 
-**注意**：核心包自身的导出（也就是这些 shim 指向的目标）由上游的 `packages/tools/src/sync-remote-deps.ts` 生成。详情请参见 [Core Package Bundling](../core/BUNDLING.md)。
+**注意**：核心包自身的导出（也就是这些 shim 指向的目标）由上游的 `packages/tools/src/sync-remote-deps.ts` 生成。详情请参见 [核心包打包](../core/BUNDLING.md)。
 
 #### 自动导出（`./test/*`）
 
@@ -567,4 +565,4 @@ const TEST_PACKAGE_NAME = 'vitest';
 2. 在 `dist/test/` 中创建 shim 文件
 3. 从 `package.json` 中移除旧的 `./test*` 导出
 4. 合并新生成的测试导出
-5. 确保 `dist/test` 在 `files` 数组中
+5. 确保 `dist/test` 在 `files` 数组中。

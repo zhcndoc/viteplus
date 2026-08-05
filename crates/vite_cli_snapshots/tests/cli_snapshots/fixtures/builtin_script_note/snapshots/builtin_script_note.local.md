@@ -1,4 +1,4 @@
-# 内置脚本说明
+# 内置脚本说明。
 
 ## `vp dev --port 12312312312`
 
@@ -68,42 +68,38 @@ Finished in <duration> on 1 files using <n> threads.
 本地路径检查原始的 `help` 拼写；全局 CLI 会在委托给本地命令之前渲染帮助信息
 
 ```
-注意：您正在将 `vp help` 作为 Vite+ 内置命令运行。如果您想运行 help npm 脚本，请改用 `vpr help`。
-vp/<version>
+VITE+ - The Unified Toolchain for the Web
 
-用法：
-  $ vp [root]
+Usage: vp dev [ROOT] [OPTIONS]
 
-命令：
-  [root]           启动开发服务器
-  build [root]     构建生产版本
-  optimize [root]  预捆绑依赖（已弃用，预捆绑过程会自动运行，无需调用）
-  preview [root]   在本地预览生产构建
+Run the development server.
+Options are forwarded to Vite.
 
-如需更多信息，请使用 `--help` 标志运行任意命令：
-  $ vp --help
-  $ vp build --help
-  $ vp optimize --help
-  $ vp preview --help
+Arguments:
+  [ROOT]  Project root directory (default: current directory)
 
-选项：
-  --host [host]            [string] 指定主机名
-  --port <port>            [number] 指定端口
-  --open [path]            [boolean | string] 启动时打开浏览器
-  --cors                   [boolean] 启用 CORS
-  --strictPort             [boolean] 如果指定的端口已被占用则退出
-  --force                  [boolean] 强制优化器忽略缓存并重新捆绑
-  --experimentalBundle     [boolean] 使用实验性的完整捆绑模式（此功能高度实验性）
-  -c, --config <file>      [string] 使用指定的配置文件
-  --base <path>            [string] 公共基础路径（默认：/）
-  -l, --logLevel <level>   [string] info | warn | error | silent
-  --clearScreen            [boolean] 启用/禁用日志记录时清屏
-  --configLoader <loader>  [string] 使用 'bundle' 通过 Rolldown 捆绑配置，或使用 'runner'（实验性）即时处理配置，或使用 'native'（实验性）通过原生运行时加载配置（默认：bundle）
-  -d, --debug [feat]       [string | boolean] 显示调试日志
-  -f, --filter <filter>    [string] 筛选调试日志
-  -m, --mode <mode>        [string] 设置环境模式
-  -h, --help               显示此消息
-  -v, --version            显示版本号
+Options:
+  --host [HOST]           Specify hostname
+  --port <PORT>           Specify port
+  --open [PATH]           Open browser on startup
+  --cors                  Enable CORS
+  --strictPort            Exit if specified port is already in use
+  --force                 Ignore the optimizer cache and re-bundle
+  --experimentalBundle    Use experimental full bundle mode
+  --base <PATH>           Public base path
+  -l, --logLevel <LEVEL>  Set log level
+  --clearScreen           Allow or disable clearing the screen
+  -d, --debug [FEAT]      Show debug logs
+  -f, --filter <FILTER>   Filter debug logs
+  -m, --mode <MODE>       Set env mode
+  -h, --help              Print help
+
+Examples:
+  vp dev
+  vp dev --open
+  vp dev --host localhost --port 5173
+
+Documentation: https://viteplus.dev/guide/dev
 ```
 
 ## `vp preview --port 12312312312`
@@ -113,8 +109,8 @@ vp/<version>
 **退出代码：** 1
 
 ```
-error when starting preview server:
-Error: No available ports found between 12312312312 and 65535
+启动预览服务器时出错：
+错误：在 12312312312 到 65535 之间未找到可用端口
 ```
 
 ## `vp lint src/`

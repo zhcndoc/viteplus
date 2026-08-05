@@ -3,6 +3,7 @@
 //! This module contains all the CLI-related code.
 //! It handles argument parsing, command dispatching, and orchestration of the task execution.
 
+mod app_target;
 mod execution;
 mod handler;
 mod help;
@@ -47,7 +48,24 @@ async fn execute_direct_subcommand(
     cwd: &AbsolutePathBuf,
     options: Option<CliOptions>,
 ) -> Result<ExitStatus, Error> {
-    let (workspace_root, _) = vite_workspace::find_workspace_root(cwd)?;
+    // A bare app command at a workspace root resolves its target first
+    // (defaultPackage, package listing); the command then runs as if invoked
+    // in the resolved directory (rfcs/cwd-flag.md).
+    let (target, workspace_root_hint) = app_target::resolve_app_target(&subcommand, cwd)?;
+    let retargeted = matches!(&target, app_target::AppTarget::Dir(_));
+    let cwd = match &target {
+        app_target::AppTarget::Exit(status) => return Ok(*status),
+        app_target::AppTarget::Dir(dir) => dir,
+        app_target::AppTarget::CurrentDir => cwd,
+    };
+
+    // The resolver hands back the workspace root it already found whenever the
+    // command runs in the unchanged cwd (never after a -C/elicitation
+    // retarget), so it matches a fresh lookup here and saves the second walk.
+    let workspace_root = match workspace_root_hint {
+        Some(root) => root,
+        None => vite_workspace::find_workspace_root(cwd)?.0,
+    };
     let workspace_path: Arc<AbsolutePath> = workspace_root.path.into();
 
     let resolver = if let Some(options) = options {
@@ -56,11 +74,19 @@ async fn execute_direct_subcommand(
         SubcommandResolver::new(Arc::clone(&workspace_path))
     };
 
-    let envs: Arc<FxHashMap<Arc<OsStr>, Arc<OsStr>>> = Arc::new(
-        std::env::vars_os()
+    let envs: Arc<FxHashMap<Arc<OsStr>, Arc<OsStr>>> = Arc::new({
+        let mut envs: FxHashMap<Arc<OsStr>, Arc<OsStr>> = std::env::vars_os()
             .map(|(k, v)| (Arc::from(k.as_os_str()), Arc::from(v.as_os_str())))
-            .collect(),
-    );
+            .collect();
+        // When elicitation retargeted the command, the tool runs with the
+        // target as its working directory: keep the POSIX PWD consistent,
+        // like a real `cd`. Untargeted runs keep the caller's PWD verbatim
+        // (it may legitimately differ from cwd through shell symlinks).
+        if cfg!(unix) && retargeted {
+            envs.insert(Arc::from(OsStr::new("PWD")), Arc::from(cwd.as_path().as_os_str()));
+        }
+        envs
+    });
     let envs = envs_with_explicit_package_manager_path(cwd, envs).await?;
 
     let status = match subcommand {
@@ -170,22 +196,20 @@ async fn envs_with_explicit_package_manager_path(
     cwd: &AbsolutePath,
     envs: Arc<FxHashMap<Arc<OsStr>, Arc<OsStr>>>,
 ) -> Result<Arc<FxHashMap<Arc<OsStr>, Arc<OsStr>>>, Error> {
-    let Some(resolution) =
-        (match vite_install::package_manager::resolve_package_manager_from_package_json(cwd) {
-            Ok(resolution) => resolution,
-            Err(error) => {
-                tracing::debug!(
-                    ?error,
-                    "failed to resolve explicit packageManager for direct command PATH setup"
-                );
-                return Ok(envs);
-            }
-        })
-    else {
+    let Some(resolution) = (match vite_pm_cli::resolve_package_manager_from_package_json(cwd) {
+        Ok(resolution) => resolution,
+        Err(error) => {
+            tracing::debug!(
+                ?error,
+                "failed to resolve explicit packageManager for direct command PATH setup"
+            );
+            return Ok(envs);
+        }
+    }) else {
         return Ok(envs);
     };
 
-    let (install_dir, _, _) = match vite_install::download_package_manager(
+    let (install_dir, _, _) = match vite_pm_cli::download_package_manager(
         resolution.package_manager_type,
         &resolution.version,
         resolution.hash.as_deref(),
@@ -233,7 +257,7 @@ async fn execute_vite_task_command(
     let mut config_loader = VitePlusConfigLoader::new(resolve_vite_config_fn);
 
     // Update PATH to include package manager bin directory BEFORE session init
-    if let Ok(pm) = vite_install::PackageManager::builder(&cwd).build().await {
+    if let Ok(pm) = vite_pm_cli::PackageManager::builder(&cwd).build().await {
         let bin_prefix = pm.get_bin_prefix();
         let _ = prepend_to_path_env(&bin_prefix, PrependOptions::default());
     }
@@ -304,10 +328,10 @@ async fn execute_pm_command(
     command: vite_pm_cli::PackageManagerCommand,
     cwd: &AbsolutePath,
 ) -> Result<ExitStatus, Error> {
-    // `-g`/`--global` operations on install/add/remove/update/`pm list` map to
-    // a vite-plus-managed package store on the global CLI; the local CLI has
-    // no such store, so refuse rather than silently doing the wrong thing
-    // (mutating the project, dropping `--node`, ignoring `--dry-run`, …).
+    // Commands projected into the vite-plus-managed package store only work
+    // in the global CLI. The local CLI has no such store, so refuse rather
+    // than silently doing the wrong thing (mutating the project, dropping
+    // `--node`, ignoring `--dry-run`, …).
     if command.is_managed_global() {
         return Err(Error::Anyhow(anyhow::anyhow!(
             "Global package operations (`-g`/`--global`) are only supported by the globally-installed `vp` CLI. See https://viteplus.dev/guide/ to install it, then run the same command via the global `vp` binary.",
@@ -324,7 +348,7 @@ async fn execute_pm_command(
         }
         Err(e) => return Err(Error::Anyhow(anyhow::Error::new(e))),
     };
-    Ok(ExitStatus(status.code().unwrap_or(1) as u8))
+    Ok(types::exit_status_from(status))
 }
 
 #[cfg(test)]
@@ -466,7 +490,7 @@ mod tests {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
         let run_config_path = PathBuf::from(manifest_dir).join("../src/run-config.ts");
 
-        if std::env::var("VITE_UPDATE_TASK_TYPES").as_deref() == Ok("1") {
+        if std::env::var("VP_UPDATE_TASK_TYPES").as_deref() == Ok("1") {
             std::fs::write(&run_config_path, &ts_type).expect("Failed to write run-config.ts");
         } else {
             let current = std::fs::read_to_string(&run_config_path)
@@ -475,7 +499,7 @@ mod tests {
             pretty_assertions::assert_eq!(
                 current,
                 ts_type,
-                "run-config.ts is out of sync. Run `VITE_UPDATE_TASK_TYPES=1 cargo test -p vite-plus-cli run_config_types_in_sync` to update."
+                "run-config.ts is out of sync. Run `VP_UPDATE_TASK_TYPES=1 cargo test -p vite-plus-cli run_config_types_in_sync` to update."
             );
         }
     }

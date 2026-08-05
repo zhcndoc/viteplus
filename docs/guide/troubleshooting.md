@@ -52,9 +52,10 @@ Vite+ 期望使用现代的上游工具版本。
 
 如果 `vp staged` 失败或预提交钩子未运行：
 
-- 确保 `vite.config.ts` 包含 `staged` 块
-- 运行 `vp config` 以安装钩子
-- 检查是否因 `VITE_GIT_HOOKS=0` 而有意跳过了钩子安装
+- 确保 `vite.config.ts` 包含 `staged` 配置块
+- 确保项目自有的预提交钩子运行 `vp staged`
+- 运行 `vp config` 以安装钩子分发器
+- 检查是否通过 `VP_GIT_HOOKS=0` 有意跳过了钩子安装
 
 一个最小的分阶段配置示例如下：
 

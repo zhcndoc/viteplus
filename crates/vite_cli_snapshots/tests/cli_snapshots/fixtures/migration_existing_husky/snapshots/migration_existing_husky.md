@@ -5,28 +5,29 @@
 
 ## `vp migrate --no-interactive`
 
-迁移应将 husky 重写为 vp 配置
+迁移应保留 Husky 设置
 
 ```
 VITE+ - 面向 Web 的统一工具链
 
-◇ 已将 . 迁移至 Vite+ <version>
+⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已配置 Git hooks
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-检查 prepare 脚本已重写，并且 husky 已从 devDeps 中移除
+prepare 脚本和 Husky 依赖应保留
 
 ```
 {
   "name": "migration-existing-husky",
   "scripts": {
-    "prepare": "vp config"
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
@@ -57,10 +58,18 @@ peerDependencyRules:
     vite: '*'
 ```
 
-## `vpt print-file .vite-hooks/pre-commit`
+## `vpt print-file .husky/pre-commit`
 
-检查 pre-commit hook 已重写为 vp staged
+Husky 钩子应保持不变
 
 ```
-vp staged
+pnpm lint-staged
+```
+
+## `vpt stat-file .vite-hooks --assert-not dir`
+
+Vite+ hooks 不应与 Husky 一起安装
+
+```
+.vite-hooks: missing
 ```

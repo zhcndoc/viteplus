@@ -42,10 +42,10 @@ devDependencies:
 应将软件包添加到 packages/app
 
 ```
-.                                        |  WARN  `node_modules` is present. Lockfile only installation will make it out-of-date
+.                                        |  警告  `node_modules` 已存在。仅安装锁定文件会使其过时
 .                                        |   +1 +
 
-Done in <duration> using pnpm <version>
+完成于 <duration>，使用 pnpm <version>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -150,7 +150,7 @@ Done in <duration> using pnpm <version>
 
 ## `vp install test-vite-plus-package@1.0.0 --filter * --workspace-root`
 
-应为 add 命令安装软件包别名
+应使用 add 命令安装软件包别名
 
 ```
 VITE+ - Web 的统一工具链
@@ -215,7 +215,7 @@ For help, run: pnpm help add
 **退出代码：** 1
 
 ```
- ERROR  Unknown option: 'save-catalog-name'
-Did you mean 'save-optional'? Use "--config.unknown=value" to force an unknown option.
-For help, run: pnpm help add
+ 错误  未知选项：'save-catalog'
+你是不是想使用 'save-exact' 或 'save-prod'？使用 "--config.unknown=value" 可强制使用未知选项。
+如需帮助，请运行：pnpm help add
 ```

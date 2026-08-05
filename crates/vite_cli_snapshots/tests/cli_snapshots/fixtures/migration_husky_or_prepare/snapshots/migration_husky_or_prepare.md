@@ -10,10 +10,10 @@
 ```
 VITE+ - 面向 Web 的统一工具链
 
-◇ 已将 . 迁移至 Vite+ <version>
+⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
+◇ 已将 . 迁移到 Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已配置 Git hooks
+• 已应用 1 项配置更新
 ```
 
 ## `vpt print-file package.json`
@@ -24,11 +24,16 @@ VITE+ - 面向 Web 的统一工具链
 {
   "name": "migration-husky-or-prepare",
   "scripts": {
-    "prepare": "vp config || true"
+    "prepare": "husky || true"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "lint-staged": {
+    "*.js": "oxlint --fix"
   },
   "devEngines": {
     "packageManager": {

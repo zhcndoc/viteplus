@@ -10,9 +10,8 @@
 ```
 VITE+ - 面向 Web 的统一工具链
 
+⚠ 检测到 Husky — 保留其钩子、配置和依赖项不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
 ◇ 已将 . 迁移至 Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-! 警告：
-  - 未配置 Git hooks — 跳过安装（Git hooks 已禁用）
+• 已应用 1 项配置更新
 ```

@@ -25,21 +25,19 @@ warn: 软件包 'conflict-pkg' 提供了 'node' 二进制文件，但它与内�
 
 使用指定的 Node.js 版本安装
 
-**退出代码：** 1
-
 ```
 VITE+ - The Unified Toolchain for the Web
 
 info: Installing 1 global package with Node.js <version>
-error: Failed to install conflict-pkg: Package was not installed correctly, package.json not found at <home>/.vite-plus/packages/conflict-pkg#<uuid>/lib/node_modules/conflict-pkg/package.json
+warn: Package 'conflict-pkg' provides 'node' binary, but it conflicts with a built-in shim. Skipping.
+✓ Installed conflict-pkg 1.0.0
+  Bins: conflict-cli
 ```
 
 ## `vp remove -g conflict-pkg`
 
 清理
 
-**退出代码：** 1
-
 ```
-Failed to uninstall conflict-pkg: Package conflict-pkg is not installed
+已卸载 conflict-pkg
 ```

@@ -30,9 +30,9 @@
 应在指定包中更新
 
 ```
-警告：npm 不支持 --latest 标志。仅在 semver 范围内更新。
+警告：npm 不支持 --latest。
 
-已是最新版本，用时 <duration>
+已是最新版本，用时 <时长>
 ```
 
 ## `vpt print-file packages/app/package.json`
@@ -113,10 +113,10 @@ up to date in <duration>
 应递归更新但不保存
 
 ```
-npm warn workspaces app in filter set, but no workspace folder present
-npm warn workspaces @vite-plus-test/utils in filter set, but no workspace folder present
+npm 警告：过滤器集合中包含工作区 app，但不存在工作区文件夹
+npm 警告：过滤器集合中包含工作区 @vite-plus-test/utils，但不存在工作区文件夹
 
-up to date in <duration>
+已是最新版本，用时 <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json`
@@ -151,7 +151,7 @@ up to date in <duration>
 
 ```
 
-up to date in <duration>
+在 <duration> 内已是最新
 ```
 
 ## `vpt print-file packages/app/package.json`

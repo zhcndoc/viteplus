@@ -43,7 +43,7 @@ await cp(join(rolldownPluginUtilsDir, 'dist'), join(projectDir, 'dist', 'pluginu
 
 - `@rolldown/pluginutils` → `@voidzero-dev/vite-plus-core/rolldown/pluginutils`
 - `rolldown/*` → `@voidzero-dev/vite-plus-core/rolldown/*`
-- 在发布构建中：`@rolldown/binding-*` → `vite-plus/binding`
+- 在发布构建中：支持的 `@rolldown/binding-*` → `@voidzero-dev/vite-plus-*`
 
 **输入**：`rolldown/packages/rolldown/dist/`
 **输出**：`dist/rolldown/`
@@ -142,45 +142,34 @@ export const RewriteImportsPlugin: Plugin = {
 
 ### 发布构建：原生绑定重写
 
-在发布构建期间（`RELEASE_BUILD=1`），会针对 Rolldown 的原生绑定执行额外的关键转换：
+在发布构建期间（`RELEASE_BUILD=1`），`bundleRolldown()` 通过 `build-support/rewrite-rolldown-binding.ts` 重写 Rolldown 的原生绑定 require。对于 CLI 的 `napi.targets` 中的每个平台（通过 `parseTriple` 映射为 napi 平台后缀），加载器中的 `@rolldown/binding-<suffix>` require 会变为 `@voidzero-dev/vite-plus-<suffix>`，并且该分支的版本保护会从 Rolldown 版本切换为 core 的版本，这也是 Vite+ 平台包发布时所使用的版本。
 
-```typescript
-// 在 bundleRolldown() 中
-if (process.env.RELEASE_BUILD) {
-  // @rolldown/binding-darwin-arm64 → vite-plus/binding
-  source = source.replace(/@rolldown\/binding-([a-z0-9-]+)/g, 'vite-plus/binding');
-  // 同步版本字符串
-  source = source.replaceAll(`${rolldownBindingVersion}`, pkgJson.version);
-}
-```
+**特定平台的绑定重写**，每个 `packages/cli/package.json` 中的 `napi.targets` 条目对应一个重写（参见 [CLI 包捆绑](../cli/BUNDLING.md#napi-targets) 中的目标表），例如：
 
-**按平台的绑定重写**：
+| 原始导入                        | 重写后的导入                             |
+| ---------------------------------- | ---------------------------------------- |
+| `@rolldown/binding-darwin-arm64`   | `@voidzero-dev/vite-plus-darwin-arm64`   |
+| `@rolldown/binding-linux-x64-musl` | `@voidzero-dev/vite-plus-linux-x64-musl` |
 
-| 原始导入                          | 重写后的导入        |
-| --------------------------------- | ------------------- |
-| `@rolldown/binding-darwin-arm64`  | `vite-plus/binding` |
-| `@rolldown/binding-darwin-x64`    | `vite-plus/binding` |
-| `@rolldown/binding-linux-arm64-gnu` | `vite-plus/binding` |
-| `@rolldown/binding-linux-x64-gnu` | `vite-plus/binding` |
-| `@rolldown/binding-win32-x64-msvc` | `vite-plus/binding` |
+对于 Vite+ 不提供的那些平台（android、freebsd、`wasm32-wasi` 回退版本、`darwin-universal` 等），其标识符仍保持为 `@rolldown/binding-*`，并继续保留上游版本保护。如果重写后的标识符数量和版本保护数量与 napi-rs 加载器的结构不一致，构建将失败，因此加载器格式发生变化时不会发布不完整的重写结果。
 
 **这很重要，因为**：
 
-1. **自包含分发** - 用户无需单独安装 `@rolldown/binding-*` 包
-2. **版本对齐** - rolldown binding 版本与 vite-plus 版本同步
-3. **单一原生模块** - `vite-plus/binding` 导出指向 CLI 编译出的 `.node` 文件，其中在 `RELEASE_BUILD=1` 构建时包含 `rolldown_binding`
+1. **自包含分发** - 用户无需安装单独的 `@rolldown/binding-*` 包
+2. **声明式依赖图** - Core 通过自身的 `optionalDependencies` 解析绑定（由 `packages/cli/publish-native-addons.ts` 在发布期间注入），因此 pnpm 的全局虚拟存储和 Yarn PnP 无需依赖隐藏的提升即可正常工作，并且 core 不再需要反向依赖 `vite-plus`
+3. **版本对齐** - 每个重写分支的保护都会检查平台包版本是否与 core 版本一致；两者始终同步发布
 
 **解析链**：
 
 ```
 用户代码导入 '@voidzero-dev/vite-plus-core/rolldown'
   → dist/rolldown/index.mjs
-    → 导入 'vite-plus/binding'（从 @rolldown/binding-* 重写而来）
-      → vite-plus CLI 包的 ./binding 导出
-        → binding/vite-plus.darwin-arm64.node（包含 rolldown_binding）
+    → requires '@voidzero-dev/vite-plus-<platform>'
+      (由 '@rolldown/binding-<platform>' 重写而来)
+      → vite-plus.<platform>.node（包含 rolldown_binding）
 ```
 
-有关 CLI 如何编译 rolldown bindings 的详细信息，请参见 [CLI Package Bundling](../cli/BUNDLING.md#rolldown-native-binding-integration)。
+详情请参阅 [CLI 包捆绑](../cli/BUNDLING.md#rolldown-native-binding-integration)，了解 CLI 如何编译和发布平台包，并参阅 `rfcs/core-binding-resolution.md` 了解相关设计。
 
 ---
 
@@ -350,7 +339,7 @@ dist/
 # 构建核心包
 pnpm -C packages/core build
 
-# 发布构建（将 @rolldown/binding-* 重写为 vite-plus/binding）
+# 发布构建（将受支持的 @rolldown/binding-* 重写为 @voidzero-dev/vite-plus-*）
 RELEASE_BUILD=1 pnpm -C packages/core build
 ```
 

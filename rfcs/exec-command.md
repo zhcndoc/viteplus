@@ -151,7 +151,7 @@ vp exec -r --report-summary -- vitest run
 
 - `-r`（递归）会包含工作区根以及所有工作区包
 - `-w`（工作区根）仅在工作区根包上运行
-- `--filter '*'` 会包含工作区根，因为 `*` 会按名称匹配所有包，包括根包
+- `--filter '*'` 会包含工作区根，因为 `*` 会按名称匹配所有包，包括根包。
 
 ## 核心行为
 
@@ -242,17 +242,17 @@ packages/cli/binding/src/exec/
 
 以下现有代码被复用：
 
-| 模块             | 函数                           | 用途                                           |
-| ---------------- | ------------------------------ | ---------------------------------------------- |
-| `vite_command`   | `resolve_bin()`                | 通过 PATH 查找解析二进制路径                  |
-| `vite_command`   | `build_command()`              | 为二进制构建 `tokio::process::Command`        |
-| `vite_command`   | `build_shell_command()`        | 为 `-c` 模式构建 shell 命令                   |
-| `vite_install`   | `PackageManager::get_bin_prefix()` | 获取用于 PATH 的包管理器 bin 目录          |
-| `vite_workspace` | `find_workspace_root()`        | 从 cwd 定位 workspace 根目录                 |
-| `vite_workspace` | `load_package_graph()`         | 加载 workspace 包和依赖图                    |
-| `vite_workspace` | `PackageQueryArgs`             | 用于包选择的 CLI 参数结构体                  |
-| `vite_workspace` | `IndexedPackageGraph`          | 带有 `resolve_query()` 的索引图               |
-| `vite_workspace` | `FilterResolution`             | 解析结果：子图 + 未匹配的选择器               |
+| Module           | Function                           | Purpose                                           |
+| ---------------- | ---------------------------------- | ------------------------------------------------- |
+| `vite_command`   | `resolve_bin()`                    | Resolve binary path via PATH lookup               |
+| `vite_command`   | `build_command()`                  | Build a `tokio::process::Command` for a binary    |
+| `vite_command`   | `build_shell_command()`            | Build a shell command for `-c` mode               |
+| `vite_pm_cli`    | `PackageManager::get_bin_prefix()` | Get package manager bin directory for PATH        |
+| `vite_workspace` | `find_workspace_root()`            | Locate workspace root from cwd                    |
+| `vite_workspace` | `load_package_graph()`             | Load workspace packages and dependency graph      |
+| `vite_workspace` | `PackageQueryArgs`                 | CLI args struct for package selection             |
+| `vite_workspace` | `IndexedPackageGraph`              | Indexed graph with `resolve_query()`              |
+| `vite_workspace` | `FilterResolution`                 | Resolution result: subgraph + unmatched selectors |
 
 ## 设计决策
 
@@ -454,9 +454,6 @@ command-exec-pnpm10/
 
 ```json
 {
-  "env": {
-    "VITE_DISABLE_AUTO_INSTALL": "1"
-  },
   "commands": [
     "vp exec echo hello # 基本 exec，无 vite-plus 依赖（由全局 CLI 直接处理）",
     "vp exec node -e \"console.log('hi')\" # 带参数透传的 exec",
@@ -512,7 +509,7 @@ command-exec/
 **测试用例**:
 
 1. `vp exec cowsay hello` — 通过本地 CLI 委托执行本地安装的二进制文件
-2. `vp exec -c 'echo $PATH'` — 验证 `node_modules/.bin` 已前置到 PATH
+2. `vp exec -c 'echo $PATH'` — 验证 `node_modules/.bin` 已前置到 PATH。
 
 ## 边缘情况
 
@@ -565,7 +562,7 @@ Error: 'vp exec' requires a command to run
 - 现有的 `vp dlx` 和 `vpx` 行为保持不变
 - 新增的 `exec` 子命令只是纯粹的功能扩展
 - 配置格式没有任何变化
-- 遵循既有的委派模式（类似 `vp run`）
+- 遵循既有的委派模式（类似 `vp run`）。
 
 ## 与 pnpm exec 的比较
 
@@ -609,4 +606,4 @@ vp exec -r --if-present -- eslint .
 - 遵循已确立的全局/本地 CLI 路由的无条件委派模式
 - 复用现有基础设施（`vpx.rs` 辅助函数、委派、PATH 操作）
 - 通过本地 CLI 支持工作区特性（recursive、filter、parallel）
-- 仅为新增功能，不会带来破坏性变更
+- 仅为新增功能，不会带来破坏性变更。

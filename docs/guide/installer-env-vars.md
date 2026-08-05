@@ -147,14 +147,14 @@ Vite+ 会在垫片调度和 Shell 集成期间设置其他 `VP_*` 变量（递�
 
 ## 日志记录与调试
 
-### `VITE_LOG`
+### `VP_LOG`
 
 - **用途**：`tracing_subscriber` 的日志过滤字符串
 - **默认值**：无
 - **示例**：
   ```bash
-  VITE_LOG=debug vp dev
-  VITE_LOG=vite_task=trace vp build
+  VP_LOG=debug vp dev
+  VP_LOG=vite_task=trace vp build
   ```
 
 ### `VP_DEBUG_SHIM`

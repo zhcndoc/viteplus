@@ -5,7 +5,7 @@
 
 ## `vp config`
 
-应在不提示的情况下自动安装钩子
+应在不提示的情况下自动安装调度器
 
 ```
 ```
@@ -18,27 +18,28 @@
 .vite-hooks/_
 ```
 
-## `vpt print-file .vite-hooks/pre-commit`
+## `vpt stat-file .vite-hooks/_/pre-commit --assert file`
 
-应该包含 vp staged
-
-```
-vp staged
-```
-
-## `vpt print-file vite.config.ts`
-
-应包含 staged 配置
+生成的调度器垫片应存在
 
 ```
-import { defineConfig } from 'vite-plus';
+.vite-hooks/_/pre-commit: file
+```
 
-export default defineConfig({
-  staged: {
-    "*": "vp check --fix"
-  },
+## `vpt stat-file .vite-hooks/pre-commit --assert missing`
 
-});
+不应创建项目钩子
+
+```
+.vite-hooks/pre-commit: missing
+```
+
+## `vpt stat-file vite.config.ts --assert missing`
+
+不应创建 vite 配置文件
+
+```
+vite.config.ts: missing
 ```
 
 ## `vp config`
@@ -47,25 +48,18 @@ export default defineConfig({
 
 ```
 
-## `vpt print-file .vite-hooks/pre-commit`
+## `vpt stat-file .vite-hooks/pre-commit --assert missing`
 
-应保持不变
-
-```
-vp staged
-```
-
-## `vpt print-file vite.config.ts`
-
-应保持不变
+项目 hook 仍应不存在
 
 ```
-import { defineConfig } from 'vite-plus';
+.vite-hooks/pre-commit: missing
+```
 
-export default defineConfig({
-  staged: {
-    "*": "vp check --fix"
-  },
+## `vpt stat-file vite.config.ts --assert missing`
 
-});
+vite 配置仍应不存在
+
+```
+vite.config.ts: missing
 ```

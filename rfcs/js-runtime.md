@@ -9,21 +9,21 @@
 3. **无法固定运行时版本**：项目无法指定并强制使用特定的 Node.js 版本
 4. **未来可扩展性**：随着 Bun 和 Deno 等替代方案逐渐成熟，项目可能希望使用不同的运行时
 
-`vite_install` 中的 PackageManager 实现已成功处理包管理器（pnpm、yarn、npm）的自动下载和缓存。我们可以将同样的模式应用到 JavaScript 运行时。
+`vite_pm_cli` 中的 PackageManager 实现已经成功处理了包管理器（pnpm、yarn、npm）的自动下载和缓存。我们可以将相同的模式应用于 JavaScript 运行时。
 
 ## 目标
 
 1. **纯库设计**：一个库 crate，接收运行时名称和版本作为输入，下载并缓存运行时，然后返回安装路径
 2. **跨平台支持**：使用合适的二进制文件处理 Windows、macOS 和 Linux
 3. **一致的缓存**：使用与 PackageManager 相同的全局缓存目录模式
-4. **可扩展设计**：初始支持 Node.js，并为 Bun 和 Deno 预留架构
+4. **可扩展设计**：初始支持 Node.js，并为 Bun 和 Deno 预留架构。
 
 ## 非目标（初始版本）
 
 - ~~配置自动检测（不读取 package.json、.nvmrc 等）~~ **现已通过 `.node-version`、`devEngines.runtime` 和 `engines.node` 支持**
 - 同时管理多个运行时版本
 - 提供版本管理器 CLI（如 nvm/fnm）
-- 支持自定义/非官方的 Node.js 构建
+- 支持自定义/非官方的 Node.js 构建。
 
 ## 输入格式
 
@@ -46,7 +46,7 @@
 - 精确版本：`22.13.1`
 - Caret 范围：`^22.0.0`（>=22.0.0 <23.0.0）
 - Tilde 范围：`~22.13.0`（>=22.13.0 <22.14.0）
-- 最新：省略版本以获取最新发布版本
+- 最新：省略版本以获取最新发布版本。
 
 ## 架构
 
@@ -523,15 +523,15 @@ i9j0k1l2...  node-v22.13.1-linux-arm64.tar.gz
 - 基于文件的锁，防止竞态条件
 - 获取锁后再次检查缓存（另一个进程可能已经完成）
 
-## 与 vite_install 的集成
+## 与 vite_pm_cli 集成
 
-`vite_install` crate 可以使用 `vite_js_runtime` 来：
+`vite_pm_cli` crate 可以使用 `vite_js_runtime` 来：
 
 1. 在运行包管理器命令前确保正确的 Node.js 版本
 2. 使用受管理的 Node.js 执行包管理器二进制文件
 
 ```rust
-// vite_install 中的集成示例
+// 在 vite_pm_cli 中的集成示例
 use vite_js_runtime::{JsRuntimeType, download_runtime};
 
 async fn run_with_managed_node(
@@ -620,7 +620,7 @@ pub enum Error {
 
 3. **并发下载**
    - 模拟多个进程下载同一版本
-   - 验证不会出现损坏或冲突
+   - 验证不会出现损坏或冲突。
 
 ## 设计决策
 
@@ -635,7 +635,7 @@ pub enum Error {
 - 更容易独立测试
 - 职责单一清晰：下载并缓存运行时
 
-### 2. 独立 Crate vs. 扩展 vite_install
+### 2. 独立 Crate vs. 扩展 vite_pm_cli
 
 **决策**：创建一个新的 `vite_js_runtime` crate。
 
@@ -687,7 +687,7 @@ pub enum Error {
 3. **Deno 支持**：创建实现 `JsRuntimeProvider` 的 `DenoProvider`
 4. ✅ **版本范围**：支持如 `node@^22.0.0` 这样的 semver 范围
 5. **离线模式**：完整离线支持（部分：范围会优先检查本地缓存）
-6. **LTS 别名**：支持 `lts` 别名以下载最新 LTS 版本
+6. **LTS 别名**：支持 `lts` 别名以下载最新 LTS 版本。
 
 ## 成功标准
 

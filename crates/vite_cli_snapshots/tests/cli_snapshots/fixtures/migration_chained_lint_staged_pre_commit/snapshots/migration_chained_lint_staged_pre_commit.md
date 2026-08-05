@@ -5,30 +5,35 @@
 
 ## `vp migrate --no-interactive`
 
-迁移应保留 lint-staged 之后的链式命令
+迁移应保留现有的 Husky 设置
 
 ```
 VITE+ - Web 的统一工具链
 
-◇ 已将 . 迁移至 Vite+ <版本>
-• Node <版本>  pnpm <版本>
-• 已应用 2 项配置更新
-• 已配置 Git 钩子
+⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
+◇ 已将 . 迁移到 Vite+ <version>
+• Node <version>  pnpm <version>
+• 已应用 1 项配置更新
 ```
 
 ## `vpt print-file package.json`
 
-检查 prepare 已重写，并且 husky/lint-staged 已移除
+检查 Husky prepare、依赖项和 lint-staged 配置是否得到保留
 
 ```
 {
   "name": "migration-chained-lint-staged-pre-commit",
   "scripts": {
-    "prepare": "vp config"
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "lint-staged": {
+    "*.js": "oxlint --fix"
   },
   "devEngines": {
     "packageManager": {
@@ -42,7 +47,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+Check whether pnpm-workspace.yaml contains overrides and catalog
 
 ```
 catalog:
@@ -59,7 +64,7 @@ peerDependencyRules:
 
 ## `vpt print-file vite.config.ts`
 
-检查暂存配置是否已迁移到 vite.config.ts
+检查暂存的配置是否尚未迁移，而 Husky 拥有该钩子
 
 ```
 import { defineConfig } from 'vite-plus';
@@ -67,16 +72,13 @@ import { defineConfig } from 'vite-plus';
 export default defineConfig({
   fmt: {},
   lint: {"jsPlugins":[{"name":"vite-plus","specifier":"vite-plus/oxlint-plugin"}],"rules":{"vite-plus/prefer-vite-plus-imports":"error"},"options":{"typeAware":true,"typeCheck":true}},
-  staged: {
-    "*.js": "vp lint --fix"
-  },
 });
 ```
 
-## `vpt print-file .vite-hooks/pre-commit`
+## `vpt print-file .husky/pre-commit`
 
-检查 npx lint-staged 已被替换，但保留了 --diff HEAD~1 && npm test
+检查链式 Husky 钩子未发生变化
 
 ```
-vp staged --diff HEAD~1 && npm test
+npx lint-staged --diff HEAD~1 && npm test
 ```

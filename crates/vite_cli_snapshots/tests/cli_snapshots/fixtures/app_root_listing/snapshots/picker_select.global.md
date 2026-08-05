@@ -1,0 +1,46 @@
+# picker_select
+
+在工作区根目录下运行不带参数的 app 命令且存在多个候选项时，会打开模糊包选择器（vp run 选择器组件）；输入内容可进行筛选，按 Enter 会将所选项作为隐式的 -C 运行（rfcs/cwd-flag.md）。
+
+## `vp build`
+
+**→ expect-milestone:** `package-select::0`
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
+Select a package to build (↑/↓, Enter to run, type to search):
+
+  › admin apps/admin
+    web   apps/web
+    ui    packages/ui
+```
+
+**← write:** `web`
+
+**→ expect-milestone:** `package-select:web:0`
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
+Select a package to build (↑/↓, Enter to run, type to search): web
+
+  › web apps/web
+```
+
+**← write-key:** `enter`
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
+Selected package: web (apps/web)
+Tip: run this directly with `vp -C apps/web build`
+✓ 2 modules transformed.
+computing gzip size...
+dist/index.html  <size> kB │ gzip: <size> kB
+
+✓ built in <duration>
+```

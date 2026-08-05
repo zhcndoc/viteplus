@@ -1,4 +1,4 @@
-# 迁移钩子在现有钩子路径上跳过
+# 迁移钩子在现有钩子路径上被跳过
 
 ## `git init`
 
@@ -13,25 +13,20 @@
 ```
 VITE+ - 面向 Web 的统一工具链
 
-◇ 已将 . 迁移到 Vite+ <version>
+⚠ core.hooksPath 已设置为 ".custom-hooks" — 保持现有的 hook 设置不变。
+◇ 已将 . 迁移至 Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-! 警告：
-  - 未配置 Git hooks —— core.hooksPath 已设置为 ".custom-hooks"，跳过
+• 已应用 1 项配置更新
 ```
 
 ## `vpt print-file package.json`
 
-prepare 应保持为 'husky'，并且 husky 必须保留在 devDependencies 中
+该软件包不应获得钩子策略或生命周期变更
 
 ```
 {
   "name": "migration-hooks-skip-on-existing-hookspath",
-  "scripts": {
-    "prepare": "husky"
-  },
   "devDependencies": {
-    "husky": "^9.1.7",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },

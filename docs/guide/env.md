@@ -6,12 +6,14 @@
 
 默认情况下托管模式处于开启状态，因此 `node`、`npm` 和相关的 shim 会通过 Vite+ 解析，并为当前项目选择正确的 Node.js 版本。
 
-项目的 Node.js 版本按以下来源解析，优先级依次如下：
+Vite+ 首先检查当前目录，然后逐级向上检查其父目录。包含受支持声明的最近目录优先。在每个目录中，按以下顺序检查来源：
 
-1. `.node-version` 文件（当前目录或父目录）
+1. `.node-version` 文件
 2. `package.json` 中的 `devEngines.runtime`（[devEngines 标准](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines)）
 3. `package.json` 中的 `engines.node`
-4. 全局默认值（`vp env default`），然后是最新的 LTS
+4. `.nvmrc` 文件
+
+如果没有任何目录声明版本，Vite+ 将使用全局默认版本（`vp env default`），然后使用最新的 LTS 版本。
 
 `devEngines.runtime` 的优先级高于 `engines.node`，因为它声明的是开发环境需求，而 `engines.node` 是面向使用者的支持范围。`vp env doctor` 会在声明来源冲突时发出警告。
 
@@ -94,7 +96,7 @@ vp-use --unset
 - `vp env doctor` 运行环境诊断
 - `vp env which` 显示将使用的工具路径
 - `vp env list` 显示本地安装的 Node.js 版本
-- `vp env list-remote` 显示注册表中可用的 Node.js 版本
+- `vp env list-remote` 显示注册表中可用的 Node.js 版本。
 
 ## 项目设置
 
@@ -112,7 +114,7 @@ vp env print                  # 打印此会话的 shell 片段
 
 # 管理
 vp env pin lts                # 将项目固定到最新的 LTS 版本
-vp env install                # 安装 .node-version 或 package.json 中指定的版本
+vp env install                # 安装来自 .node-version、package.json 或 .nvmrc 的版本
 vp env default lts            # 设置全局默认版本
 vp env use 20                 # 在当前 shell 会话中使用 Node.js 20
 vp env use --unset            # 移除会话覆盖

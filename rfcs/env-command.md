@@ -4,7 +4,7 @@
 
 本 RFC 提议新增 `vp env` 命令，通过基于 shim 的架构提供系统级、对 IDE 安全的 Node.js 版本管理。这些 shims 会拦截 `node`、`npm`、`npx` 和 `corepack` 命令，并根据项目配置自动解析并执行正确的 Node.js 版本。
 
-> **注意**：`corepack` shim 最初被排除在外，因为 Vite+ 已集成包管理器功能。后来在 [#858](https://github.com/voidzero-dev/vite-plus/issues/858) 和 [#1309](https://github.com/voidzero-dev/vite-plus/issues/1309) 中重新审视：用户和脚本会直接调用 `corepack`/`pnpm`/`yarn`，而在没有系统级 Node.js 安装的情况下，根本无法访问 `corepack`。另见 [Corepack Shim](#corepack-shim)。】【。
+> **注意**：`corepack` shim 最初被排除在外，因为 Vite+ 已集成包管理器功能。后来在 [#858](https://github.com/voidzero-dev/vite-plus/issues/858) 和 [#1309](https://github.com/voidzero-dev/vite-plus/issues/1309) 中重新审视：用户和脚本会直接调用 `corepack`/`pnpm`/`yarn`，而在没有系统级 Node.js 安装的情况下，根本无法访问 `corepack`。另见 [Corepack Shim](#corepack-shim)。
 
 ## 动机
 
@@ -297,10 +297,9 @@ argv[0] = "corepack"  → Shim 模式：解析版本，执行 corepack（Node 25
 │                 │                     │  2. .node-version           │       │
 │                 │                     │  3. package.json#devEngines │       │
 │                 │                     │  4. package.json#engines    │       │
-│                 │                     │  5. 用户默认值（配置）       │       │
-│                 ▼                     │  6. 最新 LTS                │       │
-│  ┌──────────────────────────────┐     └─────────────────────────────┘       │
-│  │  确保已安装 Node.js          │                                           │
+│                 ▼                     │  5. 用户默认值（配置）       │       │
+│  ┌──────────────────────────────┐     │  6. 最新 LTS                │       │
+│  │  确保已安装 Node.js          │     └─────────────────────────────┘       │
 │  │  （必要时下载）              │                                           │
 │  └──────────────┬───────────────┘                                           │
 │                 │                                                           │
@@ -415,16 +414,16 @@ VP_HOME/                              # 默认：~/.vite-plus
 
 **关键目录：**
 
-| Directory          | Purpose                                                                      |
+| 目录               | 用途                                                                         |
 | ------------------ | ---------------------------------------------------------------------------- |
-| `bin/`             | vp 符号链接以及所有 shims（node、npm、npx、corepack、全局包二进制） |
-| `current/bin/`     | 实际的 vp CLI 二进制（bin/ 中的 shims 指向这里）                             |
-| `js_runtime/node/` | 已安装的 Node.js 版本                                                   |
-| `packages/`        | 带元数据的已安装全局包                                      |
-| `bins/`            | 每个二进制的配置文件（跟踪每个二进制由哪个包拥有）              |
-| `shared/`          | 用于 package require() 解析的 NODE_PATH 符号链接                          |
-| `tmp/`             | 原子安装的暂存区域                                        |
-| `cache/`           | 解析缓存                                                             |
+| `bin/`             | vp 符号链接以及所有 shim（node、npm、npx、corepack、全局包二进制） |
+| `current/bin/`     | 实际的 vp CLI 二进制（bin/ 中的 shim 指向这里）                             |
+| `js_runtime/node/` | 已安装的 Node.js 版本                                                        |
+| `packages/`        | 带元数据的已安装全局包                                                       |
+| `bins/`            | 每个二进制的配置文件（跟踪每个二进制由哪个包拥有）                           |
+| `shared/`          | 用于 package require() 解析的 NODE_PATH 符号链接                             |
+| `tmp/`             | 原子安装的暂存区域                                                           |
+| `cache/`           | 解析缓存                                                                     |
 
 ### config.json 格式
 
@@ -462,7 +461,7 @@ vite-plus 支持以下版本规范格式，兼容 nvm、fnm 和 actions/setup-no
 | **部分版本**         | `20`, `20.18`                     | 取最高匹配（优先 LTS）         | 基于时间（1 小时） |
 | **Semver 范围**      | `^20.0.0`, `~20.18.0`, `>=20 <22` | 取最高匹配（优先 LTS）         | 基于时间（1 小时） |
 | **最新 LTS**         | `lts/*`                           | 最高 LTS 版本                 | 基于时间（1 小时） |
-| **LTS 代号**         | `lts/iron`, `lts/jod`             | LTS 线上最高版本              | 基于时间（1 小时） |
+| **LTS 代号**          | `lts/iron`, `lts/jod`             | LTS 线上最高版本              | 基于时间（1 小时） |
 | **LTS 偏移**         | `lts/-1`, `lts/-2`                | 第 n 高的 LTS 线              | 基于时间（1 小时） |
 | **通配符**           | `*`                               | 取最高匹配（优先 LTS）         | 基于时间（1 小时） |
 | **最新版本**         | `latest`                          | 绝对最新版本                  | 基于时间（1 小时） |
@@ -2184,15 +2183,15 @@ $ vp env --current --json
 
 ## 环境变量
 
-| 变量                      | 描述                                                                                         | 默认值         |
-| ------------------------- | -------------------------------------------------------------------------------------------- | -------------- |
-| `VP_HOME`                 | bin 和配置的基础目录                                                                        | `~/.vite-plus` |
-| `VP_NODE_VERSION`         | Node.js 版本的会话覆盖（由 `vp env use` 设置）                                              | unset          |
-| `VITE_LOG`                | 日志级别：debug、info、warn、error                                                            | `warn`         |
-| `VP_DEBUG_SHIM`           | 启用额外的 shim 诊断信息                                                                     | unset          |
-| `VP_BYPASS`               | 查找系统工具时要跳过的 bin 目录的 PATH 风格列表；设置为 `=1` 可完全绕过 shim                | unset          |
-| `VP_TOOL_RECURSION`       | **内部**：防止 shim 递归                                                                     | unset          |
-| `VP_ENV_USE_EVAL_ENABLE`  | **内部**：由 shell 包装器设置，用于表示 `vp env use` 的输出将被 eval 执行                    | unset          |
+| 变量                     | 描述                                                                                          | 默认值         |
+| ------------------------ | --------------------------------------------------------------------------------------------- | -------------- |
+| `VP_HOME`                | bin 和配置的基础目录                                                                         | `~/.vite-plus` |
+| `VP_NODE_VERSION`        | Node.js 版本的会话覆盖值（由 `vp env use` 设置）                                               | 未设置         |
+| `VP_LOG`                 | 日志级别：debug、info、warn、error                                                             | `warn`         |
+| `VP_DEBUG_SHIM`          | 启用额外的 shim 诊断                                                                          | 未设置         |
+| `VP_BYPASS`              | 查找系统工具时要跳过的 bin 目录列表，格式同 PATH；设置为 `=1` 可完全绕过 shim                  | 未设置         |
+| `VP_TOOL_RECURSION`      | **内部**：防止 shim 递归                                                                        | 未设置         |
+| `VP_ENV_USE_EVAL_ENABLE` | **内部**：由 shell 包装器设置，用于指示 `vp env use` 的输出将被 eval                                | 未设置         |
 
 ## Unix 特定注意事项
 
@@ -2411,11 +2410,11 @@ env-doctor/
 
 已做出以下决策：
 
-1. **VP_HOME 默认位置**: `~/.vite-plus` - 简单、易记的路径，用户容易查找和配置。
+1. **VP_HOME 默认位置**：`~/.vite-plus` - 简单、易记的路径，用户容易查找和配置。
 
-2. **Windows Shim 策略**：使用会设置 `VP_SHIM_TOOL` 并启动 `vp.exe` 的 Trampoline `.exe` 文件 - 避免出现“Terminate batch job?”提示，可在所有 shell 中工作。参见 [RFC: Trampoline EXE for Shims](./trampoline-exe-for-shims.md)。
+2. **Windows Shim 策略**：使用会设置 `VP_SHIM_TOOL` 并启动 `vp.exe` 的 Trampoline `.exe` 文件 - 避免出现“Terminate batch job?”提示，可在所有 shell 中工作。参见 [RFC：用于 Shim 的 Trampoline EXE](./trampoline-exe-for-shims.md)。
 
-3. **Corepack 处理**：将其作为默认 shim 包含在内（在 [#1309](https://github.com/voidzero-dev/vite-plus/issues/1309) 中重新审视，最初被排除）。该 shim 优先使用 vp 管理的全局 corepack，然后回退到 Node 自带的二进制文件（Node.js ≤ 24），并在 Node.js 25+ 上自动安装受管副本，因为 corepack 不再随 Node 捆绑。参见 [Corepack Shim](#corepack-shim)。
+3. **Corepack 处理**：将其作为默认 shim 包含在内（在 [#1309](https://github.com/voidzero-dev/vite-plus/issues/1309) 中重新审视，最初被排除）。该 shim 优先使用由 vp 管理的全局 corepack，然后回退到 Node 自带的二进制文件（Node.js ≤ 24），并在 Node.js 25+ 上自动安装受管副本，因为 corepack 不再随 Node 捆绑。参见 [Corepack Shim](#corepack-shim)。
 
 4. **缓存持久化**：跨升级持久化 - 更好的性能，并通过缓存格式版本化保证兼容性。
 

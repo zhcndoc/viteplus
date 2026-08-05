@@ -90,10 +90,10 @@ Vite+ 可以从启动项目、开发、检查与测试，一直到构建生产�
 
 ### 启动
 
-- [`vp create`](/guide/create) 创建新的应用程序、包和单体仓库。
+- [`vp create`](/guide/create) 创建新的应用、软件包和 monorepo。
 - [`vp migrate`](/guide/migrate) 将现有项目迁移到 Vite+。
-- [`vp config`](/guide/commit-hooks) 配置提交钩子和代理集成。
-- [`vp staged`](/guide/commit-hooks) 对已暂存的文件运行检查。
+- [`vp config`](/guide/commit-hooks) 安装 Git 钩子分发器并配置代理集成。
+- [`vp staged`](/guide/commit-hooks) 检查暂存区中的文件。
 - [`vp install`](/guide/install) 使用正确的包管理器安装依赖项。
 - [`vp env`](/guide/env) 管理 Node.js 版本。
 

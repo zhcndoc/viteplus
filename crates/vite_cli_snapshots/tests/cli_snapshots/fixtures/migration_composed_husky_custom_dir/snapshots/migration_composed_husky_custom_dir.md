@@ -3,30 +3,44 @@
 ## `git init`
 
 
+## `vpt mkdir -p .config/husky/_`
+
+
+## `vpt write-file .config/husky/pre-commit '#'\!'/usr/bin/env sh
+npx lint-staged
+'`
+
+
+## `vpt write-file .config/husky/_/h '#'\!'/usr/bin/env sh
+echo custom dispatcher
+'`
+
+
 ## `vp migrate --no-interactive`
 
-迁移应在组合的 prepare 中保留自定义 husky 目录
+迁移应跳过自定义 Husky 配置
 
 ```
 VITE+ - Web 的统一工具链
 
+⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。请先手动迁移 Husky，然后再启用 Vite+ 钩子。
 ◇ 已将 . 迁移到 Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已配置 Git hooks
+• 已应用 1 项配置更新
 ```
 
 ## `vpt print-file package.json`
 
-prepare 应为 'vp config --hooks-dir .config/husky && npm run build'
+应保留 prepare 和 Husky 依赖
 
 ```
 {
   "name": "migration-composed-husky-custom-dir",
   "scripts": {
-    "prepare": "npm run build && vp config --hooks-dir .config/husky"
+    "prepare": "npm run build && husky install .config/husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
@@ -59,48 +73,26 @@ peerDependencyRules:
 
 ## `vpt print-file .config/husky/pre-commit`
 
-pre-commit 钩子应该位于自定义目录中
+自定义钩子应保持不变
 
 ```
-vp staged
+#!/usr/bin/env sh
+npx lint-staged
 ```
 
 ## `vpt print-file .config/husky/_/h`
 
-钩子调度器应正确解析嵌套目录中的仓库根目录
+自定义调度器应保持不变
 
 ```
 #!/usr/bin/env sh
-{ [ "$HUSKY" = "2" ] || [ "$VITE_GIT_HOOKS" = "2" ]; } && set -x
-n=$(basename "$0")
-s=$(dirname "$(dirname "$0")")/$n
+echo custom dispatcher
+```
 
-[ ! -f "$s" ] && exit 0
+## `vpt stat-file .vite-hooks --assert-not dir`
 
-i="${XDG_CONFIG_HOME:-$HOME/.config}/vite-plus/hooks-init.sh"
-[ ! -f "$i" ] && i="${XDG_CONFIG_HOME:-$HOME/.config}/husky/init.sh"
-[ -f "$i" ] && . "$i"
+不应创建 Vite+ hook 树
 
-{ [ "${HUSKY-}" = "0" ] || [ "${VITE_GIT_HOOKS-}" = "0" ]; } && exit 0
-
-d="$(dirname "$(dirname "$(dirname "$(dirname "$0")")")")"
-__vp_shell=/bin/sh
-[ -x "$__vp_shell" ] || __vp_shell=$(command -v sh)
-
-if [ -n "${VP_HOME-}" ]; then
-  __vp_bin="$VP_HOME/bin"
-elif [ -n "${HOME-}" ]; then
-  __vp_bin="$HOME/.vite-plus/bin"
-else
-  __vp_bin=""
-fi
-[ -n "$__vp_bin" ] && [ -d "$__vp_bin" ] && export PATH="$PATH:$__vp_bin"
-
-export PATH="$d/node_modules/.bin:$PATH"
-"$__vp_shell" -e "$s" "$@"
-c=$?
-
-[ $c != 0 ] && echo "VITE+ - $n script failed (code $c)"
-[ $c = 127 ] && echo "VITE+ - command not found in PATH=$PATH"
-exit $c
+```
+.vite-hooks: missing
 ```

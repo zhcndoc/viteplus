@@ -1,6 +1,7 @@
 # 分阶段配置
 
-`vp staged` 和 `vp config` 从 `vite.config.ts` 中的 `staged` 块读取分阶段文件规则。请参阅 [提交钩子指南](/guide/commit-hooks)。
+`vp staged` 从 `vite.config.ts` 中的 `staged` 块读取暂存文件规则。请参阅
+[提交钩子指南](/guide/commit-hooks)。
 
 ## 示例
 

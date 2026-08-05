@@ -1,4 +1,4 @@
-# command_outdated_npm10
+# 命令过时_npm10
 
 ## `vp install`
 
@@ -118,7 +118,7 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 **退出代码：** 1
 
 ```
-warn: --prod/--dev not supported by npm
+warn: npm does not support --prod.
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
 test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
@@ -132,7 +132,7 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 **退出代码：** 1
 
 ```
-warn: --prod/--dev not supported by npm
+warn: npm does not support --dev.
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
 test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
@@ -146,7 +146,7 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 **退出代码：** 1
 
 ```
-warn: --no-optional not supported by npm
+warn: npm does not support --no-optional.
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
 test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
@@ -160,7 +160,7 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 **退出代码：** 1
 
 ```
-warn: --compatible not supported by npm
+warn: npm does not support --compatible.
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
 test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
@@ -169,7 +169,7 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 
 ## `vpt json-edit package.json optionalDependencies.test-vite-plus-other-optional '"^1.0.0"'`
 
-应支持与可选依赖项兼容的输出
+应支持与可选依赖项兼容的输出。
 
 
 ## `vp outdated --compatible`
@@ -177,11 +177,11 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 **退出代码：** 1
 
 ```
-警告：npm 不支持 --compatible
-软件包                         当前版本  期望版本  最新版本  位置                                      被依赖于
-test-vite-plus-other-optional    1.0.0   1.1.0   1.1.0  node_modules/test-vite-plus-other-optional  工作区
-test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     工作区
-testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       工作区
+warn: npm does not support --compatible.
+Package                        Current  Wanted  Latest  Location                                    Depended by
+test-vite-plus-other-optional    1.0.0   1.1.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
+test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
+testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       workspace
 ```
 
 ## `vp outdated --sort-by name`
@@ -191,7 +191,7 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 **退出代码：** 1
 
 ```
-warn: --sort-by not supported by npm
+warn: npm does not support --sort-by.
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.1.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
 test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace

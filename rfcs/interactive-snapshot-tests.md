@@ -116,17 +116,17 @@ vp = "local"                                # "local" | "global" | ["local", "gl
 comment = """
 在模板选择器中按下向下箭头会选中第二个模板。
 """
-cwd = "packages/app"                        # 可选，相对于 fixture 根目录
-skip-platforms = ["windows"]                # 可选；取值："windows"、"linux"、
-                                            #   "macos"、{ os = "linux", libc = "musl" }
-ignore = false                              # 可选；将该 trial 注册为 #[ignore]
-local-registry = false                      # 可选；通过本地 npm registry 提供 checkout 包 + fixture
-                                            #   tarball
-seed-runtime = true                         # 默认；将预置的受管 JS
-                                            #   runtime 符号链接到 case 的 VP_HOME 中（对于
-                                            #   runtime-provisioning 测试则为 false）
-env = { VITE_DISABLE_AUTO_INSTALL = "1" }   # 可选；为整个 case 额外添加 env
-unset-env = ["GITHUB_ACTIONS"]              # 可选；从基础 env 中移除
+cwd = "packages/app"                        # optional, relative to fixture root
+skip-platforms = ["windows"]                # optional; values: "windows", "linux",
+                                            #   "macos", { os = "linux", libc = "musl" }
+ignore = false                              # optional; registers the trial as #[ignore]
+local-registry = false                      # optional; serve checkout packages + fixture
+                                            #   tarballs through the local npm registry
+seed-runtime = true                         # default; symlink a provisioned managed JS
+                                            #   runtime into the case VP_HOME (false for
+                                            #   runtime-provisioning tests)
+env = { CUSTOM_ENV = "value" }             # optional; case-wide env additions
+unset-env = ["GITHUB_ACTIONS"]              # optional; remove from the baseline env
 steps = [ ... ]
 after = [ ... ]                             # 可选的清理步骤，绝不会被快照记录
 ```
@@ -212,7 +212,7 @@ steps = [
 
 ### 全局（`vp = "global"`）
 
-运行器运行的是新构建的 Rust 二进制文件，它从测试可执行文件旁边的目标目录中解析出来（见设计概览），并以 `vp`、`vpr` 和 `vpx` 的名称链接到每个用例的 bin 目录中。`VITE_GLOBAL_CLI_JS_SCRIPTS_DIR` 指向当前检出的 `packages/cli/dist`，与现在一致。
+运行器会运行新构建的 Rust 二进制文件，该文件从测试可执行文件旁边的目标目录中解析（参见设计概览），并以 `vp`、`vpr` 和 `vpx` 为名称链接到每个用例的 bin 目录中。`VP_GLOBAL_CLI_JS_SCRIPTS_DIR` 指向检出目录中的 `packages/cli/dist`，与当前相同。
 
 这消除了当前全局运行器的两个固定成本：
 
@@ -301,11 +301,11 @@ steps = [
 
 ## 输出规范化
 
-在截图进入快照之前，会先对捕获到的屏幕内容进行脱敏处理，这部分移植自 vite-task 的 `redact.rs`，并扩展了仍然有必要的、vp 特定的规则：
+在截图进入快照之前，会先对捕获到的屏幕内容进行脱敏处理，这部分移植自 vite-task 的 `redact.rs`，并扩展了仍然必要的、vp 特定的规则：
 
 - 路径：临时 staging 根目录、`VP_HOME`、home 目录、workspace 根目录、Windows 分隔符以及 `\\?\` 前缀。
 - 持续时间、大小、线程数、UUID、内容哈希。
-- 在与版本无关的场景中，打包工具所带版本号。
+- 在与版本无关的场景中，打包工具所带的版本号。
 - 注册表主机（npmjs 与 mirror）。
 - 无序的诊断块（按排序处理，就像 vite-task 对多线程 lint 输出所做的那样）。
 

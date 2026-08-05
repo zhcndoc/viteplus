@@ -30,7 +30,8 @@ VITE+ - Web 的统一工具链
   install    安装所有依赖，或在提供包名称时添加这些包
 
 选项：
-  -h, --help  打印帮助信息
+  -C <DIR>    在 <DIR> 中运行 vp，就像从该目录而非当前工作目录启动 vp
+  -h, --help  显示帮助信息
 ```
 
 ## `vp pack -h`
@@ -38,58 +39,62 @@ VITE+ - Web 的统一工具链
 pack 帮助信息
 
 ```
-vp pack
+VITE+ - Web 的统一工具链
 
-用法：
-  $ vp pack [...files]
+用法：vp pack [...FILES] [OPTIONS]
 
-命令：
-  [...files]  打包文件
+构建一个库。
+选项将传递给 Vite+ Pack。
 
-如需更多信息，请使用 `--help` 标志运行任意命令：
-  $ vp pack --help
+参数：
+  [...FILES]  要打包的文件
 
 选项：
-  --config-loader <loader>      要使用的配置加载器：auto、native、tsx、unrun（默认：auto）
-  --no-config                   禁用配置文件（默认：true）
-  -f, --format <format>         打包格式：esm、cjs、iife、umd（默认：esm）
+  -f, --format <FORMAT>         打包格式：esm、cjs、iife、umd（默认：esm）
   --clean                       清理输出目录，使用 --no-clean 禁用
-  --deps.never-bundle <module>  将依赖标记为外部依赖
+  --deps.never-bundle <MODULE>  将依赖标记为外部依赖
   --minify                      压缩输出
   --devtools                    启用 devtools 集成
-  --debug [feat]                显示调试日志
-  --target <target>             打包目标，例如 "es2015"、"esnext"
-  -l, --logLevel <level>        设置日志级别：info、warn、error、silent
+  --debug [FEAT]                显示调试日志
+  --target <TARGET>             打包目标，例如 "es2015"、"esnext"
+  -l, --logLevel <LEVEL>        设置日志级别：info、warn、error、silent
   --fail-on-warn                遇到警告时失败（默认：true）
-  --no-write                    禁止将文件写入磁盘，与监听模式不兼容（默认：true）
-  -d, --out-dir <dir>           输出目录（默认：dist）
-  --treeshake                   对打包内容进行 Tree-shaking（默认：true）
+  --no-write                    禁止将文件写入磁盘，与监视模式不兼容（默认：true）
+  -d, --out-dir <DIR>           输出目录（默认：dist）
+  --treeshake                   对打包结果进行 Tree-shaking（默认：true）
   --sourcemap                   生成 source map（默认：false）
-  --shims                       启用 cjs 和 esm shims（默认：false）
-  --platform <platform>         目标平台（默认：node）
+  --shims                       启用 cjs 和 esm shim（默认：false）
+  --platform <PLATFORM>         目标平台（默认：node）
   --dts                         生成 dts 文件
   --publint                     启用 publint（默认：false）
   --attw                        启用 Are the types wrong 集成（默认：false）
   --unused                      启用未使用依赖检查（默认：false）
-  -w, --watch [path]            监听模式
-  --ignore-watch <path>         在监听模式下忽略自定义路径
-  --from-vite [vitest]          复用 Vite 或 Vitest 的配置
+  -w, --watch [PATH]            监视模式
+  --ignore-watch <PATH>         在监视模式下忽略自定义路径
+  --from-vite [VITEST]          复用 Vite 或 Vitest 的配置
   --report                      大小报告（默认：true）
-  --env.* <value>               定义编译时环境变量
-  --env-file <file>             从文件加载环境变量，与 --env 一起使用时，--env 中的变量优先级更高
-  --env-prefix <prefix>         要注入到打包内容中的环境变量前缀（默认：VITE_PACK_,TSDOWN_）
-  --on-success <command>        成功时要运行的命令
-  --copy <dir>                  将文件复制到输出目录
-  --public-dir <dir>            --copy 的别名，已弃用
-  --tsconfig <tsconfig>         设置 tsconfig 路径
-  --unbundle                    非打包模式
-  --root <dir>                  输入文件的根目录
+  --env.* <VALUE>               定义编译时环境变量
+  --env-file <FILE>             从文件加载环境变量，与 --env 一起使用时，--env 中的变量优先级更高
+  --env-prefix <PREFIX>         注入到打包结果中的环境变量前缀（默认：VITE_PACK_,TSDOWN_）
+  --on-success <COMMAND>        成功时运行的命令
+  --copy <DIR>                  将文件复制到输出目录
+  --public-dir <DIR>            --copy 的别名，已弃用
+  --tsconfig <TSCONFIG>         设置 tsconfig 路径
+  --unbundle                    取消打包模式
+  --root <DIR>                  输入文件的根目录
   --exe                         打包为可执行文件
-  -W, --workspace [dir]         启用工作区模式
-  --concurrency <count>         并行运行的 Rolldown 构建任务的最大数量
-  -F, --filter <pattern>        过滤配置（cwd 或名称），例如 /pkg-name$/ 或 pkg-name
+  -W, --workspace [DIR]         启用工作区模式
+  --concurrency <COUNT>         并行运行的 Rolldown 构建的最大数量
+  -F, --filter <PATTERN>        过滤配置（cwd 或名称），例如 /pkg-name$/ 或 pkg-name
   --exports                     为 package.json 生成与导出相关的元数据（实验性）
-  -h, --help                    显示此帮助信息
+  -h, --help                    显示此消息
+
+示例：
+  vp pack
+  vp pack src/index.ts --dts
+  vp pack --watch
+
+文档：https://viteplus.dev/guide/pack
 ```
 
 ## `vp fmt -h`
@@ -97,43 +102,41 @@ vp pack
 fmt 帮助信息
 
 ```
-用法：[-c=PATH] [PATH]...
+VITE+ - 面向 Web 的统一工具链
+
+用法：vp fmt [PATH]... [OPTIONS]
+
+格式化代码。
+选项将传递给 Oxfmt。
+
+参数：
+  [PATH]...  文件、目录或 glob 模式（默认为当前目录）
 
 模式选项：
-        --init               使用默认值初始化 `.oxfmtrc.json`
-        --migrate=SOURCE     从指定来源迁移配置到 `.oxfmtrc.json`
-                             可用来源：prettier、biome
-        --lsp                启动语言服务器协议（LSP）服务器
-        --stdin-filepath=PATH  指定用于推断所使用解析器的文件名
+  --stdin-filepath <PATH>  指定用于推断 stdin 解析器的文件名
 
 输出选项：
-        --write              就地格式化并写入文件（默认）
-        --check              检查文件是否已格式化，同时显示统计信息
-        --list-different     列出将被更改的文件
+  --write           就地格式化并写入文件
+  --check           检查文件是否已格式化并显示统计信息
+  --list-different  列出将被更改的文件
 
-配置选项
-    -c, --config=PATH        配置文件路径（.json、.jsonc、.ts、.mts、.cts、.js、
-                             .mjs、.cjs）
-        --disable-nested-config  不在子目录中搜索配置文件
+忽略选项：
+  --ignore-path <PATH>  忽略文件的路径；可以多次指定
+  --with-node-modules   格式化 node_modules 中的文件，该目录默认会被跳过
 
-忽略选项
-        --ignore-path=PATH   忽略文件的路径。可以多次指定。如果未指定，则使用当前目录中的
-                             .gitignore 和 .prettierignore。
-        --with-node-modules  格式化 node_modules 目录中的代码（默认跳过）
+运行时选项：
+  --no-error-on-unmatched-pattern  当模式未匹配时不要退出并报错
+  --threads <INT>                  要使用的线程数；设置为 1 可使用一个 CPU 核心
 
-运行时选项
-        --no-error-on-unmatched-pattern  当模式不匹配时不以错误退出
-        --threads=INT        要使用的线程数。设置为 1 以仅使用 1 个 CPU 核心。
+选项：
+  -h, --help  打印帮助信息
 
-可用的位置参数：
-    PATH                     单个文件、路径或路径列表。也支持 Glob 模式。
-                             （请务必将其放在引号中，否则 shell 可能会在传递之前将其展开。）
-                             也支持使用 `!` 前缀排除模式，例如 `'!**/fixtures/*.js'`。
-                             如果未提供，则使用当前工作目录。
+示例：
+  vp fmt
+  vp fmt src --check
+  vp fmt . --write
 
-可用选项：
-    -h, --help               打印帮助信息
-    -V, --version            打印版本信息
+文档：https://viteplus.dev/guide/fmt
 ```
 
 ## `vp lint -h`
@@ -141,104 +144,81 @@ fmt 帮助信息
 lint 帮助信息
 
 ```
-用法：[-c=<./.oxlintrc.json>] [PATH]...
+VITE+ - The Unified Toolchain for the Web
 
-基本配置
-    -c, --config=<./.oxlintrc.json>  Oxlint 配置文件
-                              * `.json` 和 `.jsonc` 配置文件在所有运行时中均受支持
-                              * JavaScript/TypeScript 配置文件仍处于实验阶段，要求通过 Node.js
-                              运行
-                              * 配置文件中可以使用注释。
-                              * 尝试兼容 ESLint v8 的格式
-        --tsconfig=<./tsconfig.json>  覆盖用于导入解析的 TypeScript 配置。
-                              Oxlint 会自动为每个文件查找相关的 `tsconfig.json`。仅当你的项目使用
-                              非标准的 tsconfig 名称或位置时才使用此选项。
-        --init                使用默认值初始化 oxlint 配置
+Usage: vp lint [PATH]... [OPTIONS]
 
-允许 / 禁止多个 lint 规则
-   在命令行中从左到右累积规则和类别。
-   例如 `-D correctness -A no-debugger` 或 `-A all -D no-debugger`。
-   类别包括：
-   * `correctness` - 完全错误或无用的代码（默认）
-   * `suspicious`  - 很可能错误或无用的代码
-   * `pedantic`    - 相当严格或偶尔会产生误报的 lint 规则
-   * `perf`        - 可以用更高性能的方式编写的代码
-   * `style`       - 应以更符合惯用方式编写的代码
-   * `restriction` - 禁止使用语言和库功能的 lint 规则
-   * `nursery`     - 仍在开发中的新 lint 规则
-   * `all`         - 上述除 `nursery` 外的所有类别。不自动启用插件
-  -A, --allow=NAME          允许该规则或类别（抑制 lint）
-    -W, --warn=NAME           禁止该规则或类别（发出警告）
-    -D, --deny=NAME           禁止该规则或类别（发出错误）
+Lint code.
+Options are forwarded to Oxlint.
 
-启用/禁用插件
-        --disable-unicorn-plugin  禁用默认开启的 unicorn 插件
-        --disable-oxc-plugin  禁用默认开启的 oxc 特有规则
-        --disable-typescript-plugin  禁用默认开启的 TypeScript 插件
-        --import-plugin       启用 import 插件并检测 ESM 问题。
-        --react-plugin        启用默认关闭的 react 插件
-        --jsdoc-plugin        启用 jsdoc 插件并检测 JSDoc 问题
-        --jest-plugin         启用 Jest 插件并检测测试问题
-        --vitest-plugin       启用 Vitest 插件并检测测试问题
-        --jsx-a11y-plugin     启用 JSX-a11y 插件并检测无障碍问题
-        --nextjs-plugin       启用 Next.js 插件并检测 Next.js 问题
-        --react-perf-plugin   启用 React 性能插件并检测渲染性能
-                              问题
-        --promise-plugin      启用 promise 插件并检测 promise 使用问题
-        --node-plugin         启用 node 插件并检测 node 使用问题
-        --vue-plugin          启用 vue 插件并检测 vue 使用问题
+Arguments:
+  [PATH]...  Files or directories to lint
 
-修复问题
-        --fix                 尽可能修复问题。输出中只报告未修复的问题。
-        --fix-suggestions     应用可自动修复的建议。可能会改变程序行为。
-        --fix-dangerously     应用危险的修复和建议
+Basic Configuration:
+  --tsconfig <PATH>  Override the TypeScript config used for import resolution
 
-忽略文件
-        --ignore-path=PATH    指定用作 `.eslintignore` 的文件
-        --ignore-pattern=PAT  指定要忽略的文件模式（在 `.eslintignore` 中的模式之外追加）
-        --no-ignore           禁止根据 `.eslintignore` 文件、--ignore-path
-                              标志和 --ignore-pattern 标志排除文件
+Rule Severity:
+  -A, --allow <NAME>  Allow a rule or category
+  -W, --warn <NAME>   Emit a warning for a rule or category
+  -D, --deny <NAME>   Emit an error for a rule or category
 
-处理警告
-        --quiet               禁止报告警告，只报告错误
-        --deny-warnings       确保警告产生非零退出代码
-        --max-warnings=INT    指定警告阈值。如果项目中存在过多警告级别的规则违规，
-                              可使用此选项强制以错误状态退出
+Plugins:
+  --disable-unicorn-plugin     Disable the unicorn plugin, which is enabled by default
+  --disable-oxc-plugin         Disable Oxc-specific rules, which are enabled by default
+  --disable-typescript-plugin  Disable the TypeScript plugin, which is enabled by default
+  --import-plugin              Enable the import plugin
+  --react-plugin               Enable the React plugin
+  --jsdoc-plugin               Enable the JSDoc plugin
+  --jest-plugin                Enable the Jest plugin
+  --vitest-plugin              Enable the Vitest plugin
+  --jsx-a11y-plugin            Enable the JSX accessibility plugin
+  --nextjs-plugin              Enable the Next.js plugin
+  --react-perf-plugin          Enable the React performance plugin
+  --promise-plugin             Enable the promise plugin
+  --node-plugin                Enable the Node.js plugin
+  --vue-plugin                Enable the Vue plugin
 
-输出
-    -f, --format=ARG          使用特定的输出格式。可能的值：`checkstyle`、
-                              `default`、`agent`、`github`、`gitlab`、`json`、`junit`、
-                              `sarif`、`stylish`、`unix`
-        --debug=OPTIONS       启用调试输出选项。选项以逗号分隔。可能的值：
-                               * `files` - 打印将要进行 lint 的文件列表，然后退出。
-                               * `timings` - 启用按规则统计的耗时信息。
+Fix Problems:
+  --fix              Fix issues when possible
+  --fix-suggestions  Apply auto-fixable suggestions
+  --fix-dangerously  Apply dangerous fixes and suggestions
 
-其他
-        --silent              不显示任何诊断信息
-        --no-error-on-unmatched-pattern  当没有文件被选中进行 lint 时不以错误退出
-                              （例如应用忽略模式后）
-        --threads=INT         要使用的线程数。设置为 1 表示只使用 1 个 CPU 核心。
-        --print-config        此选项输出将使用的配置。存在此选项时不会执行 lint，
-                              且只有与配置相关的选项有效。
+Ignore Files:
+  --ignore-path <PATH>        Use the specified .eslintignore file
+  --ignore-pattern <PATTERN>  Add file patterns to ignore
+  --no-ignore                 Disable file exclusion from ignore rules
 
-内联配置注释
-        --report-unused-disable-directives  报告类似 `// oxlint-disable-line` 的指令注释，
-                              即使该行本来不会报告任何错误
-        --report-unused-disable-directives-severity=SEVERITY  与
-                              `--report-unused-disable-directives` 相同，但允许你指定
-                              所报告错误的严重级别。这两个选项一次只能使用一个。
+Handle Warnings:
+  --quiet               Report errors only
+  --deny-warnings       Exit non-zero when warnings are reported
+  --max-warnings <INT>  Set the warning threshold before exiting non-zero
 
-可用的位置参数：
-    PATH                      单个文件、单个路径或路径列表
+Output:
+  -f, --format <FORMAT>  Set output format: checkstyle, default, agent, github, gitlab, json, junit, sarif, stylish, or unix
+  --debug <OPTIONS>      Enable comma-separated debug output options: files or timings
 
-可用选项：
-        --rules               列出当前已注册的所有规则
-        --lsp                 启动语言服务器
-        --disable-nested-config  禁止自动加载嵌套配置文件
-        --type-aware          启用需要类型信息的规则
-        --type-check          启用实验性类型检查（包括 TypeScript 编译器诊断）
-    -h, --help                打印帮助信息
-    -V, --version             打印版本信息
+Miscellaneous:
+  --silent                         Do not display diagnostics
+  --no-error-on-unmatched-pattern  Do not exit with an error when no files are selected for linting
+  --threads <INT>                  Number of threads to use; set to 1 to use one CPU core
+  --print-config                   Print the resolved configuration without linting
+
+Inline Configuration:
+  --report-unused-disable-directives                      Report unused oxlint-disable directives
+  --report-unused-disable-directives-severity <SEVERITY>  Report unused disable directives at the specified severity
+
+Options:
+  --rules       List all registered rules
+  --type-aware  Enable rules requiring type information
+  --type-check  Enable experimental type checking and compiler diagnostics
+  -h, --help    Print help information
+
+Examples:
+  vp lint
+  vp lint src --fix
+  vp lint --type-aware --tsconfig ./tsconfig.json
+
+Documentation: https://viteplus.dev/guide/lint
 ```
 
 ## `vp build -h`
@@ -246,33 +226,43 @@ lint 帮助信息
 构建帮助信息
 
 ```
-vp/<version>
+VITE+ - Web 统一工具链
 
-用法：
-  $ vp build [root]
+用法：vp build [ROOT] [OPTIONS]
+
+构建生产版本。
+选项将传递给 Vite。
+
+参数：
+  [ROOT]  项目根目录（默认：当前目录）
 
 选项：
-  --target <target>             [string] 转译目标（默认：'baseline-widely-available'）
-  --outDir <dir>                [string] 输出目录（默认：dist）
-  --assetsDir <dir>             [string] 在 outDir 下放置资源的目录（默认：assets）
-  --assetsInlineLimit <number>  [number] 静态资源 base64 内联阈值（字节）（默认：4096）
-  --ssr [entry]                 [string] 为服务端渲染构建指定入口
-  --sourcemap [output]          [boolean | "inline" | "hidden"] 为构建输出源映射（默认：false）
-  --minify [minifier]           [boolean | "oxc" | "terser" | "esbuild"] 启用/禁用压缩，或指定要使用的压缩器（默认：oxc）
-  --manifest [name]             [boolean | string] 输出构建清单 json
-  --ssrManifest [name]          [boolean | string] 输出 ssr 清单 json
-  --emptyOutDir                 [boolean] 当 outDir 位于 root 之外时强制清空 outDir
-  -w, --watch                   [boolean] 磁盘上的模块发生更改时重新构建
-  --app                         [boolean] 与 `builder: {}` 相同
-  -c, --config <file>           [string] 使用指定的配置文件
-  --base <path>                 [string] 公共基础路径（默认：/）
-  -l, --logLevel <level>        [string] info | warn | error | silent
-  --clearScreen                 [boolean] 允许/禁用日志记录时清屏
-  --configLoader <loader>       [string] 使用 'bundle' 通过 Rolldown 打包配置，或使用 'runner'（实验性）即时处理，或使用 'native'（实验性）通过原生运行时加载（默认：bundle）
-  -d, --debug [feat]            [string | boolean] 显示调试日志
-  -f, --filter <filter>         [string] 过滤调试日志
-  -m, --mode <mode>             [string] 设置环境模式
-  -h, --help                    显示此消息
+  --target <TARGET>             转译目标
+  --outDir <DIR>                输出目录
+  --assetsDir <DIR>             生成资源的目录
+  --assetsInlineLimit <NUMBER>  静态资源内联阈值
+  --ssr [ENTRY]                 构建用于服务端渲染的版本
+  --sourcemap [MODE]            输出源映射
+  --minify [MINIFIER]           启用或禁用压缩
+  --manifest [NAME]             生成构建清单
+  --ssrManifest [NAME]          生成 SSR 清单
+  --emptyOutDir                 即使 outDir 位于根目录之外也清空它
+  -w, --watch                   文件发生变化时重新构建
+  --app                         使用构建器 API 构建应用
+  --base <PATH>                 公共基础路径
+  -l, --logLevel <LEVEL>        设置日志级别
+  --clearScreen                 允许或禁用清屏
+  -d, --debug [FEAT]            显示调试日志
+  -f, --filter <FILTER>         筛选调试日志
+  -m, --mode <MODE>             设置环境模式
+  -h, --help                    打印帮助信息
+
+示例：
+  vp build
+  vp build --watch
+  vp build --sourcemap
+
+文档：https://viteplus.dev/guide/build
 ```
 
 ## `vp test -h`
@@ -280,102 +270,105 @@ vp/<version>
 测试帮助信息
 
 ```
-vitest/4.1.10
- WARN: no options were found for your subcommands so we printed the whole output
+VITE+ - Web 的统一工具链
 
-Usage:
-  $ vitest [...filters]
+用法：vp test [COMMAND] [FILTERS]... [OPTIONS]
 
-Commands:
-  run [...filters]
-  related [...filters]
-  watch [...filters]
-  dev [...filters]
-  bench [...filters]
-  init <project>
-  list [...filters]
-  [...filters]
-  complete [shell]
+默认运行一次测试。
+选项将传递给 Vitest。
 
-For more info, run any command with the `--help` flag:
-  $ vitest run --help
-  $ vitest related --help
-  $ vitest watch --help
-  $ vitest dev --help
-  $ vitest bench --help
-  $ vitest init --help
-  $ vitest list --help
-  $ vitest --help
-  $ vitest complete --help
-  $ vitest --help --expand-help
+命令：
+  run      运行一次测试
+  watch    以监视模式运行测试
+  dev      以开发模式运行测试
+  related  运行与已更改文件相关的测试
+  bench    运行基准测试
+  list     列出匹配的测试
 
-Options:
-  -v, --version                                              Display version number
-  -r, --root <path>                                          Root path
-  -c, --config <path>                                        Path to config file
-  -u, --update [type]                                        Update snapshot (accepts boolean, "new", "all" or "none")
-  -w, --watch                                                Enable watch mode
-  -t, --testNamePattern <pattern>                            Run tests with full names matching the specified regexp pattern
-  --dir <path>                                               Base directory to scan for the test files
-  --ui                                                       Enable UI
-  --open                                                     Open UI automatically (default: !process.env.CI)
-  --api [port]                                               Specify server port. Note if the port is already being used, Vite will automatically try the next available port so this may not be the actual port the server ends up listening on. If true will be set to 51204. Use '--help --api' for more info.
-  --silent [value]                                           Silent console output from tests. Use 'passed-only' to see logs from failing tests only.
-  --hideSkippedTests                                         Hide logs for skipped tests
-  --reporter <name>                                          Specify reporters (default, agent, minimal, blob, verbose, dot, json, tap, tap-flat, junit, tree, hanging-process, github-actions)
-  --outputFile <filename/-s>                                 Write test results to a file when supporter reporter is also specified, use cac's dot notation for individual outputs of multiple reporters (example: --outputFile.tap=./tap.txt)
-  --coverage                                                 Enable coverage report. Use '--help --coverage' for more info.
-  --mode <name>                                              Override Vite mode (default: test or benchmark)
-  --isolate                                                  Run every test file in isolation. To disable isolation, use --no-isolate (default: true)
-  --globals                                                  Inject apis globally
-  --dom                                                      Mock browser API with happy-dom
-  --browser <name>                                           Run tests in the browser. Equivalent to --browser.enabled (default: false). Use '--help --browser' for more info.
-  --pool <pool>                                              Specify pool, if not running in the browser (default: forks)
-  --execArgv <option>                                        Pass additional arguments to node process when spawning worker_threads or child_process.
-  --vmMemoryLimit <limit>                                    Memory limit for VM pools. If you see memory leaks, try to tinker this value.
-  --fileParallelism                                          Should all test files run in parallel. Use --no-file-parallelism to disable (default: true)
-  --maxWorkers <workers>                                     Maximum number or percentage of workers to run tests in
-  --environment <name>                                       Specify runner environment, if not running in the browser (default: node)
-  --passWithNoTests                                          Pass when no tests are found
-  --logHeapUsage                                             Show the size of heap for each test when running in node
-  --detectAsyncLeaks                                         Detect asynchronous resources leaking from the test file (default: false)
-  --allowOnly                                                Allow tests and suites that are marked as only (default: !process.env.CI)
-  --dangerouslyIgnoreUnhandledErrors                         Ignore any unhandled errors that occur
-  --shard <shards>                                           Test suite shard to execute in a format of <index>/<count>
-  --changed [since]                                          Run tests that are affected by the changed files (default: false)
-  --sequence <options>                                       Options for how tests should be sorted. Use '--help --sequence' for more info.
-  --inspect [[host:]port]                                    Enable Node.js inspector (default: 127.0.0.1:9229)
-  --inspectBrk [[host:]port]                                 Enable Node.js inspector and break before the test starts
-  --testTimeout <timeout>                                    Default timeout of a test in milliseconds (default: 5000). Use 0 to disable timeout completely.
-  --hookTimeout <timeout>                                    Default hook timeout in milliseconds (default: 10000). Use 0 to disable timeout completely.
-  --bail <number>                                            Stop test execution when given number of tests have failed (default: 0)
-  --retry <times>                                            Retry the test specific number of times if it fails (default: 0). Use '--help --retry' for more info.
-  --diff <path>                                              DiffOptions object or a path to a module which exports DiffOptions object. Use '--help --diff' for more info.
-  --exclude <glob>                                           Additional file globs to be excluded from test
-  --expandSnapshotDiff                                       Show full diff when snapshot fails
-  --disableConsoleIntercept                                  Disable automatic interception of console logging (default: false)
-  --typecheck                                                Enable typechecking alongside tests (default: false). Use '--help --typecheck' for more info.
-  --project <name>                                           The name of the project to run if you are using Vitest workspace feature. This can be repeated for multiple projects: --project=1 --project=2. You can also filter projects using wildcards like --project=packages*, and exclude projects with --project=!pattern.
-  --slowTestThreshold <threshold>                            Threshold in milliseconds for a test or suite to be considered slow (default: 300)
-  --teardownTimeout <timeout>                                Default timeout of a teardown function in milliseconds (default: 10000)
-  --cache                                                    Enable cache. Use '--help --cache' for more info.
-  --maxConcurrency <number>                                  Maximum number of concurrent tests and suites during test file execution (default: 5)
-  --expect                                                   Configuration options for expect() matches. Use '--help --expect' for more info.
-  --printConsoleTrace                                        Always print console stack traces
-  --includeTaskLocation                                      Collect test and suite locations in the location property
-  --attachmentsDir <dir>                                     The directory where attachments from context.annotate are stored in (default: .vitest-attachments)
-  --run                                                      Disable watch mode
-  --no-color                                                 Removes colors from the console output (default: true)
-  --clearScreen                                              Clear terminal screen when re-running tests during watch mode (default: true)
-  --configLoader <loader>                                    Use bundle to bundle the config with esbuild or runner (experimental) to process it on the fly. This is only available in vite version 6.1.0 and above. (default: bundle)
-  --standalone                                               Start Vitest without running tests. Tests will be running only on change. If browser mode is enabled, the UI will be opened automatically. This option is ignored when CLI file filters are passed. (default: false)
-  --mergeReports [path]                                      Path to a blob reports directory. If this options is used, Vitest won't run any tests, it will only report previously recorded tests
-  --listTags [type]                                          List all available tags instead of running tests. --list-tags=json will output tags in JSON format, unless there are no tags.
-  --clearCache                                               Delete all Vitest caches, including experimental.fsModuleCache, without running any tests. This will reduce the performance in the subsequent test run.
-  --tagsFilter <expression>                                  Run only tests with the specified tags. You can use logical operators && (and), || (or) and ! (not) to create complex expressions, see https://vitest.dev/guide/test-tags#syntax for more information.
-  --strictTags                                               Should Vitest throw an error if test has a tag that is not defined in the config. (default: true)
-  --experimental <features>                                  Experimental features.. Use '--help --experimental' for more info.
-  -h, --help                                                 Display this message
+参数：
+  [FILTERS]...  测试文件筛选器
+
+选项：
+  -r, --root <PATH>                   根路径
+  -u, --update [TYPE]                 更新快照（接受布尔值、"new"、"all" 或 "none"）
+  -w, --watch                         启用监视模式
+  -t, --testNamePattern <PATTERN>     运行完整名称匹配指定正则表达式模式的测试
+  --dir <PATH>                        扫描测试文件的基础目录
+  --ui                                启用 UI
+  --open                              自动打开 UI（默认：!process.env.CI）
+  --api [PORT]                        指定服务器端口；如果为 true，则默认为 51204
+  --silent [VALUE]                    静默测试的控制台输出。使用 'passed-only' 仅查看失败测试的日志
+  --hideSkippedTests                  隐藏跳过测试的日志
+  --reporter <NAME>                   指定报告器（default、agent、minimal、blob、verbose、dot、json、tap、tap-flat、junit、tree、hanging-process、github-actions）
+  --outputFile <FILENAME/-S>          将测试结果写入文件；对于多个报告器的单独输出，请使用点号表示法（例如：--outputFile.tap=./tap.txt）
+  --coverage                          启用覆盖率报告
+  --mode <NAME>                       覆盖 Vite 模式（默认：test 或 benchmark）
+  --isolate                           隔离运行每个测试文件。使用 --no-isolate 禁用（默认：true）
+  --globals                           全局注入 API
+  --dom                               使用 happy-dom 模拟浏览器 API
+  --browser <NAME>                    在浏览器中运行测试；等同于 --browser.enabled（默认：false）
+  --pool <POOL>                       不在浏览器中运行时指定进程池（默认：forks）
+  --execArgv <OPTION>                 生成工作线程或子进程时向 Node.js 传递额外参数
+  --vmMemoryLimit <LIMIT>             VM 进程池的内存限制
+  --fileParallelism                   并行运行测试文件。使用 --no-file-parallelism 禁用（默认：true）
+  --maxWorkers <WORKERS>              运行测试的最大工作线程数或百分比
+  --environment <NAME>                指定运行环境（默认：node）
+  --passWithNoTests                   未找到测试时仍通过
+  --logHeapUsage                      在 Node.js 中运行时显示每个测试的堆大小
+  --detectAsyncLeaks                  检测测试文件中泄漏的异步资源（默认：false）
+  --allowOnly                         允许标记为 only 的测试和测试套件（默认：!process.env.CI）
+  --dangerouslyIgnoreUnhandledErrors  忽略发生的所有未处理错误
+  --shard <SHARDS>                    要执行的测试套件分片，格式为 <index>/<count>
+  --changed [SINCE]                   运行受已更改文件影响的测试（默认：false）
+  --sequence <OPTIONS>                配置测试排序
+  --inspect [[HOST:]PORT]             启用 Node.js 检查器（默认：127.0.0.1:9229）
+  --inspectBrk [[HOST:]PORT]          启用 Node.js 检查器，并在测试开始前暂停
+  --testTimeout <TIMEOUT>             默认测试超时时间（毫秒）（默认：5000；0 表示禁用）
+  --hookTimeout <TIMEOUT>             默认钩子超时时间（毫秒）（默认：10000；0 表示禁用）
+  --bail <NUMBER>                     在指定数量的失败后停止执行测试（默认：0）
+  --retry <TIMES>                     重试失败的测试（默认：0）
+  --diff <PATH>                       DiffOptions 对象或导出该对象的模块路径
+  --exclude <GLOB>                    要从测试中排除的其他文件 glob
+  --expandSnapshotDiff                快照失败时显示完整差异
+  --disableConsoleIntercept           禁用对控制台日志的自动拦截（默认：false）
+  --typecheck                         启用与测试并行的类型检查（默认：false）
+  --project <NAME>                    按名称或通配符选择一个或多个 Vitest 工作区项目
+  --slowTestThreshold <THRESHOLD>     将测试或测试套件视为缓慢的阈值（默认：<duration>）
+  --teardownTimeout <TIMEOUT>         默认清理超时时间（毫秒）（默认：10000）
+  --cache                             启用缓存
+  --maxConcurrency <NUMBER>           最大并发测试和测试套件数量（默认：5）
+  --expect                            配置 expect 匹配器
+  --printConsoleTrace                 始终打印控制台堆栈跟踪
+  --includeTaskLocation               收集测试和测试套件的位置，并存入 location 属性
+  --attachmentsDir <DIR>              使用 context.annotate 创建的附件目录（默认：.vitest-attachments）
+  --run                               禁用监视模式
+  --no-color                          移除控制台输出中的颜色（默认：true）
+  --clearScreen                       在监视模式下重新运行测试时清空终端（默认：true）
+  --standalone                        启动 Vitest，但在文件发生更改前不运行测试（默认：false）
+  --mergeReports [PATH]               合并之前记录的 blob 报告，但不运行测试
+  --listTags [TYPE]                   列出可用标签；--list-tags=json 输出 JSON
+  --clearCache                        删除所有 Vitest 缓存，但不运行测试
+  --tagsFilter <EXPRESSION>           仅运行与标签表达式匹配的测试
+  --strictTags                        测试使用未定义标签时出错（默认：true）
+  --experimental <FEATURES>           启用实验性功能
+  -h, --help                          显示此信息
+
+基准测试选项：
+  --compare <FILENAME>     要与之比较的基准测试输出文件
+  --outputJson <FILENAME>  基准测试输出文件
+
+列表选项：
+  --json [TRUE/PATH]                将收集的测试打印为 JSON 或写入文件（默认：false）
+  --filesOnly                       仅打印测试文件，不包含测试用例
+  --staticParse                     静态解析文件，而不是运行文件（默认：false）
+  --staticParseConcurrency <LIMIT>  并发处理的测试文件数量
+
+示例：
+  vp test
+  vp test src/foo.test.ts
+  vp test watch --coverage
+
+文档：https://viteplus.dev/guide/test
 ```
 
 ## `vp preview -h`
@@ -383,26 +376,35 @@ Options:
 preview 帮助信息
 
 ```
-vp/<版本>
+VITE+ - Web 的统一工具链
 
-用法:
-  $ vp preview [root]
+用法：vp preview [ROOT] [OPTIONS]
 
-选项:
-  --host [host]            [字符串] 指定主机名
-  --port <port>            [数字] 指定端口
-  --strictPort             [布尔值] 如果指定的端口已被占用则退出
-  --open [path]            [布尔值 | 字符串] 启动时打开浏览器
-  --outDir <dir>           [字符串] 输出目录（默认值：dist）
-  -c, --config <file>      [字符串] 使用指定的配置文件
-  --base <path>            [字符串] 公共基础路径（默认值：/）
-  -l, --logLevel <level>   [字符串] info | warn | error | silent
-  --clearScreen            [布尔值] 允许/禁用日志记录时清屏
-  --configLoader <loader>  [字符串] 使用 'bundle' 通过 Rolldown 打包配置，或使用 'runner'（实验性）即时处理配置，或使用 'native'（实验性）通过原生运行时加载（默认值：bundle）
-  -d, --debug [feat]       [字符串 | 布尔值] 显示调试日志
-  -f, --filter <filter>    [字符串] 筛选调试日志
-  -m, --mode <mode>        [字符串] 设置环境模式
-  -h, --help               显示此信息
+预览生产构建。
+选项将转发给 Vite。
+
+参数：
+  [ROOT]  项目根目录（默认：当前目录）
+
+选项：
+  --host [HOST]           指定主机名
+  --port <PORT>           指定端口
+  --strictPort            如果指定端口已被占用则退出
+  --open [PATH]           启动时打开浏览器
+  --outDir <DIR>          要预览的输出目录
+  --base <PATH>           公共基础路径
+  -l, --logLevel <LEVEL>  设置日志级别
+  --clearScreen           允许或禁用清屏
+  -d, --debug [FEAT]      显示调试日志
+  -f, --filter <FILTER>   筛选调试日志
+  -m, --mode <MODE>       设置环境模式
+  -h, --help              显示帮助
+
+示例：
+  vp preview
+  vp preview --port 4173
+
+文档：https://viteplus.dev/guide/build
 ```
 
 ## `vp dev -h`
@@ -410,39 +412,36 @@ vp/<版本>
 dev 帮助信息
 
 ```
-vp/<version>
+VITE+ - Web 统一工具链
 
-用法：
-  $ vp [root]
+用法：vp dev [ROOT] [OPTIONS]
 
-命令：
-  [root]           启动开发服务器
-  build [root]     构建生产版本
-  optimize [root]  预构建依赖（已弃用，预构建过程会自动运行，无需调用）
-  preview [root]   在本地预览生产构建
+运行开发服务器。
+选项将转发给 Vite。
 
-如需更多信息，请使用 `--help` 标志运行任意命令：
-  $ vp --help
-  $ vp build --help
-  $ vp optimize --help
-  $ vp preview --help
+参数：
+  [ROOT]  项目根目录（默认：当前目录）
 
 选项：
-  --host [host]            [string] 指定主机名
-  --port <port>            [number] 指定端口
-  --open [path]            [boolean | string] 启动时打开浏览器
-  --cors                   [boolean] 启用 CORS
-  --strictPort             [boolean] 如果指定的端口已被占用则退出
-  --force                  [boolean] 强制优化器忽略缓存并重新构建
-  --experimentalBundle     [boolean] 使用实验性的完整构建模式（此功能高度实验性）
-  -c, --config <file>      [string] 使用指定的配置文件
-  --base <path>            [string] 公共基础路径（默认：/）
-  -l, --logLevel <level>   [string] info | warn | error | silent
-  --clearScreen            [boolean] 允许/禁用日志记录时清屏
-  --configLoader <loader>  [string] 使用 'bundle' 通过 Rolldown 打包配置，或使用 'runner'（实验性）即时处理，或使用 'native'（实验性）通过原生运行时加载（默认：bundle）
-  -d, --debug [feat]       [string | boolean] 显示调试日志
-  -f, --filter <filter>    [string] 过滤调试日志
-  -m, --mode <mode>        [string] 设置环境模式
-  -h, --help               显示此信息
-  -v, --version            显示版本号
+  --host [HOST]           指定主机名
+  --port <PORT>           指定端口
+  --open [PATH]           启动时打开浏览器
+  --cors                  启用 CORS
+  --strictPort            如果指定端口已被占用则退出
+  --force                 忽略优化器缓存并重新打包
+  --experimentalBundle    使用实验性完整打包模式
+  --base <PATH>           公共基础路径
+  -l, --logLevel <LEVEL>  设置日志级别
+  --clearScreen           允许或禁用清屏
+  -d, --debug [FEAT]      显示调试日志
+  -f, --filter <FILTER>   过滤调试日志
+  -m, --mode <MODE>       设置环境模式
+  -h, --help              打印帮助信息
+
+示例：
+  vp dev
+  vp dev --open
+  vp dev --host localhost --port 5173
+
+文档：https://viteplus.dev/guide/dev
 ```

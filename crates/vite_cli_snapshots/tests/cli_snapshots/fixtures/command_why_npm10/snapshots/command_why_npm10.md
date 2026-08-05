@@ -5,11 +5,11 @@
 应先安装软件包
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 统一工具链
 
-added 3 packages, and audited 4 packages in <duration>
+已添加 3 个软件包，并审核了 4 个软件包，耗时 <duration>
 
-found 0 vulnerabilities
+发现 0 个漏洞
 ```
 
 ## `vp why testnpm2`
@@ -92,7 +92,7 @@ node_modules/test-vite-plus-package
 应警告 --long 不受 npm 支持
 
 ```
-warn: --long not supported by npm
+warn: npm does not support --long.
 testnpm2@1.0.1
 node_modules/testnpm2
   testnpm2@"1.0.1" from the root project
@@ -103,10 +103,10 @@ node_modules/testnpm2
 应警告 npm 不支持 --parseable
 
 ```
-warn: --parseable not supported by npm
+警告：npm 不支持 --parseable。
 testnpm2@1.0.1
 node_modules/testnpm2
-  testnpm2@"1.0.1" from the root project
+  testnpm2@"1.0.1" 来自根项目
 ```
 
 ## `vp why testnpm2 -P`
@@ -114,7 +114,7 @@ node_modules/testnpm2
 应警告 `--prod` 不受 npm 支持
 
 ```
-warn: --prod/--dev not supported by npm
+warn: npm does not support --prod.
 testnpm2@1.0.1
 node_modules/testnpm2
   testnpm2@"1.0.1" from the root project
@@ -125,10 +125,10 @@ node_modules/testnpm2
 应警告 --find-by 不受 npm 支持
 
 ```
-warn: --find-by not supported by npm
+警告：npm 不支持 --find-by。
 testnpm2@1.0.1
 node_modules/testnpm2
-  testnpm2@"1.0.1" from the root project
+  根项目中的 testnpm2@"1.0.1"
 ```
 
 ## `vp why testnpm2 -- --omit=dev`

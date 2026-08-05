@@ -23,8 +23,7 @@ Bun 拒绝不受支持的 JSON 输出
 **退出代码：** 1
 
 ```
-error: Invalid argument: `--json` is not supported by Bun `version`.
-* Invalid argument: `--json` is not supported by Bun `version`.
+Invalid argument: `--json` is not supported by Bun `version`.
 ```
 
 ## `vpt print-file package.json`

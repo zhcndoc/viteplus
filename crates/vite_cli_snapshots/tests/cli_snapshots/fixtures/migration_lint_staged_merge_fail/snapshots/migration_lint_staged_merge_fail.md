@@ -1,4 +1,4 @@
-# 迁移_lint_staged_合并失败
+# 迁移_lint_staged_合并失败。
 
 ## `git init`
 
@@ -10,15 +10,13 @@
 ```
 VITE+ - Web 的统一工具链
 
-◇ 已将 . 迁移到 Vite+ <version>
-• Node <version>  pnpm <version>
+◇ 已将 . 迁移到 Vite+ <版本>
+• Node <版本>  pnpm <版本>
+• Git hooks 已配置
 ! 警告：
-  - 无法将暂存配置合并到 vite.config.ts
-  - 未配置 Git hooks — 无法将暂存配置合并到 vite.config.ts
-
-请手动将暂存配置添加到 vite.config.ts 中，参见 https://viteplus.dev/guide/migrate#lint-staged
+  - 将暂存的配置合并到 vite.config.ts 失败
 → 手动后续操作：
-  - 请手动将暂存配置添加到 vite.config.ts 中，参见 https://viteplus.dev/guide/migrate#lint-staged
+  - 请手动将暂存的配置添加到 vite.config.ts，参见 https://viteplus.dev/guide/migrate#lint-staged
 ```
 
 ## `vpt print-file package.json`
@@ -79,9 +77,6 @@ module.exports = config;
 
 合并失败时没有 pre-commit 钩子
 
-**退出代码：** 1
-
 ```
-.vite-hooks/pre-commit: file
-stat-file assertion failed
+.vite-hooks/pre-commit: missing
 ```

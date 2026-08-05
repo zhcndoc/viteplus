@@ -12,9 +12,9 @@ VITE+ - Web 的统一工具链
 从注册表查看软件包信息
 
 参数：
-  <PACKAGE>               软件包名称，可选版本
+  <PACKAGE>               包名称，可包含版本号
   [FIELD]                 要查看的特定字段
-  [PASS_THROUGH_ARGS]...  其他参数
+  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
 
 选项：
   --json      以 JSON 格式输出

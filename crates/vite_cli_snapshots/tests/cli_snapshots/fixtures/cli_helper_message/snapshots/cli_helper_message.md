@@ -1,4 +1,4 @@
-# 命令行帮助信息
+# 命令行帮助信息。
 
 ## `vp -h`
 
@@ -58,7 +58,8 @@ VITE+ - Web 的统一工具链
 
 选项：
   -V, --version  显示版本
-  -h, --help     显示帮助
+  -C <DIR>       在 <DIR> 中运行，就像 vp 是从该目录而非当前工作目录启动一样
+  -h, --help     显示帮助信息
 ```
 
 ## `vp -V`
@@ -396,11 +397,14 @@ VITE+ - Web 的统一工具链
 转发命令到包管理器
 
 命令：
+  ci                为 CI 环境干净安装依赖
   approve-builds    批准运行依赖项生命周期脚本（install/postinstall）
   prune             移除不必要的软件包
+  patch             准备用于本地修补的软件包
+  patch-commit      提交已准备好的软件包补丁
   pack              创建软件包的 tarball
   list              列出已安装的软件包 [别名：ls]
-  view, info, show  查看注册表中的软件包信息
+  view, info, show  从注册表查看软件包信息
   version           转发原生软件包版本命令
   publish           将软件包发布到注册表
   stage             暂存软件包以供发布（npm 暂存发布工作流）
@@ -408,7 +412,7 @@ VITE+ - Web 的统一工具链
   cache             管理软件包缓存
   config            管理软件包管理器配置 [别名：c]
   login             登录注册表 [别名：adduser]
-  logout            退出注册表
+  logout            从注册表退出登录
   whoami            显示当前登录用户
   token             管理身份验证令牌
   audit             执行安全审计
@@ -418,6 +422,26 @@ VITE+ - Web 的统一工具链
   rebuild           重建原生模块 [别名：rb]
   fund              显示已安装软件包的赞助信息
   ping              Ping 注册表
+
+选项：
+  -h, --help  打印帮助信息
+
+文档：https://viteplus.dev/guide/install
+```
+
+## `vp pm ci -h`
+
+显示 pm ci 帮助信息
+
+```
+VITE+ - Web 的统一工具链
+
+用法：vp pm ci [-- <PASS_THROUGH_ARGS>...]
+
+为 CI 环境干净地安装依赖
+
+参数：
+  [PASS_THROUGH_ARGS]...  传递给包管理器的其他参数
 
 选项：
   -h, --help  打印帮助信息
@@ -466,10 +490,10 @@ VITE+ - Web 的统一工具链
     vp env print                  # 输出当前会话的 shell 片段
 
   管理：
-    vp env pin lts                # 固定最新的 LTS 版本
-    vp env install                # 从 .node-version / package.json 安装版本
+    vp env pin lts                # 固定到最新的 LTS 版本
+    vp env install                # 从 .node-version / package.json / .nvmrc 安装版本
     vp env use 20                 # 为当前 shell 会话使用 Node.js 20
-    vp env use --unset            # 移除会话覆盖
+    vp env use --unset            # 移除会话覆盖设置
     vp env clean                  # 移除未使用的托管缓存
 
   检查：

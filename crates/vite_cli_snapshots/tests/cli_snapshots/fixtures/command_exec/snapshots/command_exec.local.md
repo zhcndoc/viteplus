@@ -64,64 +64,46 @@ hello from subdir
 帮助信息
 
 ```
-从本地 node_modules/.bin 执行命令
+VITE+ - The Unified Toolchain for the Web
 
 用法：vp exec [选项] [命令]...
 
-参数：
-  [命令]...
-          要执行的命令及参数
+Execute a command from local node_modules/.bin.
 
-选项：
-  -r, --recursive
-          选择工作区中的所有包
+Arguments:
+  [COMMAND]...  Command and arguments to execute
 
-  -t, --transitive
-          选择当前包及其传递依赖
+Options:
+  -r, --recursive          Select all packages in the workspace
+  -t, --transitive         Select the current package and its transitive dependencies
+  -w, --workspace-root     Select the workspace root package
+  -F, --filter <FILTERS>   Match packages by name, directory, or glob pattern
+  --fail-if-no-match       Exit with a non-zero status if a `--filter` expression matches no packages
+                           Without this flag, unmatched filters only warn and exit successfully
+  -c, --shell-mode         Execute the command within a shell environment
+  --parallel               Run concurrently without topological ordering
+  --reverse                Reverse execution order
+  --resume-from <PACKAGE>  Resume from a specific package
+  --report-summary         Save results to vp-exec-summary.json
+  -h, --help               Print help
 
-  -w, --workspace-root
-          选择工作区根包
+Filter Patterns:
+  --filter <pattern>        Select by package name (e.g. foo, @scope/*)
+  --filter ./<dir>          Select packages under a directory
+  --filter {<dir>}          Same as ./<dir>, but allows traversal suffixes
+  --filter <pattern>...     Select package and its dependencies
+  --filter ...<pattern>     Select package and its dependents
+  --filter <pattern>^...    Select only the dependencies (exclude the package itself)
+  --filter !<pattern>       Exclude packages matching the pattern
 
-  -F, --filter <过滤器>
-          按名称、目录或 glob 模式匹配包。
-
-            --filter <模式>        按包名称选择（例如 foo、@scope/*）
-            --filter ./<目录>       选择目录下的包
-            --filter {<目录>}      与 ./<目录> 相同，但允许遍历后缀
-            --filter <模式>...     选择包及其依赖
-            --filter ...<模式>     选择包及其依赖者
-            --filter <模式>^...    仅选择依赖（排除包本身）
-            --filter !<模式>       排除与模式匹配的包
-
-      --fail-if-no-match
-          如果 `--filter` 表达式未匹配到任何包，则以非零状态退出。
-
-          不使用此标志时，未匹配的过滤器（拼写错误、空 glob，或叶子包上将结果折叠为零的 `{.}^...` 遍历）只会产生警告，命令仍会成功退出。
-
-  -c, --shell-mode
-          在 shell 环境中执行命令
-
-      --parallel
-          并发运行，不遵循拓扑排序
-
-      --reverse
-          反转执行顺序
-
-      --resume-from <恢复起点>
-          从指定的包恢复执行
-
-      --report-summary
-          将结果保存到 vp-exec-summary.json
-
-  -h, --help
-          打印帮助信息（使用 '-h' 查看摘要）
-
-示例：
+Examples:
   vp exec node --version                             # 运行本地 node
   vp exec tsc --noEmit                               # 运行本地 TypeScript 编译器
   vp exec -c 'tsc --noEmit && prettier --check .'    # Shell 模式
   vp exec -r -- tsc --noEmit                         # 在所有工作区包中运行
   vp exec --filter 'app...' -- tsc                   # 在筛选出的包中运行
+
+Documentation: https://viteplus.dev/guide/vpx
 ```
 
 ## `vp exec`

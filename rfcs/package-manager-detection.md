@@ -145,11 +145,12 @@ vp create vite:monorepo --no-interactive --package-manager bun
 
 **`vp create` 的解析优先级**：
 
-1. 检测到的工作区包管理器（`packageManager` 字段或 `devEngines.packageManager`；现有 monorepo 优先）
+1. 从现有 monorepo 中检测到的任何包管理器（来自清单字段、工作区文件、锁文件或包管理器配置）
 2. `--package-manager` CLI 标志
-3. 交互式提示 / 自动默认值（pnpm）
+3. 从非 monorepo 祖先目录中检测到的包管理器
+4. 交互式提示 / 自动默认值（pnpm）
 
-这确保了 monorepo 一致性：如果你在一个已经有 `packageManager` 字段的现有工作区中运行 `vp create`，工作区设置会优先于 CLI 标志。
+这样既能确保 monorepo 的一致性，又允许独立项目显式覆盖环境检测到的包管理器。
 
 ## 自动更新行为
 
@@ -180,7 +181,7 @@ vp create vite:monorepo --no-interactive --package-manager bun
 **特殊情况**：
 
 - **yarn ≥ 2.0.0**：从 `@yarnpkg/cli-dist` 下载，而不是 `yarn` npm 包
-- **bun**：从 `@oven/bun-{os}-{arch}` 下载平台相关的原生二进制文件（包括 Alpine Linux 的 musl 变体）
+- **bun**：从 `@oven/bun-{os}-{arch}` 下载平台相关的原生二进制文件（包括 Alpine Linux 的 musl 变体）。
 
 ## 工作区和 monorepo 检测
 
@@ -193,20 +194,20 @@ vp create vite:monorepo --no-interactive --package-manager bun
 
 - 要监视哪些锁文件模式用于缓存失效
 - 是否支持 catalog（pnpm、yarn、bun 支持，npm 不支持）
-- 如何翻译 workspace 过滤器（`--filter`）
+- 如何翻译 workspace 过滤器（`--filter`）。
 
 ## 检测信号总结
 
 ### 按包管理器分类
 
-| Package Manager | Lockfiles               | Config Files                                           | Fields                                        |
-| --------------- | ----------------------- | ------------------------------------------------------ | --------------------------------------------- |
-| pnpm            | `pnpm-lock.yaml`        | `pnpm-workspace.yaml`, `.pnpmfile.cjs`, `pnpmfile.cjs` | `packageManager`, `devEngines.packageManager` |
-| yarn            | `yarn.lock`             | `.yarnrc.yml`, `.yarnrc`, `yarn.config.cjs`            | `packageManager`, `devEngines.packageManager` |
-| npm             | `package-lock.json`     | —                                                      | `packageManager`, `devEngines.packageManager` |
-| bun             | `bun.lock`, `bun.lockb` | `bunfig.toml`                                          | `packageManager`, `devEngines.packageManager` |
+| 包管理器 | 锁文件                   | 配置文件                                               | 字段                                         |
+| -------- | ------------------------ | ------------------------------------------------------ | -------------------------------------------- |
+| pnpm     | `pnpm-lock.yaml`         | `pnpm-workspace.yaml`、`.pnpmfile.cjs`、`pnpmfile.cjs` | `packageManager`、`devEngines.packageManager` |
+| yarn     | `yarn.lock`              | `.yarnrc.yml`、`.yarnrc`、`yarn.config.cjs`            | `packageManager`、`devEngines.packageManager` |
+| npm      | `package-lock.json`      | —                                                      | `packageManager`、`devEngines.packageManager` |
+| bun      | `bun.lock`、`bun.lockb`  | `bunfig.toml`                                          | `packageManager`、`devEngines.packageManager` |
 
-### 缓存失效（fingerprint 忽略项）
+### 缓存失效（忽略指纹的文件）
 
 每个包管理器都有特定文件，在变更时会触发缓存失效：
 
@@ -216,26 +217,26 @@ vp create vite:monorepo --no-interactive --package-manager bun
 | yarn     | `.yarnrc`、`.yarnrc.yml`、`yarn.config.cjs`、`yarn.lock`、`.yarn/**/*`、`.pnp.cjs`   |
 | npm      | `package-lock.json`、`npm-shrinkwrap.json`                                 |
 | bun      | `bun.lock`、`bun.lockb`、`bunfig.toml`                                     |
-| All      | `**/package.json`、`.npmrc`                                                |
+| 全部     | `**/package.json`、`.npmrc`                                                |
 
 ## 实现
 
 ### Rust（核心检测）
 
-- **文件**：`crates/vite_install/src/package_manager.rs`
-- **函数**：`get_package_manager_type_and_version()` —— 按优先级顺序检测
+- **文件**：`crates/vite_pm_cli/src/package_manager.rs`
+- **函数**：`get_package_manager_type_and_version()` —— 按优先级排序的检测
 - **函数**：`prompt_package_manager_selection()` —— CI/TTY/交互式回退
 - **枚举**：`PackageManagerType` —— `Pnpm`、`Yarn`、`Npm`、`Bun`
 
 ### TypeScript（CLI 集成）
 
-- **文件**：`packages/cli/src/utils/workspace.ts` —— `detectWorkspace()` 封装 NAPI 绑定
+- **文件**：`packages/cli/src/utils/workspace.ts` —— 封装 NAPI 绑定的 `detectWorkspace()`
 - **文件**：`packages/cli/src/utils/prompts.ts` —— `selectPackageManager()` 用于非交互式默认值
 - **文件**：`packages/cli/src/create/bin.ts` —— 处理 `--package-manager` 标志
 
 ### NAPI 绑定（桥接）
 
-- **文件**：`packages/cli/binding/src/package_manager.rs` —— `detectWorkspace()` 导出到 JS
+- **文件**：`packages/cli/binding/src/package_manager.rs` —— 将 `detectWorkspace()` 导出到 JS。
 
 ## 未来增强
 

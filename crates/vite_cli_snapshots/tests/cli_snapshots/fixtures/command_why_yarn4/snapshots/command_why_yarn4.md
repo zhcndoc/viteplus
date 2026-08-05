@@ -71,7 +71,7 @@ VITE+ - Web 的统一工具链
 应警告 `--json` 不受 yarn 支持
 
 ```
-warn: --json not supported by yarn
+warn: yarn does not support --json.
 └─ command-why-yarn4@workspace:.
    └─ testnpm2@npm:1.0.1 (via npm:1.0.1)
 ```
@@ -81,7 +81,7 @@ warn: --json not supported by yarn
 应警告 yarn 不支持 --long
 
 ```
-警告：yarn 不支持 --long
+warn: yarn does not support --long.
 └─ command-why-yarn4@workspace:.
    └─ testnpm2@npm:1.0.1 (via npm:1.0.1)
 ```
@@ -90,8 +90,8 @@ warn: --json not supported by yarn
 
 应警告 `--parseable` 不受 yarn 支持
 
-```
-warn: --parseable not supported by yarn
+```text
+warn: yarn does not support --parseable.
 └─ command-why-yarn4@workspace:.
    └─ testnpm2@npm:1.0.1 (via npm:1.0.1)
 ```
@@ -101,7 +101,7 @@ warn: --parseable not supported by yarn
 应警告 `--prod` 不受 yarn 支持
 
 ```
-warn: --prod/--dev not supported by yarn
+warn: yarn does not support --prod.
 └─ command-why-yarn4@workspace:.
    └─ testnpm2@npm:1.0.1 (via npm:1.0.1)
 ```
@@ -111,7 +111,7 @@ warn: --prod/--dev not supported by yarn
 应警告 `--find-by` 不受 yarn 支持
 
 ```
-warn: --find-by not supported by yarn
+warn: yarn does not support --find-by.
 └─ command-why-yarn4@workspace:.
    └─ testnpm2@npm:1.0.1 (via npm:1.0.1)
 ```

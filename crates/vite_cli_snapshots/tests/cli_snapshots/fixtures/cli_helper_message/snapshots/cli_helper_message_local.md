@@ -30,7 +30,8 @@ VITE+ - 面向 Web 的统一工具链
   install    安装所有依赖；如果提供了包名，则添加包
 
 选项:
-  -h, --help  打印帮助信息
+  -C <DIR>    在 <DIR> 中运行 vp，就像从该目录而不是当前工作目录启动 vp
+  -h, --help  显示帮助信息
 ```
 
 ## `vp -V`
@@ -38,9 +39,9 @@ VITE+ - 面向 Web 的统一工具链
 显示版本
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 统一工具链
 
-vp <version>
+vp <版本>
 
 本地 vite-plus：
   vite-plus  未找到

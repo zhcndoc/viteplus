@@ -38,6 +38,7 @@
 应将 @vite-plus-test/utils 添加到工作区根目录
 
 ```
+警告：npm 不支持 --workspace。
 
 在 <duration> 内已是最新
 ```
@@ -114,6 +115,7 @@ added 1 package in <duration>
 应将 @vite-plus-test/utils 添加到 packages/app
 
 ```
+警告：npm 不支持 --workspace。
 
 在 <duration> 内已是最新
 ```
@@ -156,7 +158,7 @@ added 1 package in <duration>
 
 ```
 
-up to date in <duration>
+在 <duration> 内已是最新
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`

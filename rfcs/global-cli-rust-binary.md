@@ -1,8 +1,8 @@
-# RFC: 全局 CLI Rust 二进制
+# RFC：全局 CLI Rust 二进制
 
 ## 状态
 
-已实现
+已实现。
 
 ## 背景
 
@@ -56,7 +56,7 @@ bin/vite (shell script) → src/index.ts (Node.js) → Rust bindings (NAPI)
 1. 替换本地 CLI（`packages/cli`）——它仍然是一个 Node.js 包
 2. 移除 NAPI 绑定——它们将与本地 CLI 使用场景共存
 3. 更改命令语法或行为
-4. 支持仅 JavaScript 执行模式（始终使用受管理运行时）
+4. 支持仅 JavaScript 执行模式（始终使用受管理运行时）。
 
 ## 用户故事
 
@@ -193,8 +193,8 @@ crates/
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────────┐   │
-│  │   CLI 解析器     │  │ 工作区检测       │  │   VITE_GLOBAL_CLI_JS_SCRIPTS_DIR│   │
-│  │   (clap)         │  │ (来自 vite_task) │  │   （打包脚本路径）         │   │
+│  │   CLI Parser     │  │ Workspace Detect │  │   VP_GLOBAL_CLI_JS_SCRIPTS_DIR  │   │
+│  │   (clap)         │  │ (from vite_task) │  │   (bundled scripts path) │   │
 │  └────────┬─────────┘  └────────┬─────────┘  └────────────┬─────────────┘   │
 │           │                     │                         │                 │
 │  ┌────────▼─────────────────────▼─────────────────────────▼───────────────┐ │
@@ -272,9 +272,9 @@ use vite_js_runtime::download_runtime_for_project;
 use std::process::Command;
 
 pub struct JsExecutor {
-    cli_runtime: Option<JsRuntime>,      // 为 CLI 命令缓存的运行时
-    project_runtime: Option<JsRuntime>,  // 为项目委派缓存的运行时
-    scripts_dir: PathBuf,                // 来自 VITE_GLOBAL_CLI_JS_SCRIPTS_DIR
+    cli_runtime: Option<JsRuntime>,      // CLI 命令缓存的运行时
+    project_runtime: Option<JsRuntime>,  // 项目委派缓存的运行时
+    scripts_dir: PathBuf,                // 来自 VP_GLOBAL_CLI_JS_SCRIPTS_DIR
 }
 
 impl JsExecutor {
@@ -375,7 +375,7 @@ impl JsExecutor {
 - `vite_js_runtime` 在内部处理所有 `devEngines.runtime` 逻辑（读取 package.json、解析版本、缓存）
 - CLI 命令使用 CLI 自己的 package.json 目录（例如 `packages/global/`）
 - 项目委派通过 `dist/index.js` 进行，后者负责本地 CLI 检测
-- JS 入口点负责本地 CLI 检测与委派
+- JS 入口点负责本地 CLI 检测与委派。
 
 ### 实施阶段
 
@@ -492,7 +492,7 @@ thiserror = "1"
 
 - **主目录**：`~/.vite-plus/`（通过 `vite_shared::get_vite_plus_home`）
 - **Node.js 运行时**：`~/.vite-plus/js_runtime/node/{version}/`
-- **包管理器**：根据 lockfile 或 package.json 自动检测
+- **包管理器**：根据 lockfile 或 package.json 自动检测。
 
 ### JS 运行时版本管理
 
@@ -687,24 +687,24 @@ function getBinaryPath() {
 }
 
 const binaryPath = getBinaryPath();
-// 设置 VITE_GLOBAL_CLI_JS_SCRIPTS_DIR 指向 dist/index.js 所在位置
+// 将 VP_GLOBAL_CLI_JS_SCRIPTS_DIR 设置为指向 dist/index.js 所在位置
 const jsScriptsDir = join(__dirname, '..');
 
 execFileSync(binaryPath, process.argv.slice(2), {
   stdio: 'inherit',
   env: {
     ...process.env,
-    VITE_GLOBAL_CLI_JS_SCRIPTS_DIR: jsScriptsDir,
+    VP_GLOBAL_CLI_JS_SCRIPTS_DIR: jsScriptsDir,
   },
 });
 ```
 
 **工作方式：**
 
-1. `bin/vite` 从平台特定的可选依赖中找到 Rust 二进制（`vp`）
-2. 设置 `VITE_GLOBAL_CLI_JS_SCRIPTS_DIR`，指向包根目录（`dist/index.js` 所在处）
-3. 使用所有参数执行 Rust 二进制
-4. Rust 二进制使用 `$VITE_GLOBAL_CLI_JS_SCRIPTS_DIR/dist/index.js` 处的 JS 入口点
+1. `bin/vite` 从平台特定的可选依赖中查找 Rust 二进制（`vp`）
+2. 设置 `VP_GLOBAL_CLI_JS_SCRIPTS_DIR`，使其指向包根目录（其中包含 `dist/index.js`）
+3. 携带所有参数执行 Rust 二进制
+4. Rust 二进制使用 `$VP_GLOBAL_CLI_JS_SCRIPTS_DIR/dist/index.js` 中的 JS 入口点
 
 这确保了 npm 安装的工作方式与独立安装相同。
 
@@ -716,10 +716,10 @@ execFileSync(binaryPath, process.argv.slice(2), {
 #!/bin/bash
 # https://vite.plus
 #
-# Environment variables:
-#   VP_VERSION - Version to install (default: latest)
-#   VP_HOME - Installation directory (default: ~/.vite-plus)
-#   NPM_CONFIG_REGISTRY - Custom npm registry URL (default: https://registry.npmjs.org)
+# 环境变量：
+#   VP_VERSION - 要安装的版本（默认为：latest）
+#   VP_HOME - 安装目录（默认为：~/.vite-plus）
+#   NPM_CONFIG_REGISTRY - 自定义 npm 注册表 URL（默认为：https://registry.npmjs.org）
 
 set -e
 
@@ -731,7 +731,7 @@ NPM_REGISTRY="${NPM_REGISTRY%/}"
 # 检测平台并获取版本...
 # （为简洁起见省略平台检测代码）
 
-# Set up version-specific directories
+# 设置按版本区分的目录
 VERSION_DIR="$INSTALL_DIR/$VP_VERSION"
 BIN_DIR="$VERSION_DIR/bin"
 DIST_DIR="$VERSION_DIR/dist"
@@ -740,18 +740,18 @@ CURRENT_LINK="$INSTALL_DIR/current"
 # 创建目录
 mkdir -p "$BIN_DIR" "$DIST_DIR"
 
-# Download platform package (binary + .node files)
+# 下载平台包（二进制文件 + .node 文件）
 platform_url="${NPM_REGISTRY}/${package_name}/-/vite-plus-cli-${package_suffix}-${VP_VERSION}.tgz"
-# Extract to temp dir, copy binary to BIN_DIR, copy .node files to DIST_DIR
+# 解压到临时目录，将二进制文件复制到 BIN_DIR，将 .node 文件复制到 DIST_DIR
 
-# Download main package (JS scripts + package.json)
+# 下载主包（JS 脚本 + package.json）
 main_url="${NPM_REGISTRY}/vite-plus-cli/-/vite-plus-cli-${VP_VERSION}.tgz"
-# Extract dist/* to DIST_DIR, copy package.json to VERSION_DIR
+# 将 dist/* 解压到 DIST_DIR，将 package.json 复制到 VERSION_DIR
 
-# Create/update current symlink
+# 创建/更新 current 符号链接
 ln -sfn "$VP_VERSION" "$CURRENT_LINK"
 
-# Cleanup old versions (keep max 3)
+# 清理旧版本（最多保留 3 个）
 cleanup_old_versions
 
 # 将 ~/.vite-plus/current/bin 添加到 PATH
@@ -767,10 +767,10 @@ cleanup_old_versions
 ```powershell
 # https://vite.plus/ps1
 #
-# Environment variables:
-#   VP_VERSION - Version to install (default: latest)
-#   VP_HOME - Installation directory (default: $env:USERPROFILE\.vite-plus)
-#   NPM_CONFIG_REGISTRY - Custom npm registry URL (default: https://registry.npmjs.org)
+# 环境变量：
+#   VP_VERSION - 要安装的版本（默认为：latest）
+#   VP_HOME - 安装目录（默认为：$env:USERPROFILE\.vite-plus）
+#   NPM_CONFIG_REGISTRY - 自定义 npm 注册表 URL（默认为：https://registry.npmjs.org）
 
 $ErrorActionPreference = "Stop"
 
@@ -791,19 +791,19 @@ $CurrentLink = "$InstallDir\current"
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
 
-# 下载平台包（二进制 + .node 文件）
-# 将二进制解压到 BinDir，将 .node 文件解压到 DistDir
+# 下载平台包（二进制文件 + .node 文件）
+# 将二进制文件解压到 BinDir，将 .node 文件解压到 DistDir
 
 # 下载主包（JS 脚本 + package.json）
-# 将 dist/* 解压到 DistDir，将 package.json 解压到 VersionDir
+# 将 dist/* 解压到 DistDir，将 package.json 复制到 VersionDir
 
-# 创建/更新 current junction（Windows 的符号链接等价物）
+# 创建/更新 current junction（Windows 中符号链接的等价物）
 if (Test-Path $CurrentLink) {
     cmd /c rmdir "$CurrentLink" 2>$null
 }
 cmd /c mklink /J "$CurrentLink" "$VersionDir" | Out-Null
 
-# Cleanup old versions (keep max 3)
+# 清理旧版本（最多保留 3 个）
 Cleanup-OldVersions -InstallDir $InstallDir
 
 # 将 $InstallDir\current\bin 添加到用户 PATH
@@ -851,18 +851,18 @@ Cleanup-OldVersions -InstallDir $InstallDir
 
 **关键特性：**
 
-- PATH points to `~/.vite-plus/current/bin` (stable location)
-- Installing a new version updates the `current` symlink
-- Old versions are automatically cleaned up (keeps max 3 versions)
+- PATH 指向 `~/.vite-plus/current/bin`（稳定位置）
+- 安装新版本会更新 `current` 符号链接
+- 旧版本会自动清理（最多保留 3 个版本）
 
 #### Rust 二进制如何使用 JS 脚本
 
 当 Rust 二进制需要执行 JS（用于 `new`、`migrate`、`--version` 或 PM 命令）时：
 
-1. 检查 `VITE_GLOBAL_CLI_JS_SCRIPTS_DIR` 环境变量（可选）
-2. 如果未设置，则通过查找相对于二进制的 `dist/index.js` 自动检测
-3. 如果未缓存，则通过 `vite_js_runtime` 下载 Node.js（版本来自 `package.json` 中的 `devEngines.runtime`）
-4. 使用受管 Node.js 执行 JS 入口点，并传入命令和参数
+1. 检查 `VP_GLOBAL_CLI_JS_SCRIPTS_DIR` 环境变量（可选）
+2. 如果未设置，则通过查找二进制文件相对路径下的 `dist/index.js` 自动检测
+3. 如果 Node.js 尚未缓存，则通过 `vite_js_runtime` 下载（版本来自 `package.json` 中的 `devEngines.runtime`）
+4. 使用受管理的 Node.js 执行 JS 入口点，并传递命令和参数
 
 **自动检测逻辑：**
 
@@ -880,8 +880,8 @@ Cleanup-OldVersions -InstallDir $InstallDir
 ```rust
 // 在 Rust 二进制中
 fn get_js_scripts_dir() -> Result<PathBuf, Error> {
-    // 1. 先检查环境变量
-    if let Ok(dir) = std::env::var("VITE_GLOBAL_CLI_JS_SCRIPTS_DIR") {
+    // 1. 首先检查环境变量
+    if let Ok(dir) = std::env::var("VP_GLOBAL_CLI_JS_SCRIPTS_DIR") {
         return Ok(PathBuf::from(dir));
     }
 
@@ -974,7 +974,7 @@ if (fs.existsSync(rustBinarySource)) {
 
 ```yaml
 # 在现有 CI 工作流中
-- name: Build Rust CLI
+- name: 构建 Rust CLI
   run: cargo build --release --target ${{ matrix.target }} -p vite_global_cli
 ```
 
@@ -1042,7 +1042,7 @@ packages/global/
 - 与生产环境体验一致
 - snap 测试针对真实的 Rust 二进制运行
 - 自动检测可根据二进制位置找到 `dist/index.js`
-- 无需包装脚本或环境变量
+- 无需包装脚本或环境变量。
 
 ### 测试策略
 
@@ -1142,7 +1142,7 @@ NAPI 绑定服务于本地 CLI（`vite-plus` 包）的使用场景，此时 Node
 
 - JS 脚本继续按原样工作
 - Rust 二进制文件通过受管的 Node.js 运行时调用它们
-- 模板/迁移的更新不需要重新构建二进制文件
+- 模板/迁移的更新不需要重新构建二进制文件。
 
 ## 迁移路径
 
@@ -1170,7 +1170,7 @@ NAPI 绑定服务于本地 CLI（`vite-plus` 包）的使用场景，此时 Node
 - [ ] 自更新命令（`vp upgrade`）
 - [ ] 用于自定义命令的插件系统
 - [ ] Shell 补全生成
-- [ ] 带缓存模板的离线模式
+- [ ] 带缓存模板的离线模式。
 
 ## 成功标准
 
@@ -1190,4 +1190,4 @@ NAPI 绑定服务于本地 CLI（`vite-plus` 包）的使用场景，此时 Node
 - [vite_js_runtime RFC](./js-runtime.md)
 - [split-global-cli RFC](./split-global-cli.md)
 - [install-command RFC](./install-command.md)
-- [Node.js Releases](https://nodejs.org/en/about/releases/)
+- [Node.js 发布版本](https://nodejs.org/en/about/releases/)

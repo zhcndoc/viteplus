@@ -1,34 +1,35 @@
-# help
+# 帮助
 
-Top-level help output, one snapshot per flavor. The parity matrix keeps the two command surfaces honest.
+顶层帮助输出，每种风格各一个快照。对照矩阵确保两个命令界面保持一致。
 
 ## `vp help`
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - 面向 Web 的统一工具链
 
-Usage: vp <COMMAND>
+用法：vp <COMMAND>
 
-Core Commands:
-  create         Create a new project from a template
-  migrate        Migrate an existing project to Vite+
-  dev            Run the development server
-  build          Build for production
-  test           Run tests
-  lint           Lint code
-  fmt, format    Format code
-  check          Run format, lint, and type checks
-  pack           Build library
-  run            Run tasks
-  exec           Execute a command from local node_modules/.bin
-  preview        Preview production build
-  cache          Manage the task cache
-  config         Configure hooks and agent integration
-  staged         Run linters on staged files
+核心命令：
+  create         从模板创建新项目
+  migrate        将现有项目迁移到 Vite+
+  dev            运行开发服务器
+  build          构建生产版本
+  test           运行测试
+  lint           检查代码
+  fmt, format    格式化代码
+  check          运行格式化、代码检查和类型检查
+  pack           构建库
+  run            运行任务
+  exec           执行本地 node_modules/.bin 中的命令
+  preview        预览生产构建
+  cache          管理任务缓存
+  config         配置钩子和代理集成
+  staged         在暂存文件上运行代码检查器
 
-Package Manager Commands:
-  install    Install all dependencies, or add packages if package names are provided
+包管理器命令：
+  install    安装所有依赖；如果提供了包名，则添加这些包
 
-Options:
-  -h, --help  Print help
+选项：
+  -C <DIR>    在 <DIR> 中运行 vp，就像 vp 从该目录启动，而不是当前工作目录
+  -h, --help  打印帮助信息
 ```

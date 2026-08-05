@@ -1,4 +1,4 @@
-# command_config_replace_husky_hookspath
+# 命令配置替换 husky hookspath
 
 ## `git init`
 
@@ -8,14 +8,16 @@
 
 ## `vp config --no-agent`
 
-应将 .husky/_ 替换为 .vite-hooks/_
+应保留现有的 Husky hooks 路径
 
+```
+core.hooksPath 已设置为 ".husky/_"，跳过
 ```
 
 ## `git config --local core.hooksPath`
 
-应为 .vite-hooks/_
+应保持为 .husky/_
 
 ```
-.vite-hooks/_
+.husky/_
 ```

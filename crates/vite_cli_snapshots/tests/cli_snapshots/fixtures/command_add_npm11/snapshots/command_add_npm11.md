@@ -41,7 +41,7 @@ VITE+ - Web 的统一工具链
 
 ```
 
-added 1 package in <duration>
+已添加 1 个软件包，用时 <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -62,6 +62,7 @@ added 1 package in <duration>
 应将软件包添加到依赖项
 
 ```
+warn: npm does not support --allow-build.
 
 已添加 1 个软件包，耗时 <duration>
 ```

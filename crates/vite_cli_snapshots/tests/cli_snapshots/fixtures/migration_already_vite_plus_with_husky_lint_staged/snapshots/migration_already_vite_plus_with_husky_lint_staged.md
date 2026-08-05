@@ -58,32 +58,33 @@ husky/lint-staged 和 prepare 保持不变
 
 ## `vp migrate --hooks --no-interactive`
 
---hooks 选择迁移旧版 husky/lint-staged
+--hooks 仍会保留检测到的 Husky 配置
 
 ```
 VITE+ - Web 统一工具链
 
-◇ 已将 . 更新为 Vite+ <version>
-• Node <version>  pnpm <version>
-• 依赖：
-    vite   → <version>
-• 已应用 2 项配置更新
-• Git hooks 已配置
+⚠ 检测到 Husky — 保持其 hooks、配置和依赖不变。在启用 Vite+ hooks 前，请手动迁移 Husky。
+此项目已经在使用 Vite+！祝编码愉快！
 ```
 
 ## `vpt print-file package.json`
 
-应移除 husky/lint-staged，prepare 应设置为 vp config
+Husky 和 lint-staged 元数据应保留
 
 ```
 {
   "name": "migration-already-vite-plus-with-husky-lint-staged",
   "scripts": {
-    "prepare": "vp config"
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "vite": "catalog:",
     "vite-plus": "catalog:"
+  },
+  "lint-staged": {
+    "*": "vp check --fix"
   },
   "devEngines": {
     "packageManager": {
@@ -95,18 +96,18 @@ VITE+ - Web 统一工具链
 }
 ```
 
-## `vpt print-file .vite-hooks/pre-commit`
+## `vpt print-file .husky/pre-commit`
 
-pre-commit 钩子应重写为
-
-```
-vp staged
-```
-
-## `vpt stat-file .husky --assert-not dir`
-
-应移除 .husky
+Husky 钩子应保持不变
 
 ```
-.husky: missing
+npx lint-staged
+```
+
+## `vpt stat-file .husky --assert dir`
+
+.husky 应保持不变
+
+```
+.husky: dir
 ```

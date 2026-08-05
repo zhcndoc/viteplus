@@ -2,7 +2,7 @@
 
 ## 状态
 
-已实现
+已实现。
 
 ## 概要
 
@@ -35,7 +35,7 @@ rustup 提供 `rustup-init.exe` —— 一个单独的控制台二进制，用�
 - 单一二进制既是安装器又是主要工具（通过 `argv[0]` 检测行为）
 - 通过注册表修改 Windows 用户 PATH
 - 在“添加/删除程序”中注册
-- 针对从下载文件夹执行的 DLL 安全缓解措施
+- 针对从下载文件夹执行的 DLL 安全缓解措施。
 
 ## 目标
 
@@ -43,14 +43,14 @@ rustup 提供 `rustup-init.exe` —— 一个单独的控制台二进制，用�
 2. 支持 CI 环境下的静默/无人值守安装
 3. 复用来自 `vp upgrade` 命令的现有安装逻辑
 4. 保持安装器二进制较小（目标：3-5 MB）
-5. 实现与 `install.ps1` 完全相同的安装结果
+5. 实现与 `install.ps1` 完全相同的安装结果。
 
 ## 非目标
 
 1. GUI 安装器（MSI、NSIS、Inno Setup）——仅控制台，类似 rustup
 2. 跨平台安装器二进制（Linux/macOS 已有良好的 `install.sh` 支持）
 3. winget/chocolatey/scoop 的提交（未来工作）
-4. 代码签名（GA 需要，但不在本 RFC 范围内）
+4. 代码签名（GA 需要，但不在本 RFC 范围内）。
 
 ## 架构决策：单一二进制 vs. 单独的 Crate
 
@@ -79,7 +79,7 @@ crates/vite_installer/      — 独立的安装器二进制
 
 - 安装器二进制保持小（3-5 MB）
 - `vp upgrade` 与 `vp-setup.exe` 共享完全一致的安装逻辑——避免偏移
-- 清晰的关注点分离
+- 清晰的关注点分离。
 
 ## 代码共享：`vite_setup` 库
 
@@ -111,18 +111,18 @@ crates/vite_installer/      — 独立的安装器二进制
 ### 依赖图
 
 ```
-vite_installer (二进制，~3-5 MB)
-  ├── vite_setup (共享安装逻辑)
-  ├── vite_install (HTTP 客户端)
-  ├── vite_shared (home 目录解析)
-  ├── vite_path (类型化路径封装)
-  ├── clap (CLI 解析)
-  ├── tokio (异步运行时)
-  ├── indicatif (进度条)
-  └── owo-colors (终端颜色)
+vite_installer（可执行文件，约 3-5 MB）
+  ├── vite_setup（共享安装逻辑）
+  ├── vite_pm_cli（HTTP 客户端）
+  ├── vite_shared（主目录解析）
+  ├── vite_path（类型化路径封装）
+  ├── clap（CLI 解析）
+  ├── tokio（异步运行时）
+  ├── indicatif（进度条）
+  └── owo-colors（终端颜色）
 
-vite_global_cli (现有)
-  ├── vite_setup (替换内联 upgrade 代码)
+vite_global_cli（现有）
+  ├── vite_setup（替换内联 upgrade 代码）
   └── ...（所有现有依赖）
 ```
 
@@ -149,7 +149,7 @@ vite_global_cli (现有)
   >
 ```
 
-Node.js 管理器的值会在展示菜单前通过自动检测预先计算（参见 [Node.js Manager 自动检测](#nodejs-manager-auto-detection)）。用户可以在进入执行安装前的自定义子菜单中覆盖它。
+Node.js 管理器的值会在展示菜单前通过自动检测预先计算（参见 [Node.js 管理器自动检测](#nodejs-manager-auto-detection)）。用户可以在进入执行安装前的自定义子菜单中覆盖它。
 
 自定义子菜单：
 
@@ -210,82 +210,82 @@ CLI 标志的优先级高于环境变量。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      RESOLVE                                │
+│                      解析                                   │
 │                                                             │
-│  ┌─ detect platform ──────── win32-x64-msvc                 │
-│  │                           win32-arm64-msvc                │
+│  ┌─ 检测平台 ────────────── win32-x64-msvc                  │
+│  │                          win32-arm64-msvc                │
 │  │                                                          │
-│  ├─ check existing ──────── read %VP_HOME%\current           │
+│  ├─ 检查现有安装 ────────── 读取 %VP_HOME%\current           │
 │  │                                                          │
-│  └─ resolve version ──────── resolve_version_string()        │
-│                              1 HTTP call: "latest" → "0.3.0" │
-│                              same version? → skip to         │
-│                              CONFIGURE (repair path)         │
+│  └─ 解析版本 ────────────── resolve_version_string()        │
+│                             1 次 HTTP 调用：“latest” → “0.3.0”│
+│                             版本相同？→ 跳转至               │
+│                             配置（修复路径）                 │
 └─────────────────────────────────────────────────────────────┘
                               │
                    （仅当版本不同）
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      DOWNLOAD & VERIFY                      │
+│                      下载并验证                             │
 │                                                             │
-│  ┌─ resolve platform pkg ── resolve_platform_package()       │
-│  │                          2nd HTTP call: tarball URL + SRI │
+│  ┌─ 解析平台包 ──────────── resolve_platform_package()       │
+│  │                          第 2 次 HTTP 调用：tarball URL + SRI│
 │  │                                                          │
-│  ├─ download tarball ─────── GET tarball URL from registry   │
-│  │                           indicatif progress spinner  │
+│  ├─ 下载 tarball ────────── 从注册表获取 tarball URL          │
+│  │                          indicatif 进度旋转指示器         │
 │  │                                                          │
-│  └─ verify integrity ─────── SHA-512 SRI hash comparison     │
+│  └─ 验证完整性 ──────────── SHA-512 SRI 哈希比较             │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      INSTALL                                │
+│                      安装                                   │
 │                                                             │
-│  ┌─ extract binary ──────── %VP_HOME%\{version}\bin\         │
+│  ┌─ 提取二进制文件 ──────── %VP_HOME%\{version}\bin\         │
 │  │                          vp.exe + vp-shim.exe             │
 │  │                                                          │
-│  ├─ generate package.json ─ wrapper with vite-plus dep       │
-│  │                          pins pnpm@10.33.0                │
+│  ├─ 生成 package.json ───── 带有 vite-plus 依赖的包装器       │
+│  │                          固定 pnpm@10.33.0                │
 │  │                                                          │
-│  ├─ write .npmrc ────────── minimum-release-age=0            │
+│  ├─ 写入 .npmrc ─────────── minimum-release-age=0            │
 │  │                                                          │
-│  └─ install deps ────────── spawn: vp install --silent       │
-│                              installs vite-plus + transitive │
+│  └─ 安装依赖 ────────────── 启动：vp install --silent         │
+│                             安装 vite-plus + 传递依赖         │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     ACTIVATE              ◄── no return point │
-│                                               return         │
-│  ┌─ save previous version ── .previous-version (rollback)    │
-│  │                          （仅当升级已有安装）     │
+│                     激活                 ◄── 无返回点        │
+│                                               返回           │
+│  ┌─ 保存之前的版本 ──────── .previous-version（回滚）         │
+│  │                          （仅当升级已有安装）              │
 │  │                                                          │
-│  ├─ swap current ────────── mklink /J current → {version}    │
-│  │                          （Windows 上的 junction，            │
+│  ├─ 切换当前版本 ────────── mklink /J current → {version}    │
+│  │                          （Windows 上的 junction，         │
 │  │                           Unix 上的原子 symlink）         │
 │  │                                                          │
-│  └─ cleanup old versions ── keep last 3 by creation time     │
-│                              protects new + previous version │
+│  └─ 清理旧版本 ──────────── 按创建时间保留最近 3 个版本       │
+│                             保护新版本 + 之前的版本           │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│       CONFIGURE         （尽力执行，总是运行，           │
-│                          即使同版本也用于修复）        │
+│       配置              （尽力执行，总是运行，              │
+│                          即使同版本也用于修复）              │
 │                                                             │
-│  ┌─ create bin shims ────── copy vp-shim.exe → bin\vp.exe   │
-│  │                          （如果正在运行则重命名为 .old）      │
+│  ┌─ 创建 bin shim ──────── 将 vp-shim.exe 复制到 bin\vp.exe  │
+│  │                          （如果正在运行则重命名为 .old）   │
 │  │                                                          │
-│  ├─ Node.js manager ────── if enabled (pre-computed):        │
-│  │                            spawn: vp env setup --refresh  │
-│  │                          if disabled:                     │
-│  │                            spawn: vp env setup --env-only │
+│  ├─ Node.js 管理器 ─────── 如果已启用（预先计算）：           │
+│  │                            启动：vp env setup --refresh   │
+│  │                          如果已禁用：                     │
+│  │                            启动：vp env setup --env-only  │
 │  │                                                          │
-│  └─ modify User PATH ────── if --no-modify-path not set:     │
-│                              HKCU\Environment\Path           │
-│                              prepend %VP_HOME%\bin           │
-│                              broadcast WM_SETTINGCHANGE      │
+│  └─ 修改用户 PATH ──────── 如果未设置 --no-modify-path：     │
+│                             HKCU\Environment\Path           │
+│                             将 %VP_HOME%\bin 放在开头         │
+│                             广播 WM_SETTINGCHANGE            │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -296,25 +296,25 @@ CLI 标志的优先级高于环境变量。
 
 | 阶段              | 关键函数                                   | Crate            |
 | ----------------- | ------------------------------------------ | ---------------- |
-| Resolve           | `platform::detect_platform_suffix()`       | `vite_setup`     |
-| Resolve           | `install::read_current_version()`          | `vite_setup`     |
-| Resolve           | `registry::resolve_version_string()`       | `vite_setup`     |
-| Download & Verify | `registry::resolve_platform_package()`     | `vite_setup`     |
-| Download & Verify | `HttpClient::get_bytes()`                  | `vite_install`   |
-| Download & Verify | `integrity::verify_integrity()`            | `vite_setup`     |
-| Install           | `install::extract_platform_package()`      | `vite_setup`     |
-| Install           | `install::generate_wrapper_package_json()` | `vite_setup`     |
-| Install           | `install::write_release_age_overrides()`   | `vite_setup`     |
-| Install           | `install::install_production_deps()`       | `vite_setup`     |
-| Activate          | `install::save_previous_version()`         | `vite_setup`     |
-| Activate          | `install::swap_current_link()`             | `vite_setup`     |
-| Activate          | `install::cleanup_old_versions()`          | `vite_setup`     |
-| Configure         | `install::refresh_shims()`                 | `vite_setup`     |
-| Configure         | `windows_path::add_to_user_path()`         | `vite_installer` |
+| 解析              | `platform::detect_platform_suffix()`       | `vite_setup`     |
+| 解析              | `install::read_current_version()`          | `vite_setup`     |
+| 解析              | `registry::resolve_version_string()`       | `vite_setup`     |
+| 下载并验证        | `registry::resolve_platform_package()`     | `vite_setup`     |
+| 下载并验证        | `HttpClient::get_bytes()`                  | `vite_pm_cli`    |
+| 下载并验证        | `integrity::verify_integrity()`            | `vite_setup`     |
+| 安装              | `install::extract_platform_package()`      | `vite_setup`     |
+| 安装              | `install::generate_wrapper_package_json()` | `vite_setup`     |
+| 安装              | `install::write_release_age_overrides()`   | `vite_setup`     |
+| 安装              | `install::install_production_deps()`       | `vite_setup`     |
+| 激活              | `install::save_previous_version()`         | `vite_setup`     |
+| 激活              | `install::swap_current_link()`             | `vite_setup`     |
+| 激活              | `install::cleanup_old_versions()`          | `vite_setup`     |
+| 配置              | `install::refresh_shims()`                 | `vite_setup`     |
+| 配置              | `windows_path::add_to_user_path()`         | `vite_installer` |
 
-**同版本修复**：当解析出的版本与已安装版本匹配时，DOWNLOAD/INSTALL/ACTIVATE 阶段会被完全跳过（节省 1 次 HTTP 请求以及所有 I/O）。CONFIGURE 阶段会始终运行，用于修复 shim、环境文件以及在需要时修复 PATH。
+**同版本修复**：当解析出的版本与已安装版本匹配时，下载并验证、安装、激活阶段会被完全跳过（节省 1 次 HTTP 请求以及所有 I/O）。配置阶段会始终运行，用于修复 shim、环境文件以及在需要时修复 PATH。
 
-**失败恢复**：在 **Activate** 阶段之前，失败会清理版本目录，并保持现有安装不受影响。在 **Activate** 之后，所有 CONFIGURE 步骤都是尽力而为——失败会记录警告，但不会导致退出码为 1。重新运行安装器会始终重试 CONFIGURE。
+**失败恢复**：在 **激活** 阶段之前，失败会清理版本目录，并保持现有安装不受影响。在 **激活** 之后，所有配置步骤都是尽力而为——失败会记录警告，但不会导致退出码为 1。重新运行安装器会始终重试配置。
 
 ## Node.js 管理器自动检测
 
@@ -464,7 +464,8 @@ test-vp-setup-exe:
       # 从单次安装后在三个 shell 中进行验证
 ```
 
-工作流在对 `crates/vite_installer/**` 和 `crates/vite_setup/**` 的变更时触发。
+该工作流会在 `crates/vite_installer/**`、`crates/vite_pm_cli/**` 和
+`crates/vite_setup/**` 发生变更时触发。
 
 ## 代码签名
 
@@ -472,7 +473,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 
 **建议**：在 GA 发布之前获取 EV（Extended Validation，扩展验证）代码签名证书。EV 证书会立即移除 SmartScreen 警告（不需要建立信誉期）。
 
-这是一个组织层面的决策（成本：约 $300-500/年），不在实现范围内，但对用户体验至关重要。
+这是一个组织层面的决策（成本：约 $300-500/年），不在实现范围之内，但对用户体验至关重要。
 
 ## 二进制大小预算
 
@@ -556,7 +557,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 
 - 更新网站上的安装文档（`docs/guide/index.md`）
 - 通过 Netlify（`netlify.toml`）添加 `viteplus.dev/vp-setup.exe` 重定向
-- winget、chocolatey、scoop 的提交推迟到未来工作
+- winget、chocolatey、scoop 的提交推迟到未来工作。
 
 ## 代码签名
 
@@ -564,7 +565,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 
 **建议**：在 GA 发布之前获取 EV（Extended Validation，扩展验证）代码签名证书。EV 证书会立即移除 SmartScreen 警告（不需要建立信誉期）。
 
-这是一个组织层面的决策（成本：约 $300-500/年），不在实现范围内，但对用户体验至关重要。
+这是一个组织层面的决策（成本：约 $300-500/年），不在实现范围之内，但对用户体验至关重要。
 
 ## 二进制大小预算
 
@@ -575,7 +576,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 | 依赖项                            | 用途             | 大小影响   |
 | --------------------------------- | ---------------- | ---------- |
 | `reqwest` + `native-tls-vendored` | HTTP + TLS       | ~1.5 MB    |
-| `flate2` + `tar`                  | Tarball 解压     | ~200 KB    |
+| `flate2` + `tar`                  | Tar 包解压       | ~200 KB    |
 | `clap`                            | CLI 解析         | ~300 KB    |
 | `tokio` (minimal features)        | 异步运行时       | ~400 KB    |
 | `indicatif`                       | 进度条           | ~100 KB    |
@@ -584,7 +585,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 | `winreg` + `windows-sys`          | Windows 注册表   | ~50-100 KB |
 | Rust std + 额外开销               |                  | ~500 KB    |
 
-在 package profile override 中使用 `opt-level = "z"`（针对体积优化），与 trampoline 的做法一致。
+在包配置文件覆盖项中使用 `opt-level = "z"`（针对体积优化），与 trampoline 的做法一致。
 
 ## 已考虑的替代方案
 
@@ -648,7 +649,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 
 - 更新网站上的安装文档（`docs/guide/index.md`）
 - 通过 Netlify（`netlify.toml`）添加 `viteplus.dev/vp-setup.exe` 重定向
-- winget、chocolatey、scoop 的提交推迟到未来工作
+- winget、chocolatey、scoop 的提交推迟到未来工作。
 
 ## 测试策略
 
@@ -678,7 +679,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 
 - **二进制名称**：`vp-setup.exe`
 - **卸载**：依赖 `vp implode` — 安装器中不提供 `--uninstall` 标志
-- **最低 Windows 版本**：Windows 10 版本 1809（2018 年 10 月更新）或更高版本，和 [Rust 的 `x86_64-pc-windows-msvc` 目标要求](https://doc.rust-lang.org/rustc/platform-support.html) 一致
+- **最低 Windows 版本**：Windows 10 版本 1809（2018 年 10 月更新）或更高版本，和 [Rust 的 `x86_64-pc-windows-msvc` 目标要求](https://doc.rust-lang.org/rustc/platform-support.html) 一致。
 
 ## 参考资料
 
