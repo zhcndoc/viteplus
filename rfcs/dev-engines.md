@@ -14,9 +14,9 @@
 
 `devEngines` 是声明开发环境需求的跨工具标准，npm（v10.9+）、pnpm（`devEngines.runtime` 用于 Node 管理）以及 Corepack 已支持。Vite+ 目前：
 
-- 读取 `devEngines.runtime` 以解析 Node，但其优先级低于项目文件中的其他配置，且不遵循 `onFail`。
-- 完全忽略 `devEngines.packageManager`（`crates/vite_pm_cli/src/package_manager.rs:288` 中的 TODO）。更糟糕的是，在一个有意使用 `devEngines.packageManager` 且包含锁文件的项目中，当前的自动固定机制会在 `package.json` 中写入冗余的顶层 `packageManager` 字段，与用户选择的清单配置相冲突。
-- 目前只会写入 `.node-version`（`vp env pin`）和 `packageManager`（自动固定、`vp create`、`vp migrate`），因此采用 `devEngines` 进行标准化的用户无法获得写入路径支持。
+- 读取 `devEngines.runtime` 以解析 Node，但其项目文件优先级最低，且不遵循 `onFail`。
+- 完全忽略 `devEngines.packageManager`（`crates/vp_pm_cli/src/package_manager.rs:288` 中的 TODO）。更糟糕的是，在一个有意使用 `devEngines.packageManager` 加锁文件的项目中，如今的自动固定版本会向 `package.json` 写入冗余的顶层 `packageManager` 字段，与用户选择的清单配置产生冲突。
+- 目前只会写入 `.node-version`（`vp env pin`）和 `packageManager`（自动固定版本、`vp create`、`vp migrate`），因此采用 `devEngines` 作为统一标准的用户无法获得写入路径支持。
 
 #864 中的社区反馈要求 Vite+ 未来把 `devEngines` 作为标准，同时不破坏已有的 `.node-version` / `packageManager` 工作流。
 
@@ -51,31 +51,31 @@ interface DevEngineDependency {
 
 ### 当前 Vite+ 行为
 
-**Node.js 解析链**（`crates/vite_global_cli/src/commands/env/config.rs`、`crates/vite_js_runtime/src/runtime.rs`）：
+**Node.js 解析链** (`crates/vp_global_cli/src/commands/env/config.rs`, `crates/vp_js_runtime/src/runtime.rs`):
 
-1. `VP_NODE_VERSION` env var (session)
-2. `~/.vite-plus/.session-node-version` (session)
-3. `.node-version` (walk up)
-4. `package.json#engines.node` (walk up)
-5. `package.json#devEngines.runtime[name="node"]` (walk up)
-6. User default (`~/.vite-plus/config.json`)
-7. Latest LTS
+1. `VP_NODE_VERSION` 环境变量（会话级）
+2. `~/.vite-plus/.session-node-version`（会话级）
+3. `.node-version`（向上遍历）
+4. `package.json#engines.node`（向上遍历）
+5. `package.json#devEngines.runtime[name="node"]`（向上遍历）
+6. 用户默认值（`~/.vite-plus/config.json`）
+7. 最新 LTS 版本
 
-**Package manager detection chain** (`crates/vite_pm_cli/src/package_manager.rs`; [rfcs/package-manager-detection.md](./package-manager-detection.md) has been updated alongside this RFC and now documents the new chain):
+**包管理器检测链** (`crates/vp_pm_cli/src/package_manager.rs`; [rfcs/package-manager-detection.md](./package-manager-detection.md) 已随本 RFC 更新，并记录了新链路):
 
 1. `packageManager` 字段（精确版本，可选 hash）
-2. Lockfile（`pnpm-workspace.yaml`、`pnpm-lock.yaml`、`yarn.lock` 等），版本为 `latest`
+2. 锁文件（`pnpm-workspace.yaml`、`pnpm-lock.yaml`、`yarn.lock` 等），版本为 `latest`
 3. 配置文件（`.pnpmfile.cjs`、`bunfig.toml` 等），版本为 `latest`
-4. 显式默认值 / 交互选择
+4. 显式默认值 / 交互式选择
 
 **当前写入路径**：
 
-- `vp env pin` 只写 `.node-version`（`crates/vite_global_cli/src/commands/env/pin.rs`）。
-- 当从 `latest` 解析并下载某个包管理器后，`PackageManagerBuilder::build()` 会自动把精确版本写入 `packageManager` 字段（`set_package_manager_field()`）。
-- `vp create` / `vp migrate` 会在缺失时写入 `packageManager`（`packages/cli/src/migration/migrator.ts#setPackageManager`）。
-- `vp migrate` 会把 `.nvmrc` / Volta 锁定转换成 `.node-version`。
+- `vp env pin` 仅写入 `.node-version`（`crates/vp_global_cli/src/commands/env/pin.rs`）。
+- 下载从 `latest` 解析出的包管理器后，`PackageManagerBuilder::build()` 会自动将精确版本写入 `packageManager` 字段（`set_package_manager_field()`）。
+- `vp create` / `vp migrate` 在 `packageManager` 缺失时写入该字段（`packages/cli/src/migration/migrator.ts#setPackageManager`）。
+- `vp migrate` 将 `.nvmrc` / Volta 固定版本转换为 `.node-version`。
 
-**现有解析**（`crates/vite_shared/src/package_json.rs`）：`DevEngines` 只有 `runtime`；`RuntimeEngine { name, version, on_fail }` 中所有字段默认空字符串；`on_fail` 虽已解析，但未使用。
+**现有解析逻辑** (`crates/vp_shared/src/package_json.rs`)：`DevEngines` 仅包含 `runtime`；`RuntimeEngine { name, version, on_fail }` 的所有字段默认都为空字符串；`on_fail` 会被解析，但未被使用。
 
 ## 指导原则：兼容性优先
 
@@ -87,13 +87,13 @@ interface DevEngineDependency {
 
 ### 1. 共享解析：符合规范的 `DevEngines`
 
-将 `crates/vite_shared/src/package_json.rs` 泛化为：
+泛化 `crates/vp_shared/src/package_json.rs`：
 
 ```rust
 /// 一条 devEngines 依赖项（规范：DevEngineDependency）。
 pub struct DevEngineDependency {
     pub name: Str,                  // 规范要求必填
-    pub version: Option<Str>,       // 可选；None = 任意版本都满足
+    pub version: Option<Str>,       // 可选；None = 满足任意版本
     pub on_fail: Option<OnFail>,    // 可选；有效默认值取决于位置
 }
 
@@ -127,13 +127,13 @@ pub struct DevEngines {
 
 建议链路（变更已标出）：
 
-1. `VP_NODE_VERSION` env var (session)
-2. `.session-node-version` (session)
-3. `.node-version` (walk up)
-4. **`package.json#devEngines.runtime[name="node"]` (walk up)** (moved above `engines.node`)
-5. `package.json#engines.node` (walk up)
-6. User default
-7. Latest LTS
+1. `VP_NODE_VERSION` 环境变量（会话级）
+2. `.session-node-version`（会话级）
+3. `.node-version`（向上查找）
+4. **`package.json#devEngines.runtime[name="node"]`（向上查找）**（已移至 `engines.node` 之上）
+5. `package.json#engines.node`（向上查找）
+6. 用户默认值
+7. 最新 LTS 版本
 
 交换第 4 和第 5 的理由：`engines.node` 是面向使用者的支持范围（通常较宽，例如 `>=18`），而 `devEngines.runtime` 按定义是开发环境需求，也是 npm/pnpm 对开发工具实际生效的字段。当二者并存时，开发专用字段应该驱动开发运行时。这个问题在 #864 中被提出，也与 pnpm 的行为一致。
 
@@ -184,7 +184,7 @@ pub struct DevEngines {
 
 | 输入              | 写入目标（`.node-version` 或 `devEngines.runtime.version`）                            |
 | ----------------- | ---------------------------------------------------------------------------------------- |
-| `24.11.1`（精确） | `24.11.1`（已针对 registry 验证）                                                         |
+| `24.11.1`（精确） | `24.11.1`（已针对注册表验证）                                                         |
 | `24`（部分）      | 在 pin 时解析为精确版本（例如 `24.11.1`）                                                |
 | `^24.0.0`（范围） | 在 pin 时解析为精确版本                                                                  |
 | `lts` / `latest`  | 在 pin 时解析为精确版本                                                                  |
@@ -348,7 +348,7 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 - 添加 `devEngines` 时，如存在 `engines`，则紧邻其后放置；否则追加到末尾。
 - TypeScript 侧复用现有的 `editJsonFile` 辅助函数。
 
-一个共享的 Rust 小工具（位于 `vite_shared`）将负责“编辑 `package.json` 中的单个字段并保留格式”，供 pin、自动锁定和 unpin 使用。
+`vp_shared` 中的一个小型共享 Rust 辅助函数将负责“编辑 package.json 中的一个字段并保留格式”，供 pin、auto-pin 和 unpin 使用。
 
 ## 规范符合性矩阵
 
@@ -401,21 +401,21 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 
 ### 阶段 1：共享解析与 JSON 编辑
 
-1. 泛化 `crates/vite_shared/src/package_json.rs`，使其匹配规范中的 `DevEngineDependency` / `DevEngineField` / `OnFail` 类型；向 `DevEngines` 添加 `package_manager`；实现宽松解析规则；实现有效 `onFail` 的计算；为规范中的每种结构编写单元测试（单个项目、数组、缺少版本、缺少 `onFail`、格式错误的条目）。
-2. 向 `vite_shared` 添加一个能够保留格式的 package.json 编辑辅助工具。
+1. 将 `crates/vp_shared/src/package_json.rs` 中的类型泛化为符合规范的 `DevEngineDependency` / `DevEngineField` / `OnFail` 类型；向 `DevEngines` 添加 `package_manager`；添加宽松解析规则；计算有效的 `onFail`；为规范中的每种形态（单个、数组、缺少版本、缺少 onFail、格式错误的条目）添加单元测试。
+2. 向 `vp_shared` 添加保留格式的 package.json 编辑辅助工具。
 
 ### 阶段 2：包管理器检测
 
-1. 将 `devEngines.packageManager` 插入 `get_package_manager_type_and_version()`（替换 `crates/vite_pm_cli/src/package_manager.rs:288` 处的 TODO）；名称验证；数组处理；`onFail` 处理。
-2. 根据已下载的版本进行范围解析，并通过 npm 简化元数据文档提供 registry 回退。
-3. 当来源为 `devEngines.packageManager` 时，禁止自动写入；当两个字段都不存在时，将自动固定版本的目标改为 `devEngines.packageManager`。
-4. 当 `packageManager` 与 `devEngines.packageManager` 不一致时发出一致性警告（从“立即警告”到“之后报错”的过渡提示）。
+1. 将 `devEngines.packageManager` 插入 `get_package_manager_type_and_version()`（替换 `crates/vp_pm_cli/src/package_manager.rs:288` 处的 TODO）；添加名称校验、数组处理和 `onFail` 处理。
+2. 根据已下载的版本解析范围，并通过 npm 简化元数据文档回退到注册表。
+3. 当来源为 `devEngines.packageManager` 时禁止自动写入；当两个字段都不存在时，将自动固定目标重新定向到 `devEngines.packageManager`。
+4. 当 `packageManager` 与 `devEngines.packageManager` 不一致时发出一致性警告（提供“当前警告、未来报错”的过渡提示）。
 5. 通过 NAPI 绑定和 `vp env --current --json` 暴露新的来源。
 
 ### 阶段 3：`vp env` 命令
 
-1. `vp env pin` 的目标选择、`--target` 标志、值规则、同步提示（TTY）/警告（非交互）；`vp env unpin` 对称地移除设置。
-2. 调整运行时读取优先级顺序。
+1. 实现 `vp env pin` 的目标选择、`--target` 标志、值规则、同步提示（TTY）/警告（非交互）；`vp env unpin` 对称地移除设置。
+2. 调整运行时读取的优先级顺序。
 3. ~~用于 shim 分发和 `vp env use` / 优先使用系统路径的 `onFail` 矩阵。~~ 延后：运行时会解析 `onFail`，但尚未执行该策略（参见[延后 / 未来工作](#延后--未来工作)）。
 4. 添加所有新的 `vp env doctor` 检查。
 

@@ -1,4 +1,4 @@
-# RFC：通过 `vp config` + `vp staged` 内置提交前钩子
+# RFC：通过 `vp config` + `vp staged` 内置提交前钩子。
 
 ## 摘要
 
@@ -61,7 +61,7 @@
 
 ```json
 { "scripts": { "prepare": "vp config" } }
-// or
+// 或
 { "scripts": { "postinstall": "vp config" } }
 ```
 
@@ -86,7 +86,7 @@
    ```sh
    vp staged
    ```
-4. **运行 `vp config`** 以安装 hook shim 并设置 `core.hooksPath`
+4. **运行 `vp config`** 以安装 hook shim 并设置 `core.hooksPath`。
 
 ## 命令
 
@@ -223,7 +223,7 @@ Hook 设置行为：
 - **使用 husky（自定义目录）** — `rewritePrepareScript()` 将自定义目录保留为 `"vp config --hooks-dir .config/husky"`，`setupGitHooks()` 将 hooks 保留在自定义目录中（不复制）
 - **使用 `husky install`** — `rewritePrepareScript()` 会在应用 ast-grep 规则之前，将 `"husky install"` 折叠为 `"husky"`，因此 `"husky install .hooks"` 会变成 `"vp config --hooks-dir .hooks"`（保留自定义目录）
 - **已有 prepare 脚本**（例如 `"npm run build"`）— 组合为 `"vp config && npm run build"`（前置添加，以便 hooks 在其他 prepare 任务之前生效；如果已经包含 `vp config`，则保持幂等）
-- **使用 lint-staged** — 将 `vite.config.ts` 中的 `"lint-staged"` 键迁移为 `staged`，保留现有配置（已由迁移规则重写），并从 devDeps 中移除 lint-staged
+- **使用 lint-staged** — 将 `vite.config.ts` 中的 `"lint-staged"` 键迁移为 `staged`，保留现有配置（已由迁移规则重写），并从 devDeps 中移除 lint-staged。
 
 ## 迁移边界情况
 
@@ -232,7 +232,7 @@ Hook 设置行为：
 - **子目录项目**（例如 `vp migrate foo`）— 如果项目路径与 git 根目录不同，则警告“检测到子目录项目”并完全跳过 hooks 设置。这样可以避免 `vp config` 将 `core.hooksPath` 设置为子目录路径，从而接管整个仓库范围的 hooks。
 - **没有 `.git` 目录** — 添加 package.json 配置并创建 hook pre-commit 文件，但跳过 `vp config` hook 安装（没有可设置的 `core.hooksPath`）
 - **独立的 lint-staged 配置**（`.lintstagedrc.*`、`lint-staged.config.*`）— 自动迁移不支持这些配置。使用这些格式的项目会收到警告，需要手动迁移。
-- 创建 pre-commit hook 后，直接运行 `vp config` 安装 hook shim（不依赖 npm install 生命周期，因为在 CI 或 snap 测试环境中可能不会运行）
+- 创建 pre-commit hook 后，直接运行 `vp config` 安装 hook shim（不依赖 npm install 生命周期，因为在 CI 或 snap 测试环境中可能不会运行）。
 
 ## 实现架构
 
@@ -241,12 +241,12 @@ Hook 设置行为：
 两个命令都遵循类别 B（JS 脚本命令）模式，与 `vp create` 和 `vp migrate` 相同：
 
 ```rust
-// crates/vite_global_cli/src/commands/config.rs
+// crates/vp_global_cli/src/commands/config.rs
 pub async fn execute(cwd: AbsolutePathBuf, args: &[String]) -> Result<ExitStatus, Error> {
     super::delegate::execute(cwd, "config", args).await
 }
 
-// crates/vite_global_cli/src/commands/staged.rs
+// crates/vp_global_cli/src/commands/staged.rs
 pub async fn execute(cwd: AbsolutePathBuf, args: &[String]) -> Result<ExitStatus, Error> {
     super::delegate::execute(cwd, "staged", args).await
 }

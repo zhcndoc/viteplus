@@ -291,7 +291,7 @@ lodash          4.17.20  4.17.21 4.17.21 dependencies  https://...
 
 #### 1. 命令结构
 
-**文件**：`crates/vite_task/src/lib.rs`
+**文件**: `crates/vt/src/lib.rs`
 
 添加新的命令变体：
 
@@ -369,8 +369,8 @@ pub enum Commands {
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
 
-use vite_error::Error;
-use vite_path::AbsolutePath;
+use vp_error::Error;
+use vt_path::AbsolutePath;
 
 use crate::package_manager::{
     PackageManager, PackageManagerType, ResolveCommandResult, format_path_env, run_command,
@@ -629,16 +629,16 @@ pub mod outdated;  // 添加这一行
 
 #### 3. Outdated 命令实现
 
-**文件**：`crates/vite_task/src/outdated.rs`（新文件）
+**文件**: `crates/vt/src/outdated.rs` (新文件)
 
 ```rust
-use vite_error::Error;
-use vite_path::AbsolutePathBuf;
+use vp_error::Error;
+use vt_path::AbsolutePathBuf;
 use vite_package_manager::{
     PackageManager,
     commands::outdated::OutdatedCommandOptions,
 };
-use vite_workspace::Workspace;
+use vt_workspace::Workspace;
 
 pub struct OutdatedCommand {
     workspace_root: AbsolutePathBuf,
@@ -691,7 +691,7 @@ impl OutdatedCommand {
         // 这是预期行为，不是错误
         if !exit_status.success() {
             let exit_code = exit_status.code();
-            // Exit code 1 通常表示发现了过时包，这是可以接受的
+            // 退出代码 1 通常表示发现了过时包，这是可以接受的
             if exit_code != Some(1) {
                 return Err(Error::CommandFailed {
                     command: "outdated".to_string(),
@@ -785,7 +785,7 @@ impl OutdatedCommand {
 - yarn@2+ 建议使用 `upgrade-interactive` 来检查更新
 - 提供交互式 UI，而不是简单的表格
 - 虽然范式不同，但达到相同目标
-- 告知用户这种不同的行为
+- 告知用户这种不同的行为。
 
 ## 错误处理
 
@@ -793,27 +793,27 @@ impl OutdatedCommand {
 
 ```bash
 $ vite outdated
-Error: No package manager detected
-Please run one of:
-  - vp install (to set up package manager)
-  - Add packageManager field to package.json
+错误：未检测到包管理器
+请运行以下命令之一：
+  - vp install（用于设置包管理器）
+  - 将 packageManager 字段添加到 package.json
 ```
 
 ### 无效的格式选项
 
 ```bash
 $ vite outdated --format invalid
-Error: Invalid format 'invalid'
-Valid formats: table, list, json
+错误：格式“invalid”无效
+有效格式：table、list、json
 ```
 
 ### 不支持的标志警告
 
 ```bash
 $ vite outdated --prod
-Detected package manager: npm@11.0.0
-Warning: --prod not supported by npm
-Running: npm outdated
+检测到的包管理器：npm@11.0.0
+警告：npm 不支持 --prod
+正在运行：npm outdated
 ```
 
 ## 用户体验
@@ -963,7 +963,7 @@ vp outdated --update
 - 将检查和更新混在一起很危险
 - 用户应在更新前进行审查
 - 已经存在单独的 `vp update` 命令
-- 保持命令专注于单一目的
+- 保持命令专注于单一目的。
 
 ## 实施计划
 
@@ -997,7 +997,7 @@ vp outdated --update
 1. 更新 CLI 文档
 2. 在 README 中添加示例
 3. 文档化包管理器兼容性
-4. 添加故障排查指南
+4. 添加故障排查指南。
 
 ## 测试策略
 
@@ -1010,7 +1010,7 @@ vp outdated --update
 - yarn@4.x
 - npm@10.x
 - npm@11.x
-- bun@1.x [WIP]
+- bun@1.x [进行中]
 
 ### 单元测试
 
@@ -1101,12 +1101,12 @@ fn test_pnpm_outdated_prod_only() {
 ```
 fixtures/outdated-test/
   pnpm-workspace.yaml
-  package.json (with some outdated deps)
+  package.json（包含一些过时的依赖）
   packages/
     app/
-      package.json (with outdated deps)
+      package.json（包含过时的依赖）
     utils/
-      package.json (with outdated deps)
+      package.json（包含过时的依赖）
   test-steps.json
 ```
 
@@ -1184,7 +1184,7 @@ Examples:
 1. **无缓存**：查询远程注册表，缓存会过期
 2. **依赖网络**：性能取决于注册表响应时间
 3. **并行检查**：某些包管理器会并行执行版本检查
-4. **JSON 输出**：比表格格式更便于程序化解析
+4. **JSON 输出**：比表格格式更便于程序化解析。
 
 ## 安全考量
 
@@ -1192,7 +1192,7 @@ Examples:
 2. **注册表信任**：依赖 package registry 提供版本信息
 3. **漏洞检测**：有助于识别已知存在漏洞的包
 4. **适用于 CI**：可安全运行于 CI/CD 流水线中
-5. **审计集成**：结果可用于安全审计
+5. **审计集成**：结果可用于安全审计。
 
 ## 向后兼容性
 
@@ -1201,7 +1201,7 @@ Examples:
 - 现有命令不受影响
 - 新命令是增量添加
 - 任务配置无变化
-- 缓存行为无变化
+- 缓存行为无变化。
 
 ## 迁移路径
 
@@ -1298,7 +1298,7 @@ vite outdated -g typescript
 | 功能               | pnpm               | npm                           | yarn@1           | yarn@2+             | bun                  | 备注                     |
 | ------------------ | ------------------ | ----------------------------- | ---------------- | ------------------- | -------------------- | ------------------------ |
 | 基本命令           | ✅ `outdated`      | ✅ `outdated`                 | ✅ `outdated`    | ⚠️ `upgrade-int...` | ✅ `outdated`        | yarn@2+ 使用交互式界面   |
-| 模式匹配           | ✅ Glob patterns   | ⚠️ 包名                        | ⚠️ 包名           | ❌ 不支持            | ❌ 不支持             | pnpm 支持 glob 模式      |
+| 模式匹配           | ✅ Glob 模式       | ⚠️ 包名                        | ⚠️ 包名           | ❌ 不支持            | ❌ 不支持             | pnpm 支持 glob 模式      |
 | JSON 输出          | ✅ `--format json` | ✅ `--json`                   | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 不同的标志               |
 | 长输出             | ✅ `--long`        | ✅ `--long`                   | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm 和 npm           |
 | 可解析             | ❌ 不支持          | ✅ `--parseable`              | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 npm                   |
@@ -1308,7 +1308,7 @@ vite outdated -g typescript
 | 依赖类型筛选       | ✅ `--prod/--dev`  | ❌ 不支持                      | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm                  |
 | 仅兼容版本         | ✅ `--compatible`  | ❌ 不支持                      | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm                  |
 | 排序结果           | ✅ `--sort-by`     | ❌ 不支持                      | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 仅 pnpm                  |
-| 全局检查           | ✅ `-g`            | ✅ `-g`                       | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | pnpm 和 npm              |
+| 全局检查           | ✅ `-g`            | ✅ `-g`                       | ❌ 不支持         | ❌ 不支持             | ❌ 不支持             | pnpm 和 npm              |
 | 显示所有传递依赖   | ⚠️ `-r`            | ✅ `--all`                    | ❌ 不支持         | ❌ 不支持            | ❌ 不支持             | 不同的方法               |
 
 ## 未来增强
@@ -1412,7 +1412,7 @@ Changes:
 5. **我们是否应该以不同方式支持 yarn@2+？**
    - 建议：是，使用 `upgrade-interactive`
    - 与 yarn@2+ 的推荐方式一致
-   - 向用户提供有关不同 UI 的说明
+   - 向用户提供有关不同 UI 的说明。
 
 ## 成功指标
 
@@ -1420,7 +1420,7 @@ Changes:
 2. **更新频率**：用户检查后更新包的频率
 3. **CI 集成**：在 CI/CD 中用于过期检查的使用情况
 4. **用户反馈**：关于命令实用性的调查/问题
-5. **安全影响**：含有漏洞的过期包数量减少
+5. **安全影响**：含有漏洞的过期包数量减少。
 
 ## 结论
 

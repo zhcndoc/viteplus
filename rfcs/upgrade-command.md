@@ -39,14 +39,14 @@ Vite+ 通过 bash 安装脚本（`curl -fsSL https://vite.plus | bash`）作为�
 2. 复用相同的基于 npm 的分发渠道（不引入新基础设施）
 3. 支持具备自动回滚能力的原子升级
 4. 保留最近 3 个版本以便手动回滚
-5. 支持版本固定和通道选择（latest、test）
+5. 支持版本固定和通道选择（latest、test）。
 
 ## 非目标
 
 1. 每次命令调用时自动更新（这可能是未来增强）
 2. Windows PowerShell 安装路径（由 `install.ps1` 覆盖）
 3. 从 npm 分发渠道迁移走
-4. 更新 Node.js 版本（已由 `vp env` 负责）
+4. 更新 Node.js 版本（已由 `vp env` 负责）。
 
 ## 用户故事
 
@@ -56,66 +56,66 @@ Vite+ 通过 bash 安装脚本（`curl -fsSL https://vite.plus | bash`）作为�
 
 ```bash
 $ vp upgrade
-info: checking for updates...
-info: found vite-plus-cli@0.2.0 (current: 0.1.0)
-info: downloading vite-plus-cli@0.2.0 for darwin-arm64...
-info: installing...
+信息：正在检查更新...
+信息：发现 vite-plus-cli@0.2.0（当前版本：0.1.0）
+信息：正在为 darwin-arm64 下载 vite-plus-cli@0.2.0...
+信息：正在安装...
 
-✔ Updated vite-plus from 0.1.0 → 0.2.0
+✔ 已将 vite-plus 从 0.1.0 更新至 0.2.0
 
-  Release notes: https://github.com/voidzero-dev/vite-plus/releases/tag/v0.2.0
+  发布说明：https://github.com/voidzero-dev/vite-plus/releases/tag/v0.2.0
 ```
 
 ### 故事 2：已经是最新版本
 
 ```bash
 $ vp upgrade
-info: checking for updates...
+信息：正在检查更新...
 
-✔ Already up to date (0.2.0)
+✔ 已是最新版本（0.2.0）
 ```
 
 ### 故事 3：更新到指定版本
 
 ```bash
 $ vp upgrade 0.1.5
-info: checking for updates...
-info: found vite-plus-cli@0.1.5 (current: 0.2.0)
-info: downloading vite-plus-cli@0.1.5 for darwin-arm64...
-info: installing...
+信息：正在检查更新...
+信息：发现 vite-plus-cli@0.1.5（当前版本：0.2.0）
+信息：正在为 darwin-arm64 下载 vite-plus-cli@0.1.5...
+信息：正在安装...
 
-✔ Updated vite-plus from 0.2.0 → 0.1.5
+✔ 已将 vite-plus 从 0.2.0 更新至 0.1.5
 ```
 
 ### 故事 4：安装测试通道构建
 
 ```bash
 $ vp upgrade --tag test
-info: checking for updates...
-info: found vite-plus-cli@0.3.0-beta.1 (current: 0.2.0)
-info: downloading vite-plus-cli@0.3.0-beta.1 for darwin-arm64...
-info: installing...
+信息：正在检查更新...
+信息：发现 vite-plus-cli@0.3.0-beta.1（当前版本：0.2.0）
+信息：正在为 darwin-arm64 下载 vite-plus-cli@0.3.0-beta.1...
+信息：正在安装...
 
-✔ Updated vite-plus from 0.2.0 → 0.3.0-beta.1
+✔ 已将 vite-plus 从 0.2.0 更新至 0.3.0-beta.1
 ```
 
 ### 故事 5：回滚到上一个版本
 
 ```bash
 $ vp upgrade --rollback
-info: rolling back to previous version...
-info: switching from 0.2.0 → 0.1.0
+信息：正在回滚到上一个版本...
+信息：正在从 0.2.0 切换至 0.1.0
 
-✔ Rolled back to 0.1.0
+✔ 已回滚至 0.1.0
 ```
 
 ### 故事 6：仅检查更新，不安装
 
 ```bash
 $ vp upgrade --check
-info: checking for updates...
-Update available: 0.2.0 → 0.3.0
-Run `vp upgrade` to update.
+信息：正在检查更新...
+有可用更新：0.2.0 → 0.3.0
+运行 `vp upgrade` 进行更新。
 ```
 
 ### 故事 7：CI 环境——非交互式
@@ -137,7 +137,7 @@ Arguments:
   [VERSION]    Target version (e.g., "0.2.0"). Defaults to "latest"
 
 Options:
-  --tag <TAG>      npm dist-tag to install (default: "latest", also: "test")
+  --tag <TAG>      npm dist-tag to install (default: "latest", also "test")
   --check          Check for updates without installing
   --rollback       Revert to the previously active version
   --force          Force reinstall even if already on the target version
@@ -147,7 +147,7 @@ Options:
 
 ### 架构
 
-升级命令完全在 `vite_global_cli` crate 内使用 Rust 实现，逻辑与 `install.sh` 保持一致，但作为原生子进程工作流运行。
+升级命令完全使用 Rust 在 `vp_global_cli` crate 中实现，其逻辑与 `install.sh` 保持一致，但以原生子进程工作流运行。
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -247,11 +247,11 @@ fn verify_integrity(data: &[u8], expected: &str) -> Result<(), Error> {
 - 主包元数据：`{registry}/vite-plus-cli/{version}` → 包含 `dist.integrity`
 - 平台包元数据：`{registry}/@voidzero-dev/vite-plus-cli-{suffix}/{version}` → 包含 `dist.integrity`
 
-平台检测复用 `vite_js_runtime` 中已有的逻辑，或镜像 bash 脚本的做法：
+平台检测复用 `vp_js_runtime` 中的现有逻辑，或采用 bash 脚本中的方法：
 
 - `uname -s` → os（darwin、linux）
 - `uname -m` → arch（x64、arm64）
-- Linux：检测 gnu vs musl libc
+- Linux：检测 gnu 与 musl libc
 
 #### 步骤 4：解压并安装
 
@@ -355,7 +355,7 @@ Windows 上的关键差异：
 ### 文件结构
 
 ```
-crates/vite_global_cli/
+crates/vp_global_cli/
 ├── src/
 │   ├── commands/
 │   │   ├── upgrade/
@@ -402,7 +402,7 @@ fn detect_platform() -> Result<String, Error> {
 
 ### Registry 客户端
 
-使用 `reqwest`（已通过 `vite_js_runtime` 成为依赖）进行 HTTP 请求：
+使用 `reqwest`（已通过 `vp_js_runtime` 成为依赖项）发送 HTTP 请求：
 
 ```rust
 async fn resolve_version(registry: &str, version_or_tag: &str) -> Result<PackageMetadata, Error> {
@@ -510,7 +510,7 @@ Upgrade {
 - 与现有 `install.sh` 行为一致（按创建时间排序，而不是 semver）
 - 在不无限制占用磁盘空间的前提下提供回滚安全保障
 - 每个版本约为 ~20-30MB，因此 3 个版本总计约为 ~60-90MB
-- 当前活动版本和上一个版本始终受到清理保护，防止降级后被意外删除
+- 当前活动版本和上一个版本始终受到清理保护，防止降级后被意外删除。
 
 ## 实现阶段
 
@@ -527,13 +527,13 @@ Upgrade {
 
 **需要创建/修改的文件：**
 
-- `crates/vite_global_cli/src/commands/upgrade/mod.rs`（新建）
-- `crates/vite_global_cli/src/commands/upgrade/registry.rs`（新建）
-- `crates/vite_global_cli/src/commands/upgrade/platform.rs`（新建）
-- `crates/vite_global_cli/src/commands/upgrade/download.rs`（新建）
-- `crates/vite_global_cli/src/commands/upgrade/install.rs`（新建）
-- `crates/vite_global_cli/src/commands/mod.rs`（添加模块）
-- `crates/vite_global_cli/src/cli.rs`（添加命令变体 + 路由）
+- `crates/vp_global_cli/src/commands/upgrade/mod.rs` (new)
+- `crates/vp_global_cli/src/commands/upgrade/registry.rs` (new)
+- `crates/vp_global_cli/src/commands/upgrade/platform.rs` (new)
+- `crates/vp_global_cli/src/commands/upgrade/download.rs` (new)
+- `crates/vp_global_cli/src/commands/upgrade/install.rs` (new)
+- `crates/vp_global_cli/src/commands/mod.rs` (add module)
+- `crates/vp_global_cli/src/cli.rs` (add command variant + routing)
 
 **成功标准：**
 
@@ -568,7 +568,7 @@ Upgrade {
 **成功标准：**
 
 - [ ] 大型二进制文件的下载进度可见
-- [ ] 成功更新后会显示发布说明链接
+- [ ] 成功更新后会显示发布说明链接。
 
 ## 测试策略
 
@@ -618,7 +618,7 @@ vp -V
 - **自动检查更新**：带有用户主动选择通知的周期性后台检查（例如每天一次，缓存结果）
 - **更新通道**：允许通过配置文件固定到某个通道（stable、beta、nightly）
 - **增量更新**：只下载变更的文件，而不是完整 tarball
-- **Windows 支持**：为 Windows 原生安装扩展基于 PowerShell 的更新机制
+- **Windows 支持**：为 Windows 原生安装扩展基于 PowerShell 的更新机制。
 
 ## 参考资料
 

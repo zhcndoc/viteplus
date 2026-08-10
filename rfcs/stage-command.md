@@ -1,7 +1,7 @@
-# RFC: Vite+ `vp pm stage` 命令
+# RFC：Vite+ `vp pm stage` 命令
 
 - Issue: [#1674](https://github.com/voidzero-dev/vite-plus/issues/1674)
-- 状态：已在 [#1715](https://github.com/voidzero-dev/vite-plus/pull/1715) 中实现
+- 状态：已在 [#1715](https://github.com/voidzero-dev/vite-plus/pull/1715) 中实现。
 
 ## 摘要
 
@@ -53,7 +53,7 @@ npm 推出了 **分阶段发布**（npm CLI ≥ 11.15.0，Node ≥ 22.14.0），
 - npm: <https://docs.npmjs.com/staged-publishing>
 - pnpm: <https://pnpm.io/cli/stage>（在 pnpm 11.3 中加入，参见 <https://pnpm.io/blog/releases/11.3>）
 - yarn（berry）: <https://yarnpkg.com/cli/npm/publish>（`--staged` 标志）以及 `yarn npm stage …`
-- bun: 目前不支持分阶段发布（只有 `bun publish`）
+- bun: 目前不支持分阶段发布（只有 `bun publish`）。
 
 ## 提议的解决方案
 
@@ -179,9 +179,12 @@ yarn berry 在 `yarn npm stage` 下只暴露 `list` / `approve` / `reject`
 
 ## 实现架构
 
-当前代码位于 `crates/vite_pm_cli/`（clap 表层 + 分发）和 `crates/vite_install/src/commands/`（按命令的解析器）中。`PackageManagerCommand`/`PmCommands` 枚举同时被全局 CLI 和本地 NAPI 绑定通过 `#[command(flatten)]` 共享，因此添加一个变体会自动同时暴露到两个 CLI 中。
+当前代码位于 `crates/vp_pm_cli/`（clap 接口和分发）以及
+`crates/vite_install/src/commands/`（按命令划分的解析器）中。
+`PackageManagerCommand`/`PmCommands` 枚举通过 `#[command(flatten)]` 由全局 CLI
+和本地 NAPI 绑定共享，因此添加一个变体后会自动同时出现在两个 CLI 中。
 
-### 1. Clap 表层：`crates/vite_pm_cli/src/cli.rs`
+### 1. Clap 接口：`crates/vp_pm_cli/src/cli.rs`
 
 在 `PmCommands` 中添加一个 `Stage` 变体，以及一个 `StageCommands` 子命令枚举（参照现有的 `DistTagCommands`）：
 
@@ -282,17 +285,16 @@ pub struct StageCommandOptions<'a> {
 
 impl PackageManager {
     pub async fn run_stage_command(&self, options: &StageCommandOptions<'_>,
-        cwd: impl AsRef<AbsolutePath>) -> Result<ExitStatus, Error> { /* run_command */ }
+        cwd: impl AsRef<AbsolutePath>) -> Result<ExitStatus, Error> { /* 运行命令 */ }
 
     pub fn resolve_stage_command(&self, options: &StageCommandOptions) -> ResolveCommandResult {
-        // match self.client {
-        //   Pnpm                       => bin "pnpm", ["stage", <sub>, ...]
-        //   Npm                        => bin "npm",  ["stage", <sub>, ...]
-        //   Yarn (berry) Publish       => bin "yarn", ["npm", "publish", "--staged", ...]
-        //   Yarn (berry) List/Approve/Reject => bin "yarn", ["npm", "stage", <sub>, ...]
-        //   Yarn (berry) View/Download => warn + bin "npm", ["stage", <sub>, ...]
-        //   Yarn (classic) / Bun       => warn + bin "npm", ["stage", <sub>, ...]
-        // }
+        // 匹配 self.client：
+        //   Pnpm                       => 二进制文件 "pnpm"，["stage", <sub>, ...]
+        //   Npm                        => 二进制文件 "npm"， ["stage", <sub>, ...]
+        //   Yarn（berry）Publish       => 二进制文件 "yarn"，["npm", "publish", "--staged", ...]
+        //   Yarn（berry）List/Approve/Reject => 二进制文件 "yarn"，["npm", "stage", <sub>, ...]
+        //   Yarn（berry）View/Download => 警告 + 二进制文件 "npm"，["stage", <sub>, ...]
+        //   Yarn（classic）/ Bun       => 警告 + 二进制文件 "npm"，["stage", <sub>, ...]
     }
 }
 ```
@@ -303,7 +305,7 @@ impl PackageManager {
 pub mod stage;
 ```
 
-### 3. 处理器：`crates/vite_pm_cli/src/handlers.rs`
+### 3. 处理器：`crates/vp_pm_cli/src/handlers.rs`
 
 导入 `stage::{StageCommandOptions, StageSubcommand}`，并在 `run_pm_subcommand` 中添加一个 `PmCommands::Stage` 分支，将 clap 的 `StageCommands` 转换为拥有所有权的 `StageSubcommand`（形状与现有的 `DistTag`/`Owner`/`Token` 分支一致）。
 
@@ -408,9 +410,7 @@ error: 未提供以下必需参数：
 
 ## 文档
 
-- `docs/guide/install.md`：`vp pm <command>` 的“Advanced”部分列出
-  了转发的命令；添加 `vp pm stage`，附上一段简短的分阶段发布说明，并
-  指向 npm 文档。
+- `docs/guide/install.md`：`vp pm <command>` 的“高级”部分列出了转发的命令；添加 `vp pm stage`，附上一段简短的分阶段发布说明，并指向 npm 文档。
 - 在相关位置注明 yarn 的注意事项（`vp pm stage` ≠ `yarn stage`）。
 - 重新生成任何受影响的帮助快照（`command-pm-*`）。
 

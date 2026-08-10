@@ -100,10 +100,10 @@ ghcr.io/voidzero-dev/vite-plus vp <cmd>` 用于试用 vp，或在干净的工具
 
 ## 非目标
 
-1. 生产运行时镜像（改为记录模式，请参见 Future Work 了解一种可能的轻量运行时基础镜像）。
+1. 生产运行时镜像（改为记录模式，请参见未来工作了解一种可能的轻量运行时基础镜像）。
 2. 按 Node.js 版本键控的镜像标签（本设计要避免的标签泛滥）。
-3. Alpine/musl 镜像变体。glibc 是默认选项（官方、签名验证过的 Node.js，无原生插件破坏），而 Alpine 被推迟处理（参见 Future Work），而不是在第一个版本中发布。
-4. `vp prune --docker` 单仓库裁剪（Future Work）。
+3. Alpine/musl 镜像变体。glibc 是默认选项（官方、签名验证过的 Node.js，无原生插件破坏），而 Alpine 被推迟处理（参见未来工作），而不是在第一个版本中发布。
+4. `vp prune --docker` 单仓库裁剪（未来工作）。
 5. Docker Hub 发布（目前仅限 GHCR）。
 
 ## 设计
@@ -313,7 +313,8 @@ docker run --rm -it -v "$PWD:/app" -w /app ghcr.io/voidzero-dev/vite-plus vp bui
    之后有需求，再考虑预烘焙或离线变体。）
 2. **默认包含原生构建工具链。** 是否在默认镜像中包含 `build-essential`/`python3`
    （体积更大，但原生扩展可直接工作），还是保持默认精简，并在
-   `-full` 变体中添加它们？（倾向：默认包含，因为这是一个构建镜像；之后再提供 `-slim`。）
+   `-full` 变体中添加它们？（倾向：默认包含，因为这是一个构建镜像；之后再提供
+   `-slim`。）
 3. **`vp install --prod` 语义用于运行时拷贝。** 确认 vp 对于仅生产环境安装所暴露的确切标志
    集，以及在文档示例模式中，专用的 deps 阶段是否能改进层缓存。
 4. **镜像命名。** `ghcr.io/voidzero-dev/vite-plus` 还是使用 `-toolchain` 后缀，以
@@ -337,18 +338,9 @@ docker run --rm -it -v "$PWD:/app" -w /app ghcr.io/voidzero-dev/vite-plus vp bui
    （测得 Alpine SSR 运行时约 136 MB），但由于 musl 的权衡，这也是
    现在不发布它的原因：
 
-   - 在 musl 上，vp 会从 `unofficial-builds.nodejs.org` 下载 Node.js，
-     该站点不提供 PGP 签名（见 `crates/vite_js_runtime/src/providers/node.rs`），
-     因此 Alpine 变体无法获得 Debian 镜像所具备的“官方、已签名验证的 Node.js”
-     保证。
-   - musl 是经典的原生 addon 关键风险点（预编译 addon 通常面向 glibc；在
-     musl 上它们需要 musl 预构建包或源码编译，再加上 `gcompat`/`libc6-compat`），
-     这是 Vite+ 项目经常遇到的问题（better-sqlite3、sharp）。更广泛的业界也
-     因相同原因将 musl 视为风险点（Volta 不支持 musl，mise 需要
-     `MISE_LIBC=musl`，moon 需要 `MOON_TOOLCHAIN_FORCE_GLOBALS=true`，
-     Turborepo 需要 `apk add libc6-compat`）。
-   - musl 版 Node.js 二进制只能运行在 musl 基础镜像上，因此 Alpine 构建器
-     需要一个 Alpine 运行时阶段（而不是 debian-slim/distroless）。
+   - 在 musl 上，vp 从 `unofficial-builds.nodejs.org` 下载 Node.js，该站点不发布 PGP 签名（参见 `crates/vp_js_runtime/src/providers/node.rs`），因此 Alpine 变体无法获得 Debian 镜像所具备的“官方、经签名验证的 Node.js”保证。
+   - musl 是原生插件的典型棘手问题（预构建插件通常基于 glibc；在 musl 上则需要 musl 预构建版本，或进行源码编译并搭配 `gcompat`/`libc6-compat`），而 Vite+ 项目经常会遇到这种情况（better-sqlite3、sharp）。业界也出于相同原因将 musl 视为风险因素（Volta 不支持 musl，mise 需要 `MISE_LIBC=musl`，moon 需要 `MOON_TOOLCHAIN_FORCE_GLOBALS=true`，Turborepo 需要执行 `apk add libc6-compat`）。
+   - musl Node.js 二进制文件只能在 musl 基础镜像上运行，因此 Alpine 构建器需要使用 Alpine 运行时阶段（而不是 debian-slim/distroless）。
 
    如果要添加，应作为可选的 `-alpine` 变体发布，并附带醒目的注意事项，
    以及文档化的 libc 自动检测/覆盖。
@@ -367,4 +359,4 @@ docker run --rm -it -v "$PWD:/app" -w /app ghcr.io/voidzero-dev/vite-plus vp bui
 - 分发先例：pnpm <https://pnpm.io/docker>, Deno <https://github.com/denoland/deno_docker>,
   mise <https://mise.jdx.dev/mise-cookbook/docker.html>, Turborepo
   <https://turborepo.dev/docs/guides/tools/docker>, distroless
-  <https://github.com/GoogleContainerTools/distroless/blob/main/nodejs/README.md>.
+  <https://github.com/GoogleContainerTools/distroless/blob/main/nodejs/README.md>】【。

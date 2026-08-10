@@ -1,7 +1,7 @@
 # RFC：验证 Node.js `SHASUMS256.txt` 的 PGP 签名
 
 - Issue: [#1807](https://github.com/voidzero-dev/vite-plus/issues/1807)
-- 状态：已在 [#1848](https://github.com/voidzero-dev/vite-plus/pull/1848) 中实现
+- 状态：已在 [#1848](https://github.com/voidzero-dev/vite-plus/pull/1848) 中实现。
 
 ## 摘要
 
@@ -19,7 +19,8 @@ Node.js 会使用发布者的 PGP 密钥对 `SHASUMS256.txt` 进行签名（见
 
 ## 背景
 
-运行时下载流程会先解析出一个预期哈希，然后再据此验证归档包（`crates/vite_js_runtime/src/runtime.rs`）：
+运行时下载流程会解析一次预期哈希值，然后据此验证归档文件
+（`crates/vp_js_runtime/src/runtime.rs`）：
 
 ```rust
 let expected_hash = match &download_info.hash_verification {
@@ -103,12 +104,11 @@ musl/Windows 交叉构建。
 
 ### 内嵌发布密钥环
 
-受信任密钥从
+受信任的密钥来自
 [`nodejs/release-keys`](https://github.com/nodejs/release-keys) 仓库
-（所有当前与历史发布密钥）整理后 vendored 到
-`crates/vite_js_runtime/src/assets/node-release-keys.asc`，并通过 `include_str!`
-嵌入。历史密钥是必需的：例如 `node-v18.20.5` 是由一个不在 Node 当前“主密钥”
-列表中的密钥签名的，因此如果只保留当前密钥，Node 18 LTS 的验证就会失败。
+（所有当前及历史发布密钥），被纳入
+`crates/vp_js_runtime/src/assets/node-release-keys.asc`，并通过
+`include_str!` 嵌入。必须包含历史密钥：例如，`node-v18.20.5` 由一个不在 Node 当前“主密钥”列表中的密钥签名，因此仅包含当前密钥的集合会导致 Node 18 LTS 验证失败。
 
 ### 验证策略（与 `gpgv` 一致）
 
@@ -190,11 +190,11 @@ pub struct ShasumsSignature {
 所有当前发布者的密钥都已包含，因此这只会影响某个全新的发布者在密钥环刷新之前的短暂窗口。
 
 密钥环会自动保持最新。一个定时工作流
-（`.github/workflows/update-node-release-keys.yml`，每周执行）会通过
+（`.github/workflows/update-node-release-keys.yml`，每周运行）通过
 `.github/scripts/update-node-release-keys.sh` 从 `nodejs/release-keys` 重新生成
-内嵌密钥环，并在内容变化时创建拉取请求。该 PR **不会自动合并**：在信任根更新之前，
-需要人工审核哪些密钥发生了变化，而 PR CI（`vite_js_runtime` 测试）会确认每个 vendored 密钥仍然可以解析。
-同一个脚本也可以在本地手动运行，以按需刷新密钥环。
+嵌入式密钥环，并在密钥环发生变化时创建拉取请求。该拉取请求**不会**自动合并：在人类审查发生变化的密钥
+后，才会更新信任锚点；同时，拉取请求的 CI（`vp_js_runtime` 测试）
+会确认每个 vendored 密钥仍能正确解析。同一脚本也可以在本地运行，以按需刷新密钥环。
 
 ### 运维者的关闭选项
 
@@ -213,26 +213,21 @@ Vite+ 只执行**公钥签名验证**，因此不适用。当前没有修复版 
 
 ## 实现
 
-- `crates/vite_js_runtime/src/pgp_verify.rs`（新增）：密钥环解析、
-  `verify_clearsigned`、吊销和子密钥策略检查，以及异步
-  `verify_signed_shasums` 包装器（在阻塞线程上运行；密钥解析和
-  验证属于 CPU 密集型）。
-- `crates/vite_js_runtime/src/assets/node-release-keys.asc`（新增）：内置
-  的发布密钥环。
-- `crates/vite_js_runtime/src/provider.rs`：`ShasumsSignature`，以及
-  `HashVerification::ShasumsFile` 上的 `signature` 字段。
-- `crates/vite_js_runtime/src/providers/node.rs`：构建 `.asc` URL，并根据解析出的主机设置 `required`。
-- `crates/vite_js_runtime/src/runtime.rs`：获取/验证 `.asc`，对非官方镜像做尽力而为的回退处理。
-- `crates/vite_js_runtime/src/error.rs`：`SignatureVerificationFailed`。
+- `crates/vp_js_runtime/src/pgp_verify.rs`（新增）：密钥环解析、`verify_clearsigned`、撤销和子密钥策略检查，以及异步的 `verify_signed_shasums` 包装器（在阻塞线程上运行；密钥解析和验证受 CPU 限制）。
+- `crates/vp_js_runtime/src/assets/node-release-keys.asc`（新增）：内置的发布密钥环。
+- `crates/vp_js_runtime/src/provider.rs`：`ShasumsSignature`，以及 `HashVerification::ShasumsFile` 上的 `signature` 字段。
+- `crates/vp_js_runtime/src/providers/node.rs`：构建 `.asc` URL，并根据解析出的主机设置 `required`。
+- `crates/vp_js_runtime/src/runtime.rs`：获取并验证 `.asc`，并为非官方镜像提供尽力而为的回退方案。
+- `crates/vp_js_runtime/src/error.rs`：`SignatureVerificationFailed`。
 
 ## 测试
 
-单元测试使用位于
-`crates/vite_js_runtime/src/assets/test/` 下的内置真实测试夹具：
+单元测试使用了目录
+`crates/vp_js_runtime/src/assets/test/` 下随附的真实夹具：
 
 - 一个真实发布版本能够通过验证并返回预期的校验和。
 - 被篡改的 SHASUMS 正文会被拒绝。
-- 对空/不受信任密钥环的签名会被拒绝。
+- 对空密钥环或不受信任密钥环的签名会被拒绝。
 - 非清签名输入会被拒绝。
 - 针对之前曾出问题的情况提供了回归测试夹具：来自
   现已过期密钥的发布（`v18.14.0`）、其密钥后来被重新认证的发布
@@ -250,8 +245,8 @@ Vite+ 只执行**公钥签名验证**，因此不适用。当前没有修复版 
 
 ## 参考
 
-- Issue [#1807](https://github.com/voidzero-dev/vite-plus/issues/1807)
-- [Node.js: Verifying binaries](https://github.com/nodejs/node#verifying-binaries)
+- 问题 [#1807](https://github.com/voidzero-dev/vite-plus/issues/1807)
+- [Node.js：验证二进制文件](https://github.com/nodejs/node#verifying-binaries)
 - [`nodejs/release-keys`](https://github.com/nodejs/release-keys)
-- [`pgp` (rPGP)](https://crates.io/crates/pgp)
+- [`pgp`（rPGP）](https://crates.io/crates/pgp)
 - [`js-runtime.md`](./js-runtime.md)

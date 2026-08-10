@@ -42,14 +42,14 @@ vite-task 仓库已经实现了与此设计完全相同的可用方案，如今�
 
 | Crate                      | 角色                                                                                                                                                                                                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pty_terminal`             | Spawns a child in a PTY (`portable-pty`), feeds output through a `vt100` emulator, answers cursor-position queries, handles resize and ctrl-c. Encodes platform workarounds: ConPTY on Windows, a global lock for musl PTY crashes, macOS slave-fd lifetime for EIO truncation. |
-| `pty_terminal_test`        | `TestTerminal` wrapper plus `Reader::expect_milestone(name)`: block until the child emits a named milestone, then return the rendered screen.                                                                                                                                   |
-| `pty_terminal_test_client` | Child-side helper that encodes milestones as window-title updates (`OSC 2 ; pty-terminal-test:<32-hex-id>:<base64url(name)>`, a fresh id per emission), which survive both Unix PTYs and Windows ConPTY and arrive in-order with the output they mark.                          |
-| `snapshot_test`            | Minimal snapshot store: compare or update via `UPDATE_SNAPSHOTS=1`, write `<name>.new` on mismatch, return a unified diff as the failure message.                                                                                                                               |
+| `pty_terminal`             | 在 PTY 中生成子进程（`portable-pty`），通过 `vt100` 模拟器传递输出，响应光标位置查询，并处理终端大小调整和 ctrl-c。封装了平台相关的变通方案：Windows 上使用 ConPTY、用于规避 musl PTY 崩溃的全局锁，以及用于避免 EIO 截断的 macOS 从属文件描述符生命周期处理。 |
+| `pty_terminal_test`        | `TestTerminal` 包装器以及 `Reader::expect_milestone(name)`：阻塞等待子进程发出指定名称的里程碑，然后返回渲染后的屏幕。                                                                                                                                   |
+| `pty_terminal_test_client` | 子进程侧辅助工具，通过窗口标题更新将里程碑编码为（`OSC 2 ; pty-terminal-test:<32-hex-id>:<base64url(name)>`，每次发出时使用一个新的 id），这些信息能够在 Unix PTY 和 Windows ConPTY 中存活，并与其标记的输出按顺序到达。                          |
+| `snapshot_test`            | 极简快照存储：通过 `UPDATE_SNAPSHOTS=1` 进行比较或更新，发生不匹配时写入 `<name>.new`，并将统一差异作为失败消息返回。                                                                                                                               |
 
-在此基础上，`vite_task_bin/tests/e2e_snapshots` 实现了一个 `libtest-mimic` 自定义测试目标：fixture 在 `snapshots.toml` 中声明用例，步骤采用 argv 数组（不使用 shell），交互步骤携带有序的 `interactions` 列表，并且每个用例都会生成一个 Markdown 快照，其中包含命令行、交互日志，以及在每个里程碑和退出时捕获的带围栏终端截图。
+在此基础上，`vt_bin/tests/e2e_snapshots` 实现了一个 `libtest-mimic` 自定义测试目标：fixture 在 `snapshots.toml` 中声明用例，步骤采用 argv 数组（不使用 shell），交互式步骤包含有序的 `interactions` 列表，并且每个用例都会生成一个 Markdown 快照，其中包含命令行、交互日志，以及在每个里程碑和退出时捕获的带围栏终端截图。
 
-vite-plus 已经通过 git 依赖了 vite-task 的 crate（`fspy`、`vite_glob`、`vite_path`、`vite_str`、`vite_task`、`vite_workspace`），而 Rust CLI 的交互式选择器工作计划基于 `vite_select`，它已经暴露了里程碑发送所需的 `after_render` 钩子。重用这套栈是实现确定性交互测试的最低风险路径。
+vite-plus 已经通过 git 依赖 vite-task 的 crate（`fspy`、`vt_glob`、`vt_path`、`vt_str`、`vt`、`vt_workspace`），而 Rust CLI 的交互式选择器工作计划基于 `vt_select` 开展；该 crate 已经提供了里程碑发出所需的 `after_render` 钩子。复用这套技术栈是实现确定性交互式测试的最低风险路径。
 
 ## 目标
 
@@ -71,10 +71,10 @@ vite-plus 已经通过 git 依赖了 vite-task 的 crate（`fspy`、`vite_glob`�
 新布局（名称仍可继续讨论）：
 
 ```
-crates/vite_cli_snapshots/          # 仅用于开发的 crate，绝不发布或打包
-├── Cargo.toml                      # publish = false；dev 依赖：libtest-mimic、
+crates/vp_cli_snapshots/          # 仅用于开发的 crate，绝不会发布或打包
+├── Cargo.toml                      # publish = false；dev-deps：libtest-mimic、
 │                                   #   pty_terminal_test、snapshot_test
-├── src/bin/vpt.rs                  # 测试工具多合一入口（独立 bin target）
+├── src/bin/vpt.rs                  # 测试工具多功能程序（独立的 bin 目标）
 └── tests/cli_snapshots/
     ├── main.rs                     # libtest-mimic 运行器（harness = false）
     ├── redact.rs                   # 输出规范化
@@ -90,9 +90,9 @@ crates/vite_cli_snapshots/          # 仅用于开发的 crate，绝不发布或
                 └── <case>.md       # 记录的快照
 ```
 
-运行器是一个独立的 workspace crate，而不是 `crates/vite_global_cli` 的测试目标。产品 crate 保持不变：目标列表里没有仅用于测试的 bin，依赖图里没有 `vpt` 依赖，也无需维护打包排除项。`vpt` 是运行器 crate 自身的 bin target，因此 `CARGO_BIN_EXE_vpt` 仍然可以免费解析到它。
+运行器是一个专用的 workspace crate，而不是 `crates/vp_global_cli` 的测试目标。产品 crate 保持不变：其目标列表中没有仅用于测试的 bin，依赖关系图中没有 `vpt` 依赖，也无需维护任何打包排除项。`vpt` 本身就是运行器 crate 的一个 bin 目标，因此 `CARGO_BIN_EXE_vpt` 仍然可以直接解析到它。
 
-这种布局唯一放弃的是 `CARGO_BIN_EXE_vp`（Cargo 只会为定义了该 binary 的 package 的测试设置它）。取而代之的是，运行器会在运行时从自身可执行文件位置解析 `vp`：测试二进制运行在 `target/<profile>/deps/` 下，因此全局 binary 位于父目录中（这也是 `assert_cmd::cargo_bin` 使用的同样技巧）。运行时查找对 Windows CI 流程也更友好；nextest 归档是在 Linux 上构建、再到另一台机器上运行，而不是像 `env!` 那样在编译期烘焙一个绝对路径。构建顺序由入口 recipe 处理（`just snapshot-test` 和 pnpm 包装器会在 `cargo test -p vite_cli_snapshots` 之前先执行 `cargo build -p vite_global_cli`）；如果 binary 缺失，运行器会立即失败并给出该说明，而不是去测试一个过期的构建产物。
+这种布局唯一放弃的是 `CARGO_BIN_EXE_vp`（Cargo 只会为定义该二进制文件的 package 的测试设置它）。取而代之的是，运行器在运行时根据自身的可执行文件位置解析 `vp`：测试二进制文件会从 `target/<profile>/deps/` 运行，因此全局二进制文件位于其父目录中（这与 `assert_cmd::cargo_bin` 所采用的技术相同）。相比通过 `env!` 嵌入编译时绝对路径，运行时查找也更适合 Windows CI 流程，因为 nextest 归档文件是在 Linux 上构建、在另一台机器上运行的。构建顺序由入口配方处理（`just snapshot-test` 和 pnpm 包装器会先运行 `cargo build -p vp_global_cli`，再运行 `cargo test -p vp_cli_snapshots`）；如果找不到二进制文件，运行器会立即失败，并给出相应指令，而不是使用过时的构建进行测试。
 
 每个 case 的执行流程：
 
@@ -243,9 +243,9 @@ steps = [
 
 仪器化点：
 
-- **Rust 提示**（`crates/vite_global_cli`、`crates/vite_shared`）：通过 `pty_terminal_test_client` 发出（一个新的 git 依赖，来源与现有的 vite-task crates 相同）。计划中的交互式包选择器基于 `vite_select`，其 `after_render(RenderState)` 钩子正是为此设计的；选择器每次渲染都会发出 `select:app-target:<index>`。
-- **TS 提示**（`packages/prompts`）：一个小型辅助函数（`emitMilestone(name)`）写入相同的字节序列，并接入每个 prompt 组件的渲染循环。命名约定：`<kind>:<id>:<state>`，例如 `text:project-name:my-app`、`select:template:1`、`confirm:approve-builds:yes`、`spinner:install:stop`。prompt 调用点会获得一个稳定的 `id`（组件种类加上一个在有歧义时显式指定的名称）。
-- **非 prompt 的同步点**：长时间运行的命令可以标记稳定的生命周期点（`dev-server:ready`、`watch:rebuilt`），这样服务器和 watch 模式的测试在发送下一个按键或 ctrl-c 之前就有东西可等待。这就是解除搁置的 `command-pack-watch-restart` 用例的关键。
+- **Rust 提示**（`crates/vp_global_cli`、`crates/vp_shared`）：通过 `pty_terminal_test_client` 发出（一个新的 git 依赖项，来源与现有的 vite-task crates 相同）。计划中的交互式包选择器基于 `vt_select` 构建，其 `after_render(RenderState)` 钩子正是为此设计的；选择器每次渲染都会发出 `select:app-target:<index>`。
+- **TS 提示**（`packages/prompts`）：一个小型辅助函数（`emitMilestone(name)`）写入相同的字节序列，并接入每个提示组件的渲染循环。命名约定：`<kind>:<id>:<state>`，例如 `text:project-name:my-app`、`select:template:1`、`confirm:approve-builds:yes`、`spinner:install:stop`。提示调用点会获得一个稳定的 `id`（组件类型加上在存在歧义时明确指定的名称）。
+- **非提示同步点**：长时间运行的命令可以标记稳定的生命周期节点（`dev-server:ready`、`watch:rebuilt`），这样服务器和监视模式的测试就有可以等待的节点，然后再发送下一次按键或 ctrl-c。这正是解除搁置的 `command-pack-watch-restart` 用例阻塞的关键。
 
 里程碑名称会刻意编码渲染后的状态（查询文本、光标索引、选择项），而不只是一个事件名。在按下 `down` 后等待 `select:template:1`，意味着屏幕截图不会与渲染发生竞争。
 
@@ -313,7 +313,7 @@ steps = [
 
 ## vpt 测试工具
 
-`vpt` 是一个小型 Rust 多功能工具（`crates/vite_cli_snapshots` 的一个 bin 目标，因此它的依赖永远不会触及产品 crate），用于替代旧语料库中占主导地位的 shell 内建命令（427 个 `cat`、141 个 `test`，以及 `mkdir`/`rm`/`ls`/`echo`/`cp`/`chmod`/`printf` 和 `json-edit`）。
+`vpt` 是一个小型 Rust 多功能工具（`crates/vp_cli_snapshots` 的一个 bin 目标，因此其依赖不会触及产品 crate），用于替代旧语料库中占主导地位的 shell 内建命令（427 个 `cat`、141 个 `test`，以及 `mkdir`/`rm`/`ls`/`echo`/`cp`/`chmod`/`printf` 和 `json-edit`）。
 
 它刻意不是一种新设计。vite-task 的 `vtt` 多功能工具已经覆盖了这部分几乎全部能力，并提供了 20 个子命令，因此 `vpt` 在重叠之处直接采用 `vtt` 的子命令名称和语义，并移植其实现（它们按设计只依赖 std，每个只有几十行）。保持契约完全一致意味着 fixtures、快照和使用习惯可以在两个仓库之间直接迁移。
 
@@ -338,7 +338,7 @@ steps = [
 
 `vtt` 中没有对应项的 vp 专属新增命令：`vpt json-edit <file> <dot-path> <value>`（现有 snap-tests 中用于 fixture manifest 编辑的 `json-edit` 辅助工具）以及 `vpt chmod`。
 
-曾考虑复用 `vtt` 本身，但最终否决。Cargo git 依赖只提供库代码，绝不会提供某个依赖的二进制文件，因此获取 `vtt` 可执行文件就需要通过仓库外的 `cargo install --git`，并且要与本地开发、CI 和 nextest 归档中的其他 vite-task git 依赖保持锁步更新。将其作为库复用则意味着要依赖 `vite_task_bin`，并把整个 `vt` 产品树（任务引擎、TUI、服务器、fspy）拖入 runner 构建，只为了几个非常简单的辅助工具。这样一来，vp 专属子命令还必须先提上游 PR 并更新依赖，测试才能在这里使用它们。如果将来重复代码真的变成维护负担，预定路径是上游提取：vite-task 将这些子命令移入一个小型库 crate（就像 `pty_terminal` 目前为模拟器所做的那样），然后 `vtt`/`vpt` 变成其薄薄的 bin 包装器。
+我们曾考虑过直接复用 `vtt` 本身，但最终否决了这一方案。Cargo 的 git 依赖只提供库代码，从不提供依赖项的二进制文件，因此要获取 `vtt` 可执行文件，就需要在本地开发、CI 和 nextest 归档中，通过一个与其他 vite-task git 依赖严格同步锁定的、额外的 `cargo install --git` 步骤来完成。将其作为库复用，则意味着依赖 `vt_bin`，并将整个 `vt` 产品树（任务引擎、TUI、服务器、fspy）拖入 runner 构建中，而实际只需要几个简单的辅助工具。此外，vp 专属子命令还需要先提交上游 PR，再升级依赖，之后这里的测试才能使用它们。如果重复实现最终变成维护负担，指定的演进路径是上游提取：vite-task 将这些子命令移入一个小型库 crate（正如 `pty_terminal` 已经为模拟器提供的功能一样），而 `vtt`/`vpt` 则成为基于该库的轻量级 bin 包装器。
 
 `vpt` 打印的一切都是确定性的，并且在各平台上完全一致，这直接针对造成 182 个 Windows 跳过案例的最大原因。随着迁移不断发现值得一等化的模式，子命令列表会继续扩展；任何不值得做成子命令的东西，都说明旧案例测试的是 shell，而不是 vp。
 
@@ -354,19 +354,19 @@ steps = [
 
 ## CI 集成
 
-- 该测试套件是一个 cargo test 目标：先执行 `cargo build -p vite_global_cli`，再执行 `cargo test -p vite_cli_snapshots --test cli_snapshots`，并封装在 `just snapshot-test` 配方中。分片使用 `cargo nextest --partition`，而不是自定义的 `--shard=i/n` 逻辑。
-- 两种 flavor 从第一天起就在 CI 中运行，且位于独立的作业中。`cli-snapshot-test`（Linux 和 macOS，每个 OS 一个执行分支）会构建 `packages/cli/dist`，安装发布版二进制文件，并使用全局 flavor 通过 `VP_SNAP_GLOBAL_VP` 指向已安装的二进制文件来运行完整套件，因此不需要第二次编译 `vite_global_cli`。（对于无法提供其中一种 flavor 的环境，`VP_SNAP_SKIP_FLAVORS` 仍然可用，例如本地运行且未构建 `dist/` 的情况。）
-- Windows 方案复用了现有的跨编译基础设施：`build-windows-tests` 生成一个专用的 `-p vite_cli_snapshots` nextest archive（包含测试二进制和 `vpt`），而 `cli-snapshot-test-windows` 作业在 `windows-latest` 上运行它，且不需要 Rust toolchain。全局 `vp` 通过 `VP_SNAP_GLOBAL_VP` 由 `build-windows-cli` 预构建提供，JS CLI 则在运行器上为本地 flavor 构建，nextest 的 `--workspace-remap` 会在运行时重写 `CARGO_MANIFEST_DIR`/`CARGO_BIN_EXE_vpt`，从而让重定位后的二进制在检出目录中找到 fixtures 和辅助程序（运行器之所以优先使用这些运行时值而不是编译期路径，正是因为这个原因）。
-- musl 覆盖保留其 Alpine 容器执行分支；`pty_terminal` 已经在 musl 内部对 PTY 启动做了串行化处理。
-- 通过测试退出码判断通过/失败。`git diff` gate 和 `retry-failed-snap-tests.sh` 不适用于这个新套件。若某个用例被证明是不稳定的，修复方式应是设定里程碑或添加脱敏规则，而不是重跑；临时隔离（`ignore = true` 加上一个 issue）是缓冲阀。
+- 该测试套件是一个 cargo test 目标：先执行 `cargo build -p vp_global_cli`，再执行 `cargo test -p vp_cli_snapshots --test cli_snapshots`，并封装在 `just snapshot-test` 配方中。分片使用 `cargo nextest --partition`，而不是自定义的 `--shard=i/n` 逻辑。
+- 两种风格从第一天起都会在 CI 中运行，并使用独立的任务。`cli-snapshot-test`（Linux 和 macOS，每个操作系统一个任务）会构建 `packages/cli/dist`，安装 release 二进制文件，并运行完整测试套件；全局风格通过 `VP_SNAP_GLOBAL_VP` 指向已安装的二进制文件，因此无需再次编译 `vp_global_cli`。（对于无法提供其中一种风格的环境，`VP_SNAP_SKIP_FLAVORS` 仍然可用，例如本地运行时没有构建 `dist/`。）
+- Windows 方案复用现有的交叉编译基础设施：`build-windows-tests` 会生成专用于 `-p vp_cli_snapshots` 的 nextest 归档（包含测试二进制文件和 `vpt`），而 `cli-snapshot-test-windows` 任务会在不安装 Rust 工具链的 `windows-latest` 上运行该归档。全局 `vp` 通过 `VP_SNAP_GLOBAL_VP` 使用 `build-windows-cli` 预先构建的版本，JS CLI 则在 runner 上为本地风格构建；nextest 的 `--workspace-remap` 会在运行时重写 `CARGO_MANIFEST_DIR`/`CARGO_BIN_EXE_vpt`，使迁移后的二进制文件能够在 checkout 中找到 fixtures 和辅助工具（runner 之所以优先使用这些运行时值而不是编译时路径，正是因为这个原因）。
+- musl 覆盖率保留其 Alpine 容器任务；`pty_terminal` 已经在 musl 上于内部对 PTY 启动进行串行化。
+- 通过/失败取决于测试退出代码。`git diff` 门禁和 `retry-failed-snap-tests.sh` 不适用于新套件。如果某个用例被证明存在不稳定性，修复方式应是制定里程碑或添加脱敏规则，而不是重新运行；临时隔离（`ignore = true` 加上 issue）是缓冲手段。
 
 开发者命令：
 
 ```bash
-just snapshot-test                                                  # 构建 vp，运行全部
+just snapshot-test                                                  # 构建 vp，运行全部测试
 just snapshot-test create                                           # 子字符串过滤
 UPDATE_SNAPSHOTS=1 just snapshot-test create_basic                  # 接受变更
-cargo test -p vite_cli_snapshots --test cli_snapshots -- create     # 直接运行，前提是 vp 已构建
+cargo test -p vp_cli_snapshots --test cli_snapshots -- create     # 直接运行，如果 vp 已构建
 ```
 
 轻量的 pnpm 包装器（`pnpm snapshot-test [filter]`）保持与当前脚本一致的 DX 体验。
@@ -380,7 +380,7 @@ tool migrate-snap-tests packages/cli/snap-tests --vp local [name-filter]
 tool migrate-snap-tests packages/cli/snap-tests-global --vp global [name-filter]
 ```
 
-对于每个旧的 case 目录，它会在 `crates/vite_cli_snapshots/tests/cli_snapshots/fixtures/` 下生成一个新的 fixture，并追加到迁移报告中。
+对于每个旧 case 目录，它都会在 `crates/vp_cli_snapshots/tests/cli_snapshots/fixtures/` 下生成一个新的 fixture，并追加到迁移报告中。
 
 ### 字段映射
 
@@ -415,7 +415,7 @@ tool migrate-snap-tests packages/cli/snap-tests-global --vp global [name-filter]
 
 旧的 `snap.txt` 文件不会被转换；这些格式衡量的内容不同（字节流 vs 渲染后的屏幕）。每批次的迁移流程如下：
 
-1. `tool migrate-snap-tests <old-dir> --vp <flavor> <filter>`
+1. `tool migrate-snap-tests <old-dir> --vp <flavor> <filter>` 
 2. `UPDATE_SNAPSHOTS=1 just snapshot-test <filter>` 记录基线
 3. 将新的 `.md` 与旧的 `snap.txt` 逐个审查对比（这一步很适合由 agent 执行：相同的命令、相同的 fixture、“新的快照是否断言了旧的快照所断言的一切”）
 4. 在同一个 PR 中删除已迁移的旧 case 目录，这样任何时刻每个 case 都只存在于一棵目录树中。
@@ -426,9 +426,9 @@ tool migrate-snap-tests packages/cli/snap-tests-global --vp global [name-filter]
 
 曾考虑过使用 TypeScript runner（node-pty 加上一个 JS vt100，例如 `@xterm/headless`），因为当前 runner 和本地 CLI 都是 TS。之所以否决，是因为：里程碑协议、ConPTY 的顺序怪癖、musl 下的 PTY 崩溃、macOS 的 EIO 截断，以及 snapshot/diff 机制，这些在本仓库可通过现有依赖模式（指向 vite-task 的 git 依赖）直接复用的 crates 中都已经解决并经过实战检验；node-pty 是一个带有自身构建/预编译矩阵的原生模块；而 Rust 的 `libtest-mimic` 目标可以与工作区现有的 `just test` / nextest / xwin CI 机制集成。TS 端仍然会参与其中（`packages/prompts` 中的里程碑发出、迁移工具、本地 registry），但进程编排由 Rust 负责。
 
-### 独立的 runner crate，而不是 `vite_global_cli` 的测试目标
+### 专用 runner crate，而不是 `vp_global_cli` 的测试目标
 
-vite-task 将其 runner 放在产品二进制 crate（`vite_task_bin`）内部，这也是它的测试可以使用 `CARGO_BIN_EXE_vt` 的原因。这里曾考虑照搬这种做法，但最终否决。二进制目标不能使用 dev-dependencies，因此 `vpt` 的依赖会变成 `vite_global_cli` 的普通依赖，把仅用于测试的代码一起带进产品构建图；该包的每次发布构建都会多产出一个二进制，打包层必须永远将其排除；并且产品 crate 的 manifest 将不再真正描述这个产品本身。单独的 `crates/vite_cli_snapshots`（`publish = false`，并且完全从发布构建中排除）可以把这些全部隔离在产品之外。代价是在运行时从目标目录解析 `vp`，而不是使用 `env!("CARGO_BIN_EXE_vp")`，再加上一个用于构建顺序的包装 recipe；不过，对于 Windows 上重定位后的 nextest archives，运行时查找也是更稳妥的选择。
+vite-task 将其 runner 放在产品 bin crate（`vt_bin`）中，这正是其测试能够使用 `CARGO_BIN_EXE_vt` 的原因。这里曾考虑照搬这一做法，但最终否决了。Bin target 不能使用 dev-dependencies，因此 `vpt` 的依赖会变成 `vp_global_cli` 的常规依赖，使产品构建图膨胀并包含仅供测试使用的代码；每次构建该 package 的发布版本都会额外生成一个二进制文件，而打包流程必须永远将其排除；并且产品 crate 的 manifest 也将不再准确描述产品本身。专用的 `crates/vp_cli_snapshots`（设置 `publish = false`，完全排除在发布构建之外）可以将这些内容全部隔离在产品之外。代价是需要在运行时从 target 目录解析 `vp`，而不能使用 `env!("CARGO_BIN_EXE_vp")`，并且需要一个用于保证构建顺序的包装 recipe；对于 Windows 上重新放置的 nextest 归档而言，运行时查找也是更稳健的选择。
 
 ### 使用 argv 步骤和 `vpt`，而不是 shell
 
@@ -463,9 +463,9 @@ global/local 的拆分重复了 fixture，并让两个表面逐渐漂移（PR #2
 
 ## 发布计划
 
-阶段 1，runner：添加 git 依赖（`pty_terminal_test`、`pty_terminal_test_client`、`snapshot_test`）、包含其 `cli_snapshots` 测试目标和 `vpt` bin 的 `crates/vite_cli_snapshots` crate、flavor 供应、脱敏、`just snapshot-test` 配方，以及 CI 集成。先提交一些手写用例，覆盖两种 flavor、一个交互式用例和一个 `local-registry` 用例。
+阶段 1，运行器：添加 git 依赖（`pty_terminal_test`、`pty_terminal_test_client`、`snapshot_test`）、包含 `cli_snapshots` 测试目标和 `vpt` 二进制的 `crates/vp_cli_snapshots` crate、风味配置、脱敏、`just snapshot-test` 配方以及 CI 接入。合入时附带少量手写用例，覆盖两种风味、一个交互式用例以及一个 `local-registry` 用例。
 
-阶段 2，instrumentation：在 `packages/prompts`（clack 组件）以及 Rust 的 prompt/selector 路径中发出里程碑事件。先落地 PR #2031 的后续 picker 测试和一个 `vp create` 交互流程作为验证用例，并补上已暂存的 watch-restart 用例。
+阶段 2，埋点：在 `packages/prompts`（clack 组件）以及 Rust 的 prompt/selector 路径中发出里程碑事件。先落地 PR #2031 的后续 picker 测试和一个 `vp create` 交互流程作为验证用例，并补上已暂存的 watch-restart 用例。
 
 阶段 3，迁移：先落地 `tool migrate-snap-tests`，然后分批迁移到可审查的批次中（建议顺序：先迁移 `snap-tests-global`，因为它从 VP_HOME 隔离中受益最大，然后再迁移 `snap-tests`）。在此阶段，旧套件和新套件会在 CI 中并行运行；每个批次 PR 都会删除它所迁移的旧用例。
 

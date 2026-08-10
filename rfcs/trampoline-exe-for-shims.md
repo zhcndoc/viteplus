@@ -1,4 +1,4 @@
-# RFC：用于 Shims 的 Windows Trampoline `.exe`
+# RFC：用于 Shims 的 Windows 跳板 `.exe`
 
 ## 状态
 
@@ -93,8 +93,8 @@ PowerShell `.ps1` 脚本可以避免 Ctrl+C 问题，但有关键限制：
 ### Crate 结构
 
 ```
-crates/vite_trampoline/
-├── Cargo.toml      # 零外部依赖
+crates/vp_trampoline/
+├── Cargo.toml      # Zero external dependencies
 ├── src/
 │   └── main.rs     # ~90 行，单文件二进制
 ```
@@ -254,8 +254,8 @@ trampoline 二进制文件（`vp-shim.exe`）与 `vp.exe` 一起分发：
 | **依赖**           | `windows` crate（unsafe、无 CRT）        | 零（原始 FFI 声明）                  |
 | **工具链**         | Nightly Rust（`panic="immediate-abort"`） | Stable Rust                          |
 | **二进制大小**     | 39-47 KB                                 | ~200 KB                              |
-| **入口点**         | `#![no_main]` + `mainCRTStartup`         | 标准 `fn main()`                 |
-| **错误输出**       | `ufmt`（无 `core::fmt`）                 | `write_all`（无 `core::fmt`）         |
+| **入口点**         | `#![no_main]` + `mainCRTStartup`         | 标准 `fn main()`                     |
+| **错误输出**       | `ufmt`（无 `core::fmt`）                 | `write_all`（无 `core::fmt`）        |
 | **Ctrl+C 处理**    | `SetConsoleCtrlHandler` → 忽略           | 相同方法                             |
 | **退出码**         | `GetExitCodeProcess` → `exit()`          | `Command::status()` → `exit()`       |
 
@@ -277,7 +277,7 @@ vite-plus trampoline 之所以显著更简单，是因为它不需要将数据�
 
 ### 4. 将 `vp.exe` 复制为每个 shim（已拒绝）
 
-每份副本约 5-10MB。Trampoline 能以约 100KB 达到相同结果。
+每份副本约 5-10MB。跳板能以约 100KB 达到相同结果。
 
 ### 5. 用 `windows` crate 做 FFI（已拒绝）
 

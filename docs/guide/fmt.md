@@ -20,11 +20,11 @@ vp fmt . --write
 
 将格式化配置直接放在 `vite.config.ts` 中的 `fmt` 块，这样所有配置都保持在一个地方。我们不建议在 Vite+ 中使用 `.oxfmtrc.json`。
 
-对于编辑器，将格式化配置路径指向 `./vite.config.ts`，这样保存时格式化会使用相同的 `fmt` 块：
+对于编辑器，请禁用嵌套的格式化程序配置，以便保存时格式化使用根目录 Vite+ 的 `fmt` 块：
 
 ```json [.vscode/settings.json]
 {
-  "oxc.fmt.configPath": "./vite.config.ts"
+  "oxc.fmt.disableNestedConfig": true
 }
 ```
 

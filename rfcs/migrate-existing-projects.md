@@ -2,7 +2,7 @@
 
 - 状态：已在 `rfc/migrate-upgrade-path` 上实现；端到端浏览器模式验证仍未完成（见后续事项）
 - 依赖于：[#1588 用上游 vitest 替换 @voidzero-dev/vite-plus-test](https://github.com/voidzero-dev/vite-plus/pull/1588)（已合并，`342fd2f4`）
-- 相关：`docs/guide/upgrade.md`、[migration-command.md](./migration-command.md)、[upgrade-command.md](./upgrade-command.md)
+- 相关：`docs/guide/upgrade.md`、[migration-command.md](./migration-command.md)、[upgrade-command.md](./upgrade-command.md)。
 
 ## 目标：两条命令完成升级
 
@@ -13,9 +13,9 @@ vp upgrade   # 更新全局 `vp` 二进制文件
 vp migrate   # 将项目升级到新的工具链
 ```
 
-这两步都必不可少，而且顺序很重要。`vp migrate` 通常运行项目的**本地** `vite-plus`，而旧项目中的这个版本早于新的升级逻辑（甚至还会重写将项目固定到旧版本的配置）。因此，先执行 `vp upgrade` 可以提供足够新的 CLI，然后 `vp migrate` 再切换到它（见 Routing）并应用下面的规则。仅仅执行 `vp update vite-plus` 并不够：它只会提升依赖，但不会协调 override/catalog 配置。
+这两步都必不可少，而且顺序很重要。`vp migrate` 通常运行项目的**本地** `vite-plus`，而旧项目中的这个版本早于新的升级逻辑（甚至还会重写将项目固定到旧版本的配置）。因此，先执行 `vp upgrade` 可以提供足够新的 CLI，然后 `vp migrate` 再切换到它（见“路由”）并应用下面的规则。仅仅执行 `vp update vite-plus` 并不够：它只会提升依赖，但不会协调 override/catalog 配置。
 
-`vp migrate` 是幂等的：对于已经是最新状态的项目，它会报告“already using Vite+”并且不会做任何修改。
+`vp migrate` 是幂等的：对于已经是最新状态的项目，它会报告“已经在使用 Vite+”并且不会做任何修改。
 
 对于现有的 Vite+ 项目，`vp migrate` 只升级工具链版本（下面这些规则）。设置分组（git hooks、编辑器配置、agent 文件、ESLint 和 Prettier 迁移、框架 shim、tsconfig `baseUrl`，以及将 `.nvmrc`/Volta 迁移为 `.node-version`）仅在使用 `--full` 时运行。按动作划分的标志 `--hooks`、`--agent` 和 `--editor` 可在不使用 `--full` 的情况下启用单个设置动作。默认升级如果跳过了可用的设置动作，会提示运行 `vp migrate --full`。全新（非 Vite+）项目始终执行完整迁移。
 
@@ -102,14 +102,14 @@ catalog 是 pnpm 的独立特性，与工作区设置分离，自 pnpm 9.5.0 起
 
 ## 实现
 
-| 区域                                                               | 变更                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `crates/vite_global_cli` (`commands/migrate.rs`, `js_executor.rs`) | `delegate_migrate`：比较本地 `vite-plus` 与全局 `vp` 版本；当本地版本较旧时提升到全局 CLI。                                                                                                                                                                                                                                                                                                                                                                           |
-| `crates/vite_migration` (`import_rewriter.rs`)                     | 支持包级 Nuxt 兼容模式：在所有声明了 `@nuxt/test-utils` 的包中保留 `vitest` 和 `vitest/*` 导入标识符，同时继续重写范围限定的 `@vitest/browser*`；在插件包中保留 `vite` 和 `vite/*` 导入标识符（无范围名称 `vite-plugin-*` 或 `unplugin-*`，或者 `peer/runtime deps` 中包含 `vite`），以便发布的插件仍可被 vite 消费；返回保留文件计数用于迁移摘要。 |
-| `packages/cli/src/migration/{migrator,npm-reinstall,bin}.ts`       | Yarn PnP 预检与 `node-modules` 转换；基于使用情况的托管覆盖集合；按包进行依赖协调；在所有目标中移除 `vitest`；完整对齐 `@vitest/*`；恢复 browser provider；在 `vite-plus`/`vite` 下重新固定版本；修复空/无关 `pnpm` 的路由；清理过期的 npm Vite 安装；包级 Nuxt 依赖检测与保留 Vitest 供给。                                                      |
-| Oxlint `prefer-vite-plus-imports` 规则                             | 应用相同的 Nuxt 包级 `vitest` / `vitest/*` 例外，以便诊断和自动修复都能保留迁移后的兼容结果。                                                                                                                                                                                                                                                                                                                                                                      |
+| 区域                                                             | 变更                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crates/vp_global_cli`（`commands/migrate.rs`、`js_executor.rs`） | `delegate_migrate`：比较本地 `vite-plus` 与全局 `vp` 的版本；当本地版本较旧时升级到全局 CLI。                                                                                                                                                                                                                                                                                                                                                  |
+| `crates/vp_migration`（`import_rewriter.rs`）                     | 支持按包启用的 Nuxt 兼容模式：对于声明了 `@nuxt/test-utils` 的包，在整个包范围内保留 `vitest` 和 `vitest/*` 说明符，同时继续重写作用域为 `@vitest/browser*` 的说明符；在插件包中保留 `vite` 和 `vite/*` 说明符（未作用域限定的名称为 `vite-plugin-*` 或 `unplugin-*`，或在 peer/runtime 依赖中包含 `vite`），以便已发布的插件仍可被 vite 使用；返回保留文件的数量，用于迁移摘要。 |
+| `packages/cli/src/migration/{migrator,npm-reinstall,bin}.ts`     | Yarn PnP 预检和 `node-modules` 转换；基于使用情况的托管覆盖集合；按包进行依赖协调；在每个依赖入口中移除 `vitest`；完整对齐 `@vitest/*`；恢复浏览器提供程序；重新固定 `vite-plus`/`vite` 的下游版本；修复空的/无关 `pnpm` 路由；清理过时的 npm Vite 安装；按包检测 Nuxt 依赖并保留 Vitest 提供； |
+| Oxlint `prefer-vite-plus-imports` 规则                           | 应用相同的按 Nuxt 包划分的 `vitest` / `vitest/*` 例外，使诊断和自动修复保留与迁移兼容的结果。                                                                                                                                                                                                                                                                                                                      |
 
-已由 `migrator.spec.ts` 中的单元测试覆盖（移除 vitest、所需的 peer 供给、生态系统对齐、浏览器 provider 恢复包括旧版包装器导入路径、工作区定位、重新固定版本、空 `pnpm` 协调），`npm-reinstall.spec.ts`（过期 npm 安装和锁文件清理），以及 `vite_global_cli` 中的路由测试。
+由 `migrator.spec.ts` 中的单元测试覆盖（移除 vitest、所需 peer 依赖提供、生态系统对齐、包括旧版包装器导入路径在内的浏览器提供程序恢复、工作区本地化、下游重新固定、空 `pnpm` 协调）、`npm-reinstall.spec.ts` 中的单元测试覆盖（过时的 npm 安装和锁文件清理），以及 `vp_global_cli` 中的路由测试覆盖。
 
 ## 快照覆盖范围
 

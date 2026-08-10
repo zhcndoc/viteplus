@@ -156,13 +156,13 @@ error: 检测到 lint 或类型问题
 `vp check` **不会**运行 Vitest。区分是有意为之：
 
 - `vp check` = 快速静态分析（秒级）
-- `vp test` = 测试执行（分钟级）
+- `vp test` = 测试执行（分钟级）。
 
 ## 实现架构
 
 ### Rust 全局 CLI
 
-在 `crates/vite_global_cli/src/cli.rs` 的 `Commands` 枚举中添加 `Check` 变体：
+在 `crates/vp_global_cli/src/cli.rs` 的 `Commands` 枚举中添加 `Check` 变体：
 
 ```rust
 #[command(disable_help_flag = true)]
@@ -180,9 +180,9 @@ Commands::Check { args } => commands::delegate::execute(cwd, "check", &args).awa
 
 ### NAPI 绑定
 
-`Check` 变体在 `packages/cli/binding/src/cli.rs` 的 `SynthesizableSubcommand` 中定义。检查命令的编排逻辑位于独立模块 `packages/cli/binding/src/check/`，遵循与 `exec/` 相同的“每个命令一个目录”的模式：
+在 `packages/cli/binding/src/cli.rs` 的 `SynthesizableSubcommand` 中定义 `Check` 变体。检查命令的编排逻辑位于独立模块 `packages/cli/binding/src/check/`，遵循与 `exec/` 相同的“每个命令一个目录”的模式：
 
-- `check/mod.rs` — `execute_check()` 编排（顺序运行 fmt + lint，处理 `--fix` 重新格式化）
+- `check/mod.rs` — `execute_check()` 编排（按顺序运行 fmt + lint，处理 `--fix` 重新格式化）
 - `check/analysis.rs` — 输出分析类型（`CheckSummary`、`LintMessageKind` 等）、解析器与格式化辅助函数
 
 检查模块会复用 `cli.rs` 中的 `SubcommandResolver` 和 `resolve_and_capture_output` 来解析并运行底层的 fmt/lint 命令。
@@ -193,9 +193,9 @@ Commands::Check { args } => commands::delegate::execute(cwd, "check", &args).awa
 
 ### 关键文件
 
-1. `crates/vite_global_cli/src/cli.rs` — `Check` 命令变体与路由
-2. `packages/cli/binding/src/cli.rs` — `SynthesizableSubcommand::Check` 定义，委托给 `check` 模块
-3. `packages/cli/binding/src/check/mod.rs` — 检查命令编排（`execute_check`）
+1. `crates/vp_global_cli/src/cli.rs` — `Check` 命令变体及路由
+2. `packages/cli/binding/src/cli.rs` — `SynthesizableSubcommand::Check` 定义，委托至 `check` 模块
+3. `packages/cli/binding/src/check/mod.rs` — Check 命令编排（`execute_check`）
 4. `packages/cli/binding/src/check/analysis.rs` — 输出解析与分析类型
 
 ## CLI 帮助输出
@@ -294,7 +294,7 @@ packages/cli/snap-tests/check-fmt-fail/
   package.json
   steps.json     # { "steps": [{ "command": "vp check" }] }
   src/index.ts   # 格式不良的文件
-  snap.txt       # 显示 fmt --check 失败；lint 不会运行（fail-fast）
+  snap.txt       # 显示 fmt --check 失败；lint 不会运行（快速失败）
 
 packages/cli/snap-tests/check-no-fmt/
   package.json

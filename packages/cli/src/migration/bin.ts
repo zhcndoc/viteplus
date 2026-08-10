@@ -26,7 +26,7 @@ import {
   selectPackageManager,
   upgradeYarn,
 } from '../utils/prompts.ts';
-import { accent, log, muted, printHeader, warnMsg } from '../utils/terminal.ts';
+import { accent, formatDuration, log, muted, printHeader, warnMsg } from '../utils/terminal.ts';
 import {
   confirmBaseUrlFix,
   fixBaseUrlInTsconfig,
@@ -559,17 +559,6 @@ async function collectMigrationPlan(
   return plan;
 }
 
-function formatDuration(durationMs: number) {
-  if (durationMs < 1000) {
-    return `${Math.max(1, durationMs)}ms`;
-  }
-  const durationSeconds = durationMs / 1000;
-  if (durationSeconds < 10) {
-    return `${durationSeconds.toFixed(1)}s`;
-  }
-  return `${Math.round(durationSeconds)}s`;
-}
-
 /**
  * Reconcile a CommandRunSummary from `runViteInstall` with the migration's
  * duration counter and exit-code state. `runViteInstall` returns
@@ -969,6 +958,7 @@ async function executeMigrationPlan(
     interactive,
     conflictDecisions: plan.editorConflictDecisions,
     silent: true,
+    packageManager: plan.packageManager,
   });
 
   // 11. Add framework shims if requested
@@ -1491,6 +1481,7 @@ async function main() {
         interactive: options.interactive,
         conflictDecisions: plan.editorConflictDecisions,
         silent: true,
+        packageManager,
       });
       didMigrate = true;
     }

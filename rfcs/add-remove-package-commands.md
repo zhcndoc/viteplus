@@ -55,11 +55,11 @@ vp add @myorg/utils --workspace --filter app
 vp add lodash -w  # 添加到 workspace 根目录
 ```
 
-## 提议的解决方案
+## 提议的解决方案。
 
 ### 命令语法
 
-#### Add 命令
+#### 添加命令
 
 ```bash
 vp add <PACKAGES>... [OPTIONS]
@@ -83,7 +83,7 @@ vp add --save-peer react
 # 添加可选依赖
 vp add -O sharp
 
-# Workspace 操作
+# 工作区操作
 vp add react --filter app              # 添加到特定包
 vp add @myorg/utils --workspace --filter app  # 添加 workspace 依赖
 vp add lodash -w                       # 添加到 workspace 根目录
@@ -93,9 +93,9 @@ vp add utils --filter "!@myorg/core"   # 排除包
 
 ##### 带有 `PACKAGES` 参数的 `vp install` 命令
 
-为了适配用户对 `npm install <PACKAGES>…` 的习惯和体验，`vp install <PACKAGES>...` 将被特殊处理为 add 命令的别名。
+为了适配用户对 `npm install <PACKAGES>…` 的习惯和体验，`vp install <PACKAGES>...` 将被特殊处理为添加命令的别名。
 
-以下命令会在处理时自动转换为 add 命令：
+以下命令会在处理时自动转换为添加命令：
 
 ```bash
 vp install <PACKAGES>... [OPTIONS]
@@ -116,7 +116,7 @@ vp add -g <PACKAGES>...
 -> npm install -g <PACKAGES>...
 ```
 
-#### Remove 命令
+#### 移除命令
 
 ```bash
 vp remove <PACKAGES>... [OPTIONS]
@@ -135,7 +135,7 @@ vp rm typescript
 # 别名支持
 vp rm old-package
 
-# Workspace 操作
+# 工作区操作
 vp remove lodash --filter app          # 从特定包中移除
 vp rm utils --filter "app*"            # 从多个包中移除
 vp remove -g typescript                # 移除全局包
@@ -233,7 +233,7 @@ vp add react --allow-build=react,napi -- --use-stderr
 
 #### 1. 命令结构
 
-**文件**：`crates/vite_task/src/lib.rs`
+**文件**: `crates/vt/src/lib.rs`
 
 添加新的命令变体：
 
@@ -444,7 +444,7 @@ impl PackageManager {
 
 #### 3. Add 命令实现
 
-**文件**：`crates/vite_task/src/add.rs`（新文件）
+**文件**: `crates/vt/src/add.rs`（新文件）
 
 ```rust
 pub struct AddCommand {
@@ -501,7 +501,7 @@ impl AddCommand {
 
 #### 4. Remove 命令实现
 
-**文件**：`crates/vite_task/src/remove.rs`（新文件）
+**文件**: `crates/vt/src/remove.rs`（新文件）
 
 ```rust
 pub struct RemoveCommand {
@@ -575,7 +575,7 @@ fn handle_global_flag(args: &[String], pm_type: PackageManagerType) -> (Vec<Stri
 }
 ```
 
-#### 2. Workspace Filters
+#### 2. 工作区过滤器
 
 pnpm 使用 `--filter` 放在命令前，而 yarn/npm 使用不同的方法：
 
@@ -629,9 +629,9 @@ fn build_workspace_command(
 }
 ```
 
-#### 3. Workspace 依赖
+#### 3. 工作区依赖
 
-当使用 `--workspace` 标志添加 workspace 依赖时：
+当使用 `--workspace` 标志添加工作区依赖时：
 
 ```bash
 # pnpm：以 workspace: 协议添加
@@ -719,7 +719,7 @@ vp add react react-dom @types/react -D
 vp remove lodash axios underscore
 ```
 
-**实现**：包名作为标志前的位置参数。
+**实现**：包名作为标志位之前的位置参数。
 
 ## 错误处理
 
@@ -727,18 +727,18 @@ vp remove lodash axios underscore
 
 ```bash
 $ vp add
-Error: No packages specified
-Usage: vp add <PACKAGES>... [OPTIONS]
+错误：未指定包
+用法：vp add <PACKAGES>... [OPTIONS]
 ```
 
 ### 未检测到包管理器
 
 ```bash
 $ vp add react
-Error: No package manager detected
-Please run one of:
-  - vp install (to set up package manager)
-  - Add packageManager field to package.json
+错误：未检测到包管理器
+请执行以下操作之一：
+  - vp install（用于设置包管理器）
+  - 将 packageManager 字段添加到 package.json
 ```
 
 ### 无效的包名
@@ -831,7 +831,7 @@ $ vp add
 
 - 对有经验的用户来说更慢
 - 不能用于脚本化
-- 之后可以作为可选模式再添加
+- 之后可以作为可选模式再添加。
 
 ## 实现计划
 
@@ -858,7 +858,7 @@ $ vp add
 
 1. 更新 CLI 文档
 2. 在 README 中添加示例
-3. 记录标志兼容性矩阵
+3. 记录标志兼容性矩阵。
 
 ## 测试策略
 
@@ -981,7 +981,7 @@ fixtures/add-remove-test/
 9. 删除多个包
 10. 使用 --filter 删除
 11. 无效包的错误处理
-12. yarn/npm 上不兼容 filter 的错误处理
+12. yarn/npm 上不兼容 filter 的错误处理。
 
 ## CLI 帮助输出
 
@@ -989,33 +989,33 @@ fixtures/add-remove-test/
 
 ```bash
 $ vp add --help
-Add packages to dependencies
+将软件包添加到依赖项
 
-Usage: vp add <PACKAGES>... [OPTIONS]
+用法：vp add <PACKAGES>... [OPTIONS]
 
-Arguments:
-  <PACKAGES>...  Packages to add
+参数：
+  <PACKAGES>...  要添加的软件包
 
-Options:
-  --filter <PATTERN>   Filter packages in monorepo (can be used multiple times)
-  -w, --workspace-root Add to workspace root (ignore-workspace-root-check)
-  --workspace          Only add if package exists in workspace
-  -D, --save-dev       Add as dev dependency
-  -P, --save-peer      Add as peer dependency
-  -O, --save-optional  Add as optional dependency
-  -E, --save-exact     Save exact version
-  -g, --global         Install globally
-  -h, --help           Print help
+选项：
+  --filter <PATTERN>   筛选 monorepo 中的软件包（可多次使用）
+  -w, --workspace-root 添加到工作区根目录（忽略工作区根目录检查）
+  --workspace          仅当软件包存在于工作区中时添加
+  -D, --save-dev       添加为开发依赖
+  -P, --save-peer      添加为对等依赖
+  -O, --save-optional  添加为可选依赖
+  -E, --save-exact     保存精确版本
+  -g, --global         全局安装
+  -h, --help           打印帮助信息
 
-Filter Patterns:
-  <name>           Exact package name match
-  <pattern>*       Wildcard match (pnpm only)
-  @<scope>/*       Scope match (pnpm only)
-  !<pattern>       Exclude pattern (pnpm only)
-  <pkg>...         Package and dependencies (pnpm only)
-  ...<pkg>         Package and dependents (pnpm only)
+筛选模式：
+  <name>           精确匹配软件包名称
+  <pattern>*       通配符匹配（仅 pnpm）
+  @<scope>/*       作用域匹配（仅 pnpm）
+  !<pattern>       排除模式（仅 pnpm）
+  <pkg>...         软件包及其依赖项（仅 pnpm）
+  ...<pkg>         软件包及其依赖者（仅 pnpm）
 
-Examples:
+示例：
   vp add react react-dom
   vp add -D typescript @types/react
   vp add react --filter app
@@ -1028,28 +1028,28 @@ Examples:
 
 ```bash
 $ vp remove --help
-Remove packages from dependencies
+从依赖项中移除软件包
 
-Usage: vp remove <PACKAGES>... [OPTIONS]
+用法：vp remove <PACKAGES>... [OPTIONS]
 
-Aliases: rm, un, uninstall
+别名：rm、un、uninstall
 
-Arguments:
-  <PACKAGES>...  Packages to remove
+参数：
+  <PACKAGES>...  要移除的软件包
 
-Options:
-  --filter <PATTERN>   Filter packages in monorepo (can be used multiple times)
-  -w, --workspace-root Remove from workspace root
-  -g, --global         Remove global packages
-  -h, --help           Print help
+选项：
+  --filter <PATTERN>   筛选 monorepo 中的软件包（可多次使用）
+  -w, --workspace-root 从工作区根目录移除
+  -g, --global         移除全局软件包
+  -h, --help           打印帮助信息
 
-Filter Patterns:
-  <name>           Exact package name match
-  <pattern>*       Wildcard match (pnpm only)
-  @<scope>/*       Scope match (pnpm only)
-  !<pattern>       Exclude pattern (pnpm only)
+筛选模式：
+  <name>           精确匹配软件包名称
+  <pattern>*       通配符匹配（仅 pnpm）
+  @<scope>/*       作用域匹配（仅 pnpm）
+  !<pattern>       排除模式（仅 pnpm）
 
-Examples:
+示例：
   vp remove lodash
   vp remove axios underscore lodash
   vp rm lodash --filter app
@@ -1062,14 +1062,14 @@ Examples:
 1. **不缓存**：操作直接运行，无缓存开销
 2. **单次执行**：与任务运行器不同，这些是一次性操作
 3. **透传**：处理最少，只做命令翻译
-4. **自动检测**：复用现有的包管理器检测逻辑（已缓存）
+4. **自动检测**：复用现有的包管理器检测逻辑（已缓存）。
 
 ## 安全考虑
 
 1. **包名校验**：让包管理器负责校验
 2. **锁文件完整性**：由包管理器保证完整性
 3. **不执行代码**：只是透传给受信任的包管理器
-4. **审计标志**：用户可以通过透传添加 `--audit`
+4. **审计标志**：用户可以通过透传添加 `--audit`。
 
 ## 向后兼容性
 
@@ -1078,7 +1078,7 @@ Examples:
 - 现有命令不受影响
 - 新命令是增量添加的
 - 不更改任务配置
-- 不更改缓存行为
+- 不更改缓存行为。
 
 ## 迁移路径
 
@@ -1104,7 +1104,7 @@ vp add react
 - CLI 帮助输出
 - 文档
 - VSCode 扩展建议
-- Shell 补全
+- Shell 补全。
 
 ## 文档要求
 
@@ -1285,7 +1285,7 @@ vp add "@myorg/utils@workspace:^" --filter app
 **优雅降级**：
 
 - pnpm 的高级特性（通配符、排除、选择器）在 yarn/npm/bun 上会报错，并给出有帮助的信息
-- 基础的 `--filter <exact-name>` 可在所有包管理器上正常工作
+- 基础的 `--filter <exact-name>` 可在所有包管理器上正常工作。
 
 ## 未来增强
 
@@ -1391,14 +1391,14 @@ Proceed? (Y/n)
 7. **我们是否应该校验被过滤的包是否存在？**
    - 建议：让包管理器进行校验
    - 原生工具会给出更清晰的错误信息
-   - 避免重复实现工作区解析逻辑
+   - 避免重复实现工作区解析逻辑。
 
 ## 成功指标
 
 1. **采用率**：使用 `vp add/remove` 与直接使用包管理器的用户占比
 2. **错误率**：跟踪命令失败率与直接使用包管理器时的对比
 3. **用户反馈**：关于命令易用性的调查/issue
-4. **性能**：测量相较于直接调用包管理器的开销（目标 <100ms）
+4. **性能**：测量相较于直接调用包管理器的开销（目标 <100ms）。
 
 ## 实施时间线
 
@@ -1419,9 +1419,9 @@ Proceed? (Y/n)
 
 ### 修改的文件
 
-- `crates/vite_task/src/lib.rs` - 添加命令枚举变体
-- `crates/vite_task/src/add.rs` - 新文件
-- `crates/vite_task/src/remove.rs` - 新文件
+- `crates/vt/src/lib.rs` - 添加命令枚举变体
+- `crates/vt/src/add.rs` - 新文件
+- `crates/vt/src/remove.rs` - 新文件
 - `crates/vite_package_manager/src/package_manager.rs` - 添加命令解析方法
 - `docs/cli.md` - 文档更新
 
@@ -1453,7 +1453,7 @@ Proceed? (Y/n)
 
 - 为 yarn/npm 解析通配符
 - 为每个匹配的包运行过滤后的命令
-- 在所有包管理器之间提供统一行为
+- 在所有包管理器之间提供统一行为。
 
 ## 真实世界使用示例
 

@@ -154,7 +154,7 @@ Vite+ 会在垫片调度和 Shell 集成期间设置其他 `VP_*` 变量（递�
 - **示例**：
   ```bash
   VP_LOG=debug vp dev
-  VP_LOG=vite_task=trace vp build
+  VP_LOG=vt=trace vp build
   ```
 
 ### `VP_DEBUG_SHIM`

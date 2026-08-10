@@ -101,8 +101,8 @@ vp why react --no-optional      # 排除可选依赖
 # 深度控制
 vp why react --depth 3          # 将树深度限制为 3 层
 
-# 自定义 finder（仅 pnpm）
-vp why react --find-by myFinder # 使用 .pnpmfile.cjs 中的 finder 函数
+# 自定义查找器（仅 pnpm）
+vp why react --find-by myFinder # 使用 .pnpmfile.cjs 中的查找器函数
 ```
 
 Vite+ 不提供对全局包的 `why` 功能。
@@ -133,11 +133,11 @@ Vite+ 不提供对全局包的 `why` 功能。
 | `--json`                  | `--json`                  | `--json`                | `--json`            | `--json`                 | N/A             | JSON 输出格式                                                   |
 | `--long`                  | `--long`                  | N/A                     | N/A                 | N/A                      | N/A             | 详细输出（仅 pnpm）                                             |
 | `--parseable`             | `--parseable`             | N/A                     | N/A                 | N/A                      | N/A             | 可解析格式（仅 pnpm）                                           |
-| `-r, --recursive`         | `-r, --recursive`         | N/A                     | N/A                 | `--recursive`            | N/A             | 跨所有工作区检查                                                 |
+| `-r, --recursive`         | `-r, --recursive`         | `--recursive`            | N/A                 | `--recursive`            | N/A             | 跨所有工作区检查                                                 |
 | `--filter <pattern>`      | `--filter <pattern>`      | `--workspace <pattern>` | N/A                 | N/A                      | N/A             | 目标特定工作区（pnpm/npm）                                      |
 | `-w, --workspace-root`    | `-w`                      | N/A                     | N/A                 | N/A                      | N/A             | 在工作区根目录检查（pnpm 特有）                                 |
 | `-P, --prod`              | `-P, --prod`              | N/A                     | N/A                 | N/A                      | N/A             | 仅生产依赖（仅 pnpm）                                           |
-| `-D, --dev`               | `-D, --dev`              | N/A                     | N/A                 | N/A                      | N/A             | 仅开发依赖（仅 pnpm）                                           |
+| `-D, --dev`               | `-D, --dev`               | N/A                     | N/A                 | N/A                      | N/A             | 仅开发依赖（仅 pnpm）                                           |
 | `--depth <number>`        | `--depth <number>`        | N/A                     | N/A                 | N/A                      | `--depth`       | 限制树深度（pnpm/bun）                                          |
 | `--no-optional`           | `--no-optional`           | N/A                     | `--ignore-optional` | N/A                      | N/A             | 排除可选依赖（仅 pnpm）                                         |
 | `--exclude-peers`         | `--exclude-peers`         | N/A                     | N/A                 | 移除 `--peers` 标志      | N/A             | 排除 peer 依赖（yarn@2+ 默认包含 peer 依赖）                    |
@@ -154,7 +154,7 @@ Vite+ 不提供对全局包的 `why` 功能。
 
 **别名：**
 
-- `vp explain` = `vp why`（与 npm 的主命令名一致）
+- `vp explain` = `vp why`（与 npm 的主命令名一致）。
 
 ### 不同包管理器之间的 Why 行为差异
 
@@ -272,13 +272,13 @@ info Reasons this module exists
 
 - `--recursive`：跨工作区检查
 - `--peers`：包含 peer 依赖（由 Vite+ 默认添加）
-- 不同的插件系统可能会影响输出
+- 不同的插件系统可能会影响输出。
 
 ### 实现架构
 
 #### 1. 命令结构
 
-**文件**：`crates/vite_task/src/lib.rs`
+**文件**：`crates/vt/src/lib.rs`
 
 添加新的命令变体：
 
@@ -359,8 +359,8 @@ pub enum Commands {
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
 
-use vite_error::Error;
-use vite_path::AbsolutePath;
+use vp_error::Error;
+use vt_path::AbsolutePath;
 
 use crate::package_manager::{
     PackageManager, PackageManagerType, ResolveCommandResult, format_path_env, run_command,
@@ -578,16 +578,16 @@ pub mod why;  // 添加这一行
 
 #### 3. Why 命令实现
 
-**文件**：`crates/vite_task/src/why.rs`（新文件）
+**文件**：`crates/vt/src/why.rs`（新文件）
 
 ```rust
-use vite_error::Error;
-use vite_path::AbsolutePathBuf;
+use vp_error::Error;
+use vt_path::AbsolutePathBuf;
 use vite_package_manager::{
     PackageManager,
     commands::why::WhyCommandOptions,
 };
-use vite_workspace::Workspace;
+use vt_workspace::Workspace;
 
 pub struct WhyCommand {
     workspace_root: AbsolutePathBuf,
@@ -726,7 +726,7 @@ impl WhyCommand {
 - pnpm 允许按依赖类型过滤
 - npm 或 yarn 中不可用
 - 有助于聚焦分析
-- 不支持时发出警告
+- 不支持时发出警告。
 
 ## 错误处理
 
@@ -930,7 +930,7 @@ vp why react --json  # 在 yarn 上
 - 输出格式解析很脆弱
 - 不同包管理器的数据不同
 - 更适合对不支持的功能发出警告
-- 保留原生输出
+- 保留原生输出。
 
 ## 实施计划
 
@@ -961,7 +961,7 @@ vp why react --json  # 在 yarn 上
 1. 更新 CLI 文档
 2. 在 README 中添加示例
 3. 记录包管理器兼容性
-4. 添加故障排查指南
+4. 添加故障排查指南。
 
 ## 测试策略
 
@@ -1079,53 +1079,53 @@ fixtures/why-test/
 6. 依赖类型过滤
 7. 深度限制
 8. 全局包检查
-9. 不支持标志的警告信息
+9. 不支持标志的警告信息。
 
 ## CLI 帮助输出
 
 ```bash
 $ vp why --help
-Show why a package is installed
+显示安装某个软件包的原因
 
-Usage: vp why [OPTIONS] <PACKAGE>... [-- <PASS_THROUGH_ARGS>...]
+用法：vp why [选项] <软件包>... [-- <透传参数>...]
 
-Aliases: explain
+别名：explain
 
-Arguments:
-  <PACKAGE>...           Package(s) to check (required, pnpm/npm support multiple, yarn uses first)
+参数：
+  <软件包>...           要检查的软件包（必需，pnpm/npm 支持多个，yarn 使用第一个）
 
-Options:
-  --json                 Output in JSON format
-  --long                 Show extended information (pnpm-specific)
-  --parseable            Show parseable output (pnpm-specific)
-  -r, --recursive        Check recursively across all workspaces
-  --filter <PATTERN>     Filter packages in monorepo (pnpm-specific, can be used multiple times)
-  -w, --workspace-root   Check in workspace root (pnpm-specific)
-  -P, --prod             Only production dependencies (pnpm-specific)
-  -D, --dev              Only dev dependencies (pnpm-specific)
-  --depth <NUMBER>       Limit tree depth (pnpm-specific)
-  --no-optional          Exclude optional dependencies (pnpm-specific)
-  --exclude-peers        Exclude peer dependencies (pnpm/yarn@2+-specific)
-  --find-by <FINDER_NAME> Use a finder function defined in .pnpmfile.cjs (pnpm-specific)
-  -h, --help             Print help
+选项：
+  --json                 以 JSON 格式输出
+  --long                 显示扩展信息（pnpm 专用）
+  --parseable            显示可解析的输出（pnpm 专用）
+  -r, --recursive        递归检查所有工作区
+  --filter <模式>        筛选 monorepo 中的软件包（pnpm 专用，可多次使用）
+  -w, --workspace-root   在工作区根目录中检查（pnpm 专用）
+  -P, --prod             仅检查生产依赖（pnpm 专用）
+  -D, --dev              仅检查开发依赖（pnpm 专用）
+  --depth <数字>         限制树的深度（pnpm 专用）
+  --no-optional          排除可选依赖（pnpm 专用）
+  --exclude-peers        排除对等依赖（pnpm/yarn@2+ 专用）
+  --find-by <查找器名称> 使用 .pnpmfile.cjs 中定义的查找器函数（pnpm 专用）
+  -h, --help             打印帮助
 
-Package Manager Behavior:
-  pnpm:    Shows complete dependency tree with all dependents
-  npm:     Shows dependency path explaining installation
-  yarn@1:  Shows why package exists with disk size info
-  yarn@2+: Shows dependency tree in streamlined format
+包管理器行为：
+  pnpm:    显示包含所有依赖方的完整依赖树
+  npm:     显示解释安装原因的依赖路径
+  yarn@1:  显示软件包存在的原因及磁盘大小信息
+  yarn@2+: 以精简格式显示依赖树
 
-Examples:
-  vp why react                       # Show why react is installed
-  vp explain lodash                  # Same as above (alias)
-  vp why react react-dom             # Check multiple packages (pnpm/npm)
-  vp why react --json                # JSON output
-  vp why react --long                # Verbose output (pnpm)
-  vp why react -r                    # Recursive across workspaces
-  vp why react --filter app          # Check in specific workspace (pnpm)
-  vp why react --prod                # Only production deps (pnpm)
-  vp why react --depth 3             # Limit tree depth (pnpm)
-  vp why react --find-by myFinder    # Use custom finder (pnpm)
+示例：
+  vp why react                       # 显示安装 react 的原因
+  vp explain lodash                  # 与上方相同（别名）
+  vp why react react-dom             # 检查多个软件包（pnpm/npm）
+  vp why react --json                # JSON 输出
+  vp why react --long                # 详细输出（pnpm）
+  vp why react -r                    # 递归检查所有工作区
+  vp why react --filter app          # 在指定工作区中检查（pnpm）
+  vp why react --prod                # 仅检查生产依赖（pnpm）
+  vp why react --depth 3             # 限制树的深度（pnpm）
+  vp why react --find-by myFinder    # 使用自定义查找器（pnpm）
 ```
 
 ## 性能考量
@@ -1133,14 +1133,14 @@ Examples:
 1. **无缓存**：查询操作很快，缓存没有收益
 2. **原生性能**：委托给包管理器经过优化的代码
 3. **单次执行**：快速分析当前状态
-4. **JSON 输出**：可被解析用于程序化使用
+4. **JSON 输出**：可被解析用于程序化使用。
 
 ## 安全考量
 
 1. **只读**：仅读取已安装的包，不做修改
 2. **不执行代码**：只查询依赖树
 3. **适合 CI**：可安全运行于 CI/CD 流水线
-4. **审计集成**：帮助理解安全漏洞的来源
+4. **审计集成**：帮助理解安全漏洞的来源。
 
 ## 向后兼容性
 
@@ -1149,7 +1149,7 @@ Examples:
 - 现有命令不受影响
 - 新命令是增量式的
 - 不更改任务配置
-- 不更改缓存行为
+- 不更改缓存行为。
 
 ## 迁移路径
 
@@ -1208,7 +1208,7 @@ vp why @babel/helper-plugin-utils
 vp why vulnerable-package
 vp why vulnerable-package --prod  # 仅生产环境
 
-# 找出 monorepo 中所有依赖者
+# 找出单体仓库中所有依赖者
 vp why legacy-library -r --json
 ```
 
@@ -1338,14 +1338,14 @@ lodash@4.17.21（压缩后 285KB）
 5. **是否应与 audit 集成？**
    - 建议：后续增强
    - 内联显示安全信息
-   - 示例：`vp why package --with-audit`
+   - 示例：`vp why package --with-audit`。
 
 ## 成功指标
 
 1. **采用率**：使用 `vp why` 相比直接使用包管理器的用户百分比
 2. **调试效率**：识别依赖问题所需时间
 3. **CI 集成**：在 CI/CD 中用于依赖验证的使用情况
-4. **用户反馈**：关于命令有用性的调查/问题反馈
+4. **用户反馈**：关于命令有用性的调查/问题反馈。
 
 ## 结论
 

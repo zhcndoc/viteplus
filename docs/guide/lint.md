@@ -1,6 +1,6 @@
-# Lint
+# 代码检查
 
-`vp lint` 使用 Oxlint 对代码进行 lint 检查。
+`vp lint` 使用 Oxlint 对代码进行代码检查。
 
 ## 概述
 
@@ -43,8 +43,10 @@ export default defineConfig({
 - `typeAware: true` 启用需要 TypeScript 类型信息的规则
 - `typeCheck: true` 在 lint 检查期间启用完整的类型检查
 
-此功能基于 TypeScript Go 工具链上的 [tsgolint](https://github.com/oxc-project/tsgolint) 实现。它使 Oxlint 能够获取类型信息，并允许通过 `vp lint` 和 `vp check` 直接进行类型检查。
+此路径基于 TypeScript 7（即 TypeScript Go）工具链中的 [tsgolint](https://github.com/oxc-project/tsgolint) 提供支持。它使 Oxlint 能够访问类型信息，并允许通过 `vp lint` 和 `vp check` 直接进行类型检查。
 
 ## JavaScript 插件
 
-如果你正在从 ESLint 迁移，并且仍然依赖一些关键的基于 JavaScript 的 ESLint 插件，Oxlint 支持 [JS 插件](https://oxc.rs/docs/guide/usage/linter/js-plugins)，可以帮助你在迁移完成前继续使用这些插件。
+如果你正在从 ESLint 迁移，并且仍然依赖一些关键的基于 JavaScript 的 ESLint 插件，Oxlint 提供了 [JS 插件支持](https://oxc.rs/docs/guide/usage/linter/js-plugins)，可以帮助你在完成迁移的同时继续运行这些插件。
+
+JS 插件还支持为 Oxlint [编写自定义规则](https://oxc.rs/docs/guide/usage/linter/writing-js-plugins.html)。

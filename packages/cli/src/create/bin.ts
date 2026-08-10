@@ -37,11 +37,12 @@ import {
   resolveApproveBuildTargets,
 } from '../utils/approve-builds.ts';
 import { detectExistingEditors, selectEditors, writeEditorConfigs } from '../utils/editor.ts';
-import { initGitRepository } from '../utils/git.ts';
+import { findGitRoot, initGitRepository } from '../utils/git.ts';
 import { renderCliDoc } from '../utils/help.ts';
 import { readJsonFile } from '../utils/json.ts';
 import { displayRelative } from '../utils/path.ts';
 import {
+  cancelAndExit,
   type CommandRunSummary,
   defaultInteractive,
   downloadPackageManager,
@@ -51,7 +52,7 @@ import {
   runViteInstall,
   selectPackageManager,
 } from '../utils/prompts.ts';
-import { accent, muted, log, printHeader, success } from '../utils/terminal.ts';
+import { accent, formatDuration, muted, log, printHeader, success } from '../utils/terminal.ts';
 import {
   detectWorkspace,
   updatePackageJsonWithDeps,
@@ -68,7 +69,6 @@ import {
   resolveOrgManifestForCreate,
 } from './org-resolve.ts';
 import {
-  cancelAndExit,
   checkProjectDirExists,
   promptPackageNameAndTargetDir,
   promptTargetDir,
@@ -377,36 +377,11 @@ function formatTemplateName(templateName: string) {
   return `${frameworkName} + ${isTypeScript ? 'TypeScript' : 'JavaScript'}`;
 }
 
-function formatDuration(durationMs: number) {
-  if (durationMs < 1000) {
-    return `${Math.max(1, durationMs)}ms`;
-  }
-  const durationSeconds = durationMs / 1000;
-  if (durationSeconds < 10) {
-    return `${durationSeconds.toFixed(1)}s`;
-  }
-  return `${Math.round(durationSeconds)}s`;
-}
-
 function getNextCommand(projectDir: string, command: string) {
   if (!projectDir || projectDir === '.') {
     return command;
   }
   return `cd ${projectDir} && ${command}`;
-}
-
-function findGitRoot(startPath: string) {
-  let dir = startPath;
-  while (true) {
-    if (fs.existsSync(path.join(dir, '.git'))) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      return undefined;
-    }
-    dir = parent;
-  }
 }
 
 function getCopilotSetupRoot(projectRoot: string, isExistingMonorepo: boolean) {
@@ -1114,6 +1089,7 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
       interactive: options.interactive,
       silent: compactOutput,
       extraVsCodeSettings: { 'npm.scriptRunner': 'vp' },
+      packageManager,
     });
     if (selectedEditors?.includes('vscode')) {
       ensureGitignoreVsCodeEditorConfigs(fullPath);
@@ -1294,6 +1270,7 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
       interactive: options.interactive,
       silent: compactOutput,
       extraVsCodeSettings: { 'npm.scriptRunner': 'vp' },
+      packageManager,
     });
     if (selectedEditors?.includes('vscode')) {
       ensureGitignoreVsCodeEditorConfigs(fullPath);
@@ -1316,7 +1293,7 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
   // `@oxlint/migrate` can resolve eslint.config.js's plugin imports, then
   // migrate before the vite-plus rewrite so the generated .oxlintrc/.oxfmtrc
   // get merged into vite.config.ts — matching `vp migrate`. Pin the
-  // packageManager field (vite_pm_cli defaults to pnpm in CI/non-TTY when no
+  // packageManager field (vp_pm_cli defaults to pnpm in CI/non-TTY when no
   // signal is present) and force yarn's classic node_modules layout
   // (Plug'n'Play zip entries break @oxlint/migrate's fileURLToPath resolution).
   const installAndMigrate = async (installCwd: string) => {

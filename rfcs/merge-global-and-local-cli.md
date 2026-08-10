@@ -4,10 +4,10 @@
 
 此前，CLI 被拆分为两个 npm 包：
 
-- **`vite-plus`**（`packages/cli/`）—— 本地 CLI，作为项目的 devDependency 安装。通过 Rust 的 NAPI 绑定处理 build、test、lint、fmt、run 以及其他任务类命令。
-- **`vite-plus-cli`**（`packages/global/`）—— 全局 CLI，安装到 `~/.vite-plus/`。处理 create、migrate、version 以及包管理器相关命令。它有自己独立的 NAPI 绑定 crate、rolldown 构建、安装脚本和 snap 测试。
+- **`vite-plus`**（`packages/cli/`）——本地 CLI，作为项目的开发依赖安装。通过 Rust 的 NAPI 绑定处理 build、test、lint、fmt、run 以及其他任务类命令。
+- **`vite-plus-cli`**（`packages/global/`）——全局 CLI，安装到 `~/.vite-plus/`。处理 create、migrate、version 以及包管理器相关命令。它有自己独立的 NAPI 绑定 crate、rolldown 构建、安装脚本和 snap 测试。
 
-Rust 二进制 `vp`（`crates/vite_global_cli/`）充当入口点，转发到 `packages/global/dist/index.js`，后者会检测本地的 `vite-plus` 安装并相应地转发命令。
+Rust 二进制文件 `vp`（`crates/vp_global_cli/`）作为入口点，委托给 `packages/global/dist/index.js`，后者检测本地的 `vite-plus` 安装，并相应地转发命令。
 
 **双包方案的问题：**
 
@@ -25,7 +25,7 @@ Rust 二进制 `vp`（`crates/vite_global_cli/`）充当入口点，转发到 `p
 3. 统一 NAPI 绑定 crate
 4. 用通过 `oxc_resolver` 进行的直接 Rust 解析替换 JS shim
 5. 简化 CI 构建与发布流水线
-6. 保持所有现有功能正常工作
+6. 保持所有现有功能正常工作。
 
 ## 架构（合并后）
 
@@ -105,7 +105,7 @@ packages/cli/
 
 ### 命令路由
 
-Rust 的 `vp` 二进制（`crates/vite_global_cli/`）将命令分为两类：
+Rust `vp` 二进制（`crates/vp_global_cli/`）将命令路由到两类之一：
 
 ```
                        vp <command>
@@ -116,10 +116,10 @@ Rust 的 `vp` 二进制（`crates/vite_global_cli/`）将命令分为两类：
      ┌────────────────┐         ┌────────────────┐
      │   类别 A       │         │   类别 B       │
      │   包管理器     │         │   JavaScript   │
-     │    (Rust)      │         │   (Node.js)    │
+     │    (Rust)      │         │    (Node.js)   │
      └───────┬────────┘         └───────┬────────┘
              │                          │
-       vite_pm_cli::                oxc_resolver finds
+       vp_pm_cli::                oxc_resolver finds
        dispatch                     local vite-plus
              │                          │
              ▼                    ┌─────┴─────┐
@@ -147,7 +147,7 @@ Rust 的 `vp` 二进制（`crates/vite_global_cli/`）将命令分为两类：
                               │ remove, update  │
                               │ dlx, pm <…>     │
                               │   → NAPI        │
-                              │   → vite_pm_cli │
+                              │   → vp_pm_cli │
                               ├────────────────┤
                               │ create, migrate │
                               │ --version       │
@@ -156,8 +156,8 @@ Rust 的 `vp` 二进制（`crates/vite_global_cli/`）将命令分为两类：
                               └────────────────┘
 ```
 
-- **类别 A（包管理器）**：`install`、`add`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>` —— clap 定义和分发逻辑位于共享的 `crates/vite_pm_cli/` crate 中。全局 CLI 和本地 CLI 的绑定都会将 `vite_pm_cli::PackageManagerCommand` 展平成顶层参数解析器的一部分，并调用 `vite_pm_cli::dispatch` 来运行底层包管理器（pnpm/npm/yarn/bun）。全局 CLI 还会额外拦截 `--global`，用于 vite-plus 管理的安装（`commands::env::global_install`），然后再继续委派。
-- **类别 B（JavaScript）**：所有其他命令（`build`、`test`、`lint`、`create`、`migrate`、`--version` 等）—— Rust 使用 `oxc_resolver` 查找项目本地的 `vite-plus/dist/bin.js` 并运行它。如果不存在本地安装，则回退到全局安装中的 `dist/bin.js`。随后统一的 `bin.ts` 入口点会将命令路由到 NAPI 绑定（任务命令和 PM 命令，后者通过 `vite_pm_cli::dispatch`）或 `dist/global/` 中由 rolldown 打包的模块（create、migrate、version）。
+- **类别 A（包管理器）**：`install`、`add`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>` —— clap 定义和分发逻辑位于共享的 `crates/vp_pm_cli/` crate 中。全局 CLI 和本地 CLI 绑定都会将 `vp_pm_cli::PackageManagerCommand` 展平到各自顶层的参数解析器中，并调用 `vp_pm_cli::dispatch` 来运行底层包管理器（pnpm/npm/yarn/bun）。全局 CLI 还会针对 vite-plus 管理的安装额外拦截 `--global`，并在之后委托给 `commands::env::global_install`。
+- **类别 B（JavaScript）**：所有其他命令（`build`、`test`、`lint`、`create`、`migrate`、`--version` 等）——Rust 使用 `oxc_resolver` 查找项目本地的 `vite-plus/dist/bin.js` 并运行。如果不存在本地安装，则回退到全局安装中的 `dist/bin.js`。随后，统一的 `bin.ts` 入口点会将命令路由到 NAPI 绑定（任务命令和包管理器命令，后者通过 `vp_pm_cli::dispatch`），或路由到 `dist/global/` 中由 rolldown 打包的模块（create、migrate、version）。
 
 ### 全局 scripts_dir 解析（Rust）
 
@@ -220,14 +220,14 @@ if (command === 'create') {
 
 2. **已彻底删除 `packages/global/`**
 
-3. **已更新 Rust `vp` 二进制**（`crates/vite_global_cli/`）：
-   - 添加了 `oxc_resolver` 依赖，用于直接解析本地 `vite-plus`
-   - 移除了 JS shim 层 — 不再需要 `dist/index.js` 中间层
+3. **已更新 Rust `vp` 二进制**（`crates/vp_global_cli/`）：
+   - 添加 `oxc_resolver` 依赖，用于直接解析本地 vite-plus
+   - 移除 JS shim 层 — 不再需要 `dist/index.js` 中间层
    - 将所有命令入口从 `index.js` 更新为 `bin.js`
-   - 将 `MAIN_PACKAGE_NAME` 从 `vite-plus-cli` 改为 `vite-plus`
+   - 将 `MAIN_PACKAGE_NAME` 从 `vite-plus-cli` 修改为 `vite-plus`
    - 脚本目录解析：`version_dir/node_modules/vite-plus/dist/`
 
-4. **重构了全局安装目录**（`~/.vite-plus/<version>/`）：
+4. **已重构全局安装目录**（`~/.vite-plus/<version>/`）：
    - 包装器 `package.json` 声明 `vite-plus` 为依赖
    - `vite-plus` 由 npm 安装到 `node_modules/` 中（而不是从 tarball 解压）
    - `.node` NAPI 二进制通过 npm `optionalDependencies` 安装（不再手动复制）
@@ -265,18 +265,18 @@ if (command === 'create') {
     - 升级注册表（`registry.rs`）直接查询 CLI 包，而不是查找 `optionalDependencies`
     - 减少了 `npm install vite-plus` 的下载体积（不再包含未使用的 `vp` 二进制）
 
-11. **通过共享的 `vite_pm_cli` crate 将所有 PM 命令带到了本地 CLI**：
-    - 将每个 PM 命令（`install`、`add`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>`）的 clap 定义和分发逻辑提取到 `crates/vite_pm_cli/`。`vite_global_cli` 和 `packages/cli/binding/` 中的 NAPI crate 都会把 `PackageManagerCommand` 展平到顶层参数解析器，并调用 `vite_pm_cli::dispatch`。
-    - 之前本地 CLI 绑定只认识 `install` 这个快捷入口；其他所有 PM 命令都会触发 clap 的 “unknown subcommand” 错误。现在 `npx vp add <pkg>`、`vp remove`、`vp pm publish` 等在全局和本地上都能以相同方式工作。
-    - 全局 CLI 为 `--global` 路径保留了一个薄封装（`commands::env::global_install`），会在委派给 `vite_pm_cli::dispatch` 之前拦截处理。本地 CLI 直接委派，并绕过 vite-task 调度器，因为 PM 操作不需要缓存。
-    - 删除了逐命令模块 `crates/vite_global_cli/src/commands/{add,remove,install,update,dedupe,outdated,why,link,unlink,dlx,pm}.rs`。
-    - 为每个命令在 `packages/cli/snap-tests/` 中镜像了一个 pnpm10 代表性 fixture，以锁定行为一致性。
+11. **通过共享的 `vp_pm_cli` crate 将所有包管理器命令引入本地 CLI**：
+    - 将每个包管理器命令（`install`、`add`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>`）的 clap 定义和分发器提取到 `crates/vp_pm_cli/`。`vp_global_cli` 和 `packages/cli/binding/` NAPI crate 都会将 `PackageManagerCommand` 展平到其顶层参数解析器中，并调用 `vp_pm_cli::dispatch`。
+    - 此前，本地 CLI 绑定只支持 `install` 快捷方式；其他所有包管理器命令都会产生 clap 的“未知子命令”错误。现在，`npx vp add <pkg>`、`vp remove`、`vp pm publish` 等命令在全局和本地环境中的行为完全一致。
+    - 全局 CLI 保留了针对 `--global` 路径的轻量包装器（`commands::env::global_install`），该包装器会在委托给 `vp_pm_cli::dispatch` 之前进行拦截。本地 CLI 则直接委托，并绕过 vite-task 调度器，因为包管理器操作不需要缓存。
+    - 删除了各命令对应的模块 `crates/vp_global_cli/src/commands/{add,remove,install,update,dedupe,outdated,why,link,unlink,dlx,pm}.rs`。
+    - 将每个命令各自一个具有代表性的 pnpm10 fixture 镜像到 `packages/cli/snap-tests/`，以锁定两者之间的一致性。
 
 ## 验证
 
-- `cargo test -p vite_global_cli` — Rust 单元测试通过
+- `cargo test -p vp_global_cli` — Rust 单元测试通过
 - `pnpm -F vite-plus snap-test-local` — 本地 CLI 快照测试通过
 - `pnpm -F vite-plus snap-test-global` — 全局 CLI 快照测试通过
-- `pnpm bootstrap-cli` — 完整构建和全局安装成功
-- `VP_VERSION=test bash packages/cli/install.sh` — 从 npm 进行生产安装可用
-- 手动测试：`vp create`、`vp migrate`、`vp --version`、`vp build`、`vp test` 均可正常工作
+- `pnpm bootstrap-cli` — 完整构建并成功进行全局安装
+- `VP_VERSION=test bash packages/cli/install.sh` — 从 npm 进行生产环境安装成功
+- 手动测试：`vp create`、`vp migrate`、`vp --version`、`vp build`、`vp test` 均运行正常

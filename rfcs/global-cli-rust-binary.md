@@ -23,7 +23,7 @@ bin/vite (shell script) → src/index.ts (Node.js) → Rust bindings (NAPI)
 
 ### 机会
 
-`vite_js_runtime` crate 已经提供了健壮的 Node.js 下载与管理能力：
+`vp_js_runtime` crate 已经提供了强大的 Node.js 下载和管理能力：
 
 - 自动解析并下载 Node.js 版本
 - 多平台支持（Linux、macOS、Windows；x64、arm64）
@@ -42,14 +42,14 @@ bin/vite (shell script) → src/index.ts (Node.js) → Rust bindings (NAPI)
 
 ## 目标
 
-1. **移除 Node.js 安装前置条件**：创建一个独立的 Rust 二进制，用户可以直接下载并运行，无需在系统上预先安装 Node.js
-2. **增强 JS 运行时管理**：使用 `vite_js_runtime` 自动下载、缓存并管理 Node.js 版本，从而实现：
-   - 为包管理器和 CLI 操作自动提供 Node.js
-   - 通过 `package.json` 中的 `devEngines.runtime` 实现按项目的运行时版本控制
-   - 在开发环境之间保持一致的运行时版本
-3. **保持当前功能**：`packages/global` 中的所有命令都继续通过打包的 JS 脚本工作
-4. **保持向后兼容**：现有命令行接口和行为保持不变
-5. **跨平台分发**：通过平台特定二进制支持 Linux、macOS 和 Windows
+1. **移除 Node.js 安装前置条件**：创建一个独立的 Rust 二进制文件，用户可以下载并立即运行，无需预先在系统中安装 Node.js
+2. **增强 JS 运行时管理**：使用 `vp_js_runtime` 自动下载、缓存和管理 Node.js 版本，实现：
+   - 为包管理器和 CLI 操作自动配置 Node.js
+   - 通过 package.json 中的 `devEngines.runtime` 控制每个项目的运行时版本
+   - 确保不同开发环境中的运行时版本一致
+3. **保持当前功能**：`packages/global` 中的所有命令继续通过捆绑的 JS 脚本运行
+4. **保持向后兼容性**：现有命令行接口和行为保持不变
+5. **跨平台分发**：通过平台专用二进制文件支持 Linux、macOS 和 Windows
 
 ## 非目标
 
@@ -106,13 +106,13 @@ vp create --template create-vite my-app
 
 ## 技术设计
 
-### 新的 Crate：`vite_global_cli`
+### 新建 Crate：`vp_global_cli`
 
-创建一个新的 crate：`crates/vite_global_cli`，编译为独立二进制。
+在 `crates/vp_global_cli` 创建一个编译为独立二进制文件的新 crate。
 
 ```
 crates/
-├── vite_global_cli/         # 新 crate
+├── vp_global_cli/         # 新建 crate
 │   ├── Cargo.toml
 │   └── src/
 │       ├── main.rs          # 入口点
@@ -123,10 +123,10 @@ crates/
 │       │   ├── new.rs       # 项目脚手架
 │       │   ├── migrate.rs   # 迁移命令
 │       │   └── ...
-│       ├── js_executor.rs   # 通过 vite_js_runtime 执行 JS
-│       └── workspace.rs     # 工作区检测（复用 vite_task）
-├── vite_js_runtime/         # 已有 - Node.js 管理
-├── vite_task/               # 已有 - 任务执行
+│       ├── js_executor.rs   # 通过 vp_js_runtime 执行 JS
+│       └── workspace.rs     # Workspace 检测（复用 vt 中的实现）
+├── vp_js_runtime/         # 现有 - Node.js 管理
+├── vt/               # 现有 - 任务执行
 └── ...
 ```
 
@@ -153,7 +153,7 @@ crates/
 | `dlx <package>`       | 执行包           | Rust CLI → 受管 Node.js → pnpm/npm dlx  |
 | `pm <subcommand>`     | 转发给包管理器   | Rust CLI → 受管 Node.js → pnpm/npm/yarn |
 
-**注意：** 由于 pnpm、npm 和 yarn 都是 Node.js 程序，这些命令都需要 Node.js 执行。全局 CLI 会在运行任何 PM 命令时使用 `vite_js_runtime` 自动下载并管理 Node.js。
+**注意：** 由于 pnpm、npm 和 yarn 都是 Node.js 程序，因此这些命令需要 Node.js 才能执行。全局 CLI 在运行任何包管理器命令时，都会使用 `vp_js_runtime` 自动下载并管理 Node.js。
 
 #### 类别 B：JS 脚本命令（Rust CLI + 受管 Node.js + JS 脚本）
 
@@ -173,7 +173,7 @@ crates/
 | ------------------------------------------------------------- | -------------------------------------------------- |
 | `dev`, `build`, `test`, `lint`, `fmt`, `run`, `preview`, `cache` | Rust CLI → 受管 Node.js → `dist/index.js` → 本地 CLI |
 
-**注意：** 全局 CLI 使用 `vite_js_runtime` 确保 Node.js 可用，并从项目的 `devEngines.runtime` 配置中解析版本。JS 入口点负责检测 vite-plus 是否已在本地安装，并委派给本地 CLI 的 `dist/bin.js`。
+**注意：** 全局 CLI 使用 `vp_js_runtime` 确保 Node.js 可用，并根据项目的 `devEngines.runtime` 配置解析版本。JS 入口点负责检测本地是否已安装 vite-plus，并将命令委派给本地 CLI 的 `dist/bin.js`。
 
 #### 类别 D：纯 Rust 命令（不需要 Node.js）
 
@@ -189,12 +189,12 @@ crates/
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                        vite_global_cli（Rust 二进制）                        │
+│                         vp_global_cli（Rust 二进制文件）                      │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────────┐   │
-│  │   CLI Parser     │  │ Workspace Detect │  │   VP_GLOBAL_CLI_JS_SCRIPTS_DIR  │   │
-│  │   (clap)         │  │ (from vite_task) │  │   (bundled scripts path) │   │
+│  │   CLI 解析器     │  │   工作区检测     │  │   VP_GLOBAL_CLI_JS_SCRIPTS_DIR  │
+│  │   （clap）       │  │   （来自 vt）    │  │   （内置脚本路径）       │   │
 │  └────────┬─────────┘  └────────┬─────────┘  └────────────┬─────────────┘   │
 │           │                     │                         │                 │
 │  ┌────────▼─────────────────────▼─────────────────────────▼───────────────┐ │
@@ -222,7 +222,7 @@ crates/
 │    cli_package_json_dir             │    │    project_dir                 │
 │  )                                  │    │  )                             │
 │                                     │    │                                │
-│  vite_js_runtime 读取：             │    │  vite_js_runtime 读取：        │
+│  vp_js_runtime 读取：               │    │  vp_js_runtime 读取：          │
 │  packages/global/package.json       │    │  <project>/package.json        │
 │  └─> devEngines.runtime: "22.22.0"  │    │  └─> devEngines.runtime        │
 │                                     │    │                                │
@@ -230,7 +230,7 @@ crates/
               │                                          │
               ▼                                          ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          vite_js_runtime crate                              │
+│                          vp_js_runtime crate                              │
 │                                                                             │
 │  内置逻辑（两个流程相同）：                                                  │
 │  1. 从提供的路径读取 package.json                                           │
@@ -250,14 +250,14 @@ crates/
 │  ┌─────────────┐  ┌──────────────┐  │    │  ┌──────────────────────────┐  │
 │  │ pnpm/npm/   │  │ 打包的      │  │    │  │ dist/index.js            │  │
 │  │ yarn        │  │ JS 脚本     │  │    │  │ → 检测/安装本地           │  │
-│  │ (类 A)      │  │ (类 B)      │  │    │  │ → 委派给本地 CLI         │  │
+│  │ （类别 A）  │  │ （类别 B）  │  │    │  │ → 委派给本地 CLI         │  │
 │  └─────────────┘  └──────────────┘  │    │  └──────────────────────────┘  │
 └─────────────────────────────────────┘    └────────────────────────────────┘
 
 图例：
-- 两条流程都使用 download_runtime_for_project()，只是目录路径不同
-- vite_js_runtime 在内部处理所有 devEngines.runtime 逻辑
-- 类别 C 通过 dist/index.js 委派，而它负责本地 CLI 检测
+- 两个流程都使用 download_runtime_for_project()，只是传入的目录路径不同
+- vp_js_runtime 在内部处理所有 devEngines.runtime 逻辑
+- 类别 C 通过 dist/index.js 进行委派，由其处理本地 CLI 检测
 - 类别 D：不需要 Node.js（纯 Rust）
 ```
 
@@ -266,9 +266,9 @@ crates/
 当需要执行 JavaScript 时，执行器会使用 `download_runtime_for_project()`，但传入不同的目录路径：
 
 ```rust
-// crates/vite_global_cli/src/js_executor.rs
+// crates/vp_global_cli/src/js_executor.rs
 
-use vite_js_runtime::download_runtime_for_project;
+use vp_js_runtime::download_runtime_for_project;
 use std::process::Command;
 
 pub struct JsExecutor {
@@ -371,11 +371,11 @@ impl JsExecutor {
 
 **关键点：**
 
-- 两条流程都使用 `download_runtime_for_project()`——唯一差异只是目录路径
-- `vite_js_runtime` 在内部处理所有 `devEngines.runtime` 逻辑（读取 package.json、解析版本、缓存）
-- CLI 命令使用 CLI 自己的 package.json 目录（例如 `packages/global/`）
-- 项目委派通过 `dist/index.js` 进行，后者负责本地 CLI 检测
-- JS 入口点负责本地 CLI 检测与委派。
+- 两种流程都使用 `download_runtime_for_project()`——唯一的区别是目录路径不同
+- `vp_js_runtime` 在内部处理所有 `devEngines.runtime` 逻辑（读取 package.json、解析版本、缓存）
+- CLI 命令使用 CLI 的 package.json 目录（例如 `packages/global/`）
+- 项目委派使用项目目录，并通过 `dist/index.js` 传递命令
+- JS 入口点负责检测本地 CLI 并进行委派
 
 ### 实施阶段
 
@@ -383,46 +383,46 @@ impl JsExecutor {
 
 **范围：**
 
-- 搭建 `vite_global_cli` crate 结构
+- 设置 `vp_global_cli` crate 结构
 - 使用 clap 实现 CLI 解析
-- 实现工作区检测（复用 `vite_task`）
+- 实现工作区检测（复用 `vt` 中的实现）
 - 实现包管理器检测与封装
 - 实现所有包管理器命令：
   - `install [packages]` / `i` - 安装依赖或添加包
-  - `add <packages>` - 向依赖中添加包
-  - `remove <packages>` / `rm`, `un`, `uninstall` - 移除包
+  - `add <packages>` - 将包添加到依赖项
+  - `remove <packages>` / `rm`、`un`、`uninstall` - 移除包
   - `update [packages]` / `up` - 更新包
-  - `outdated [packages]` - 检查过期包
-  - `dedupe` - 依赖去重
-  - `why <package>` / `explain` - 解释某个包为何被安装
-  - `info <package>` / `view`, `show` - 从 registry 查看包信息
+  - `outdated [packages]` - 棌查过时的包
+  - `dedupe` - 去重依赖
+  - `why <package>` / `explain` - 解释安装某个包的原因
+  - `info <package>` / `view`、`show` - 查看注册表中的包信息
   - `link [package|dir]` / `ln` - 链接包
   - `unlink [package|dir]` - 取消链接包
-  - `dlx <package>` - 无需安装即可执行包
-  - `pm <subcommand>` - 转发给包管理器（list、prune、pack）
+  - `dlx <package>` - 执行包但不安装
+  - `pm <subcommand>` - 转发到包管理器（list、prune、pack）
 
 **要创建的文件：**
 
-- `crates/vite_global_cli/Cargo.toml`
-- `crates/vite_global_cli/src/main.rs`
-- `crates/vite_global_cli/src/cli.rs` # 顶层 clap 解析器；为所有 PM 子命令展平 `vite_pm_cli::PackageManagerCommand`，并拦截 `--global` 以进行受管安装
-- `crates/vite_global_cli/src/commands/mod.rs`
-- `crates/vite_global_cli/src/commands/new.rs` # 项目脚手架
-- `crates/vite_global_cli/src/commands/migrate.rs` # 迁移命令
-- `crates/vite_global_cli/src/commands/delegate.rs` # 本地 CLI 委派
-- `crates/vite_global_cli/src/commands/version.rs` # 版本显示
-- `crates/vite_global_cli/src/js_executor.rs`
-- `crates/vite_global_cli/src/error.rs`
+- `crates/vp_global_cli/Cargo.toml`
+- `crates/vp_global_cli/src/main.rs`
+- `crates/vp_global_cli/src/cli.rs` # 顶层 clap 解析器；为所有包管理器子命令扁平化 `vp_pm_cli::PackageManagerCommand`，并拦截受管理安装中的 `--global`
+- `crates/vp_global_cli/src/commands/mod.rs`
+- `crates/vp_global_cli/src/commands/new.rs` # 项目脚手架
+- `crates/vp_global_cli/src/commands/migrate.rs` # 迁移命令
+- `crates/vp_global_cli/src/commands/delegate.rs` # 本地 CLI 委派
+- `crates/vp_global_cli/src/commands/version.rs` # 版本显示
+- `crates/vp_global_cli/src/js_executor.rs`
+- `crates/vp_global_cli/src/error.rs`
 
-> **注意：** PM 命令的 clap 定义和分发（`add`、`install`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>`）位于共享的 `crates/vite_pm_cli/` crate 中，因此它们可以被 `vite_global_cli` 和本地 CLI 的 NAPI 绑定（`packages/cli/binding/`）复用。之前位于 `crates/vite_global_cli/src/commands/` 下的逐个命令模块（`add.rs`、`install.rs`、`remove.rs`、…）已被移除，改为使用 `vite_pm_cli::dispatch`。
+> **注意：** 包管理器命令的 clap 定义和分发（`add`、`install`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>`）位于共享的 `crates/vp_pm_cli/` crate 中，因此 `vp_global_cli` 和本地 CLI 的 NAPI 绑定（`packages/cli/binding/`）都可以复用。此前位于 `crates/vp_global_cli/src/commands/` 下的各命令模块（`add.rs`、`install.rs`、`remove.rs` 等）已被移除，改用 `vp_pm_cli::dispatch`。
 
 **成功标准：**
 
-- [x] 所有 PM 命令都可在未预装 Node.js 的情况下运行（使用受管 Node.js）
-- [x] 首次运行 PM 命令时会自动下载受管 Node.js
+- [x] 所有包管理器命令都可在未预装 Node.js 的情况下运行（使用受管 Node.js）
+- [x] 首次运行包管理器命令时会自动下载受管 Node.js
 - [x] 自动在项目中检测 pnpm/npm/yarn
 - [x] 如果包管理器不可用，则通过受管 Node.js 下载
-- [x] 所有 PM 命令与当前 Node.js CLI 的行为一致
+- [x] 所有包管理器命令与当前 Node.js CLI 的行为一致
 - [x] `--help` 文档与当前 CLI 匹配
 - [x] 命令别名工作正常（i、rm、up 等）
 
@@ -432,7 +432,7 @@ impl JsExecutor {
 
 - 为内置模板实现 `new` 命令（vite:monorepo 等）
 - 为远程模板实现 JS 执行器
-- 与 `vite_js_runtime` 集成以下载 Node.js
+- 与 `vp_js_runtime` 集成以下载 Node.js
 
 **成功标准：**
 
@@ -470,13 +470,13 @@ impl JsExecutor {
 
 ### 依赖变更
 
-**`vite_global_cli` 的新依赖：**
+**`vp_global_cli` 的新增依赖：**
 
 ```toml
 [dependencies]
-vite_js_runtime = { path = "../vite_js_runtime" }
-vite_shared = { path = "../vite_shared" }  # 用于缓存目录等
-vite_path = { path = "../vite_path" }
+vp_js_runtime = { path = "../vp_js_runtime" }
+vp_shared = { path = "../vp_shared" }  # 用于缓存目录等
+vt_path = { path = "../vt_path" }
 
 clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
@@ -490,9 +490,9 @@ thiserror = "1"
 
 全局 CLI 将使用与当前 CLI 相同的配置位置：
 
-- **主目录**：`~/.vite-plus/`（通过 `vite_shared::get_vite_plus_home`）
-- **Node.js 运行时**：`~/.vite-plus/js_runtime/node/{version}/`
-- **包管理器**：根据 lockfile 或 package.json 自动检测。
+- **主目录**: `~/.vite-plus/`（通过 `vp_shared::get_vite_plus_home`）
+- **Node.js 运行时**: `~/.vite-plus/js_runtime/node/{version}/`
+- **包管理器**: 根据锁定文件或 package.json 自动检测。
 
 ### JS 运行时版本管理
 
@@ -565,7 +565,7 @@ thiserror = "1"
 - **无系统冲突**：不同项目可以使用不同的 Node.js 版本
 - **自动供给**：如果未缓存，运行时会自动下载
 
-这与现有 `vite_js_runtime` crate 的能力集成（参见 [js-runtime RFC](./js-runtime.md)）。
+这与现有的 `vp_js_runtime` crate 的功能集成（参见 [js-runtime RFC](./js-runtime.md)）。
 
 ### 打包与分发策略
 
@@ -860,9 +860,9 @@ Cleanup-OldVersions -InstallDir $InstallDir
 当 Rust 二进制需要执行 JS（用于 `new`、`migrate`、`--version` 或 PM 命令）时：
 
 1. 检查 `VP_GLOBAL_CLI_JS_SCRIPTS_DIR` 环境变量（可选）
-2. 如果未设置，则通过查找二进制文件相对路径下的 `dist/index.js` 自动检测
-3. 如果 Node.js 尚未缓存，则通过 `vite_js_runtime` 下载（版本来自 `package.json` 中的 `devEngines.runtime`）
-4. 使用受管理的 Node.js 执行 JS 入口点，并传递命令和参数
+2. 如果未设置，则通过查找二进制相对位置的 `dist/index.js` 进行自动检测
+3. 如果尚未缓存，则通过 `vp_js_runtime` 下载 Node.js（版本来自 `package.json` 的 devEngines.runtime）
+4. 使用受管理的 Node.js 执行 JS 入口点，并传入命令和参数
 
 **自动检测逻辑：**
 
@@ -975,7 +975,7 @@ if (fs.existsSync(rustBinarySource)) {
 ```yaml
 # 在现有 CI 工作流中
 - name: 构建 Rust CLI
-  run: cargo build --release --target ${{ matrix.target }} -p vite_global_cli
+  run: cargo build --release --target ${{ matrix.target }} -p vp_global_cli
 ```
 
 ### 错误处理
@@ -986,8 +986,8 @@ pub enum Error {
     #[error("未检测到包管理器。请在项目目录中运行。")]
     NoPackageManager,
 
-    #[error("下载 Node.js 运行时失败：{0}")]
-    RuntimeDownload(#[from] vite_js_runtime::Error),
+    #[error("Failed to download Node.js runtime: {0}")]
+    RuntimeDownload(#[from] vp_js_runtime::Error),
 
     #[error("命令执行失败：{0}")]
     CommandExecution(std::io::Error),
@@ -1020,11 +1020,11 @@ packages/global/
 
 **开发流程：**
 
-1. 构建 Rust 二进制：`cargo build -p vite_global_cli`
+1. 构建 Rust 二进制：`cargo build -p vp_global_cli`
 2. 构建 JS：`pnpm -F vite-plus-cli build`
-3. 运行安装脚本：`pnpm bootstrap-cli`（内部会运行 `install-global-cli.ts`）
+3. 运行安装脚本：`pnpm bootstrap-cli`（内部运行 `install-global-cli.ts`）
 4. 脚本将二进制复制到 `packages/global/bin/vp`
-5. 本地开发和 snap 测试可以保持不变
+5. 本地开发和 snap 测试无需修改即可运行
 
 **设置后的目录结构：**
 
@@ -1100,9 +1100,9 @@ Node.js 22 是当前的 LTS 版本线，提供长期支持。选择 22.22.0 作�
 
 捆绑 Node.js 会显著增加二进制文件体积（约 100MB+）。相反，按需下载：
 
-- 保持初始下载体积较小（约 20MB）
-- 允许版本灵活切换
-- 利用现有的 `vite_js_runtime` 缓存
+- 减小初始下载量（约 20MB）
+- 提供版本灵活性
+- 利用现有的 `vp_js_runtime` 缓存
 
 ### 3. 为什么包装包管理器，而不是重新实现？
 
@@ -1187,7 +1187,7 @@ NAPI 绑定服务于本地 CLI（`vite-plus` 包）的使用场景，此时 Node
 
 ## 参考资料
 
-- [vite_js_runtime RFC](./js-runtime.md)
+- [vp_js_runtime RFC](./js-runtime.md)
 - [split-global-cli RFC](./split-global-cli.md)
 - [install-command RFC](./install-command.md)
 - [Node.js 发布版本](https://nodejs.org/en/about/releases/)

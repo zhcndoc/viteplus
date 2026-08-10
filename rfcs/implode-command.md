@@ -2,7 +2,7 @@
 
 ## 状态
 
-已实现
+已实现。
 
 ## 背景
 
@@ -36,13 +36,13 @@ source "$HOME/.vite-plus/env.fish"
 2. 清理 shell 配置文件（移除 source 行及相关注释）
 3. 删除 `~/.vite-plus/` 目录及其所有内容
 4. 处理 Windows 特定的清理（用户 PATH、被锁定的二进制文件）
-5. 要求显式确认，以防止意外卸载
+5. 要求显式确认，以防止意外卸载。
 
 ## 非目标
 
 1. 选择性移除（例如，保留已下载的 Node.js 版本）
 2. 移除前备份
-3. 删除项目级别的 `vite-plus` npm 依赖
+3. 删除项目级别的 `vite-plus` npm 依赖。
 
 ## 用户故事
 
@@ -138,7 +138,7 @@ Options:
 
 #### 第 1 步：解析 Home 目录
 
-使用 `vite_shared::get_vite_plus_home()` 确定安装目录。如果目录不存在，打印 "not installed" 并以 0 退出。
+使用 `vp_shared::get_vite_plus_home()` 确定安装目录。如果目录不存在，则打印“未安装”并以 0 退出。
 
 #### 第 2 步：扫描 Shell 配置文件
 
@@ -194,7 +194,7 @@ shell 配置文件清理不是致命错误——如果某个文件无法写入�
 ### 文件结构
 
 ```
-crates/vite_global_cli/
+crates/vp_global_cli/
 ├── src/
 │   ├── commands/
 │   │   ├── implode.rs        # 完整实现
@@ -207,8 +207,8 @@ crates/vite_global_cli/
 
 | 错误                        | 行为                         |
 | ---------------------------- | ---------------------------- |
-| 未找到 Home 目录             | 打印 "not installed"，以 0 退出 |
-| Home 目录不存在              | 打印 "not installed"，以 0 退出 |
+| 未找到 Home 目录             | 打印“未安装”，以 0 退出 |
+| Home 目录不存在              | 打印“未安装”，以 0 退出 |
 | 无法确定用户 Home            | 返回错误                    |
 | Shell 配置文件写入失败       | 警告并继续                  |
 | Windows PATH 清理失败        | 警告并继续                  |
@@ -249,7 +249,7 @@ vp implode
 vp implode --yes
 
 # 验证清理
-ls ~/.vite-plus      # 应不应存在
+ls ~/.vite-plus      # 不应存在
 grep vite-plus ~/.zshenv ~/.zshrc ~/.bashrc  # 应找不到任何内容
 
 # 验证 vp 已移除

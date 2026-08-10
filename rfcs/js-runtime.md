@@ -1,4 +1,4 @@
-# RFC：JavaScript 运行时管理（`vite_js_runtime`）
+# RFC：JavaScript 运行时管理（`vp_js_runtime`）
 
 ## 背景
 
@@ -9,7 +9,7 @@
 3. **无法固定运行时版本**：项目无法指定并强制使用特定的 Node.js 版本
 4. **未来可扩展性**：随着 Bun 和 Deno 等替代方案逐渐成熟，项目可能希望使用不同的运行时
 
-`vite_pm_cli` 中的 PackageManager 实现已经成功处理了包管理器（pnpm、yarn、npm）的自动下载和缓存。我们可以将相同的模式应用于 JavaScript 运行时。
+`vp_pm_cli` 中的 `PackageManager` 实现已经成功处理了包管理器（pnpm、yarn、npm）的自动下载和缓存。我们可以将相同的模式应用于 JavaScript 运行时。
 
 ## 目标
 
@@ -53,7 +53,7 @@
 ### crate 结构
 
 ```
-crates/vite_js_runtime/
+crates/vp_js_runtime/
 ├── Cargo.toml
 └── src/
     ├── lib.rs              # 公共 API 导出
@@ -204,7 +204,7 @@ impl NodeProvider {
 **直接下载指定版本：**
 
 ```rust
-use vite_js_runtime::{JsRuntimeType, download_runtime};
+use vp_js_runtime::{JsRuntimeType, download_runtime};
 
 let runtime = download_runtime(JsRuntimeType::Node, "22.13.1").await?;
 println!("Node.js 已安装到: {}", runtime.get_binary_path());
@@ -214,8 +214,8 @@ println!("版本: {}", runtime.version()); // "22.13.1"
 **基于项目下载（读取 .node-version、devEngines.runtime 或 engines.node）：**
 
 ```rust
-use vite_js_runtime::download_runtime_for_project;
-use vite_path::AbsolutePathBuf;
+use vp_js_runtime::download_runtime_for_project;
+use vt_path::AbsolutePathBuf;
 
 let project_path = AbsolutePathBuf::new("/path/to/project".into()).unwrap();
 let runtime = download_runtime_for_project(&project_path).await?;
@@ -445,7 +445,7 @@ https://nodejs.org/dist/v{version}/node-v{version}-{platform}.{ext}
 
 ### 自定义镜像支持
 
-可以使用 `VP_NODE_DIST_MIRROR` 环境变量覆盖发行版 URL。这对于企业环境或 nodejs.org 可能较慢或被屏蔽的地区非常有用。
+可以使用 `VP_NODE_DIST_MIRROR` 环境变量覆盖发行版 URL。这对于企业环境或 nodejs.org 访问速度较慢或受到屏蔽的地区非常有用。
 
 ```bash
 VP_NODE_DIST_MIRROR=https://example.com/mirrors/node vp build
@@ -455,7 +455,7 @@ VP_NODE_DIST_MIRROR=https://example.com/mirrors/node vp build
 
 ### 完整性与真实性验证
 
-Node.js 会为每个发布版本提供 `SHASUMS256.txt` 和一个 PGP clear-signed 的 `SHASUMS256.txt.asc`
+Node.js 会为每个发布版本提供 `SHASUMS256.txt` 和一个经过 PGP 明文签名的 `SHASUMS256.txt.asc`
 （由 Node.js 发布者签名）：
 
 ```
@@ -465,13 +465,13 @@ https://nodejs.org/dist/v{version}/SHASUMS256.txt.asc
 
 实现会自动验证真实性和完整性：
 
-1. 下载 clear-signed 的 `SHASUMS256.txt.asc`，并使用内嵌的 Node.js 发布密钥副本验证其 PGP 签名，然后解析
+1. 下载经过明文签名的 `SHASUMS256.txt.asc`，并使用内嵌的 Node.js 发布密钥副本验证其 PGP 签名，然后解析
    已验证的明文（见 [verify-node-shasums-signature.md](./verify-node-shasums-signature.md)）
 2. 提取目标压缩包文件名对应的 SHA256 哈希
 3. 下载压缩包后，根据预期哈希进行验证
 4. 如果签名无效或哈希不匹配，则返回错误
 
-对官方 `nodejs.org` 源，签名验证是强制性的。非官方的 musl 构建和只提供 `SHASUMS256.txt`
+对于官方 `nodejs.org` 源，签名验证是强制性的。非官方的 musl 构建和只提供 `SHASUMS256.txt`
 的自定义镜像会回退到仅哈希验证（`signature: None`，或者在 `.asc` 不存在时尽力而为）。
 
 SHASUMS256.txt 内容示例：
@@ -523,16 +523,16 @@ i9j0k1l2...  node-v22.13.1-linux-arm64.tar.gz
 - 基于文件的锁，防止竞态条件
 - 获取锁后再次检查缓存（另一个进程可能已经完成）
 
-## 与 vite_pm_cli 集成
+## 与 vp_pm_cli 集成
 
-`vite_pm_cli` crate 可以使用 `vite_js_runtime` 来：
+`vp_pm_cli` crate 可以使用 `vp_js_runtime` 来：
 
 1. 在运行包管理器命令前确保正确的 Node.js 版本
 2. 使用受管理的 Node.js 执行包管理器二进制文件
 
 ```rust
-// 在 vite_pm_cli 中的集成示例
-use vite_js_runtime::{JsRuntimeType, download_runtime};
+// vp_pm_cli 中的集成示例
+use vp_js_runtime::{JsRuntimeType, download_runtime};
 
 async fn run_with_managed_node(
     node_version: &str,
@@ -556,7 +556,7 @@ async fn run_with_managed_node(
 
 ## 错误处理
 
-`vite_js_runtime::Error` 中的错误变体：
+`vp_js_runtime::Error` 中的错误变体：
 
 ```rust
 pub enum Error {
@@ -635,9 +635,9 @@ pub enum Error {
 - 更容易独立测试
 - 职责单一清晰：下载并缓存运行时
 
-### 2. 独立 Crate vs. 扩展 vite_pm_cli
+### 2. 独立 Crate vs. 扩展 vp_pm_cli
 
-**决策**：创建一个新的 `vite_js_runtime` crate。
+**决策**：创建一个新的 `vp_js_runtime` crate。
 
 **理由**：
 
@@ -678,7 +678,7 @@ pub enum Error {
 - 将通用下载逻辑与运行时特定细节清晰分离
 - 每个 provider 封装：平台字符串、URL 构造、哈希验证、二进制路径
 - 添加新运行时只需实现该 trait
-- 通用下载工具可在所有 provider 之间复用
+- 通用下载工具可在所有 provider 之间复用。
 
 ## 未来增强
 

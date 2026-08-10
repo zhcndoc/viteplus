@@ -186,7 +186,7 @@ vp update react --latest
 
 #### 1. 命令结构
 
-**文件**：`crates/vite_task/src/lib.rs`
+**文件**：`crates/vt/src/lib.rs`
 
 添加新的命令变体：
 
@@ -384,7 +384,7 @@ impl PackageManager {
                 // npm 没有 --latest 标志
                 // 提示用户或以不同方式处理
                 if options.latest {
-                    eprintln!("Warning: npm doesn't support --latest flag. Use 'npm outdated' to check for updates.");
+                    eprintln!("警告：npm 不支持 --latest 标志。请使用 'npm outdated' 检查更新。");
                 }
             }
         }
@@ -401,7 +401,7 @@ impl PackageManager {
 
 #### 3. 更新命令实现
 
-**文件**：`crates/vite_task/src/update.rs`（新文件）
+**文件**：`crates/vt/src/update.rs`（新文件）
 
 ```rust
 pub struct UpdateCommand {
@@ -556,27 +556,27 @@ Warning: npm 不支持交互模式
 
 ```bash
 $ vp update react --latest
-Detected package manager: pnpm@10.15.0
-Running: pnpm update --latest react
+检测到包管理器：pnpm@10.15.0
+正在运行：pnpm update --latest react
 
-Packages: +0 -0 ~1
+包：+0 -0 ~1
 ~1
-Progress: resolved 150, reused 145, downloaded 1, added 0, done
+进度：已解析 150，已复用 145，已下载 1，已添加 0，完成
 
-dependencies:
+依赖：
 ~ react 18.2.0 → 18.3.1
 
-Done in 1.2s
+耗时 1.2 秒
 ```
 
 ### 交互模式输出
 
 ```bash
 $ vp up -i
-Detected package manager: pnpm@10.15.0
-Running: pnpm update --interactive
+检测到包管理器：pnpm@10.15.0
+正在运行：pnpm update --interactive
 
-? Choose which packages to update: (Press <space> to select, <a> to select all)
+? 选择要更新的软件包：（按 <space> 选择，按 <a> 全选）
 ❯◯ react 18.2.0 → 18.3.1
  ◯ react-dom 18.2.0 → 18.3.1
  ◯ typescript 5.0.0 → 5.5.0
@@ -609,7 +609,7 @@ vp update react --range # 在 semver 范围内更新
 
 - 破坏 semver 预期
 - 与包管理器默认行为不同
-- 可能导致意外的破坏性变更
+- 可能导致意外的破坏性变更。
 
 ## 实施计划
 
@@ -638,7 +638,7 @@ vp update react --range # 在 semver 范围内更新
 
 1. 更新 CLI 文档
 2. 在 README 中添加示例
-3. 记录包管理器兼容性
+3. 记录包管理器兼容性。
 
 ## 测试策略
 
@@ -838,7 +838,7 @@ Continue? (Y/n)
 1. **采用率**：使用 `vp update` 而不是直接使用包管理器的用户百分比
 2. **更新频率**：跟踪依赖保持最新的频率
 3. **用户反馈**：关于命令易用性的调查/问题反馈
-4. **错误率**：跟踪命令失败率与直接使用包管理器的对比
+4. **错误率**：跟踪命令失败率与直接使用包管理器的对比。
 
 ## 结论
 

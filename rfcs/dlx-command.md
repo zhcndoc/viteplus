@@ -138,13 +138,13 @@ vp dlx typescript tsc --version --help
 
 1. 解析已知的 vp dlx 选项（`--package`、`-c`、`-s`）
 2. 第一个非选项参数是软件包说明符（可选带有 @version）
-3. 所有剩余参数都会原样传递给所执行的命令
+3. 所有剩余参数都会原样传递给所执行的命令。
 
 ## 实现架构
 
 ### 1. 命令结构
 
-**文件**：`crates/vite_command/src/lib.rs`
+**文件**: `crates/vp_command/src/lib.rs`
 
 添加新命令：
 
@@ -183,8 +183,8 @@ pub enum Commands {
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
 
-use vite_error::Error;
-use vite_path::AbsolutePath;
+use vp_error::Error;
+use vt_path::AbsolutePath;
 
 use crate::package_manager::{
     PackageManager, PackageManagerType, ResolveCommandResult, format_path_env, run_command,
@@ -434,11 +434,11 @@ fn extract_command_from_spec(spec: &str) -> String {
 
 ### 3. 命令处理器
 
-**文件**：`crates/vite_task/src/dlx.rs`（新文件）
+**文件**: `crates/vt/src/dlx.rs`（新文件）
 
 ```rust
-use vite_error::Error;
-use vite_path::AbsolutePathBuf;
+use vp_error::Error;
+use vt_path::AbsolutePathBuf;
 use vite_install::commands::dlx::DlxCommandOptions;
 use vite_install::PackageManager;
 
@@ -480,7 +480,7 @@ impl DlxCommand {
 
         let exit_status = package_manager.run_dlx_command(&options, &self.cwd).await?;
 
-        Ok(vite_shared::exit_code_from_status(exit_status))
+        Ok(vp_shared::exit_code_from_status(exit_status))
     }
 }
 ```
@@ -498,9 +498,9 @@ impl DlxCommand {
 - 提供可行的解决方案，而不是直接报错
 - 通过提示告知用户正在使用回退方案
 
-### 2. Package 标志的位置
+### 2. 软件包标志的位置
 
-**决策**：接受位于 package spec 之前任意位置的 `--package` 标志。
+**决策**：接受位于软件包规范之前任意位置的 `--package` 标志。
 
 **理由**：
 
@@ -522,25 +522,25 @@ impl DlxCommand {
 
 ### 4. 静默模式映射
 
-**决策**：将 `--silent` 映射为各包管理器对应的标志。
+**决策**：将 `--silent` 映射为各软件包管理器对应的标志。
 
 **理由**：
 
 - pnpm 使用 `--silent`
 - npm 使用 `--loglevel silent`
 - yarn 使用 `--quiet`
-- 为不同包管理器提供一致的用户体验
+- 为不同软件包管理器提供一致的用户体验
 
-### 5. 从 Package Spec 中提取命令
+### 5. 从软件包规范中提取命令
 
-**决策**：针对 npm，自动从 package spec 中提取命令名称。
+**决策**：针对 npm，自动从软件包规范中提取命令名称。
 
 **理由**：
 
 - `npm exec` 要求在 `--` 后显式指定命令名称
-- `pnpm dlx` 和 `yarn dlx` 会从 package 中推断命令
+- `pnpm dlx` 和 `yarn dlx` 会从软件包中推断命令
 - 自动处理可提供一致的用户体验
-- 能够正确处理作用域包
+- 能够正确处理作用域软件包
 
 ### 6. 没有 package.json 时回退到 npx
 
@@ -550,8 +550,8 @@ impl DlxCommand {
 
 - `npx` 不要求存在 `package.json` —— `vp dlx` 也不应该要求
 - 用户可能会在任何项目之外的目录中运行 `vp dlx` 或 `vpx`（例如 `/tmp`、主目录）
-- 没有 `package.json` 时，就没有可供检测的包管理器，因此 `npx` 是通用的回退方案
-- `prepend_js_runtime_to_path_env()` 已经处理了没有 package.json 的情况（使用 CLI runtime），因此 `npx` 位于 PATH 中
+- 没有 `package.json` 时，就没有可供检测的软件包管理器，因此 `npx` 是通用的回退方案
+- `prepend_js_runtime_to_path_env()` 已经处理了没有 `package.json` 的情况（使用 CLI runtime），因此 `npx` 位于 PATH 中
 
 ### 7. 自动确认 npm/npx 的提示
 
@@ -561,10 +561,10 @@ impl DlxCommand {
 
 - pnpm 默认不需要确认提示
 - yarn dlx 不需要确认提示
-- npm 和 npx 在运行缓存中不存在的包时会提示确认
-- 自动添加 `--yes` 可确保所有包管理器的行为一致
+- npm 和 npx 在运行缓存中不存在的软件包时会提示确认
+- 自动添加 `--yes` 可确保所有软件包管理器的行为一致
 - 从 CLI 中移除 npm 专用的 `--yes/-y` 和 `--no/-n` 选项
-- 用户希望无论底层使用哪种包管理器，`vp dlx` 的行为都保持一致
+- 用户希望无论底层使用哪种软件包管理器，`vp dlx` 的行为都保持一致。
 
 ## 错误处理
 
@@ -722,13 +722,13 @@ Error: yarn@1.22.19 does not support dlx command
 - 用户体验令人沮丧
 - npx 回退方案运行良好且可用
 - 其他工具（如 `bun x`）也提供回退方案
-- 用户不应该为了使用 dlx 而切换包管理器
+- 用户不应该为了使用 dlx 而切换包管理器。
 
 ## 实施计划
 
 ### 阶段 1：核心基础设施
 
-1. 在 `vite_command` 中向 `Commands` 枚举添加 `Dlx` 变体
+1. 在 `vp_command` 中为 `Commands` 枚举添加 `Dlx` 变体
 2. 创建 `DlxCommandOptions` 结构体
 3. 为每个包管理器实现 `resolve_dlx_command`
 4. 添加 `run_dlx_command` 执行方法
@@ -916,7 +916,7 @@ $ vp dlx --help
 
 4. **构建脚本**：pnpm 的 `--allow-build` 控制 postinstall 脚本。
    - 默认情况下，dlx 包可以运行构建脚本
-   - 对不受信任的包，应考虑相关安全影响
+   - 对不受信任的包，应考虑相关安全影响。
 
 ## 向后兼容性
 
@@ -925,7 +925,7 @@ $ vp dlx --help
 - 不影响现有命令
 - 新命令仅为新增功能
 - 不改变配置格式
-- 不改变缓存行为
+- 不改变缓存行为。
 
 ## 未来增强功能
 

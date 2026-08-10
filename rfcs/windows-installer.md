@@ -1,4 +1,4 @@
-# RFC: 独立的 Windows `.exe` 安装器
+# RFC：独立的 Windows `.exe` 安装程序
 
 ## 状态
 
@@ -60,20 +60,20 @@ rustup 使用一个二进制解决一切——`rustup-init.exe` 会将自身复�
 
 **不适用于 vp**，原因是：
 
-- `vp.exe` 从 npm 注册表作为平台特定包下载
-- 安装器不能把自身复制成 `vp.exe`——两者本质上是不同的二进制
-- `vp.exe` 链接了 `vite_js_runtime`、`vite_workspace`、`oxc_resolver`（约 15-20 MB）——安装器不需要这些
+- `vp.exe` 从 npm registry 以平台特定软件包的形式下载
+- 安装器无法将自身复制为 `vp.exe` —— 它们本质上是不同的二进制文件
+- `vp.exe` 链接了 `vp_js_runtime`、`vt_workspace`、`oxc_resolver`（约 15-20 MB）——安装器完全不需要这些
 
 ### 选项 B：带共享库的独立 crate（推荐）
 
 创建两个新的 crate：
 
 ```
-crates/vite_setup/     — 共享安装逻辑（库）
-crates/vite_installer/      — 独立的安装器二进制
+crates/vp_setup/     — 共享安装逻辑（库）
+crates/vp_installer/      — 独立的安装器二进制文件
 ```
 
-`vite_setup` 提取可复用的安装逻辑，该逻辑当前位于 `vite_global_cli/src/commands/upgrade/`。`vp upgrade` 和 `vp-setup.exe` 都会调用 `vite_setup`。
+`vp_setup` 提取当前位于 `vp_global_cli/src/commands/upgrade/` 中的可复用安装逻辑。`vp upgrade` 和 `vp-setup.exe` 都调用 `vp_setup`。
 
 **收益：**
 
@@ -81,25 +81,25 @@ crates/vite_installer/      — 独立的安装器二进制
 - `vp upgrade` 与 `vp-setup.exe` 共享完全一致的安装逻辑——避免偏移
 - 清晰的关注点分离。
 
-## 代码共享：`vite_setup` 库
+## 代码共享：`vp_setup` 库
 
 ### 提取内容
 
-| `upgrade/` 中的原始位置  | 提取到 `vite_setup::` | 用途                                                                                              |
-| ------------------------ | --------------------- | ------------------------------------------------------------------------------------------------- |
-| `platform.rs`            | `platform`            | OS/架构检测                                                                                       |
-| `registry.rs`            | `registry`            | npm 注册表查询                                                                                    |
-| `integrity.rs`           | `integrity`           | SHA-512 校验                                                                                      |
-| `install.rs`（所有函数） | `install`             | Tarball 解压、package.json 生成、.npmrc 覆盖、依赖安装、symlink/junction 置换、版本清理、回滚支持 |
+| `upgrade/` 中的原始位置 | 提取至 `vp_setup::` | 用途                                                                                                                              |
+| ----------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `platform.rs`           | `platform`          | 操作系统/架构检测                                                                                                                |
+| `registry.rs`           | `registry`          | npm 注册表查询                                                                                                                   |
+| `integrity.rs`          | `integrity`         | SHA-512 校验                                                                                                                     |
+| `install.rs`（所有函数） | `install`           | Tarball 提取、package.json 生成、.npmrc 覆盖、依赖安装、符号链接/联接点替换、版本清理、回滚支持 |
 
-### `vite_global_cli` 中保留内容
+### `vp_global_cli` 中保留的内容
 
 - `vp upgrade` 的 CLI 参数解析
 - 版本对比（当前 vs 可用）
 - 回滚逻辑
 - 特定于 upgrade 体验的输出格式化
 
-### `vite_installer` 中新增内容
+### `vp_installer` 中新增的内容
 
 - 交互式安装提示（编号菜单）
 - 通过注册表修改 Windows 用户 PATH
@@ -111,19 +111,19 @@ crates/vite_installer/      — 独立的安装器二进制
 ### 依赖图
 
 ```
-vite_installer（可执行文件，约 3-5 MB）
-  ├── vite_setup（共享安装逻辑）
-  ├── vite_pm_cli（HTTP 客户端）
-  ├── vite_shared（主目录解析）
-  ├── vite_path（类型化路径封装）
-  ├── clap（CLI 解析）
-  ├── tokio（异步运行时）
-  ├── indicatif（进度条）
-  └── owo-colors（终端颜色）
+vp_installer (二进制文件，约 3-5 MB)
+  ├── vp_setup (共享安装逻辑)
+  ├── vp_pm_cli (HTTP 客户端)
+  ├── vp_shared (主目录解析)
+  ├── vt_path (类型化路径包装器)
+  ├── clap (CLI 解析)
+  ├── tokio (异步运行时)
+  ├── indicatif (进度条)
+  └── owo-colors (终端颜色)
 
-vite_global_cli（现有）
-  ├── vite_setup（替换内联 upgrade 代码）
-  └── ...（所有现有依赖）
+vp_global_cli (现有)
+  ├── vp_setup (替代内联升级代码)
+  └── ... (所有现有依赖)
 ```
 
 ## 用户体验
@@ -206,7 +206,7 @@ CLI 标志的优先级高于环境变量。
 
 ## 安装流程
 
-安装器会复现与 `install.ps1` 相同的结果，该流程使用 Rust 通过 `vite_setup` 实现。
+安装器通过 `vp_setup` 使用 Rust 实现，复现与 `install.ps1` 相同的结果。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -292,25 +292,25 @@ CLI 标志的优先级高于环境变量。
                         ✔ 打印成功
 ```
 
-每个阶段都映射到 `vite_setup` 库函数，这些函数与 `vp upgrade` 共享：
+每个阶段都对应于 `vp_setup` 库函数，这些函数与 `vp upgrade` 共享：
 
-| 阶段              | 关键函数                                   | Crate            |
-| ----------------- | ------------------------------------------ | ---------------- |
-| 解析              | `platform::detect_platform_suffix()`       | `vite_setup`     |
-| 解析              | `install::read_current_version()`          | `vite_setup`     |
-| 解析              | `registry::resolve_version_string()`       | `vite_setup`     |
-| 下载并验证        | `registry::resolve_platform_package()`     | `vite_setup`     |
-| 下载并验证        | `HttpClient::get_bytes()`                  | `vite_pm_cli`    |
-| 下载并验证        | `integrity::verify_integrity()`            | `vite_setup`     |
-| 安装              | `install::extract_platform_package()`      | `vite_setup`     |
-| 安装              | `install::generate_wrapper_package_json()` | `vite_setup`     |
-| 安装              | `install::write_release_age_overrides()`   | `vite_setup`     |
-| 安装              | `install::install_production_deps()`       | `vite_setup`     |
-| 激活              | `install::save_previous_version()`         | `vite_setup`     |
-| 激活              | `install::swap_current_link()`             | `vite_setup`     |
-| 激活              | `install::cleanup_old_versions()`          | `vite_setup`     |
-| 配置              | `install::refresh_shims()`                 | `vite_setup`     |
-| 配置              | `windows_path::add_to_user_path()`         | `vite_installer` |
+| 阶段             | 关键函数                                   | Crate          |
+| ----------------- | ------------------------------------------ | -------------- |
+| 解析             | `platform::detect_platform_suffix()`       | `vp_setup`     |
+| 解析             | `install::read_current_version()`          | `vp_setup`     |
+| 解析             | `registry::resolve_version_string()`       | `vp_setup`     |
+| 下载并验证       | `registry::resolve_platform_package()`     | `vp_setup`     |
+| 下载并验证       | `HttpClient::get_bytes()`                  | `vp_pm_cli`    |
+| 下载并验证       | `integrity::verify_integrity()`            | `vp_setup`     |
+| 安装             | `install::extract_platform_package()`      | `vp_setup`     |
+| 安装             | `install::generate_wrapper_package_json()` | `vp_setup`     |
+| 安装             | `install::write_release_age_overrides()`   | `vp_setup`     |
+| 安装             | `install::install_production_deps()`       | `vp_setup`     |
+| 激活             | `install::save_previous_version()`         | `vp_setup`     |
+| 激活             | `install::swap_current_link()`             | `vp_setup`     |
+| 激活             | `install::cleanup_old_versions()`          | `vp_setup`     |
+| 配置             | `install::refresh_shims()`                 | `vp_setup`     |
+| 配置             | `windows_path::add_to_user_path()`         | `vp_installer` |
 
 **同版本修复**：当解析出的版本与已安装版本匹配时，下载并验证、安装、激活阶段会被完全跳过（节省 1 次 HTTP 请求以及所有 I/O）。配置阶段会始终运行，用于修复 shim、环境文件以及在需要时修复 PATH。
 
@@ -350,7 +350,7 @@ let current: String = env.get_value("Path").unwrap_or_default();
 // ... 通过 SendMessageTimeoutW 广播 WM_SETTINGCHANGE（原始 FFI，单次调用）
 ```
 
-完整实现请查看 `crates/vite_installer/src/windows_path.rs`。
+完整实现请参阅 `crates/vp_installer/src/windows_path.rs`。
 
 ### DLL 安全性（用于下载文件夹执行）
 
@@ -402,14 +402,14 @@ InstallLocation = "C:\Users\alice\.vite-plus"
 
 ## 分发
 
-### 阶段 1：GitHub Releases
+### 阶段 1：GitHub 发布版本
 
-将安装器二进制文件挂载到每个 GitHub Release：
+将安装器二进制文件挂载到每个 GitHub 发布版本：
 
 - `vp-setup-x86_64-pc-windows-msvc.exe`
 - `vp-setup-aarch64-pc-windows-msvc.exe`
 
-发布流程已经会创建 GitHub Releases。为初始化二进制添加构建 + 上传步骤。
+发布流程已经会创建 GitHub 发布版本。为初始化二进制文件添加构建和上传步骤。
 
 ### 阶段 2：直接下载 URL（已完成）
 
@@ -417,7 +417,7 @@ InstallLocation = "C:\Users\alice\.vite-plus"
 
 ### 阶段 3：包管理器
 
-提交到 winget、chocolatey、scoop。每个都有各自的清单格式和审核流程。
+提交到 winget、chocolatey、scoop。每个包管理器都有各自的清单格式和审核流程。
 
 ## CI/构建变更
 
@@ -428,7 +428,7 @@ InstallLocation = "C:\Users\alice\.vite-plus"
 ```yaml
 - name: Build installer binary (Windows only)
   if: contains(inputs.target, 'windows')
-  run: cargo build --release --target ${{ inputs.target }} -p vite_installer
+  run: cargo build --release --target ${{ inputs.target }} -p vp_installer
 ```
 
 在 `release.yml` 中，按目标上传安装器制品，将其按目标三元组重命名，并附加到 GitHub Release：
@@ -454,7 +454,7 @@ test-vp-setup-exe:
     - uses: actions/checkout@v4
     - uses: oxc-project/setup-rust@v1
     - name: Build vp-setup.exe
-      run: cargo build --release -p vite_installer
+      run: cargo build --release -p vp_installer
     - name: Install via vp-setup.exe (silent)
       shell: pwsh
       run: ./target/release/vp-setup.exe
@@ -464,8 +464,8 @@ test-vp-setup-exe:
       # 从单次安装后在三个 shell 中进行验证
 ```
 
-该工作流会在 `crates/vite_installer/**`、`crates/vite_pm_cli/**` 和
-`crates/vite_setup/**` 发生变更时触发。
+该工作流会在 `crates/vp_installer/**`、`crates/vp_pm_cli/**` 和
+`crates/vp_setup/**` 发生变更时触发。
 
 ## 代码签名
 
@@ -484,16 +484,16 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 | 依赖项                            | 用途             | 大小影响   |
 | --------------------------------- | ---------------- | ---------- |
 | `reqwest` + `native-tls-vendored` | HTTP + TLS       | ~1.5 MB    |
-| `flate2` + `tar`                  | Tarball 解压     | ~200 KB    |
-| `clap`                            | CLI 解析         | ~300 KB    |
-| `tokio` (minimal features)        | 异步运行时       | ~400 KB    |
+| `flate2` + `tar`                  | tar 包解压       | ~200 KB    |
+| `clap`                            | 命令行解析       | ~300 KB    |
+| `tokio`（最小功能集）             | 异步运行时       | ~400 KB    |
 | `indicatif`                       | 进度条           | ~100 KB    |
 | `sha2`                            | 完整性校验       | ~50 KB     |
 | `serde_json`                      | 注册表 JSON 解析 | ~200 KB    |
 | `winreg` + `windows-sys`          | Windows 注册表   | ~50-100 KB |
-| Rust std + 额外开销               |                  | ~500 KB    |
+| Rust 标准库 + 额外开销            |                  | ~500 KB    |
 
-在 package profile override 中使用 `opt-level = "z"`（针对体积优化），与 trampoline 的做法一致。
+在软件包配置覆盖中使用 `opt-level = "z"`（针对体积优化），与 trampoline 的做法一致。
 
 ## 已考虑的替代方案
 
@@ -520,38 +520,38 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 
 ### 4. PATH 用 `winreg` Crate vs 原始 FFI（决策：`winreg`）
 
-- `winreg` crate：更高级的安全 API，经过 LTO 后约 ~50-100 KB，并且代码量显著更少（约 80 行 vs ~225 行）
-- 原始 Win32 FFI：无依赖，但需要 225 行不安全代码，并手动处理 UTF-16 编码与注册表编排
-- PowerShell 子进程：在 `install.ps1` 中已验证可行，但会增加进程生成开销并依赖 PowerShell
-- 决策：用于注册表访问时使用 `winreg`——零依赖模式适合 `vite_trampoline`（作为 shim 复制 5-10 次），但不适合单个可下载安装器：可读性更重要。`WM_SETTINGCHANGE` 广播仍然使用一次原始 FFI 调用，因为 `winreg` 不会封装它。
+- `winreg` crate：更高层级的安全 API，经 LTO 后约 50-100 KB，代码量显著更少（约 80 行，而不是 ~225 行）
+- 原始 Win32 FFI：零依赖，但包含 225 行不安全代码，需要手动进行 UTF-16 编码和注册表操作编排
+- PowerShell 子进程：已在 `install.ps1` 中验证可行，但会增加进程启动开销并引入 PowerShell 依赖
+- 决策：使用 `winreg` 访问注册表——零依赖模式适用于 `vp_trampoline`（作为 shim 被复制 5-10 次），但不适用于单个可下载的安装器，后者更看重可读性。`WM_SETTINGCHANGE` 广播仍使用一次原始 FFI 调用，因为 `winreg` 没有对其进行封装。
 
 ## 实现阶段
 
-### 阶段 1：提取 `vite_setup` 库（已完成）
+### 阶段 1：提取 `vp_setup` 库（已完成）
 
-- 创建 `crates/vite_setup/`，包含 `platform`、`registry`、`integrity`、`install` 模块
-- 将 `vite_global_cli/src/commands/upgrade/` 中的共享代码迁移到 `vite_setup`
-- 更新 `vite_global_cli` 以从 `vite_setup` 导入
+- 创建包含 `platform`、`registry`、`integrity`、`install` 模块的 `crates/vp_setup/`
+- 将 `vp_global_cli/src/commands/upgrade/` 中的共享代码移至 `vp_setup`
+- 更新 `vp_global_cli` 以从 `vp_setup` 导入
 - 所有 353 个现有测试均通过
 
-### 阶段 2：创建 `vite_installer` 二进制（已完成）
+### 阶段 2：创建 `vp_installer` 二进制程序（已完成）
 
-- 创建 `crates/vite_installer/`，并设置 `[[bin]] name = "vp-setup"`
-- 使用 clap 实现 CLI 参数解析（并支持环境变量合并）
-- 实现安装流程：调用 `vite_setup`，并在同版本情况下走相同的修复路径
+- 创建包含 `[[bin]] name = "vp-setup"` 的 `crates/vp_installer/`
+- 使用环境变量合并功能实现 CLI 参数解析（clap）
+- 实现调用 `vp_setup` 的安装流程，并支持同版本修复路径
 - 使用 `winreg` crate 实现 Windows PATH 修改
-- 使用带自定义子菜单的交互式提示
-- 实现 Node.js 管理器自动检测（预计算，无安装中途提示）
-- 为下载添加进度旋转指示器
-- 添加 DLL 安全性缓解措施（build.rs 链接标志 + 运行时 `SetDefaultDllDirectories`）
-- 激活后的步骤采用尽力而为（出错不致命）
+- 实现带有自定义子菜单的交互式提示
+- 实现 Node.js 管理器自动检测（预先计算，不在安装过程中途提示）
+- 实现下载进度旋转指示器
+- 添加 DLL 安全缓解措施（`build.rs` 链接器标志 + 运行时 `SetDefaultDllDirectories`）
+- 激活后的步骤尽力执行（出错时不会导致失败）
 
 ### 阶段 3：CI 集成（已完成）
 
-- 在 `build-upstream/action.yml` 中添加安装器二进制构建（仅 Windows targets）
+- 在 `build-upstream/action.yml` 中添加安装器二进制程序构建（仅限 Windows targets）
 - 在 `release.yml` 中添加制品上传与 GitHub Release 附件
 - 在 `test-standalone-install.yml` 中添加 `test-vp-setup-exe` 任务（cmd、pwsh、bash）
-- 在 release 正文中更新了 `vp-setup.exe` 下载提及
+- 在 release 正文中更新 `vp-setup.exe` 下载提及
 
 ### 阶段 4：文档与分发（已完成）
 
@@ -673,7 +673,7 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 - 从下载文件夹双击运行
 - SmartScreen 行为（已签名 vs 未签名）
 - Windows Defender 扫描行为
-- ARM64 Windows（如有可用）
+- ARM64 Windows（如有可用）。
 
 ## 决策
 

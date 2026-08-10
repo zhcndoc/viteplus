@@ -34,12 +34,12 @@ Vite+ 封装了若干子工具（vite、vitest、oxlint、oxfmt），并且拥�
 | ---------------- | ---------------------------- | ---------------------------------------------- |
 | `upgrade/mod.rs` | `info: `（小写）             | `info: checking for updates...`                |
 | `upgrade/mod.rs` | `warn: `（小写）             | `warn: Shim refresh failed (non-fatal): ...`   |
-| `vpx.rs`         | `Error: `（Title case）      | `Error: vpx requires a command to run`        |
+| `vpx.rs`         | `Error: `（标题格式）         | `Error: vpx requires a command to run`        |
 | `which.rs`       | `error:`（小写，粗体红色）    | `error: tool 'foo' not found`                 |
-| `main.rs`        | `Error: `（Title case）      | `Error: Failed to get current directory`      |
-| `pin.rs`         | `Warning: `（Title case）    | `Warning: Failed to download Node.js ...`     |
+| `main.rs`        | `Error: `（标题格式）         | `Error: Failed to get current directory`      |
+| `pin.rs`         | `Warning: `（标题格式）       | `Warning: Failed to download Node.js ...`     |
 | `pin.rs`         | `Note: `                     | `Note: Version will be downloaded on first use.` |
-| `dlx.rs`         | `Warning: `（Title case）    | `Warning: yarn dlx does not support shell mode` |
+| `dlx.rs`         | `Warning: `（标题格式）       | `Warning: yarn dlx does not support shell mode` |
 | `dlx.rs`         | `Note: `                     | `Note: yarn@1 does not have dlx command...`    |
 
 **3. 状态指示符符号各不相同**
@@ -79,7 +79,7 @@ $ vp upgrade --check
   info: checking for updates...
   info: found vite-plus@0.4.0 (current: 0.3.0)
 
-# vpx — 使用 “Error:” 前缀（Title case）
+# vpx — 使用 “Error:” 前缀（标题格式）
 $ vpx
   Error: vpx requires a command to run
 ```
@@ -90,7 +90,7 @@ $ vpx
 2. 将所有命令的消息前缀格式标准化为单一约定
 3. 将状态指示符符号标准化为单一集合
 4. 将品牌变更应用到 vite 输出（开发横幅、构建横幅、日志前缀）
-5. 定义一种可重复的方法：直接修改子工具源码以获得一致输出
+5. 定义一种可重复的方法：直接修改子工具源码以获得一致输出。
 
 ## 非目标
 
@@ -98,7 +98,7 @@ $ vpx
 2. 更改内部构建标记（`__VITE_ASSET__`、`__VITE_PRELOAD__` 等）
 3. 更改 `vite.config.ts` 文件名或配置 API 命名
 4. 更改每个组件使用的颜色库（各自保持不变）
-5. 第一阶段不重塑 vitest 或 oxlint 品牌（推迟到后续阶段）
+5. 第一阶段不重塑 vitest 或 oxlint 品牌（推迟到后续阶段）。
 
 ## 提议的解决方案
 
@@ -423,7 +423,7 @@ export function note(msg: string) {
 - `vite.config.ts`、`vite.config.js` 文件检测
 - 作为项目名称引用的错误消息中的 “Vite”（例如 `"Vite does not support..."`）
 - `import.meta.env.VITE_*` 文档和检测
-- `.vite/` 缓存目录名称
+- `.vite/` 缓存目录名称。
 
 ## 实施计划
 
@@ -439,33 +439,33 @@ export function note(msg: string) {
 
 ### 阶段 2：Rust CLI 输出标准化
 
-1. 创建共享输出模块，提供 `info()`、`warn()`、`error()`、`note()`、`success()` 和符号常量
-2. 将其添加为 `vite_global_cli` 和 `vite_install` 的依赖
+1. 创建包含 `info()`、`warn()`、`error()`、`note()`、`success()` 和符号常量的共享输出模块
+2. 将其添加为 `vp_global_cli` 和 `vite_install` 的依赖
 3. 迁移 `upgrade/mod.rs`（6 处消息）
-4. 迁移 `main.rs` 错误处理（3 处）
+4. 迁移 `main.rs` 的错误处理（3 处）
 5. 迁移 `vpx.rs`（4 处）
 6. 迁移 `env/which.rs`（3 处）
 7. 迁移 `env/pin.rs`（3 处）
-8. 迁移 `vite_install/src/commands/*.rs` 中的 Warning/Note 消息
-9. 更新 snap 测试
+8. 将 `vite_install/src/commands/*.rs` 中的 Warning/Note 消息迁移为统一输出
+9. 更新快照测试
 
 ### 阶段 2.5：tsdown 品牌重塑
 
 1. 在 `bundleTsdown()` 之后的 `packages/core/build.ts` 中添加 `brandTsdown()`
 2. 通过字符串替换补丁 `dist/tsdown/build-*.js`：`"tsdown <your-file>"` → `"vp pack <your-file>"`
-3. 更新 snap 测试
+3. 更新快照测试
 
 ### 阶段 3：子工具横幅
 
 1. 在 `packages/cli/binding/src/cli.rs` 中为 vitest、oxlint、oxfmt 添加 `print_banner()`
 2. 通过 TTY 检查进行控制（在管道输出中跳过）
-3. 更新 snap 测试
+3. 更新快照测试
 
 ### 阶段 4：JS 输出一致性
 
 1. 在 `packages/cli/src/utils/terminal.ts` 中添加前缀函数
 2. 将 `migration/bin.ts` 和 `create/bin.ts` 迁移为使用共享函数
-3. 更新 snap 测试
+3. 更新快照测试
 
 ## 测试策略
 
@@ -501,4 +501,4 @@ export function note(msg: string) {
 
 - 为 `vp lint` / `vp fmt` 品牌重塑克隆 oxlint/oxfmt 源码（或应用构建时补丁）
 - 在长时间运行的操作中统一进度指示器样式（spinner、进度条）
-- 提供结构化 JSON 输出模式（`--json`），用于所有命令的机器可读输出
+- 提供结构化 JSON 输出模式（`--json`），用于所有命令的机器可读输出。

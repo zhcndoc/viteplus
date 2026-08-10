@@ -1,4 +1,4 @@
-# RFC: Vite+ 审批构建命令（`vp pm approve-builds`）
+# RFC：Vite+ 审批构建命令（`vp pm approve-builds`）
 
 ## 摘要
 
@@ -177,19 +177,19 @@ Running: bun pm trust --all
 
 **npm 参考：**
 
-- `npm approve-scripts` / `npm deny-scripts` (npm ≥ 11.16.0, npm/cli #9360) 在 `package.json` 中管理一个建议性的 `allowScripts` 字段。在 npm 11.x 中这只是建议性的：安装脚本仍会运行；npm 只会对未审核的包发出警告。
+- `npm approve-scripts` / `npm deny-scripts`（npm ≥ 11.16.0，npm/cli #9360）在 `package.json` 中管理一个建议性的 `allowScripts` 字段。在 npm 11.x 中，这只是建议性的：安装脚本仍会运行；npm 只会对未审核的包发出警告。
 - 对于 npm < 11.16.0：没有等价命令。最接近的配置是 [`ignore-scripts`](https://docs.npmjs.com/cli/v11/using-npm/config#ignore-scripts) 和 [`npm rebuild`](https://docs.npmjs.com/cli/v11/commands/npm-rebuild)。
 
 **yarn 参考：**
 
 - 没有等价命令。yarn@2+ 默认已阻止第三方构建脚本（[`enableScripts`](https://yarnpkg.com/configuration/yarnrc#enableScripts) 默认为 `false`）；按包启用通过 `package.json` 中的 [`dependenciesMeta.<pkg>.built`](https://yarnpkg.com/configuration/manifest#dependenciesMeta) 完成。
 
-| Vite+ Flag                    | pnpm                                     | npm (≥ 11.16.0)                               | yarn@1     | yarn@2+    | bun                         | Description                                 |
+| Vite+ 标志                    | pnpm                                     | npm（≥ 11.16.0）                               | yarn@1     | yarn@2+    | bun                         | 描述                                 |
 | ----------------------------- | ---------------------------------------- | --------------------------------------------- | ---------- | ---------- | --------------------------- | ------------------------------------------- |
-| `vp pm approve-builds`        | `pnpm approve-builds`                    | `npm approve-scripts --allow-scripts-pending` | N/A (warn) | N/A (warn) | N/A (note)                  | pnpm: 交互式提示；npm: 列出待处理项 |
-| `vp pm approve-builds <pkg>`  | `pnpm approve-builds <pkg>`              | `npm approve-scripts <pkg>`                   | N/A (warn) | N/A (warn) | `bun pm trust <pkg>`        | 批准命名包                      |
-| `vp pm approve-builds !<pkg>` | `pnpm approve-builds !<pkg>`             | `npm deny-scripts <pkg>`                      | N/A (warn) | N/A (warn) | N/A (warn — model mismatch) | 拒绝命名包（pnpm、npm）             |
-| `--all`                       | `pnpm approve-builds --all` (≥ v10.32.0) | `npm approve-scripts --all`                   | N/A (warn) | N/A (warn) | `bun pm trust --all`        | 批准所有待处理包               |
+| `vp pm approve-builds`        | `pnpm approve-builds`                    | `npm approve-scripts --allow-scripts-pending` | 不适用（警告） | 不适用（警告） | 不适用（注意）                  | pnpm：交互式提示；npm：列出待处理项 |
+| `vp pm approve-builds <pkg>`  | `pnpm approve-builds <pkg>`              | `npm approve-scripts <pkg>`                   | 不适用（警告） | 不适用（警告） | `bun pm trust <pkg>`        | 批准命名包                      |
+| `vp pm approve-builds !<pkg>` | `pnpm approve-builds !<pkg>`             | `npm deny-scripts <pkg>`                      | 不适用（警告） | 不适用（警告） | 不适用（警告 — 模型不匹配） | 拒绝命名包（pnpm、npm）             |
+| `--all`                       | `pnpm approve-builds --all`（≥ v10.32.0） | `npm approve-scripts --all`                   | 不适用（警告） | 不适用（警告） | `bun pm trust --all`        | 批准所有待处理包               |
 
 **说明：**
 
@@ -198,13 +198,13 @@ Running: bun pm trust --all
 - **npm < 11.16.0 和 yarn 从来都没有 `approve-builds` 命令。** Vite+ 会打印一行 `warn` 并以 0 退出。对于 npm，警告会提示升级到 npm ≥ 11.16.0（或使用 `ignore-scripts`）。对于 yarn（默认阻止第三方脚本），警告会提示 `dependenciesMeta.<pkg>.built`。我们有意以 0 退出（而非非 0），这样在异构环境中按机会运行 `vp pm approve-builds` 的 monorepo 脚本不会失败。
 - **npm 的 `allowScripts` 在 npm 11.x 中仅为建议性。** 即使批准之后，安装脚本仍会运行；npm 只会在安装时对未审核的包发出警告。Vite+ 会在 npm approve/deny 写入后显示一行 `note`，以明确这一点。强制执行计划在未来的 npm 版本中实现。
 - **bun 的无参数模式** 同样会以 `note` 和 0 退出（bun 的 `bun pm trust` 需要包名；没有可转发的交互式选择器）。
-- **配置存储不同：** pnpm 写入 `pnpm-workspace.yaml` 下的 `allowBuilds:`。bun 写入 `package.json` 下的 `trustedDependencies: []`。Vite+ 不会统一存储位置——每个 PM 拥有各自的状态。（参见 [设计决策 §2](#2-do-not-normalize-storage)。)
+- **配置存储不同：** pnpm 写入 `pnpm-workspace.yaml` 下的 `allowBuilds:`。bun 写入 `package.json` 下的 `trustedDependencies: []`。Vite+ 不会统一存储位置——每个 PM 拥有各自的状态。（参见 [设计决策 §2](#2-do-not-normalize-storage)。）
 
 ### 实现架构
 
 #### 1. 命令结构
 
-**文件**：`crates/vite_task/src/lib.rs`
+**文件**：`crates/vt/src/lib.rs`
 
 在 `PmCommands` 下新增一个变体：
 
@@ -233,9 +233,9 @@ pub enum PmCommands {
 ```rust
 use std::process::ExitStatus;
 
-use vite_error::Error;
-use vite_path::AbsolutePath;
-use vite_shared::output::{note, warn};
+use vp_error::Error;
+use vt_path::AbsolutePath;
+use vp_shared::output::{note, warn};
 
 use crate::package_manager::{PackageManager, PackageManagerType};
 
@@ -350,16 +350,16 @@ pub mod approve_builds;  // <- 添加此项
 
 #### 3. CLI 实现
 
-**文件**：`crates/vite_task/src/approve_builds.rs`（新文件）
+**文件**：`crates/vt/src/approve_builds.rs`（新文件）
 
 ```rust
-use vite_error::Error;
+use vp_error::Error;
 use vite_package_manager::{
     PackageManager,
     commands::approve_builds::ApproveBuildsOptions,
 };
-use vite_path::AbsolutePathBuf;
-use vite_workspace::Workspace;
+use vt_path::AbsolutePathBuf;
+use vt_workspace::Workspace;
 
 pub struct ApproveBuildsCommand {
     workspace_root: AbsolutePathBuf,
@@ -501,8 +501,8 @@ exit code: 1
 
 ```
 $ vp pm approve-builds
-Detected package manager: pnpm@10.32.0
-Running: pnpm approve-builds
+检测到包管理器：pnpm@10.32.0
+正在运行：pnpm approve-builds
 
 ? 选择要构建的包（按 <space> 选择，按 <a> 切换全部，按 <i> 反转选择）
 ❯◯ @biomejs/biome
@@ -517,8 +517,8 @@ Running: pnpm approve-builds
 
 ```
 $ vp pm approve-builds esbuild fsevents
-Detected package manager: bun@1.3.0
-Running: bun pm trust esbuild fsevents
+检测到包管理器：bun@1.3.0
+正在运行：bun pm trust esbuild fsevents
 ✔ 已更新 package.json（trustedDependencies）
 ```
 
@@ -526,8 +526,8 @@ Running: bun pm trust esbuild fsevents
 
 ```
 $ vp pm approve-builds --all
-Detected package manager: bun@1.3.0
-Running: bun pm trust --all
+检测到包管理器：bun@1.3.0
+正在运行：bun pm trust --all
 ✔ 已信任 4 个包
 ```
 
@@ -535,8 +535,8 @@ Running: bun pm trust --all
 
 ```
 $ vp pm approve-builds
-Detected package manager: bun@1.3.0
-note  bun pm trust 需要包名。运行 `bun pm untrusted` 查看
+检测到包管理器：bun@1.3.0
+注意  bun pm trust 需要包名。运行 `bun pm untrusted` 查看
       哪些包处于待处理状态，然后显式传入它们：
         vp pm approve-builds <pkg> [<pkg>...]
         vp pm approve-builds --all
@@ -546,8 +546,8 @@ note  bun pm trust 需要包名。运行 `bun pm untrusted` 查看
 
 ```
 $ vp pm approve-builds
-Detected package manager: npm@11.0.0
-warn  npm 默认会运行生命周期脚本。若要限制它们，请在
+检测到包管理器：npm@11.0.0
+警告  npm 默认会运行生命周期脚本。若要限制它们，请在
       .npmrc 中设置 `ignore-scripts=true`，并使用
       `vp pm rebuild <package>` 重新构建已批准的包。
 ```
@@ -556,8 +556,8 @@ warn  npm 默认会运行生命周期脚本。若要限制它们，请在
 
 ```
 $ vp pm approve-builds esbuild
-Detected package manager: yarn@4.0.0
-warn  yarn 默认不会运行第三方构建脚本。要允许某个
+检测到包管理器：yarn@4.0.0
+警告  yarn 默认不会运行第三方构建脚本。要允许某个
       包，请在 package.json 中设置 `dependenciesMeta["<package>"].built: true`。
 ```
 
@@ -625,26 +625,26 @@ vp pm approve-builds --default-trusted
 
 ### 阶段 1：核心管线
 
-1. 在 `crates/vite_task/src/lib.rs` 中为 `PmCommands` 增加 `ApproveBuilds` 变体。
-2. 创建 `crates/vite_package_manager/src/commands/approve_builds.rs`，包含 pnpm + bun 适配器。
-3. 为 pnpm 接通透传（`approve-builds`、`approve-builds <pkg>`、`approve-builds <pkg> !<pkg>`、`--all`）。
-4. 接通 `bun pm trust`（位置参数 + `--all`），并附带 `!pkg` 过滤 + 警告。
-5. 接通 npm/yarn 的警告路径（退出码 0）。
-6. 接通 bun 无参数的 `note` 路径。
+1. 将 `ApproveBuilds` 变体添加到 `crates/vt/src/lib.rs` 中的 `PmCommands`。
+2. 创建 `crates/vite_package_manager/src/commands/approve_builds.rs`，实现 pnpm + bun 适配器。
+3. 为 pnpm 接入透传功能（`approve-builds`、`approve-builds <pkg>`、`approve-builds <pkg> !<pkg>`、`--all`）。
+4. 接入 `bun pm trust`（位置参数 + `--all`），并添加 `!pkg` 过滤器及警告。
+5. 接入 npm/yarn 警告路径（退出码为 0）。
+6. 接入 bun 无参数时的 `note` 路径。
 
 ### 阶段 2：pnpm `--all` 的版本门控
 
-1. 检测 pnpm 版本，并对 `< v10.32.0` 的 `--all` 返回错误，并附带用法提示。
+1. 检测 pnpm 版本，并对 `< v10.32.0` 的 `--all` 返回错误，同时附带用法提示。
 
-### 阶段 3：测试 + snap 测试
+### 阶段 3：测试 + 快照测试
 
-1. 针对命令解析的单元测试（按 PM × 标志矩阵）。
-2. 在 `packages/cli/snap-tests/` 中添加覆盖每个 PM 的 snap 测试。
+1. 针对命令解析编写单元测试（按 PM × 标志矩阵）。
+2. 在 `packages/cli/snap-tests/` 中添加覆盖每个 PM 的快照测试。
 
 ### 阶段 4：文档
 
-1. 更新 `vp pm --help`，列出新子命令。
-2. 在 [pm-command-group RFC](./pm-command-group.md) 的兼容性矩阵中增加一行。
+1. 更新 `vp pm --help`，列出新的子命令。
+2. 在 [pm 命令组 RFC](./pm-command-group.md) 的兼容性矩阵中增加一行。
 3. 将 `vp pm approve-builds` 添加到面向用户的 CLI 文档中。
 
 ## 测试策略
@@ -725,11 +725,11 @@ fn npm_warns_and_exits_zero() {
 }
 ```
 
-### Snap 测试
+### 快照测试
 
-在 `packages/cli/snap-tests/pm-approve-builds-{pnpm,bun,npm,yarn}` 下添加 fixture，覆盖：
+在 `packages/cli/snap-tests/pm-approve-builds-{pnpm,bun,npm,yarn}` 下添加测试 fixture，覆盖：
 
-- 无操作调用（npm/yarn 输出 warning，bun 输出 note）。
+- 无操作调用（npm/yarn 输出警告，bun 输出提示）。
 - bun 上的 `--all`。
 - pnpm 上的 `--all`。
 - bun 上的 `esbuild !core-js`（断言拒绝警告文本）。
@@ -838,4 +838,6 @@ vp pm approve-builds esbuild fsevents !core-js !some-tracker
 - ✅ 保留 pnpm 的 `!pkg` 拒绝语法；对 bun 则发出警告（不会静默丢弃）
 - ✅ npm 和 yarn 都会警告（分别指向 `ignore-scripts` 和 `dependenciesMeta.<pkg>.built`），并以 0 退出，保证 CI 脚本可移植
 - ✅ 不引入新的存储格式——每个 PM 继续管理各自的配置
-- ✅ 其他 bun 命令（`untrusted`、`default-trusted`）推迟为后续的并列子命令，而不是以标志位形式折叠进来
+- ✅ 其他 bun 命令（`untrusted`、`default-trusted`）推迟为后续的并列子命令，而不是以标志位形式折叠进来("")]
+
+//

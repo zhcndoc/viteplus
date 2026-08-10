@@ -22,11 +22,11 @@
 
 采用基于 shim 的方案，其中：
 
-- `VP_HOME/bin/` 目录会被添加到 PATH 中（系统级，以确保 IDE 可靠）
-- Shims（`node`、`npm`、`npx`、`corepack`）是指向 `vp` 二进制文件的符号链接（Unix）或 trampoline `.exe` 文件（Windows）
-- `vp` CLI 本身也位于 `VP_HOME/bin/` 中，因此用户只需要一个 PATH 条目
-- 二进制文件通过 `argv[0]` 检测调用方式并据此分发
-- 版本解析和安装利用现有的 `vite_js_runtime` 基础设施。
+- 将 `VP_HOME/bin/` 目录添加到 PATH（在系统级别配置，以确保 IDE 的可靠性）
+- Shims（`node`、`npm`、`npx`、`corepack`）是指向 `vp` 二进制文件的符号链接（Unix），或 trampoline `.exe` 文件（Windows）
+- `vp` CLI 本身也位于 `VP_HOME/bin/` 中，因此用户只需添加一个 PATH 条目
+- 二进制文件通过 `argv[0]` 检测调用方式，并据此进行分发
+- 版本解析和安装利用现有的 `vp_js_runtime` 基础设施
 
 ## 命令用法
 
@@ -231,7 +231,7 @@ corepack enable   # 使用 Node 自带的或 vp 管理的 corepack（见 Corepac
 
 包管理器 shim 仅在调用的命令与已配置的管理器或其生成的别名之一匹配时才使用 `packageManager`。例如，`packageManager: "npm@11.14.0"` 会让 `npm` 和 `npx` shims 运行 npm 11.14.0，而 `packageManager: "pnpm@10.19.0"` 不会把 `npm install` 变成 `pnpm install`；`npm` 会回退到已解析的 Node.js 运行时所提供的 npm。别名遵循包管理器下载布局：`npm`/`npx`、`pnpm`/`pnpx`、`yarn`/`yarnpkg` 和 `bun`/`bunx`。
 
-## 架构概览
+## 架构概览。
 
 ### 单二进制多角色设计
 
@@ -296,9 +296,8 @@ argv[0] = "corepack"  → Shim 模式：解析版本，执行 corepack（Node 25
 │  └──────────────┬───────────────┘     │  1. .session-node-version   │       │
 │                 │                     │  2. .node-version           │       │
 │                 │                     │  3. package.json#devEngines │       │
-│                 │                     │  4. package.json#engines    │       │
-│                 ▼                     │  5. 用户默认值（配置）       │       │
-│  ┌──────────────────────────────┐     │  6. 最新 LTS                │       │
+│                 ▼                     │  4. package.json#engines    │       │
+│  ┌──────────────────────────────┐     │  5. 用户默认值（配置）       │       │
 │  │  确保已安装 Node.js          │     └─────────────────────────────┘       │
 │  │  （必要时下载）              │                                           │
 │  └──────────────┬───────────────┘                                           │
@@ -462,7 +461,7 @@ vite-plus 支持以下版本规范格式，兼容 nvm、fnm 和 actions/setup-no
 | **Semver 范围**      | `^20.0.0`, `~20.18.0`, `>=20 <22` | 取最高匹配（优先 LTS）         | 基于时间（1 小时） |
 | **最新 LTS**         | `lts/*`                           | 最高 LTS 版本                 | 基于时间（1 小时） |
 | **LTS 代号**          | `lts/iron`, `lts/jod`             | LTS 线上最高版本              | 基于时间（1 小时） |
-| **LTS 偏移**         | `lts/-1`, `lts/-2`                | 第 n 高的 LTS 线              | 基于时间（1 小时） |
+| **LTS 偏移**          | `lts/-1`, `lts/-2`                | 第 n 高的 LTS 线              | 基于时间（1 小时） |
 | **通配符**           | `*`                               | 取最高匹配（优先 LTS）         | 基于时间（1 小时） |
 | **最新版本**         | `latest`                          | 绝对最新版本                  | 基于时间（1 小时） |
 
@@ -613,14 +612,14 @@ lts/iron
 **注意**：Node.js 二进制文件存储在 VP_HOME 中：
 
 - Linux/macOS：`~/.vite-plus/js_runtime/node/{version}/`
-- Windows：`%USERPROFILE%\.vite-plus\js_runtime\node\{version}\`
+- Windows：`%USERPROFILE%\.vite-plus\js_runtime\node\{version}\`。
 
 ## 实现架构
 
 ### 文件结构
 
 ```
-crates/vite_global_cli/
+crates/vp_global_cli/
 ├── src/
 │   ├── main.rs                       # 带有 shim 检测的入口点
 │   ├── cli.rs                        # 添加 Env 命令
@@ -828,9 +827,9 @@ v22.13.0  # 回退到最新 LTS
 
 ```bash
 $ node -v
-vp: Failed to install Node 20.18.0: Network error: connection refused
-vp: Check your network connection and try again
-vp: Or set VP_BYPASS=1 to use system node
+vp: 安装 Node 20.18.0 失败：网络错误：连接被拒绝
+vp: 请检查你的网络连接，然后重试
+vp: 或设置 VP_BYPASS=1 以使用系统 Node
 ```
 
 ### 未找到工具
@@ -845,13 +844,13 @@ vp: npx 在 Node 5.2.0+ 中可用
 
 ```bash
 $ vp env doctor
-Installation
+安装
   ✓ VP_HOME    ~/.vite-plus
-  ✓ Bin directory     exists
+  ✓ Bin 目录     存在
   ✓ Shims             node, npm, npx, corepack
 
-Configuration
-  ✓ Node.js mode      managed
+配置
+  ✓ Node.js 模式      托管
 
 PATH
   ✗ vp                不在 PATH 中
@@ -1779,7 +1778,7 @@ $ vp remove -g typescript
              ▼
 ┌───────────────────────────────────────────────────────────┐
 │  dispatch("npm", ["install", "-g", "codex"])               │
-│  (crates/vite_global_cli/src/shim/dispatch.rs)             │
+│  (crates/vp_global_cli/src/shim/dispatch.rs)             │
 │                                                             │
 │  1–5. vpx / recursion / bypass / shim / core checks        │
 │  6. 解析版本         → 20.18.0                             │

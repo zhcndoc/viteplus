@@ -4,7 +4,7 @@
 
 ## 概览
 
-核心包采用一种 **多项目捆绑策略**，整合了 5 个上游项目：
+核心包采用**多项目打包策略**，整合了 4 个上游项目：
 
 | 项目                    | 源位置                                                         | 用途                      |
 | ----------------------- | -------------------------------------------------------------- | ------------------------- |
@@ -12,7 +12,6 @@
 | `rolldown`              | `rolldown/packages/rolldown`                                    | Rolldown 打包器           |
 | `vite`                  | `vite/packages/vite`                                            | Vite v8 beta              |
 | `tsdown`                | `node_modules/tsdown`                                           | TypeScript 构建工具       |
-| `vitepress`             | `node_modules/vitepress`                                        | 文档工具                  |
 
 这种方式使用户能够通过单个包访问 Vite、Rolldown 及相关工具，并保持一致的模块标识符重写。
 
@@ -20,7 +19,7 @@
 
 ## 构建步骤
 
-构建过程按顺序执行 6 个步骤：
+构建过程按顺序执行 5 个步骤：
 
 ### 步骤 1：捆绑 Rolldown Pluginutils（`bundleRolldownPluginutils`）
 
@@ -76,18 +75,7 @@ await cp(join(rolldownPluginUtilsDir, 'dist'), join(projectDir, 'dist', 'pluginu
 **输入**：`node_modules/tsdown/dist/`
 **输出**：`dist/tsdown/`
 
-### 步骤 5：捆绑 Vitepress（`bundleVitepress`）
-
-**操作**：复制 dist 目录并重写 vite 导入。
-
-**转换**：
-
-- `vite` → `@voidzero-dev/vite-plus-core/vite`
-
-**输入**：`node_modules/vitepress/`
-**输出**：`dist/vitepress/`
-
-### 步骤 6：合并 Package.json（`mergePackageJson`）
+### 步骤 5：合并 package.json（`mergePackageJson`）
 
 **操作**：合并上游包的元数据并记录捆绑版本。
 
@@ -236,17 +224,11 @@ dist/
 │   ├── misc/
 │   ├── types/
 │   └── client.d.ts
-├── tsdown/                # TypeScript 构建工具
-│   ├── index.js
-│   ├── index-types.d.ts
-│   ├── run.js
-│   └── npm_entry_*.cjs    # 捆绑的 CJS 依赖
-└── vitepress/             # 文档工具
-    ├── dist/
-    ├── types/
-    ├── client.d.ts
-    ├── theme.d.ts
-    └── theme-without-fonts.d.ts
+└── tsdown/                # TypeScript 构建工具
+    ├── index.js
+    ├── index-types.d.ts
+    ├── run.js
+    └── npm_entry_*.cjs    # 打包的 CJS 依赖
 ```
 
 ---
@@ -276,13 +258,12 @@ dist/
 
 ## 源目录
 
-| 上游项目               | 源位置                                                            | 关联关系       |
-| ---------------------- | ----------------------------------------------------------------- | -------------- |
-| `@rolldown/pluginutils` | `../../rolldown/packages/rolldown/node_modules/@rolldown/pluginutils` | npm 依赖       |
-| `rolldown`              | `../../rolldown/packages/rolldown`                               | Git 子模块     |
-| `vite`                  | `../../vite/packages/vite`                                       | Git 子模块     |
-| `tsdown`                | `node_modules/tsdown`                                            | npm 依赖       |
-| `vitepress`             | `node_modules/vitepress`                                         | npm 依赖       |
+| 上游项目                  | 源位置                                                                | 关系       |
+| ------------------------- | --------------------------------------------------------------------- | ---------- |
+| `@rolldown/pluginutils`   | `../../rolldown/packages/rolldown/node_modules/@rolldown/pluginutils` | npm 依赖   |
+| `rolldown`                | `../../rolldown/packages/rolldown`                                    | Git 子模块 |
+| `vite`                    | `../../vite/packages/vite`                                            | Git 子模块 |
+| `tsdown`                  | `node_modules/tsdown`                                                 | npm 依赖   |
 
 ---
 
@@ -324,13 +305,6 @@ dist/
 5. 验证 `package.json` 中的 `bundledVersions.tsdown` 已更新
 6. 使用 `pnpm test` 进行测试
 
-### 更新 Vitepress
-
-1. 更新 `devDependencies` 中的 `vitepress` 版本
-2. 运行 `pnpm install`
-3. 运行 `pnpm -C packages/core build`
-4. 测试文档构建
-
 ---
 
 ## 构建命令
@@ -350,19 +324,18 @@ RELEASE_BUILD=1 pnpm -C packages/core build
 ### 构建流程
 
 ```
-1. bundleRolldownPluginutils()    复制预构建的 dist
-2. bundleRolldown()               复制 + 重写模块标识符
-3. buildVite()                    进行完整的 Rolldown 构建并应用转换
-   ├── 应用 RewriteImportsPlugin     构建时导入重写
-   ├── 应用 rewrite-static-paths     修复 VITE_PACKAGE_DIR 常量
-   ├── 运行 Rolldown 构建             打包 vite 源码
-   └── 复制并重写 .d.ts 文件         构建后标识符重写
-4. bundleTsdown()                 重新打包并处理 CJS
-   ├── 使用 Rolldown 打包 tsdown     查找 CJS 模块
-   ├── buildCjsDeps()                 打包检测到的 CJS 依赖
-   └── 使用 dts 插件打包类型         生成声明文件
-5. bundleVitepress()              复制 + 重写 vite 导入
-6. mergePackageJson()             合并元数据 + 记录版本
+1. bundleRolldownPluginutils()    Copy pre-built dist
+2. bundleRolldown()               Copy + rewrite module specifiers
+3. buildVite()                    Full Rolldown build with transforms
+   ├── Apply RewriteImportsPlugin     Build-time import rewriting
+   ├── Apply rewrite-static-paths     Fix VITE_PACKAGE_DIR constants
+   ├── Run Rolldown build             Bundle vite source
+   └── Copy and rewrite .d.ts files   Post-build specifier rewriting
+4. bundleTsdown()                 Re-bundle with CJS handling
+   ├── Bundle tsdown with Rolldown    Find CJS modules
+   ├── buildCjsDeps()                 Bundle detected CJS deps
+   └── Bundle types with dts plugin   Generate declarations
+5. mergePackageJson()             Merge metadata + record versions
 ```
 
 ### 关键常量

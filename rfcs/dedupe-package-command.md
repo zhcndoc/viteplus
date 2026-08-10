@@ -148,7 +148,7 @@ vp dedupe --check
 
 #### 1. 命令结构
 
-**文件**：`crates/vite_task/src/lib.rs`
+**文件**：`crates/vt/src/lib.rs`
 
 添加新的命令变体：
 
@@ -178,8 +178,8 @@ pub enum Commands {
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
 
-use vite_error::Error;
-use vite_path::AbsolutePath;
+use vp_error::Error;
+use vt_path::AbsolutePath;
 
 use crate::package_manager::{
     PackageManager, PackageManagerType, ResolveCommandResult, format_path_env, run_command,
@@ -266,16 +266,16 @@ pub mod dedupe;  // 添加这一行
 
 #### 3. Dedupe 命令实现
 
-**文件**：`crates/vite_task/src/dedupe.rs`（新文件）
+**文件**：`crates/vt/src/dedupe.rs`（新文件）
 
 ```rust
-use vite_error::Error;
-use vite_path::AbsolutePathBuf;
+use vp_error::Error;
+use vt_path::AbsolutePathBuf;
 use vite_package_manager::{
     PackageManager,
     commands::dedupe::DedupeCommandOptions,
 };
-use vite_workspace::Workspace;
+use vt_workspace::Workspace;
 
 pub struct DedupeCommand {
     workspace_root: AbsolutePathBuf,
@@ -362,7 +362,7 @@ impl DedupeCommand {
 - 与 pnpm 行为一致
 - 对 CI/CD 流水线很有用
 - 可用于验证是否需要去重
-- 是 check/dry-run 模式的标准实践
+- 是 check/dry-run 模式的标准实践。
 
 ## 错误处理
 
@@ -370,27 +370,27 @@ impl DedupeCommand {
 
 ```bash
 $ vp dedupe
-Error: No package manager detected
-Please run one of:
-  - vp install (to set up package manager)
-  - Add packageManager field to package.json
+错误：未检测到包管理器
+请运行以下命令之一：
+  - vp install（用于设置包管理器）
+  - 将 packageManager 字段添加到 package.json
 ```
 
 ### 检查模式检测到更改
 
 ```bash
 $ vp dedupe --check
-Checking if deduplication would make changes...
-Changes detected. Run 'vp dedupe' to apply.
-Exit code: 1
+正在检查去重是否会产生更改...
+检测到更改。运行 'vp dedupe' 以应用更改。
+退出代码：1
 ```
 
 ### 不支持的标志警告
 
 ```bash
 $ vp dedupe --filter app
-Warning: --filter not supported by npm, use --workspace instead
-Running: npm dedupe
+警告：npm 不支持 --filter，请改用 --workspace
+正在运行：npm dedupe
 ```
 
 ## 用户体验
@@ -399,84 +399,84 @@ Running: npm dedupe
 
 ```bash
 $ vp dedupe
-Detected package manager: pnpm@10.15.0
-Running: pnpm dedupe
+检测到包管理器：pnpm@10.15.0
+正在运行：pnpm dedupe
 
-Packages: -15
+软件包：-15
 -15
-Progress: resolved 250, reused 235, downloaded 0, added 0, done
+进度：已解析 250 个，复用 235 个，下载 0 个，新增 0 个，完成
 
-Dependencies optimized. Removed 15 duplicate packages.
+依赖项已优化。已移除 15 个重复软件包。
 
-Done in 3.2s
+耗时 3.2 秒
 ```
 
 ```bash
 $ vp dedupe --check
-Detected package manager: pnpm@10.15.0
-Running: pnpm dedupe --check
+检测到包管理器：pnpm@10.15.0
+正在运行：pnpm dedupe --check
 
-Would deduplicate 8 packages:
-  - lodash: 4.17.20 → 4.17.21 (3 occurrences)
-  - react: 18.2.0 → 18.3.1 (2 occurrences)
-  - typescript: 5.3.0 → 5.5.0 (3 occurrences)
+将对 8 个软件包进行去重：
+  - lodash：4.17.20 → 4.17.21（3 处）
+  - react：18.2.0 → 18.3.1（2 处）
+  - typescript：5.3.0 → 5.5.0（3 处）
 
-Run 'vp dedupe' to apply these changes.
-Exit code: 1
+运行 'vp dedupe' 以应用这些更改。
+退出代码：1
 ```
 
 ```bash
 $ vp dedupe --check
-Detected package manager: npm@11.0.0
-Running: npm dedupe --dry-run
+检测到包管理器：npm@11.0.0
+正在运行：npm dedupe --dry-run
 
-removed 12 packages
-updated 5 packages
+已移除 12 个软件包
+已更新 5 个软件包
 
-This was a dry run. No changes were made.
+这是一次试运行。未进行任何更改。
 
-Done in 4.5s
+耗时 4.5 秒
 ```
 
 ### Yarn@2+ 输出
 
 ```bash
 $ vp dedupe
-Detected package manager: yarn@4.0.0
-Running: yarn dedupe
+检测到包管理器：yarn@4.0.0
+正在运行：yarn dedupe
 
-➤ YN0000: ┌ Resolution step
-➤ YN0000: └ Completed
-➤ YN0000: ┌ Fetch step
-➤ YN0000: └ Completed
-➤ YN0000: ┌ Link step
-➤ YN0000: └ Completed
-➤ YN0000: Done in 1.2s
+➤ YN0000：┌ 解析步骤
+➤ YN0000：└ 已完成
+➤ YN0000：┌ 获取步骤
+➤ YN0000：└ 已完成
+➤ YN0000：┌ 链接步骤
+➤ YN0000：└ 已完成
+➤ YN0000：耗时 1.2 秒
 
-Done in 1.2s
+耗时 1.2 秒
 ```
 
 ```bash
 $ vp dedupe --check
-Detected package manager: yarn@4.0.0
-Running: yarn dedupe --check
+检测到包管理器：yarn@4.0.0
+正在运行：yarn dedupe --check
 
-➤ YN0000: Found 5 packages with duplicates
-➤ YN0000: Run 'yarn dedupe' to apply changes
+➤ YN0000：发现 5 个存在重复项的软件包
+➤ YN0000：运行 'yarn dedupe' 以应用更改
 
-Exit code: 1
+退出代码：1
 ```
 
 ### 无需更改
 
 ```bash
 $ vp dedupe
-Detected package manager: pnpm@10.15.0
-Running: pnpm dedupe
+检测到包管理器：pnpm@10.15.0
+正在运行：pnpm dedupe
 
-Already up-to-date
+已是最新状态
 
-Done in 0.8s
+耗时 0.8 秒
 ```
 
 ## 考虑过的替代设计
@@ -521,7 +521,7 @@ vp dedupe:run
 - 需要记住更多命令
 - 使用标志更符合惯例
 - 与原生包管理器 API 保持一致
-- 比 `--check` 标志不够直观
+- 比 `--check` 标志不够直观。
 
 ## 实施计划
 
@@ -551,7 +551,7 @@ vp dedupe:run
 1. 更新 CLI 文档
 2. 在 README 中添加示例
 3. 记录包管理器兼容性
-4. 添加 CI/CD 使用示例
+4. 添加 CI/CD 使用示例。
 
 ## 测试策略
 
@@ -648,31 +648,31 @@ fixtures/dedupe-test/
 2. 不修改文件的检查模式
 3. 检查模式的退出码验证
 4. 透传参数处理
-5. 包管理器检测与命令映射
+5. 包管理器检测与命令映射。
 
 ## CLI 帮助输出
 
 ```bash
 $ vp dedupe --help
-Deduplicate dependencies by removing older versions
+通过移除较旧版本来消除依赖重复
 
-Usage: vp dedupe [OPTIONS] [-- <PASS_THROUGH_ARGS>...]
+用法：vp dedupe [选项] [-- <传递参数>...]
 
-Options:
-  --check                    Check if deduplication would make changes
-                             (pnpm: --check, npm: --dry-run, yarn@2+: --check)
+选项：
+  --check                    检查消除重复是否会产生更改
+                             （pnpm：--check，npm：--dry-run，yarn@2+：--check）
 
-Behavior by Package Manager:
-  pnpm:    Removes older dependencies from lockfile, upgrades to newer compatible versions
-  npm:     Reduces duplication in package tree by moving dependencies up the tree
-  yarn@2+: Scans lockfile and removes duplicate package entries
+不同包管理器的行为：
+  pnpm：    从锁文件中移除较旧的依赖，升级到较新的兼容版本
+  npm：     通过将依赖向上移动到依赖树中来减少重复
+  yarn@2+： 扫描锁文件并移除重复的包条目
 
-Note: yarn@1 does not have a dedupe command and is not supported
+注意：yarn@1 没有 dedupe 命令，因此不受支持
 
-Examples:
-  vp dedupe                          # Deduplicate all dependencies
-  vp dedupe --check                  # Check if changes would occur
-  vp dedupe -- --some-flag           # Pass custom flags to package manager
+示例：
+  vp dedupe                          # 消除所有依赖的重复
+  vp dedupe --check                  # 检查是否会发生更改
+  vp dedupe -- --some-flag           # 将自定义标志传递给包管理器
 ```
 
 ## 性能考虑
@@ -681,14 +681,14 @@ Examples:
 2. **锁文件分析**：快速解析并优化锁文件
 3. **单次执行**：与任务运行器不同，这是一次性操作
 4. **自动检测**：复用现有的包管理器检测逻辑（已缓存）
-5. **CI/CD 优化**：检查模式可在无需完整安装的情况下快速验证
+5. **CI/CD 优化**：检查模式可在无需完整安装的情况下快速验证。
 
 ## 安全考虑
 
 1. **锁文件完整性**：在优化的同时保持锁文件完整性
 2. **版本约束**：遵守 `package.json` 中的 semver 约束
 3. **不进行意外升级**：仅在允许的版本范围内去重
-4. **审计兼容性**：可与审计命令配合使用，确保安全性
+4. **审计兼容性**：可与审计命令配合使用，确保安全性。
 
 ## 向后兼容性
 
@@ -697,7 +697,7 @@ Examples:
 - 现有命令不受影响
 - 新命令是增量添加
 - 不会修改任务配置
-- 不会修改缓存行为
+- 不会修改缓存行为。
 
 ## 迁移路径
 
@@ -785,14 +785,14 @@ vp test
 vp dedupe --report
 
 # 输出：
-Deduplication Report:
+去重报告：
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Package         Old Version    New Version    Occurrences
+包              旧版本         新版本         出现次数
 lodash          4.17.20        4.17.21        3
 react           18.2.0         18.3.1         2
 typescript      5.3.0          5.5.0          3
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total: 8 packages deduplicated
+总计：已对 8 个包执行去重
 ```
 
 ### 2. 安装后自动去重
@@ -802,7 +802,7 @@ Total: 8 packages deduplicated
 ```bash
 vp install --auto-dedupe
 
-# Or configure in vite-task.json
+# 或在 vite-task.json 中配置
 {
   "options": {
     "autoDedupe": true
@@ -815,8 +815,8 @@ vp install --auto-dedupe
 在 CI 中强制执行去重策略：
 
 ```bash
-vp dedupe --policy strict  # Fail if any duplicates exist
-vp dedupe --policy warn    # Warn but don't fail
+vp dedupe --policy strict  # 如果存在任何重复项则失败
+vp dedupe --policy warn    # 发出警告但不失败
 ```
 
 ### 4. 依赖分析
@@ -826,15 +826,15 @@ vp dedupe --policy warn    # Warn but don't fail
 ```bash
 vp dedupe --why lodash
 
-# Output:
-lodash@4.17.20:
-  - Required by: package-a@1.0.0 (via ^4.17.0)
-  - Required by: package-b@2.0.0 (via ~4.17.20)
+# 输出：
+lodash@4.17.20：
+  - 依赖方：package-a@1.0.0（通过 ^4.17.0）
+  - 依赖方：package-b@2.0.0（通过 ~4.17.20）
 
-lodash@4.17.21:
-  - Required by: package-c@3.0.0 (via ^4.17.21)
+lodash@4.17.21：
+  - 依赖方：package-c@3.0.0（通过 ^4.17.21）
 
-Recommendation: All can use lodash@4.17.21
+建议：所有依赖都可以使用 lodash@4.17.21
 ```
 
 ## 未决问题
@@ -862,14 +862,14 @@ Recommendation: All can use lodash@4.17.21
 5. **我们是否应支持交互模式？**
    - 提议：后续增强
    - 让用户选择要去重的包
-   - 类似于 `vp update --interactive`
+   - 类似于 `vp update --interactive`。
 
 ## 成功指标
 
 1. **采用率**：使用 `vp dedupe` 的用户占比 vs 直接使用包管理器
 2. **依赖减少**：重复包平均减少数量
 3. **CI 集成**：在 CI/CD 流水线中的使用情况，用于验证
-4. **错误率**：跟踪命令失败率 vs 直接使用包管理器的情况
+4. **错误率**：跟踪命令失败率 vs 直接使用包管理器的情况。
 
 ## 结论
 

@@ -185,12 +185,12 @@ vp exec -r --report-summary -- vitest run
 
 ### 全局 CLI
 
-**文件**: `crates/vite_global_cli/src/cli.rs`
+**文件**: `crates/vp_global_cli/src/cli.rs`
 
 `Commands` 枚举中的 `Exec` 变体（Category C）无条件委托给本地 CLI：
 
 ```rust
-// Category C: Local CLI Delegation
+// Category C：本地 CLI 委托
 /// 从本地 node_modules/.bin 执行命令
 #[command(disable_help_flag = true)]
 Exec {
@@ -223,7 +223,7 @@ packages/cli/binding/src/exec/
 
 单包和多包执行共用一条代码路径。`mod.rs` 会验证命令非空，并委托给 `execute_exec_workspace()`。当未提供任何 workspace 标志（`--recursive`、`--filter` 等）时，`PackageQueryArgs::into_package_query()` 会返回一个 `ContainingPackage(cwd)` 选择器，它只会解析到当前包——因此 workspace 路径可以自然地处理单包场景。
 
-包过滤委托给 `vite_workspace` 的可复用 API：`PackageQueryArgs`（通过 `#[clap(flatten)]` 内嵌的 CLI 参数结构体）→ `PackageQuery`（通过 `into_package_query()`）→ `IndexedPackageGraph::resolve_query()` → `FilterResolution`（包含 `package_subgraph` 和 `unmatched_selectors`）。这与 `vp run` 通过 `RunFlags` 使用的模式相同。
+包过滤委托给 `vt_workspace` 的可复用 API：`PackageQueryArgs`（通过 `#[clap(flatten)]` 嵌入的 CLI 参数结构体）→ `PackageQuery`（通过 `into_package_query()` 获取）→ `IndexedPackageGraph::resolve_query()` → `FilterResolution`（包含 `package_subgraph` 和 `unmatched_selectors`）。这遵循了 `vp run` 通过 `RunFlags` 使用的相同模式。
 
 本地 CLI 具备完整的 workspace 感知能力，并可以处理：
 
@@ -242,17 +242,17 @@ packages/cli/binding/src/exec/
 
 以下现有代码被复用：
 
-| Module           | Function                           | Purpose                                           |
-| ---------------- | ---------------------------------- | ------------------------------------------------- |
-| `vite_command`   | `resolve_bin()`                    | Resolve binary path via PATH lookup               |
-| `vite_command`   | `build_command()`                  | Build a `tokio::process::Command` for a binary    |
-| `vite_command`   | `build_shell_command()`            | Build a shell command for `-c` mode               |
-| `vite_pm_cli`    | `PackageManager::get_bin_prefix()` | Get package manager bin directory for PATH        |
-| `vite_workspace` | `find_workspace_root()`            | Locate workspace root from cwd                    |
-| `vite_workspace` | `load_package_graph()`             | Load workspace packages and dependency graph      |
-| `vite_workspace` | `PackageQueryArgs`                 | CLI args struct for package selection             |
-| `vite_workspace` | `IndexedPackageGraph`              | Indexed graph with `resolve_query()`              |
-| `vite_workspace` | `FilterResolution`                 | Resolution result: subgraph + unmatched selectors |
+| 模块           | 函数                               | 用途                                           |
+| -------------- | ---------------------------------- | ---------------------------------------------- |
+| `vp_command`   | `resolve_bin()`                    | 通过 PATH 查找解析二进制文件路径               |
+| `vp_command`   | `build_command()`                  | 为二进制文件构建 `tokio::process::Command`    |
+| `vp_command`   | `build_shell_command()`            | 为 `-c` 模式构建 shell 命令                    |
+| `vp_pm_cli`    | `PackageManager::get_bin_prefix()` | 获取用于 PATH 的包管理器 bin 目录              |
+| `vt_workspace` | `find_workspace_root()`            | 从 cwd 定位 workspace 根目录                   |
+| `vt_workspace` | `load_package_graph()`             | 加载 workspace 包及其依赖图                    |
+| `vt_workspace` | `PackageQueryArgs`                 | 用于选择包的 CLI 参数结构体                    |
+| `vt_workspace` | `IndexedPackageGraph`              | 提供 `resolve_query()` 的索引图                |
+| `vt_workspace` | `FilterResolution`                 | 解析结果：子图及未匹配的选择器                 |
 
 ## 设计决策
 

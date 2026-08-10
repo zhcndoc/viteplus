@@ -57,12 +57,12 @@ $ vp dev
 
   VITE+ v0.2.2
 
-  ➜  Local:   http://localhost:5173/        # opens to a 404, no index.html here
+  ➜  Local:   http://localhost:5173/        # 打开后显示 404，此处没有 index.html
 ```
 
 vp 不会输出任何错误或指导信息，并且服务器会暴露整个仓库目录树。修复方案必须引导用户提供缺失的目标，而这个目标需要有一个定义明确的原语来展开：`-C`。
 
-上述所有问题均可通过 `vite-plus@0.2.2` 重现：https://github.com/why-reproductions-are-required/vite-plus-monorepo-app-commands-repro
+上述所有问题均可通过 `vite-plus@0.2.2` 重现：https://github.com/why-reproductions-are-required/vite-plus-monorepo-app-commands-repro。
 
 ## 提议的 UX
 
@@ -255,7 +255,7 @@ vp [-C <dir>] <command> [args...]
 5. **在工作区根目录进行非交互式裸调用**：打印包列表和 `-C` 提示，退出码为 1。
 6. **其他位置**：保持当前行为，在当前目录运行。
 
-“工作区根目录”指当前目录的包是工作区根包，由 `vite_workspace::find_workspace_root` 确定（该函数已在 `packages/cli/binding/src/cli/mod.rs` 中的每次调用中执行）。
+“工作区根目录”是指当前目录中的包为工作区根包，由 `vt_workspace::find_workspace_root` 确定（该函数已在 `packages/cli/binding/src/cli/mod.rs` 的每次调用中执行）。
 
 ### 等价性不变量
 
@@ -276,10 +276,10 @@ vp -C <dir> <cmd> [args...]  ===  cd <dir> && vp <cmd> [args...]
 
 ### 选择器内容
 
-- 每个工作区包一行：名称加相对路径。不筛除任何内容；可能可运行的包（见下方规则）优先排序，然后按路径排序，因此应用会显示在顶部，同时所有内容仍可搜索。
-- 通过 `vite_select::fuzzy_match` 对名称和路径进行模糊搜索，分页方式与任务选择器完全相同。
-- 可运行的工作区根目录完全不会触发交互式询问：无论是否为 TTY，都直接在原处运行，与本 RFC 之前的行为完全一致。调用已经拥有其配置的目标：根应用，或 `pnpm-workspace.yaml` 仅携带设置（catalog、`minimumReleaseAge`）的单个包。仅当根目录不是合理目标时才进行询问，这使该功能完全保持增量式。根目录需要比成员包更强的可运行信号：对于 `dev`/`build`/`preview`，需要 `index.html`（共享根配置是常见的 monorepo 设置，但不会使根目录成为应用）；对于 `pack`，则需要通常的显式 `pack` 或默认入口规则。
-- 当恰好有一个可能可运行的包时，选择器会自动选择该包，只打印 `Selected package:` 行和提示。
+- 每个工作区包占一行：显示名称和相对路径。不隐藏任何内容；可能可运行的包（见下方规则）优先排序，然后按路径排序，因此应用会显示在顶部，同时所有包都可搜索。
+- 通过 `vt_select::fuzzy_match` 对名称和路径进行模糊搜索，分页方式与任务选择器相同。
+- 可运行的工作区根不会触发询问：无论是否处于 TTY，都直接在原地运行，行为与本 RFC 之前完全一致。该调用已经拥有其配置的目标：根应用，或其 `pnpm-workspace.yaml` 仅包含设置项（catalogs、`minimumReleaseAge`）的单个包。仅当根目录不太可能是目标时才进行询问，这使该功能完全具有增量性。根目录需要比成员包更强的可运行信号：对于 `dev`/`build`/`preview`，需要存在 `index.html`（共享的根配置通常用于 lint/fmt/tasks，这是标准的 monorepo 设置，并不会使根目录成为应用）；对于 `pack`，则遵循通常的显式 `pack` 或 default-entry 规则。
+- 当恰好有一个可能可运行的包时，选择器会自动选择它，只打印 `Selected package:` 行和提示。
 
 ### 可能可运行的启发式规则
 
@@ -290,7 +290,7 @@ vp -C <dir> <cmd> [args...]  ===  cd <dir> && vp <cmd> [args...]
 | `dev` / `build` / `preview` | 其目录直接包含 Vite 的某个配置文件名（`vite.config.{js,mjs,ts,cjs,mts,cts}`，即 Vite 探测的完整列表），**或**包根目录存在 `index.html`（Vite 的默认应用入口）                                   |
 | `pack`                      | 其 `vite.config.*` 显式声明了 `pack` 块（通过静态提取读取；没有 `pack` 的配置，以及仅可能通过展开运算符包含它的配置，都不计入），**或**存在 `src/index.ts`（tsdown 唯一的默认入口） |
 
-这两种基于文件的信号都是上游默认行为，并非 vp 自创：项目根目录的 `index.html` 是 Vite 的入口点（[index.html 和项目根目录](https://vite.dev/guide/#index-html-and-project-root)），配置文件名是 Vite 解析的列表（[配置 Vite](https://vite.dev/config/)，由 `vite_static_config::CONFIG_FILE_NAMES` 镜像，并附带上游源码链接），而 `src/index.ts` 是未配置入口时 tsdown 的默认入口（[tsdown 入口](https://tsdown.dev/options/entry)；tsdown 中的 `src/features/entry.ts` 正好解析这一路径）。
+这两个基于文件的信号都来自上游默认行为，而非 vp 的自定义规则：项目根目录中的 `index.html` 是 Vite 的入口（[index.html 和项目根目录](https://vite.dev/guide/#index-html-and-project-root)），配置文件名称是 Vite 解析的列表（[配置 Vite](https://vite.dev/config/)，由 `vp_static_config::CONFIG_FILE_NAMES` 镜像实现，并附有上游源码链接），而 `src/index.ts` 是未配置入口时 tsdown 的默认入口（[tsdown 入口](https://tsdown.dev/options/entry)；tsdown 中的 `src/features/entry.ts` 正是解析这一唯一路径）。
 
 “恰好一个可能可运行的包”意味着：按可运行优先排序后，第一行可运行而第二行不可运行。自动选择还要求终端处于交互模式。
 
@@ -309,12 +309,12 @@ export default defineConfig({
 });
 ```
 
-- 类型：`string`（四个命令共用一个目录），或按命令分别配置的对象（`{ dev: './apps/web', pack: './packages/ui' }`，根据评审要求添加）。对象中未出现的命令会继续执行选择器/列表解析。
-- 当应用命令在根配置所在目录进行裸调用时读取：该目录可以是工作区根目录，也可以是非工作区仓库根目录。非工作区结构没有包列表，因此 `defaultPackage` 是覆盖该场景的唯一机制。显式 `-C` 始终优先。
-- 目录不存在时报错：`defaultPackage points to a missing directory: ./frontend`。
-- 通过静态提取读取（`vite_static_config` 以及 `packages/cli/binding/src/cli/handler.rs` 中的加载器），与 `run` 配置相同。在非工作区根目录没有可用于执行配置的安装，因此该文件必须在不执行的情况下也能工作：使用包含静态字符串值的普通默认导出对象。
-- 只有显式声明的 `defaultPackage` 才会改变行为。已声明但不是静态值的内容（例如 `process.env.DIR`）会报错；无法分析的配置，或通过展开运算符隐藏字段的配置，会被视为未声明该键，并继续使用选择器或当前目录解析，因此特殊配置永远不会破坏无关的裸调用。
-- 仅在调用根目录读取（工作区根目录、独立包根目录，或不存在 `package.json` 祖先目录的目录）。在工作区根目录以下时，当前目录已经标识了目标，因此成员包自身的配置不会重定向目标。
+- 类型：`string`（四个命令共用一个目录）或按命令分别配置的对象（`{ dev: './apps/web', pack: './packages/ui' }`，根据评审要求新增）。对象中未列出的命令将继续使用选择器/列表解析。
+- 当在包含根配置的目录中执行裸应用命令时使用：该目录可以是工作区根目录，也可以是非工作区仓库的根目录。非工作区结构没有包列表，因此 `defaultPackage` 是覆盖该场景的唯一机制。显式指定的 `-C` 始终优先。
+- 目录不存在时报告错误：`defaultPackage points to a missing directory: ./frontend`。
+- 通过静态提取读取（`vp_static_config` 加上 `packages/cli/binding/src/cli/handler.rs` 中的加载器），方式与 `run` 配置相同。在非工作区根目录中没有可用于执行配置的安装，因此该文件必须在不执行的情况下也能工作：使用带有静态字符串值的普通 default-export 对象。
+- 只有显式声明的 `defaultPackage` 才会改变行为。已声明但不是静态值的配置（例如 `process.env.DIR`）会报错；无法分析的配置，或通过展开运算符隐藏字段的配置，会被视为未声明该键，并继续使用选择器或当前目录解析，因此特殊配置永远不会破坏无关的裸调用。
+- 仅在调用根目录处读取（工作区根目录、独立包根目录，或不存在 `package.json` 祖先目录的目录）。在工作区根目录以下，当前目录已经确定了目标，因此成员包自身的配置不会重定向目标。
 
 ## 决策
 
@@ -338,13 +338,13 @@ export default defineConfig({
 
 所有更改都位于 Rust 层；无需对上游 Vite 或 tsdown 进行更改。
 
-- `crates/vite_global_cli/src/cli.rs`：解析全局 `-C <dir>`；从 `<dir>` 解析本地安装，并将 `<dir>` 作为有效 cwd 委托执行。
-- `packages/cli/binding/src/cli/types.rs` / `mod.rs`：在本地二进制路径上解析 `-C`；在 `execute_direct_subcommand` 中添加无参数调用时的解析顺序（工作区根目录检测已在此处完成）。
-- `packages/cli/binding/src/cli/execution.rs`：将 cwd 设置为目标目录后生成子进程。
-- Picker：复用 `vite_select` 和 `vite_workspace`，它们已通过 `vite_task` crates 成为依赖项。
+- `crates/vp_global_cli/src/cli.rs`：解析全局 `-C <dir>`；从 `<dir>` 解析本地安装，并以 `<dir>` 作为有效工作目录进行委托。
+- `packages/cli/binding/src/cli/types.rs` / `mod.rs`：在本地二进制路径上解析 `-C`；在 `execute_direct_subcommand` 中加入裸调用解析顺序（工作区根目录检测已在此处完成）。
+- `packages/cli/binding/src/cli/execution.rs`：生成子进程时将 cwd 设置为目标目录。
+- Picker：复用 `vt_select` 和 `vt_workspace`，二者已通过 `vt` crates 作为依赖引入。
 - `defaultPackage`：以加载 `run` 配置的相同方式扩展 `VitePlusConfigLoader` 的静态提取，并在 `packages/cli/src/define-config.ts` 中添加 `defaultPackage?: string`。
-- `packages/cli/src/pack-bin.ts` 无需更改：位置参数处理保持不变，且 `-C` 永远不会传递到其中。
-- 文档：在全局 CLI 文档、`docs/guide/monorepo.md` 的“应用命令”部分，以及 `docs/config/` 中新增一个介绍该键的页面。
+- `packages/cli/src/pack-bin.ts` 无需更改：位置参数处理保持不变，且 `-C` 永远不会传递到该文件。
+- 文档：在全局 CLI 文档、`docs/guide/monorepo.md` 的“应用命令”部分，以及 `docs/config/` 中新增的配置项页面中添加 `-C` 条目。
 
 ## 兼容性
 
@@ -358,9 +358,9 @@ export default defineConfig({
 - 一致性回归：`vp dev <dir>` 仍将位置参数作为 Vite 的 `root` 转发，同时保持 cwd 不变。
 - 在没有 TTY 的工作区根目录中执行裸应用命令：验证包列表和退出代码。
 - `defaultPackage`：正常路径和目录不存在错误。
-- 等价性检查：在配置读取 `process.cwd()` 的 fixture 中，`vp -C <dir> build` 和 `cd <dir> && vp build` 产生相同的输出。
+- 等价性检查：在配置读取 `process.cwd()` 的测试夹具中，`vp -C <dir> build` 和 `cd <dir> && vp build` 产生相同的输出。
 
-交互式选择器将在 `vite_task` 仓库风格中获得 pty 快照覆盖（`task_select` fixtures）（如果选择器最终位于 `vite_select` 附近），否则通过 tmux 驱动的交互式运行进行手动验证。
+如果选择器最终接近 `vt_select`，交互式选择器将按照 `vt` 仓库的风格（`task_select` 测试夹具）通过 pty 快照覆盖；否则将通过 tmux 驱动的交互式运行进行手动验证。
 
 ## 待解决问题
 
@@ -384,7 +384,7 @@ export default defineConfig({
 | Vercel / Netlify / Amplify | `rootDirectory` / `base` / `appRoot` | 每个应用的部署配置，而不是多个应用中的默认项      |
 | GitHub Actions             | `defaults.run.working-directory`     | 直接命名了该机制（当前工作目录）                            |
 
-其模式是使用 `default` 加上工具对该单元所采用的名词：Angular、Nx 和 Ionic 使用“project”，Cargo 使用“members”，Salesforce 使用“package directories”。vp 使用的名词是“package”（选择器、`vp run` 文档、`vite_workspace`、pnpm 词汇均如此），因此是 `defaultPackage`。
+其模式是将 `default` 与工具自身对该单元的称谓组合起来：Angular、Nx 和 Ionic 使用 “project”，Cargo 使用 “members”，Salesforce 使用 “package directories”。vp 使用的称谓是 “package”（选择器、`vp run` 文档、`vt_workspace`、pnpm 词汇均如此），因此采用 `defaultPackage`。
 
 排除的选项：`defaultProject`（与 Vitest 的 `test.projects` 冲突，并且选择器使用的是“package”），`defaultWorkspace`（在 vp/pnpm 词汇中，“workspace”表示整个 monorepo），`defaultMembers`（复数形式，暗示要在多个 package 中运行；没有 workspace 时没有意义），`appRoot`/`rootDirectory`/`base`（与 Vite 的 `root`/`base` 选项冲突），成员标记（需要枚举成员，而没有 workspace 元数据时无法实现）。Angular 和 Nx 的弃用情况不适用于此处：当前工作目录推断已内置于解析顺序中，而每个环境的灵活性属于问题 2 的待决事项。
 

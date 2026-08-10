@@ -19,7 +19,7 @@ npm install
 1. **简化工作流**：一个命令即可跨所有包管理器使用
 2. **自动检测**：自动使用正确的包管理器
 3. **一致性**：无论底层工具如何，语法保持一致
-4. **集成**：可与现有的 Vite+ 功能无缝协作
+4. **集成**：可与现有的 Vite+ 功能无缝协作。
 
 ### 当前痛点
 
@@ -528,8 +528,8 @@ pub struct InstallCommandResult {
 **文件**: `crates/vite_global/src/install.rs`（新文件）
 
 ```rust
-use vite_error::Error;
-use vite_path::AbsolutePathBuf;
+use vp_error::Error;
+use vt_path::AbsolutePathBuf;
 use vite_package_manager::{PackageManager, InstallOptions};
 
 pub struct InstallCommand {
@@ -617,7 +617,7 @@ impl InstallCommand {
 
 - 与 npm/yarn/pnpm 习惯一致（`npm i`、`yarn`、`pnpm i`）
 - 输入更快
-- 开发者更熟悉
+- 开发者更熟悉。
 
 ## 错误处理
 
@@ -625,35 +625,35 @@ impl InstallCommand {
 
 ```bash
 $ vp install
-Error: No package manager detected
-Please run one of:
-  - vp install (after adding packageManager to package.json)
-  - Add packageManager field to package.json
+错误：未检测到包管理器
+请运行以下命令之一：
+  - vp install（向 package.json 添加 packageManager 后）
+  - 向 package.json 添加 packageManager 字段
 ```
 
 ### Lockfile 已过期
 
 ```bash
 $ vp install --frozen-lockfile
-Detected package manager: pnpm@10.15.0
-Running: pnpm install --frozen-lockfile
+检测到包管理器：pnpm@10.15.0
+正在运行：pnpm install --frozen-lockfile
 
-ERR_PNPM_OUTDATED_LOCKFILE  Cannot install with "frozen-lockfile" because pnpm-lock.yaml is not up to date with package.json
+ERR_PNPM_OUTDATED_LOCKFILE  无法使用“frozen-lockfile”进行安装，因为 pnpm-lock.yaml 未与 package.json 保持同步
 
-Error: Command failed with exit code 1
+错误：命令执行失败，退出代码为 1
 ```
 
 ### 网络错误
 
 ```bash
 $ vp install --offline
-Detected package manager: npm@11.0.0
-Running: npm install --offline
+检测到包管理器：npm@11.0.0
+正在运行：npm install --offline
 
 npm ERR! code E404
-npm ERR! 404 Not Found - GET https://registry.npmjs.org/some-package - Package not found in cache
+npm ERR! 404 Not Found - GET https://registry.npmjs.org/some-package - 缓存中未找到软件包
 
-Error: Command failed with exit code 1
+错误：命令执行失败，退出代码为 1
 ```
 
 ## 用户体验
@@ -762,7 +762,7 @@ VITE_PM=pnpm vp install
 - 不如自动检测方便
 - 需要额外配置
 - 不同机器之间不可移植
-- 现有的 lockfile 检测效果很好
+- 现有的 lockfile 检测效果很好。
 
 ## 实现计划
 
@@ -792,7 +792,7 @@ VITE_PM=pnpm vp install
 1. 更新 CLI 文档
 2. 在 README 中添加示例
 3. 编写标志兼容性矩阵文档
-4. 添加故障排查指南
+4. 添加故障排查指南。
 
 ## 测试策略
 
@@ -933,53 +933,53 @@ fixtures/install-test/
 5. 递归安装
 6. 离线安装
 7. 强制重新安装
-8. 忽略脚本安装
+8. 忽略脚本安装。
 
 ## CLI 帮助输出
 
 ```bash
 $ vp install --help
-Install all dependencies, or add packages if package names are provided
+安装所有依赖项，或在提供包名称时添加包
 
-Usage: vp install [OPTIONS] [PACKAGES]...
+用法：vp install [选项] [包]...
 
-Aliases: i
+别名：i
 
-Options:
-  -P, --prod               Do not install devDependencies
-  -D, --dev                Only install devDependencies (install) / Save to devDependencies (add)
-      --no-optional        Do not install optionalDependencies
-      --frozen-lockfile    Fail if lockfile needs to be updated (CI mode)
-      --no-frozen-lockfile Allow lockfile updates (opposite of --frozen-lockfile)
-      --lockfile-only      Only update lockfile, don't install
-      --prefer-offline     Use cached packages when available
-      --offline            Only use packages already in cache
-  -f, --force              Force reinstall all dependencies
-      --ignore-scripts     Do not run lifecycle scripts
-      --no-lockfile        Don't read or generate lockfile
-      --fix-lockfile       Fix broken lockfile entries
-      --shamefully-hoist   Create flat node_modules (pnpm only)
-      --resolution-only    Re-run resolution for peer dependency analysis
-      --silent             Suppress output (silent mode)
-      --filter <PATTERN>   Filter packages in monorepo (can be used multiple times)
-  -w, --workspace-root     Install in workspace root only
-  -E, --save-exact         Save exact version (only when adding packages)
-      --save-peer          Save to peerDependencies (only when adding packages)
-  -O, --save-optional      Save to optionalDependencies (only when adding packages)
-      --save-catalog       Save to default catalog (only when adding packages)
-  -g, --global             Install globally (only when adding packages)
-  -h, --help               Print help
+选项：
+  -P, --prod               不安装 devDependencies
+  -D, --dev                仅安装 devDependencies（install）/ 保存到 devDependencies（add）
+      --no-optional        不安装 optionalDependencies
+      --frozen-lockfile    如果锁文件需要更新则失败（CI 模式）
+      --no-frozen-lockfile 允许更新锁文件（与 --frozen-lockfile 相反）
+      --lockfile-only      仅更新锁文件，不执行安装
+      --prefer-offline     有可用缓存时使用缓存的包
+      --offline            仅使用缓存中已有的包
+  -f, --force              强制重新安装所有依赖项
+      --ignore-scripts     不运行生命周期脚本
+      --no-lockfile        不读取或生成锁文件
+      --fix-lockfile       修复损坏的锁文件条目
+      --shamefully-hoist   创建扁平的 node_modules（仅 pnpm）
+      --resolution-only    重新运行解析以分析 peer 依赖
+      --silent             抑制输出（静默模式）
+      --filter <PATTERN>   筛选 monorepo 中的包（可多次使用）
+  -w, --workspace-root     仅在工作区根目录中安装
+  -E, --save-exact         保存精确版本（仅在添加包时）
+      --save-peer          保存到 peerDependencies（仅在添加包时）
+  -O, --save-optional      保存到 optionalDependencies（仅在添加包时）
+      --save-catalog       保存到默认 catalog（仅在添加包时）
+  -g, --global             全局安装（仅在添加包时）
+  -h, --help               显示帮助
 
-Examples:
-  vp install                      # Install all dependencies
-  vp i                            # Short alias
-  vp install --prod               # Production install
-  vp install --frozen-lockfile    # CI mode (strict lockfile)
-  vp install --filter app         # Install for specific package
-  vp install --silent             # Silent install
-  vp install react                # Add react (alias for vp add)
-  vp install -D typescript        # Add typescript as devDependency
-  vp install --save-peer react    # Add react as peerDependency
+示例：
+  vp install                      # 安装所有依赖项
+  vp i                            # 简写别名
+  vp install --prod               # 生产环境安装
+  vp install --frozen-lockfile    # CI 模式（严格锁文件）
+  vp install --filter app         # 为指定包安装
+  vp install --silent             # 静默安装
+  vp install react                # 添加 react（vp add 的别名）
+  vp install -D typescript        # 将 typescript 添加为 devDependency
+  vp install --save-peer react    # 将 react 添加为 peerDependency
 ```
 
 ## 性能考虑
@@ -987,14 +987,14 @@ Examples:
 1. **委托给包管理器**：利用 PM 内置优化
 2. **无额外开销**：在运行 PM 命令前只进行最少处理
 3. **缓存利用**：支持 `--prefer-offline` 和 `--offline` 标志
-4. **并行安装**：包管理器负责处理并行化
+4. **并行安装**：包管理器负责处理并行化。
 
 ## 安全考虑
 
 1. **脚本执行**：`--ignore-scripts` 可防止执行不受信任的脚本
 2. **锁文件完整性**：`--frozen-lockfile` 确保可重现的安装
 3. **网络安全**：包管理器负责处理仓库认证
-4. **透传安全**：参数会被安全地透传
+4. **透传安全**：参数会被安全地透传。
 
 ## 向后兼容性
 
@@ -1003,7 +1003,7 @@ Examples:
 - 现有命令不受影响
 - 新命令是增量添加
 - 不更改任务配置
-- 不更改缓存行为
+- 不更改缓存行为。
 
 ## 包管理器兼容性矩阵
 
@@ -1022,7 +1022,7 @@ Examples:
 | `--ignore-scripts`     | ✅   | ✅     | ✅ `--mode skip-build`  | ✅              | ✅                      |                            |
 | `--no-lockfile`        | ✅   | ✅     | ❌                      | ✅              | ❌                      | 不支持 yarn@2+、bun        |
 | `--fix-lockfile`       | ✅   | ❌     | ✅ `--refresh-lockfile` | ❌              | ❌              | 仅 pnpm 和 yarn@2+         |
-| `--shamefully-hoist`   | ✅   | ❌     | ❌                      | ❌              | ❌（默认已 hoist）      | 仅 pnpm                    |
+| `--shamefully-hoist`   | ✅   | ❌     | ❌                      | ❌              | ❌（默认已提升）      | 仅 pnpm                    |
 | `--resolution-only`    | ✅   | ❌     | ❌                      | ❌              | ❌                      | 仅 pnpm                    |
 | `--silent`             | ✅   | ✅     | ⚠️（使用环境变量）      | ✅ `--loglevel` | ✅                      | yarn@2+ 使用环境变量       |
 | `--filter`             | ✅   | ❌     | ✅ `workspaces foreach` | ✅              | ✅                      | 不支持 yarn@1              |
@@ -1140,7 +1140,7 @@ vp install --offline
 
 4. **如何处理冲突的标志？**
    - 提议：让包管理器处理冲突
-   - 例如：`--prod` 和 `--dev` 同时使用
+   - 例如：`--prod` 和 `--dev` 同时使用。
 
 ## 结论
 

@@ -75,7 +75,7 @@ vp unlink --filter app              # 在指定工作区中取消链接
 
 ### 命令语法
 
-#### Link 命令
+#### 链接命令
 
 ```bash
 vp link [PACKAGE]
@@ -98,7 +98,7 @@ vp link ./packages/utils
 vp link ../my-other-project
 ```
 
-#### Unlink 命令
+#### 取消链接命令
 
 ```bash
 vp unlink [PACKAGE] [OPTIONS]
@@ -232,13 +232,13 @@ vp unlink -r
 
 **Unlink 行为：**
 
-- `bun unlink`：取消当前包的链接
+- `bun unlink`：取消当前包的链接。
 
 ### 实现架构
 
 #### 1. 命令结构
 
-**文件**：`crates/vite_task/src/lib.rs`
+**文件**：`crates/vt/src/lib.rs`
 
 添加新的命令变体：
 
@@ -284,8 +284,8 @@ pub enum Commands {
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
 
-use vite_error::Error;
-use vite_path::AbsolutePath;
+use vp_error::Error;
+use vt_path::AbsolutePath;
 
 use crate::package_manager::{
     PackageManager, PackageManagerType, ResolveCommandResult, format_path_env, run_command,
@@ -352,8 +352,8 @@ impl PackageManager {
 ```rust
 use std::{collections::HashMap, process::ExitStatus};
 
-use vite_error::Error;
-use vite_path::AbsolutePath;
+use vp_error::Error;
+use vt_path::AbsolutePath;
 
 use crate::package_manager::{
     PackageManager, PackageManagerType, ResolveCommandResult, format_path_env, run_command,
@@ -430,7 +430,7 @@ impl PackageManager {
 
 #### 3. Link 命令实现
 
-**文件**：`crates/vite_task/src/link.rs`（新文件）
+**文件**：`crates/vt/src/link.rs`（新文件）
 
 ```rust
 pub struct LinkCommand {
@@ -483,7 +483,7 @@ impl LinkCommand {
 
 #### 4. Unlink 命令实现
 
-**文件**：`crates/vite_task/src/unlink.rs`（新文件）
+**文件**：`crates/vt/src/unlink.rs`（新文件）
 
 ```rust
 pub struct UnlinkCommand {
@@ -589,7 +589,7 @@ vp link ../other-project/packages/utils
 - yarn@2+ 支持 `--all` 标志，提供类似功能
 - 提供整个 workspace 范围的清理能力
 - 在 npm 和 yarn@1 不可用时向用户发出警告
-- 与其他 workspace 功能保持一致
+- 与其他 workspace 功能保持一致。
 
 ## 错误处理
 
@@ -597,17 +597,17 @@ vp link ../other-project/packages/utils
 
 ```bash
 $ vp link react
-Error: No package manager detected
-Please run one of:
-  - vp install (to set up package manager)
-  - Add packageManager field to package.json
+错误：未检测到包管理器
+请运行以下任一命令：
+  - vp install（用于设置包管理器）
+  - 将 packageManager 字段添加到 package.json
 ```
 
 ### 不支持的功能
 
 ```bash
 $ vp unlink --recursive
-Warning: npm doesn't support --recursive for unlink command
+警告：npm 不支持 unlink 命令的 --recursive 选项
 # 按标准 unlink 继续执行（不带 --recursive 标志）
 ```
 
@@ -715,7 +715,7 @@ $ vp link
 
 - 对有经验的用户来说更慢
 - 不适合脚本化
-- 以后可以作为可选模式添加
+- 以后可以作为可选模式添加。
 
 ## 实现计划
 
@@ -745,7 +745,7 @@ $ vp link
 1. 更新 CLI 文档
 2. 在 README 中添加示例
 3. 记录包管理器兼容性
-4. 添加故障排查指南
+4. 添加故障排查指南。
 
 ## 测试策略
 
@@ -860,11 +860,11 @@ fixtures/link-unlink-test/
 4. 解除当前包的链接
 5. 解除指定包的链接
 6. 使用 --recursive 解除链接（仅 pnpm）
-7. 针对 yarn/npm 不支持的 --recursive 发出警告
+7. 针对 yarn/npm 不支持的 --recursive 发出警告。
 
 ## CLI 帮助输出
 
-### Link 命令
+### 链接命令
 
 ```bash
 $ vp link --help
@@ -883,18 +883,18 @@ Options:
 
 Link Types:
   Global Registration:   vp link (no package)
-  Link Global Package:   vp link <package-name>
+  Link Global Package:  vp link <package-name>
   Link Local Directory:  vp link <path>
 
 Examples:
-  vp link                        # Register current package globally
-  vp ln                          # Same as above (alias)
-  vp link react                  # Link global package 'react'
-  vp link ./packages/utils       # Link local directory
-  vp link ../my-lib              # Link from parent directory
+  vp link                        # 将当前软件包注册为全局软件包
+  vp ln                          # 同上（别名）
+  vp link react                  # 链接全局软件包“react”
+  vp link ./packages/utils       # 链接本地目录
+  vp link ../my-lib              # 从父目录链接
 ```
 
-### Unlink 命令
+### 取消链接命令
 
 ```bash
 $ vp unlink --help
@@ -911,10 +911,10 @@ Options:
   -h, --help             Print help
 
 Examples:
-  vp unlink                      # Unlink current package
-  vp unlink react                # Unlink 'react' from current project
-  vp unlink --recursive          # Unlink in all workspace packages (pnpm and yarn@2+)
-  vp unlink -r                   # Same as above (short form)
+  vp unlink                      # 取消当前软件包的链接
+  vp unlink react                # 从当前项目取消“react”的链接
+  vp unlink --recursive          # 在所有工作区软件包中取消链接（pnpm 和 yarn@2+）
+  vp unlink -r                   # 同上（短选项）
 ```
 
 ## 性能考虑
@@ -922,14 +922,14 @@ Examples:
 1. **不缓存**：操作直接运行，没有缓存开销
 2. **符号链接创建**：操作快速，对性能影响极小
 3. **单次执行**：不同于任务运行器，这些都是一次性操作
-4. **自动检测**：复用现有的包管理器检测逻辑（已缓存）
+4. **自动检测**：复用现有的包管理器检测逻辑（已缓存）。
 
 ## 安全性考虑
 
 1. **符号链接安全性**：符号链接是标准包管理器功能
 2. **路径校验**：在链接前验证目录是否存在
 3. **不执行代码**：仅通过包管理器创建/移除符号链接
-4. **全局存储**：遵循包管理器的全局存储位置
+4. **全局存储**：遵循包管理器的全局存储位置。
 
 ## 向后兼容性
 
@@ -938,7 +938,7 @@ Examples:
 - 现有命令不受影响
 - 新命令是增量添加
 - 不更改任务配置
-- 不更改缓存行为
+- 不更改缓存行为。
 
 ## 迁移路径
 
@@ -963,7 +963,7 @@ vp link react
 - CLI 帮助输出
 - 文档
 - VSCode 扩展建议
-- Shell 补全
+- Shell 补全。
 
 ## 真实世界使用示例
 
@@ -1106,7 +1106,7 @@ vp link --verify
 1. **采用率**：使用 `vp link/unlink` 的用户占比 vs 直接使用包管理器
 2. **错误率**：跟踪命令失败率 vs 直接使用包管理器
 3. **用户反馈**：关于命令易用性的调查/问题反馈
-4. **性能**：测量相较于直接调用包管理器的额外开销（目标 <100ms）
+4. **性能**：测量相较于直接调用包管理器的额外开销（目标 <100ms）。
 
 ## 结论
 

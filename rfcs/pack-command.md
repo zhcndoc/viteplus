@@ -169,9 +169,9 @@ CLI 标志会覆盖配置文件中的值。当两者都提供时，CLI 标志优
 Global CLI (Rust) ─── Category C delegation ───▸ Local CLI (pack-bin.ts) ───▸ tsdown
 ```
 
-1. **全局 CLI**（`crates/vite_global_cli/src/cli.rs`）：`Pack` 命令变体使用 `trailing_var_arg` 捕获所有参数，然后无条件委托给本地 CLI。
+1. **全局 CLI**（`crates/vp_global_cli/src/cli.rs`）：`Pack` 命令变体使用 `trailing_var_arg` 捕获所有参数，然后无条件委托给本地 CLI。
 2. **本地 CLI**（`packages/cli/src/pack-bin.ts`）：使用 `cac` 解析 CLI 选项，从 `vite.config.ts` 解析配置，并调用 tsdown 的 `resolveUserConfig` + `buildWithConfigs`。
-3. **tsdown**：处理所有打包逻辑，包括新的 SEA/exe 功能。
+3. **tsdown**：处理所有打包逻辑，包括新增的 SEA/可执行文件功能。
 
 ### 配置解析
 

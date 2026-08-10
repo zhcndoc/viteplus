@@ -223,7 +223,7 @@ vp create vite:monorepo --no-interactive --package-manager bun
 
 ### Rust（核心检测）
 
-- **文件**：`crates/vite_pm_cli/src/package_manager.rs`
+- **文件**：`crates/vp_pm_cli/src/package_manager.rs`
 - **函数**：`get_package_manager_type_and_version()` —— 按优先级排序的检测
 - **函数**：`prompt_package_manager_selection()` —— CI/TTY/交互式回退
 - **枚举**：`PackageManagerType` —— `Pnpm`、`Yarn`、`Npm`、`Bun`

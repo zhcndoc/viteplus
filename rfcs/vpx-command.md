@@ -120,7 +120,7 @@ vpx -s create-vue my-app
 
 - **`vpx eslint .`** — “运行 eslint，优先使用我的本地版本”
 - **`vp dlx create-vue my-app`** — “从注册表下载并运行 create-vue”
-- **`vpx create-vue my-app`** — 实际上与 `vp dlx` 相同，因为 `create-vue` 从未安装到本地
+- **`vpx create-vue my-app`** — 实际上与 `vp dlx` 相同，因为 `create-vue` 从未安装到本地。
 
 ## 二进制实现
 
@@ -229,7 +229,7 @@ if tool == "vpx" {
 - `vpx` 已覆盖主要用例——快速执行本地/远程二进制文件
 - 添加 `vp exec` 会引入复杂性（带 `--` 分隔符的参数解析，可能与 `vp env exec` 混淆）
 - 如果需要，之后可以作为后续功能再添加 `vp exec`
-- 保持初始实现简单且聚焦
+- 保持初始实现简单且聚焦。
 
 ## 边缘情况
 
@@ -246,7 +246,7 @@ monorepo/
 └── package.json
 ```
 
-walker 会从 cwd 继续向上查找，直到找到二进制文件或到达文件系统根目录。
+查找器会从 cwd 继续向上查找，直到找到二进制文件或到达文件系统根目录。
 
 ### 原生二进制与 JS 二进制
 
@@ -273,7 +273,7 @@ vpx eslint@9 .
 
 ### 1. Shim 检测
 
-**文件**: `crates/vite_global_cli/src/shim/mod.rs`
+**文件**: `crates/vp_global_cli/src/shim/mod.rs`
 
 在 `detect_shim_tool()` 中添加对 `vpx` 的识别：
 
@@ -289,7 +289,7 @@ if argv0_tool == "vpx" {
 
 ### 2. 分发处理器
 
-**文件**: `crates/vite_global_cli/src/shim/dispatch.rs`
+**文件**: `crates/vp_global_cli/src/shim/dispatch.rs`
 
 在分发逻辑中处理 `vpx`（委托给 `commands/vpx.rs`）：
 
@@ -308,7 +308,7 @@ if tool == "vpx" {
 
 ### 3. 二进制解析（`commands/vpx.rs`）
 
-**文件**: `crates/vite_global_cli/src/commands/vpx.rs`
+**文件**: `crates/vp_global_cli/src/commands/vpx.rs`
 
 解析顺序（当没有版本规格、没有 `--package` 标志且不是 shell 模式时）：
 
@@ -329,7 +329,7 @@ if let Some(path_bin) = find_on_path(&cmd_name) { ... }
 
 ### 4. 设置
 
-**文件**: `crates/vite_global_cli/src/commands/env/setup.rs`
+**文件**: `crates/vp_global_cli/src/commands/env/setup.rs`
 
 在创建 shim 时添加 `vpx`：
 
@@ -439,7 +439,7 @@ $ vpx non-existent-package-xyz
 - `vp dlx` 的行为完全没有变化
 - `vpx` 二进制文件是由 `vp env setup` 创建的新符号链接
 - 现有的 `node`/`npm`/`npx` shim 不受影响
-- 配置格式没有任何变化
+- 配置格式没有任何变化。
 
 ## 未来增强
 
@@ -473,4 +473,4 @@ vpx --prefer-remote eslint .    # 始终下载，忽略本地
 - 复用现有的 `vp dlx` 基础设施来处理远程回退路径
 - 使用经过验证的符号链接 + `argv[0]` 检测模式进行分发
 - 保持本地优先（`vpx`）与仅远程（`vp dlx`）之间清晰的职责分离
-- 仅为新增功能，不会破坏现有行为
+- 仅为新增功能，不会破坏现有行为。

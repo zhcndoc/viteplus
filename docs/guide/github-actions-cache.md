@@ -1,6 +1,6 @@
 # GitHub Actions 缓存
 
-::: warning Experimental
+::: warning 实验性功能
 在 GitHub Actions 的多次运行之间复用 Vite Task 的缓存属于实验性功能。请先在你的项目中测试并衡量其效果，再决定是否在 CI 中依赖它。
 :::
 
@@ -63,6 +63,10 @@ vp run lint # 应打印 "cache hit"
 
 在 `vp install` 之后恢复 `node_modules/.vite/task-cache`，因为安装包可能会重新创建或修改 `node_modules`。
 
+将下面的 `<setup-vp-version>` 设置为 [`setup-vp` 发布页面](https://github.com/voidzero-dev/setup-vp/releases)中的确切版本。你也可以使用提交 SHA。
+
+请参阅[自动版本更新](/guide/ci#automatic-version-updates)，了解如何配置 Dependabot 或 Renovate。
+
 ```yaml [.github/workflows/ci.yml]
 name: CI
 
@@ -80,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: voidzero-dev/setup-vp@v1
+      - uses: voidzero-dev/setup-vp@<setup-vp-version>
         with:
           node-version: '24'
           cache: true

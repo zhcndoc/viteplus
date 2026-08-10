@@ -129,12 +129,12 @@ packages/cli/
 │   ├── create.js             # 全局命令：vp create
 │   ├── migrate.js            # 全局命令：vp migrate
 │   ├── version.js            # 全局命令：vp --version
-│   ├── config.js             # 全局命令：vp config
+│   ├── config/bin.js         # 全局命令：vp config
 │   ├── mcp.js                # 全局命令：vp mcp
-│   ├── staged.js             # 全局命令：vp staged
-│   ├── *-<hash>.js           # 共享 chunk（代码分割）
+│   ├── staged/bin.js         # 全局命令：vp staged
+│   ├── *-<hash>.js           # 共享代码块（代码分割）
 │   ├── versions.js           # 生成的工具版本
-│   ├── client.d.ts           # ./client 类型（三斜杠引用）
+│   ├── client.d.ts           # ./client 类型（triple-slash 引用）
 │   ├── module-runner.js      # ./module-runner shim
 │   ├── internal.js           # ./internal shim
 │   ├── client/               # 同步后的客户端运行时文件
@@ -154,16 +154,16 @@ packages/cli/
 
 CLI 会为以下平台目标构建原生绑定：
 
-| Target                       | Platform | Architecture | Output File                       |
-| ---------------------------- | -------- | ------------ | --------------------------------- |
-| `aarch64-apple-darwin`       | macOS    | ARM64        | `vite-plus.darwin-arm64.node`     |
-| `x86_64-apple-darwin`        | macOS    | x64          | `vite-plus.darwin-x64.node`       |
-| `aarch64-unknown-linux-gnu`  | Linux    | ARM64 glibc  | `vite-plus.linux-arm64-gnu.node`  |
-| `aarch64-unknown-linux-musl` | Linux    | ARM64 musl   | `vite-plus.linux-arm64-musl.node` |
-| `x86_64-unknown-linux-gnu`   | Linux    | x64 glibc    | `vite-plus.linux-x64-gnu.node`    |
-| `x86_64-unknown-linux-musl`  | Linux    | x64 musl     | `vite-plus.linux-x64-musl.node`   |
-| `aarch64-pc-windows-msvc`    | Windows  | ARM64        | `vite-plus.win32-arm64-msvc.node` |
-| `x86_64-pc-windows-msvc`     | Windows  | x64          | `vite-plus.win32-x64-msvc.node`   |
+| 目标                         | 平台    | 架构         | 输出文件                         |
+| ---------------------------- | ------- | ------------ | -------------------------------- |
+| `aarch64-apple-darwin`       | macOS   | ARM64        | `vite-plus.darwin-arm64.node`     |
+| `x86_64-apple-darwin`        | macOS   | x64          | `vite-plus.darwin-x64.node`       |
+| `aarch64-unknown-linux-gnu`  | Linux   | ARM64 glibc  | `vite-plus.linux-arm64-gnu.node`  |
+| `aarch64-unknown-linux-musl` | Linux   | ARM64 musl   | `vite-plus.linux-arm64-musl.node` |
+| `x86_64-unknown-linux-gnu`   | Linux   | x64 glibc    | `vite-plus.linux-x64-gnu.node`    |
+| `x86_64-unknown-linux-musl`  | Linux   | x64 musl     | `vite-plus.linux-x64-musl.node`   |
+| `aarch64-pc-windows-msvc`    | Windows | ARM64        | `vite-plus.win32-arm64-msvc.node` |
+| `x86_64-pc-windows-msvc`     | Windows | x64          | `vite-plus.win32-x64-msvc.node`   |
 
 这些目标在 `package.json` 的 `napi.targets` 字段下定义。
 
@@ -242,10 +242,10 @@ await cli.build({
 
 当使用 `RELEASE_BUILD=1` 编译时，`.node` 文件包含：
 
-| 组件               | 来源                                   | 用途                         |
-| ------------------ | -------------------------------------- | ---------------------------- |
-| `vite_task`        | `packages/cli/binding/src/lib.rs`      | 任务运行器会话管理           |
-| `rolldown_binding` | `rolldown/crates/rolldown_binding`     | Rolldown 打包器 NAPI 绑定    |
+| 组件               | 来源                               | 用途                         |
+| ------------------ | ---------------------------------- | ---------------------------- |
+| `vt`               | `packages/cli/binding/src/lib.rs`  | 任务运行器会话管理           |
+| `rolldown_binding` | `rolldown/crates/rolldown_binding` | Rolldown 打包器 NAPI 绑定    |
 
 ### 导出链路
 
@@ -290,7 +290,7 @@ CLI 包会创建轻量的 shim 文件，从 `@voidzero-dev/vite-plus-core` 重�
 
 **注意**：`@voidzero-dev/vite-plus-core` 包本身会打包多个上游项目（vite、rolldown、tsdown、vitepress）。详情请参见[核心包打包](../core/BUNDLING.md)。
 
-### 导出映射（核心）
+**注意**：`@voidzero-dev/vite-plus-core` 包本身会打包多个上游项目（vite、rolldown、tsdown）。详情请参见[核心包打包](../core/BUNDLING.md)。
 
 | 上游 Vite 导出        | CLI 包导出              | 描述                           |
 | --------------------- | ----------------------- | ------------------------------ |
@@ -548,7 +548,7 @@ const TEST_PACKAGE_NAME = 'vitest';
 
 | 导出                 | 描述                                                             |
 | -------------------- | ---------------------------------------------------------------- |
-| `./client`           | 用于环境类型声明（CSS modules 等）的三斜杠引用 |
+| `./client`           | 用于环境类型声明（CSS modules 等）的三斜线引用 |
 | `./module-runner`    | 用于 SSR/环境的 Vite 模块运行器 |
 | `./internal`         | Vite 内部 API |
 | `./dist/client/*`    | 客户端运行时文件 |
