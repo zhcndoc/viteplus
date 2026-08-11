@@ -4,7 +4,7 @@ Vite+ 是统一的网络开发工具链和入口点。它通过结合 [Vite](htt
 
 Vite+ 分为两部分：`vp`（全局命令行工具）和 `vite-plus`（安装在每个项目中的本地包）。如果你已经有一个 Vite 项目，请使用 [`vp migrate`](/guide/migrate) 将其迁移到 Vite+，或者将我们的 [迁移提示](/guide/migrate#migration-prompt) 粘贴到你的编码工具中。
 
-正在使用 AI 助手进行构建？复制一份现成的设置提示：
+正在使用 AI 助手进行开发？查看并复制现成的设置提示：
 
 <CopyPrompt />
 
@@ -90,10 +90,11 @@ Vite+ 可以从启动项目、开发、检查与测试，一直到构建生产�
 
 ### 启动
 
-- [`vp create`](/guide/create) 创建新的应用、软件包和 monorepo。
+- [`vp create`](/guide/create) 创建新的应用、包和 monorepo。
 - [`vp migrate`](/guide/migrate) 将现有项目迁移到 Vite+。
 - [`vp config`](/guide/commit-hooks) 安装 Git 钩子分发器并配置代理集成。
-- [`vp staged`](/guide/commit-hooks) 检查暂存区中的文件。
+- [`vp hooks`](/guide/commit-hooks) 管理 Git 钩子分发器（`enable`、`disable`、`status`）。
+- [`vp staged`](/guide/commit-hooks) 对暂存文件运行检查。
 - [`vp install`](/guide/install) 使用正确的包管理器安装依赖项。
 - [`vp env`](/guide/env) 管理 Node.js 版本。
 

@@ -24,7 +24,7 @@ export default defineConfig({
     overrides: [
       {
         files: ['apps/web/**', 'packages/ui/**'],
-        plugins: ['typescript', 'react'],
+        plugins: ['react'],
         rules: {
           'react/self-closing-comp': 'error',
         },
@@ -40,9 +40,9 @@ export default defineConfig({
       },
       {
         files: ['**/*.test.ts', '**/*.spec.ts'],
-        plugins: ['typescript', 'vitest'],
+        plugins: ['vitest'],
         rules: {
-          '@typescript-eslint/no-explicit-any': 'off',
+          'typescript/no-explicit-any': 'off',
           'vitest/no-disabled-tests': 'error',
         },
       },
@@ -54,7 +54,7 @@ export default defineConfig({
 glob 会从根目录的 `vite.config.ts` 进行解析，因此请使用工作区路径，例如 `apps/web/**`、`apps/api/**` 和 `packages/ui/**`。
 
 ::: tip
-当 `lint.overrides` 中的某一项设置了 `plugins` 时，该列表会替换匹配文件的基础 `lint.plugins` 列表。请包含该文件组所需的所有插件，例如 `['typescript', 'react']`。只有在覆盖项应当原样继承基础列表时，才省略 `plugins`。
+当 `lint.overrides` 条目设置了 `plugins` 时，该列表会与基础的 `lint.plugins` 列表合并，并应用于匹配的文件。仅当覆盖配置应原样继承基础列表时，才省略 `plugins`。
 :::
 
 ## 格式覆盖

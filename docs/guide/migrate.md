@@ -68,6 +68,40 @@ vp migrate my-app
 - 运行 `vp test`
 - 运行 `vp build`
 
+## 手动安装与迁移
+
+如果你要手动将项目迁移到 Vite+，请先安装以下开发依赖：
+
+```bash
+vp install -D vite-plus
+```
+
+你需要在包管理器中添加覆盖配置，以便其他包解析到 Vite+ 的版本：将 `vite` 别名指向 `@voidzero-dev/vite-plus-core`，并将 `vitest` 固定为 Vite+ 所捆绑的版本（运行 `vp --version`），从而让整个项目与 `vp test` 共享同一个 Vitest 副本。如果不固定 `vitest`，某个依赖或工作区包可能会引入与捆绑运行器不同的 Vitest，导致 Vitest 的内部机制（模拟、`expect`、运行器状态）被拆分：
+
+```json
+"overrides": {
+  "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+  "vitest": "4.1.10"
+}
+```
+
+如果你使用的是 `pnpm`，请将以下内容添加到 `pnpm-workspace.yaml` 中：
+
+```yaml
+overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vitest: 4.1.10
+```
+
+或者，如果你使用的是 Yarn：
+
+```json
+"resolutions": {
+  "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+  "vitest": "4.1.10"
+}
+```
+
 ## 迁移提示
 
 如果您想将此工作交给编码代理（或阅读者是编码代理！），请使用以下迁移提示：
@@ -177,9 +211,9 @@ export default defineConfig({
 
 如果您的项目当前使用 `lefthook`、`simple-git-hooks` 或 `yorkie`，`vp migrate` 会保留您现有的配置不变并显示警告。即使您选择在提示过程中设置钩子，或包含 `--hooks` 标志，也会如此。
 
-如果您想手动将这些工具迁移到 Vite+，可以按照以下步骤进行。首先，将您的 staged 文件命令移动到 `vite.config.ts` 中的 `staged` 块。然后，更新生命周期脚本以运行 `vp config`。您还需要在 `.vite-hooks/pre-commit` 中创建一个运行 `vp staged` 的 Vite+ 钩子。最后，在确认 Vite+ 钩子按预期工作后，您可以移除旧工具的配置和依赖。
+如果您希望将其中一种工具手动迁移到 Vite+，可以按照以下步骤操作。首先，将暂存文件命令移动到 `vite.config.ts` 中的 `staged` 块。然后，更新您的生命周期脚本，使其运行 `vp config`。您还需要在 `.vite-hooks/pre-commit` 创建一个运行 `vp staged` 的 Vite+ 钩子。运行 `vp hooks enable`（或 `vp config`）以安装调度器并设置 `core.hooksPath`。最后，在确认 Vite+ 钩子按预期工作后，即可移除旧工具的配置和依赖。
 
-您可以在 [提交钩子指南](/guide/commit-hooks) 中找到有关完整 Vite+ 钩子设置的更多细节。
+使用 `vp hooks status` 验证调度器是否处于活动状态；如果需要在此克隆中再次将其关闭，请使用 `vp hooks disable`。有关完整 Vite+ 钩子设置的更多详情，请参见[提交钩子指南](/guide/commit-hooks)。
 
 ## 示例
 

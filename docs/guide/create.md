@@ -27,7 +27,7 @@ Vite+ 提供以下内置模板：
 - `vite:monorepo` 创建一个新的单体仓库
 - `vite:application` 创建一个新的应用程序
 - `vite:library` 创建一个新的库
-- `vite:generator` 创建一个新的代码生成器（仅限单体仓库，参见 [Code Generators](#code-generators)）
+- `vite:generator` 创建一个新的代码生成器（仅限单体仓库，参见 [代码生成器](#code-generators)）。
 
 ## 模板来源
 
@@ -43,29 +43,32 @@ Vite+ 提供以下内置模板：
 ## 选项
 
 - `--directory <dir>` 将生成的项目写入指定目标目录
-- `--agent <name>` 在脚手架生成过程中创建 agent 指令文件
-- `--no-agent` 跳过 agent 指令设置
+- `--agent <name>` 在脚手架创建过程中生成代理指令文件
+- `--no-agent` 跳过代理指令设置
 - `--editor <name>` 写入编辑器配置文件
 - `--no-editor` 跳过编辑器配置设置
-- `--git` 初始化 git 仓库
-- `--no-git` 跳过 git 仓库初始化
-- `--hooks` 启用 pre-commit hook 设置
-- `--no-hooks` 跳过 hook 设置
+- `--git` 初始化 Git 仓库
+- `--no-git` 跳过 Git 仓库初始化
 - `--package-manager <name>` 使用指定的包管理器（`pnpm`、`npm`、`yarn` 或 `bun`）
-- `--approve-builds` 无需提示即可批准并运行受限制的依赖构建脚本
-- `--no-interactive` 以非交互方式运行
-- `--verbose` 显示详细的脚手架生成输出
-- `--list` 打印可用的内置模板和热门模板
+- `--approve-builds` 自动批准并运行受限制的依赖构建脚本，不进行提示
+- `--no-interactive` 在无提示的情况下运行
+- `--verbose` 显示详细的脚手架创建输出
+- `--list` 输出可用的内置模板和热门模板
+- `--hooks` 启用提交前钩子设置（调度器 + `.vite-hooks` + `staged` 配置）
+- `--no-hooks` 跳过钩子设置
+
+创建完成后，使用 `vp hooks status`、`vp hooks disable` 和 `vp hooks enable` 管理调度器。  
+请参阅[提交钩子指南](/guide/commit-hooks)。
 
 ### 依赖构建脚本
 
-出于安全考虑，pnpm、bun 和 yarn（Berry）在你批准之前，不会运行依赖的构建脚本（`install` / `postinstall`，例如像 `better-sqlite3` 这样的原生构建）。当模板直接添加了此类依赖时，`vp create` 会在安装后将其展示出来，而不是让项目停留在半构建状态：
+出于安全考虑，pnpm、bun、yarn（Berry）和 npm（v12+）在你批准之前不会运行依赖的构建脚本（`install` / `postinstall`，例如 `better-sqlite3` 等原生构建）。当模板直接添加此类依赖时，`vp create` 会在安装后显示这些依赖，而不是让项目处于构建不完整的状态：
 
 - 交互式：系统会询问你要批准并构建哪些依赖（默认不会选中任何项）。
 - 非交互式：会显示一条说明，列出这些依赖并提示使用 `vp pm approve-builds`。
 - `--approve-builds`：会自动批准并构建它们，因此非交互式运行（CI）也能生成可直接使用的项目。
 
-批准会按照各包管理器的预期方式记录：pnpm 的 `allowBuilds`、bun 的 `trustedDependencies`，或 yarn 的 `dependenciesMeta.<pkg>.built`（位于工作区根目录的清单文件中）。你没有选择的传递性构建脚本（例如 Vite 引入的 `esbuild`）会保持为包管理器的默认行为，不会被提示。npm 默认会运行构建脚本，因此无需在此批准。
+批准会按照各包管理器的预期方式记录：pnpm 使用 `allowBuilds`，bun 使用 `trustedDependencies`，npm 使用 `allowScripts`，yarn 使用 `dependenciesMeta.<pkg>.built`（位于工作区根目录清单中）。你未选择的传递性构建脚本（例如由 Vite 引入的 `esbuild`）会保留包管理器的默认设置，不会显示出来。npm 11 及更早版本会在安装期间运行构建脚本，因此无需在此批准。
 
 ## 模板选项
 
@@ -338,4 +341,4 @@ export default defineConfig({
 3. （可选）提供一个 `bin` 启动器，以兼容 `npm create @org`。
 4. 发布。
 5. 验证：`vp create @org --no-interactive` 会打印清单表；`vp create @org` 会打开选择器。
-6. （可选）在你的内部模板仓库中提交 `create: { defaultTemplate: '@org' }`。
+6. （可选）在你的内部模板仓库中提交 `create: { defaultTemplate: '@org' }`】【。

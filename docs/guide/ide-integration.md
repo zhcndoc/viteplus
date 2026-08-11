@@ -151,8 +151,10 @@ Vite+ 通过编辑器特定设置支持 VS Code 和 Zed，`vp create` 和 `vp mi
 </project>
 ```
 
-通常，项目中的 `.idea` 文件夹会被 Git 忽略，甚至包括 `externalDependencies.xml` 文件。添加包含以下内容的 `.idea/.gitignore` 文件，有助于确保该文件存在：
+通常，项目中的 `.idea` 文件夹会被加入 Git 忽略列表，甚至包括用于告知 IDE 工作区应使用哪些插件的 `externalDependencies.xml` 文件。
 
-```gitignore [.idea/.gitignore]
-!externalDependencies.xml
+请确保将以下行添加到主 `.gitignore` 文件中，以确保该文件会被包含：
+
+```gitignore [.gitignore]
+!.idea/externalDependencies.xml
 ```

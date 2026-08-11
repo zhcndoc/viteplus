@@ -24,6 +24,7 @@ VITE+ - Web 的统一工具链
   preview        预览生产构建
   cache          管理任务缓存
   config         配置钩子和代理集成
+  hooks          管理 Git 钩子调度器
   staged         对暂存文件运行代码检查器
 
 包管理器命令：

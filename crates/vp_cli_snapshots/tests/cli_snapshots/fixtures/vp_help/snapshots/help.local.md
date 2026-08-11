@@ -17,14 +17,15 @@ VITE+ - 面向 Web 的统一工具链
   test           运行测试
   lint           检查代码
   fmt, format    格式化代码
-  check          运行格式化、代码检查和类型检查
+  check          执行格式化、代码检查和类型检查
   pack           构建库
   run            运行任务
-  exec           执行本地 node_modules/.bin 中的命令
+  exec           执行来自本地 node_modules/.bin 的命令
   preview        预览生产构建
   cache          管理任务缓存
   config         配置钩子和代理集成
-  staged         在暂存文件上运行代码检查器
+  hooks          管理 Git 钩子分发器
+  staged         对暂存文件运行代码检查器
 
 包管理器命令：
   install    安装所有依赖；如果提供了包名，则添加这些包

@@ -22,10 +22,10 @@ CLI 包使用一个 **4 步构建流程**：
 **ESM 构建** — 将所有入口点打包到 `dist/`：
 
 - 公共 API 入口：`bin`、`index`、`define-config`、`fmt`、`lint`、`pack`、`pack-bin`
-- 全局命令入口：`create`、`migrate`、`version`、`config`、`mcp`、`staged`
+- 全局命令入口：`create`、`migrate`、`version`、`config`、`hooks`、`mcp`、`staged`
 - 所有第三方依赖都会在构建时内联
-- 只有必须在运行时解析的包会保持 external（NAPI 绑定、`@voidzero-dev/vite-plus-core`、`vitest`、`oxfmt`、`oxlint`）
-- 代码分割会为多个入口共享的代码创建公共 chunk
+- 仅必须在运行时解析的包保持外部依赖（NAPI 绑定、`@voidzero-dev/vite-plus-core`、`vitest`、`oxfmt`、`oxlint`）
+- 代码分割会为多个入口共用的代码创建共享 chunk
 - 为所有入口生成 DTS（`.d.ts`）文件
 
 **CJS 构建** — 为以下内容生成双格式输出：
@@ -67,7 +67,7 @@ await cli.build({
 | 导出路径             | 类型       | 描述                                                                                 |
 | -------------------- | ---------- | ------------------------------------------------------------------------------------ |
 | `./client`           | 仅类型     | 用于环境类型声明（CSS 模块、资源导入等）的三斜杠引用                                   |
-| `./module-runner`    | JS + 类型  | 重新导出 Vite module runner，用于 SSR/环境                                           |
+| `./module-runner`    | JS + 类型  | 重新导出 Vite 模块运行器，用于 SSR/环境                                           |
 | `./internal`         | JS + 类型  | 重新导出 Vite 内部 API                                                             |
 | `./dist/client/*`    | JS         | 客户端运行时文件（`.mjs`、`.cjs`）                                                   |
 | `./types/*`          | 仅类型     | 使用 `export type *` 的仅类型重新导出                                                |
@@ -130,13 +130,14 @@ packages/cli/
 │   ├── migrate.js            # 全局命令：vp migrate
 │   ├── version.js            # 全局命令：vp --version
 │   ├── config/bin.js         # 全局命令：vp config
+│   ├── hooks/bin.js          # 全局命令：vp hooks
 │   ├── mcp.js                # 全局命令：vp mcp
 │   ├── staged/bin.js         # 全局命令：vp staged
 │   ├── *-<hash>.js           # 共享代码块（代码分割）
 │   ├── versions.js           # 生成的工具版本
-│   ├── client.d.ts           # ./client 类型（triple-slash 引用）
-│   ├── module-runner.js      # ./module-runner shim
-│   ├── internal.js           # ./internal shim
+│   ├── client.d.ts           # ./client 类型（三斜线引用）
+│   ├── module-runner.js      # ./module-runner 垫片
+│   ├── internal.js           # ./internal 垫片
 │   ├── client/               # 同步后的客户端运行时文件
 │   ├── types/                # 同步后的类型定义
 │   └── test/                 # 同步后的测试导出
@@ -166,8 +167,6 @@ CLI 会为以下平台目标构建原生绑定：
 | `x86_64-pc-windows-msvc`     | Windows | x64          | `vite-plus.win32-x64-msvc.node`   |
 
 这些目标在 `package.json` 的 `napi.targets` 字段下定义。
-
----
 
 ## Rolldown 原生绑定集成
 

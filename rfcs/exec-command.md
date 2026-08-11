@@ -178,8 +178,8 @@ vp exec -r --report-summary -- vitest run
 
 ### 与 vpx 的主要区别
 
-- `vp exec` 只会追加当前目录下的 `./node_modules/.bin` — 它**不会**向上遍历父目录。如果你想使用 monorepo 根目录下的二进制文件，请使用 `vpx`。
-- `vp exec` 从不回退到全局 vp 包或远程下载 — 命令仅通过 `node_modules/.bin` + 系统 PATH 解析。
+- `vp exec` 只会将当前目录中的 `./node_modules/.bin` 放在 PATH 前面——**不会**向上遍历父目录。如果需要使用 monorepo 根目录中的二进制文件，请使用 `vpx`。
+- 选定 Vite+ CLI 后，`vp exec` 永远不会回退到全局安装的可执行包或远程下载——命令只会通过 `node_modules/.bin` 和系统 PATH 进行解析。
 
 ## 实现架构
 
@@ -206,7 +206,7 @@ Exec {
 Commands::Exec { args } => commands::delegate::execute(cwd, "exec", &args).await,
 ```
 
-全局 CLI 始终将 `exec` 委托给本地 CLI——在全局 CLI 中不存在回退路径或直接执行。这与其他 Category C 命令采用的无条件委托模式一致。
+全局 CLI 始终将 `exec` 委托给 JavaScript CLI。委托会优先解析项目本地的 `vite-plus`；当本地 CLI 不可用时，则回退到全局安装的 `vite-plus`。当该回退发生在项目内部时，如果项目未将 `vite-plus` 声明为依赖项，`vp` 会建议进行迁移；如果已声明但不可用，则会建议安装依赖项。Rust 全局 CLI 不包含直接的 `exec` 实现。
 
 ### 本地 CLI
 
@@ -256,16 +256,16 @@ packages/cli/binding/src/exec/
 
 ## 设计决策
 
-### 1. 无条件委派（不使用全局 CLI 回退）
+### 1. 本地优先委托与全局 CLI 回退
 
-**决策**：全局 CLI 始终将 `exec` 委派给本地 CLI。对于没有将 vite-plus 作为依赖的项目，不存在回退路径。
+**决策**：全局 CLI 在可用时将 `exec` 委托给项目本地的 `vite-plus`。否则，它会在项目内提供迁移或安装指导，并继续使用全局安装的 `vite-plus` CLI。
 
 **理由**：
 
-- 简化全局 CLI —— 不需要直接执行的代码路径
+- 简化全局 CLI——无需直接执行代码路径
 - 与所有 C 类命令的分发方式保持一致
-- 本地 CLI 已具备 `--recursive`、`--filter` 等所需的全部工作区感知能力
-- 使用 `vp exec` 的项目预期已经安装了 vite-plus
+- 被委托的 CLI 具备处理 `--recursive`、`--filter` 等选项所需的全部工作区感知能力
+- 警告会指导项目迁移或安装其声明的依赖，同时不会使全局回退机制失效
 
 ### 2. 不向上遍历目录（不同于 vpx）
 
@@ -278,15 +278,15 @@ packages/cli/binding/src/exec/
 - 向上遍历会模糊包级二进制文件与工作区级二进制文件之间的边界
 - 如果你想要向上遍历的行为，请使用 `vpx`
 
-### 3. 工作区特性仅通过本地 CLI 提供
+### 3. 工作区功能使用被委托的 CLI
 
-**决策**：只有当 vite-plus 是本地依赖时，`--recursive`、`--workspace-root`、`--filter`、`--parallel`、`--reverse`、`--resume-from` 和 `--report-summary` 才能工作（由本地 CLI 处理）。
+**决策**：`--recursive`、`--workspace-root`、`--filter`、`--parallel`、`--reverse`、`--resume-from` 和 `--report-summary` 均由解析出的 `vite-plus` CLI 处理，无论它是项目本地版本还是全局回退版本。
 
 **理由**：
 
-- 这些特性需要来自 vite-task 基础设施的工作区感知能力
-- 全局 CLI 的回退仅用于简单的单目录 exec
-- 这与 `vp run` 处理工作区特性的方式一致
+- 这些功能需要 vite-task 基础设施提供工作区感知能力
+- 项目本地和全局安装的 CLI 使用相同的工作区感知实现
+- 这与 `vp run` 处理工作区功能的方式一致
 
 ### 4. 相同的环境变量约定
 
@@ -429,9 +429,9 @@ $ vp exec nonexistent-cmd
 
 ## Snap 测试
 
-### 全局 CLI 测试: `command-exec-pnpm10`
+### 全局 CLI 测试：`command-exec-pnpm10`
 
-**位置**: `packages/cli/snap-tests-global/command-exec-pnpm10/`
+**位置**：`packages/cli/snap-tests-global/command-exec-pnpm10/`
 
 ```
 command-exec-pnpm10/
@@ -440,7 +440,7 @@ command-exec-pnpm10/
 └── snap.txt          # 自动生成
 ```
 
-**`package.json`**:
+**`package.json`**：
 
 ```json
 {
@@ -450,7 +450,7 @@ command-exec-pnpm10/
 }
 ```
 
-**`steps.json`**:
+**`steps.json`**：
 
 ```json
 {
@@ -463,16 +463,16 @@ command-exec-pnpm10/
 }
 ```
 
-**测试用例**:
+**测试用例**：
 
 1. `vp exec echo hello` — 基本执行，在 `node_modules/.bin` 前置后于 PATH 中找到的命令
 2. `vp exec node -e "console.log('hi')"` — 将参数透传给带多个参数的命令
 3. `vp exec nonexistent-cmd` — 命令未找到错误消息
 4. `vp exec -c 'echo hello from shell'` — shell 模式执行
 
-### 本地 CLI 测试: `command-exec`
+### 本地 CLI 测试：`command-exec`
 
-**位置**: `packages/cli/snap-tests/command-exec/`
+**位置**：`packages/cli/snap-tests/command-exec/`
 
 ```
 command-exec/
@@ -481,7 +481,7 @@ command-exec/
 └── snap.txt          # 自动生成
 ```
 
-**`package.json`**:
+**`package.json`**：
 
 ```json
 {
@@ -495,7 +495,7 @@ command-exec/
 }
 ```
 
-**`steps.json`**:
+**`steps.json`**：
 
 ```json
 {
@@ -506,7 +506,7 @@ command-exec/
 }
 ```
 
-**测试用例**:
+**测试用例**：
 
 1. `vp exec cowsay hello` — 通过本地 CLI 委托执行本地安装的二进制文件
 2. `vp exec -c 'echo $PATH'` — 验证 `node_modules/.bin` 已前置到 PATH。

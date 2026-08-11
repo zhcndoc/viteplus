@@ -37,7 +37,7 @@ VITE+ - 面向 Web 的统一工具链
 **退出代码：** 1
 
 ```
-note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. Enforcement is planned for a future npm release.
+note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. npm 12 enforces the policy.
 npm error code ENOMATCH
 npm error No installed packages match: esbuild
 npm error A complete log of this run can be found in: <home>/.npm/_logs/<timestamp>-debug-0.log
@@ -50,7 +50,7 @@ npm error A complete log of this run can be found in: <home>/.npm/_logs/<timesta
 **退出代码：** 1
 
 ```
-note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. Enforcement is planned for a future npm release.
+note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. npm 12 enforces the policy.
 npm error code ENOMATCH
 npm error No installed packages match: core-js
 npm error A complete log of this run can be found in: <home>/.npm/_logs/<timestamp>-debug-0.log
@@ -63,7 +63,7 @@ npm error A complete log of this run can be found in: <home>/.npm/_logs/<timesta
 **退出码：** 1
 
 ```
-npm manages approvals and denials separately. Run them as two invocations, e.g. `vp pm approve-builds <approve-pkg>...` then `vp pm approve-builds !<deny-pkg>...`.
+npm 将批准和拒绝分开管理。请将它们作为两次调用执行，例如先运行 `vp pm approve-builds <approve-pkg>...`，然后运行 `vp pm approve-builds !<deny-pkg>...`。
 ```
 
 ## `vp pm approve-builds -- esbuild`
@@ -73,7 +73,7 @@ npm manages approvals and denials separately. Run them as two invocations, e.g. 
 **退出代码：** 1
 
 ```
-Pass package names as positionals (`vp pm approve-builds <pkg>...`), not after `--`.
+请将包名称作为位置参数传入（`vp pm approve-builds <pkg>...`），不要放在 `--` 之后。
 ```
 
 ## `vp pm approve-builds --all`
@@ -81,6 +81,6 @@ Pass package names as positionals (`vp pm approve-builds <pkg>...`), not after `
 -> npm approve-scripts --all（建议说明）
 
 ```
-注意：npm 的 allowScripts 策略在 npm 11.x 中仅具有建议性：安装脚本仍会运行；npm 只会在安装时警告尚未审核的软件包。强制执行计划在未来的 npm 版本中推出。
-没有包含尚未审核安装脚本的软件包。
+note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. npm 12 enforces the policy.
+No packages with unreviewed install scripts.
 ```

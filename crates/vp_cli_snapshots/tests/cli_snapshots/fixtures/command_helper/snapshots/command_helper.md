@@ -17,13 +17,14 @@ VITE+ - Web 的统一工具链
   test           运行测试
   lint           检查代码
   fmt, format    格式化代码
-  check          执行格式化、代码检查和类型检查
+  check          运行格式化、代码检查和类型检查
   pack           构建库
   run            运行任务
   exec           执行本地 node_modules/.bin 中的命令
   preview        预览生产构建
   cache          管理任务缓存
   config         配置钩子和代理集成
+  hooks          管理 Git 钩子分发器
   staged         对暂存文件运行代码检查器
 
 包管理器命令：
@@ -313,7 +314,7 @@ VITE+ - Web 的统一工具链
   --silent [value]                    静默测试中的控制台输出。使用 'passed-only' 仅查看失败测试的日志。
   --hideSkippedTests                  隐藏跳过测试的日志
   --reporter <name>                   指定报告器（default、agent、minimal、blob、verbose、dot、json、tap、tap-flat、junit、tree、hanging-process、github-actions）
-  --outputFile <filename/-s>          将测试结果写入文件，同时必须指定 supporter reporter；对于多个报告器的单独输出，使用 cac 的点号表示法（示例：--outputFile.tap=./tap.txt）
+  --outputFile <filename/-s>          将测试结果写入文件，同时必须指定支持的报告器；对于多个报告器的单独输出，使用 cac 的点号表示法（示例：--outputFile.tap=./tap.txt）
   --coverage                          启用覆盖率报告。使用 '--help --coverage' 获取更多信息。
   --mode <name>                       覆盖 Vite 模式（默认：test 或 benchmark）
   --isolate                           隔离运行每个测试文件。要禁用隔离，请使用 --no-isolate（默认：true）
@@ -389,35 +390,35 @@ VITE+ - Web 的统一工具链
 预览帮助信息
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - 面向 Web 的统一工具链
 
-Usage: vp preview [ROOT] [OPTIONS]
+用法：vp preview [ROOT] [OPTIONS]
 
-Preview a production build.
-Options are forwarded to Vite.
+预览生产构建。
+选项将转发给 Vite。
 
-Arguments:
-  [ROOT]  Project root directory (default: current directory)
+参数：
+  [ROOT]  项目根目录（默认：当前目录）
 
-Options:
-  --host [host]           [string] specify hostname
-  --port <port>           [number] specify port
-  --strictPort            [boolean] exit if specified port is already in use
-  --open [path]           [boolean | string] open browser on startup
-  --outDir <dir>          [string] output directory (default: dist)
-  --base <path>           [string] public base path (default: /)
+选项：
+  --host [host]           [string] 指定主机名
+  --port <port>           [number] 指定端口
+  --strictPort            [boolean] 如果指定的端口已被占用则退出
+  --open [path]           [boolean | string] 启动时打开浏览器
+  --outDir <dir>          [string] 输出目录（默认：dist）
+  --base <path>           [string] 公共基础路径（默认：/）
   -l, --logLevel <level>  [string] info | warn | error | silent
-  --clearScreen           [boolean] allow/disable clear screen when logging
-  -d, --debug [feat]      [string | boolean] show debug logs
-  -f, --filter <filter>   [string] filter debug logs
-  -m, --mode <mode>       [string] set env mode
-  -h, --help              Display this message
+  --clearScreen           [boolean] 允许/禁用日志记录时清屏
+  -d, --debug [feat]      [string | boolean] 显示调试日志
+  -f, --filter <filter>   [string] 过滤调试日志
+  -m, --mode <mode>       [string] 设置环境模式
+  -h, --help              显示此消息
 
-Examples:
+示例：
   vp preview
   vp preview --port 4173
 
-Documentation: https://viteplus.dev/guide/build
+文档：https://viteplus.dev/guide/build
 ```
 
 ## `vp dev -h`

@@ -167,6 +167,19 @@ vp rebuild -- --update-binary
 
 对于 pnpm v10+，裸用 `vp rebuild` 只会重新构建其构建脚本列在 `onlyBuiltDependencies` 中（或通过 `pnpm approve-builds` 批准）的包；如果要强制重新构建并绕过批准门槛，请显式指定包名。
 
+#### 依赖构建脚本（npm v12+）
+
+npm v12 会跳过依赖安装脚本（`preinstall` / `install` / `postinstall`，包括隐式的 `node-gyp` 构建），除非 `package.json` 中的 `allowScripts` 字段涵盖这些脚本；安装会成功，但 npm 会警告被跳过的内容。`vp pm approve-builds` 用于管理该允许列表：
+
+- `vp pm approve-builds <pkg...>` 批准指定的包（`npm approve-scripts`）
+- `vp pm approve-builds !<pkg...>` 拒绝这些包（`npm deny-scripts`）
+- `vp pm approve-builds --all` 批准当前所有待处理的包
+- `vp pm approve-builds` 列出其脚本尚未被涵盖的包
+
+批准操作只会记录允许列表：较早安装过程中被跳过的脚本不会运行，直到你执行 `vp rebuild <pkg>`。在 npm 11.16 - 11.x 中，相同的命令也能正常工作，但 npm 会将允许列表视为建议，仍然会运行脚本。
+
+npm v12 还默认停止解析 Git 依赖（`github:`、`git+https:`）和远程 tarball URL；此类安装会失败，并出现 `EALLOWGIT` / `EALLOWREMOTE`。可以通过 npm 的 `allow-git` / `allow-remote` 配置，按项目重新启用。
+
 #### 高级
 
 当你需要更低级别的包管理器行为时，使用这些命令：

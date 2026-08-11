@@ -13,8 +13,9 @@ VITE+ - Web 的统一工具链
   create      从模板创建新项目
   migrate     将现有项目迁移到 Vite+
   config      配置钩子和代理集成
+  hooks       管理 Git 钩子分发器
   staged      在暂存文件上运行代码检查工具
-  install, i  安装所有依赖，或在提供包名称时添加软件包
+  install, i  安装所有依赖项，或在提供软件包名称时添加软件包
   env         管理 Node.js 版本
 
 开发：
@@ -67,25 +68,25 @@ VITE+ - Web 的统一工具链
 显示版本
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 统一工具链
 
-vp <version>
+vp <版本>
 
-Local vite-plus:
-  vite-plus  <version>
+本地 vite-plus：
+  vite-plus  <版本>
 
-Tools:
-  vite             <version>
-  rolldown         <version>
-  vitest           <version>
-  oxfmt            <version>
-  oxlint           <version>
-  oxlint-tsgolint  <version>
-  tsdown           <version>
+工具：
+  vite             <版本>
+  rolldown         <版本>
+  vitest           <版本>
+  oxfmt            <版本>
+  oxlint           <版本>
+  oxlint-tsgolint  <版本>
+  tsdown           <版本>
 
-Environment:
-  Package manager  Not found
-  Node.js          <version>
+环境：
+  包管理器         未找到
+  Node.js          <版本>
 ```
 
 ## `vp install -h`
@@ -331,7 +332,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp why -h`
 
-显示 why 帮助信息
+显示 why 的帮助信息
 
 ```
 VITE+ - 面向 Web 的统一工具链

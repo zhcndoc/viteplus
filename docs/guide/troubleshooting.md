@@ -20,9 +20,9 @@ Vite+ 期望使用现代的上游工具版本。
 - 确认 `vite.config.ts` 中已启用 `lint.options.typeAware` 和 `lint.options.typeCheck`
 - 检查你的 `tsconfig.json` 是否仍在使用 `compilerOptions.baseUrl`
 
-由 `tsgolint` 驱动的 Oxlint 类型检查器路径不支持 `baseUrl`。
-`vp migrate` 和 `vp lint --init` 会尝试运行 `vp dlx @andrewbranch/ts5to6 --fixBaseUrl .`
-以在启用类型感知 lint 之前修复该问题。如果该修复失败或被拒绝，Vite+
+由 `tsgolint` 驱动的 Oxlint 类型检查器路径不支持 `baseUrl`。  
+`vp migrate` 和 `vp lint --init` 会尝试运行 `vp dlx @andrewbranch/ts5to6 --fixBaseUrl .`  
+以在启用类型感知 lint 之前修复该问题。如果该修复失败或被拒绝，Vite+  
 会跳过 `typeAware` 和 `typeCheck`。
 
 ## VS Code 扩展未读取 `vite.config.ts`
@@ -53,9 +53,14 @@ Vite+ 期望使用现代的上游工具版本。
 如果 `vp staged` 失败或预提交钩子未运行：
 
 - 确保 `vite.config.ts` 包含 `staged` 配置块
-- 确保项目自有的预提交钩子运行 `vp staged`
-- 运行 `vp config` 以安装钩子分发器
-- 检查是否通过 `VP_GIT_HOOKS=0` 有意跳过了钩子安装
+- 确保项目自有的预提交钩子运行 `vp staged`（例如 `.vite-hooks/pre-commit`）
+- 运行 `vp hooks status` 查看偏好设置、`core.hooksPath` 以及调度器是否已安装
+- 运行 `vp hooks enable`（或 `vp config`）以安装钩子调度器
+- 如果状态显示 `Preference: disabled (local)`，请使用 `vp hooks enable` 重新启用
+- 检查是否通过 `VP_GIT_HOOKS=0` 有意跳过了钩子
+
+若要在此克隆版本中停止钩子而不删除项目策略文件，请运行 `vp hooks disable`。
+完整的工作流程请参阅[提交钩子指南](/guide/commit-hooks)。
 
 一个最小的分阶段配置示例如下：
 
@@ -69,11 +74,11 @@ export default defineConfig({
 });
 ```
 
-## 由于重型插件导致的慢速配置加载
+## 由于重型插件导致的配置加载缓慢
 
-当 `vite.config.ts` 在顶层导入插件时，这些插件会在每个命令执行时被求值，包括 `vp lint`、`vp fmt`、编辑器集成以及长生命周期的后台进程。这会使配置加载变慢，并可能触发插件初始化的副作用，例如读取文件、启动监听器或连接到服务。
+当 `vite.config.ts` 在顶层导入插件时，这些插件会在每次执行命令时被求值，包括 `vp lint`、`vp fmt`、编辑器集成以及长生命周期的后台进程。这会使配置加载变慢，并可能触发插件初始化的副作用，例如读取文件、启动监听器或连接到服务。
 
-使用 `lazyPlugins` 可在 vite-plus 仅为读取元数据块而加载你的配置时跳过插件工厂（`lint`、`fmt`、`check`、`staged`、`pack`、`create`、`run`/`cache` 任务查找，以及编辑器工具）。当 Vite 真正运行时，插件仍会加载：`dev`、`build`、`test`、`preview`，以及你的脚本所启动的任何构建（例如 `vp run` 任务、`vp exec`）：
+使用 `lazyPlugins` 可在 vite-plus 仅为读取元数据而加载你的配置时跳过插件工厂（`lint`、`fmt`、`check`、`staged`、`pack`、`create`、`run`/`cache` 任务查找，以及编辑器工具）。当 Vite 真正运行时，插件仍会加载：`dev`、`build`、`test`、`preview`，以及你的脚本所启动的任何构建（例如 `vp run` 任务、`vp exec`）：
 
 ```ts [vite.config.ts]
 import { defineConfig, lazyPlugins } from 'vite-plus';
