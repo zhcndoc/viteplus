@@ -51,9 +51,10 @@ VITE+ - 面向 Web 的统一工具链
   rebuild                    重建原生模块
   pm                         将命令转发给包管理器
 
-维护：
-  upgrade  将 vp 本身更新到最新版本
-  implode  移除 vp 及所有相关数据
+Maintain:
+  toolchain  Show active Vite+ tools, versions, and relationships
+  upgrade    Update vp itself to the latest version
+  implode    Remove vp and all related data
 
 文档：https://viteplus.dev/guide/
 

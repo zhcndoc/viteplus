@@ -51,9 +51,10 @@ VITE+ - Web 的统一工具链
   rebuild                    重新构建原生模块
   pm                         将命令转发给软件包管理器
 
-维护：
-  upgrade  将 vp 更新到最新版本
-  implode  移除 vp 及所有相关数据
+Maintain:
+  toolchain  Show active Vite+ tools, versions, and relationships
+  upgrade    Update vp itself to the latest version
+  implode    Remove vp and all related data
 
 文档：https://viteplus.dev/guide/
 
@@ -154,7 +155,7 @@ VITE+ - Web 的统一工具链
   -D, --save-dev                      保存到 `devDependencies`
   --save-peer                         保存到 `peerDependencies` 和 `devDependencies`
   -O, --save-optional                 保存到 `optionalDependencies`
-  -E, --save-exact                    保存确切版本，而不是 semver 范围
+  -E, --save-exact                     保存确切版本，而不是 semver 范围
   --save-catalog-name <CATALOG_NAME>  将新依赖项保存到指定的 catalog 名称
   --save-catalog                      将新依赖项保存到默认 catalog
   --allow-build <NAMES>               允许运行 postinstall 的软件包名称列表

@@ -39,7 +39,14 @@ Vite+ 按照以下顺序检测包管理器：
 
 Vite+ 当前会下载所声明的包管理器（即 `onFail: "download"` 的行为）；其他 `onFail` 值虽被接受，但尚未做区分处理。
 
-显式的 `packageManager` 字段（或 `devEngines.packageManager` 声明）也会影响匹配的包管理器 shim。如果项目有 `packageManager: "npm@10.9.4"`，`npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也遵循同样的规则：`pnpm`/`pnpx`、`yarn`/`yarnpkg`、以及 `bun`/`bunx`。不匹配的工具不会被转换；`pnpm` 项目中的 `npm` 仍然会按 npm 解析。
+`packageManager` 固定版本可以携带完整性哈希（`yarn@4.17.1+sha512.…`）。`corepack use` 会写入该哈希。Vite+ 使用与 Corepack 相同的工件进行哈希处理：
+
+- Yarn 2 及更高版本使用提取后的 CLI 二进制文件（`bin/yarn.js`）
+- npm、pnpm 和 Yarn Classic 使用 npm 包 tarball
+
+Vite+ 在安装 Yarn 时对 CLI 进行一次哈希处理，并记录它验证过的固定版本。后续命令会将自身的固定版本与该记录进行比较。不匹配记录的固定版本会导致检查失败，并停止命令。Corepack 也会在其自身的缓存中保留相同类型的记录。
+
+显式的 `packageManager` 字段（或 `devEngines.packageManager` 声明）也会影响匹配的包管理器 shim。如果项目具有 `packageManager: "npm@10.9.4"`，则 `npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也遵循相同方式：`pnpm`/`pnpx`、`yarn`/`yarnpkg` 以及 `bun`/`bunx`。不匹配的工具不会被转换；`pnpm` 项目中的 `npm` 仍会解析为 npm。
 
 ## 用法
 
@@ -149,7 +156,9 @@ Vite+ 提供了所有熟悉的包管理命令：
 - `vp why react` 解释为什么安装了 `react`
 - `vp info react` 显示注册表元数据，如版本和 dist-tags
 
-#### 重新构建
+这些命令会显示包管理器安装的包。它们不会显示 Vite+ 打包或编译的工具。运行 `vp toolchain [tool]` 可显示这些工具，包括 Vite、Rolldown 和 Oxc。为了便于阅读输出，当 Vite+ 也提供该包时，`vp why` 会显示提示。
+
+#### 重建
 
 当需要重新编译原生模块时，使用 `vp rebuild`；例如在切换 Node.js 版本后，或当 C/C++ 加载失败的扩展无法加载时。
 

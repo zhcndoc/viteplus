@@ -20,8 +20,9 @@ vp migrate --no-interactive
 
 位置参数 `PATH` 是可选的。
 
-- 如果省略，`vp migrate` 会迁移当前目录
-- 如果提供，它会迁移该目标目录
+- 如果省略，`vp migrate` 将迁移当前目录
+- 如果提供，则迁移该目标目录
+- 对于 monorepo，目标必须是工作区根目录。Vite+ 无法迁移单个工作区成员，因为迁移会更新所有成员共享的包管理器配置、catalog 和锁文件。
 
 ```bash
 vp migrate

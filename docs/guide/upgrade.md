@@ -11,6 +11,29 @@
 
 你可以独立升级这两者。
 
+## 查看工具链
+
+运行 `vp toolchain` 以显示当前目录的组件：
+
+```bash
+vp toolchain
+vp toolchain vite
+vp toolchain vite rolldown oxc
+vp toolchain --json
+```
+
+当项目中存在本地 `vite-plus` 包时，该命令会使用它。使用
+`--global` 可显示全局 `vp` 命令所对应的版本：
+
+```bash
+vp toolchain --global
+```
+
+`vp why <package>` 会显示包管理器中的依赖关系图。它
+无法显示打包进 `@voidzero-dev/vite-plus-core` 的代码，也无法
+显示编译进 Vite+ 的引擎。使用 `vp toolchain` 查看这些版本及其
+关系。
+
 ## 全局 `vp`
 
 ```bash
@@ -53,7 +76,7 @@ Vite+ 的某个版本可能会提升内置的 Vitest 版本。由于这个固定
 升级 `vite-plus` 后，请将 `vitest` 重新固定到 Vite+ 现在所内置的版本。你可以通过以下命令查看该版本：
 
 ```bash
-vp --version
+vp toolchain vitest
 ```
 
 然后将 `vitest` 覆盖项设置为该精确版本，或者重新运行 `vp migrate` 让它为你更新固定版本。
@@ -66,7 +89,7 @@ vp --version
 
 `vite-plus` 和 `@voidzero-dev/vite-plus-core` 都以相同的 `0.0.0-commit.<sha>` 版本发布。每个拉取请求都会附带一条评论，列出其最新提交对应的确切版本，并提供可直接复制的安装步骤。
 
-你可以在自动更新上游依赖的拉取请求中找到预览构建。示例可在已合并的拉取请求中搜索 [upstream dependency updates](https://github.com/voidzero-dev/vite-plus/pulls?q=is%3Apr+is%3Amerged+upgrade+upstream+dependencies)。
+你可以在自动更新上游依赖的拉取请求中找到预览构建。示例可在已合并的拉取请求中搜索 [上游依赖更新](https://github.com/voidzero-dev/vite-plus/pulls?q=is%3Apr+is%3Amerged+upgrade+upstream+dependencies)。
 
 预览构建通过拉取请求编号或提交 SHA 来指定。它们不是稳定的版本范围，除非维护者要求，否则你应避免将其保留在长期存在的分支中。
 
@@ -86,7 +109,7 @@ irm https://vite.plus/ps1 | iex
 Remove-Item Env:\VP_PR_VERSION
 ```
 
-安装器会通过 registry bridge 将该引用解析为其 `0.0.0-commit.<sha>` 构建，并像安装其他版本一样进行安装。之后运行 `vp --version` 以确认当前启用的是哪个构建以及捆绑的工具版本。测试完成后，可通过运行 `vp upgrade --force`，或在不设置 `VP_PR_VERSION` 的情况下重新运行安装器，恢复到已发布版本。
+安装器使用 registry bridge 将 ref 解析为 `0.0.0-commit.<sha>` 构建。它会像安装其他版本一样安装此构建。运行 `vp toolchain --global` 以显示当前使用的构建和工具版本。测试完成后，运行 `vp upgrade --force` 以恢复已发布的版本。你也可以在不传入 `VP_PR_VERSION` 的情况下运行安装器。
 
 ### 本地 `vite-plus` 预览版
 
@@ -96,6 +119,6 @@ Remove-Item Env:\VP_PR_VERSION
 vp migrate
 ```
 
-Migrate 会将项目指向桥接注册表（写入 `.npmrc`，或者在 Yarn Berry 中写入 `.yarnrc.yml`），并将 `vite-plus` 以及 `vite` -> `@voidzero-dev/vite-plus-core` 别名固定到匹配的 `0.0.0-commit.<sha>` 版本。正是这条注册表配置使得项目自己的 CI 也能解析到相同版本，因此如果你希望 CI 也测试该预览版，就把它提交上去。
+Migrate 会将桥接注册表写入 `.npmrc`。对于 Yarn Berry，它会将注册表写入 `.yarnrc.yml`。它会将 `vite-plus` 和 `vite` 别名固定到匹配的 `0.0.0-commit.<sha>` 版本。`vite` 别名指向 `@voidzero-dev/vite-plus-core`。如果项目 CI 必须测试预览版，请提交该注册表行。
 
-安装后，请用 `vp --version` 检查捆绑版本。测试完成后，恢复到已发布版本：将 `vite-plus` 改回 `latest`，从 `.npmrc`（或 `.yarnrc.yml`）中移除 bridge 的 `registry` 行，然后使用 `vp install` 重新安装。
+安装完成后，运行 `vp toolchain` 以显示所选版本。测试完成后，将 `vite-plus` 设置为 `latest`。从 `.npmrc` 或 `.yarnrc.yml` 中移除桥接 `registry` 行。然后运行 `vp install`。

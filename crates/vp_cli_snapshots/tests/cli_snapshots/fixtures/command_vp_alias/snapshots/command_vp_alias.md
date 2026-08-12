@@ -9,23 +9,24 @@ VITE+ - Web 的统一工具链
 
 用法：vp <COMMAND>
 
-核心命令：
-  create         从模板创建新项目
-  migrate        将现有项目迁移到 Vite+
-  dev            运行开发服务器
-  build          构建生产版本
-  test           运行测试
-  lint           检查代码
-  fmt, format    格式化代码
-  check          运行格式化、代码检查和类型检查
-  pack           构建库
-  run            运行任务
-  exec           执行本地 node_modules/.bin 中的命令
-  preview        预览生产构建
-  cache          管理任务缓存
-  config         配置钩子和代理集成
-  hooks          管理 Git 钩子调度器
-  staged         对暂存文件运行代码检查器
+Core Commands:
+  create         Create a new project from a template
+  migrate        Migrate an existing project to Vite+
+  dev            Run the development server
+  build          Build for production
+  test           Run tests
+  lint           Lint code
+  fmt, format    Format code
+  check          Run format, lint, and type checks
+  pack           Build library
+  run            Run tasks
+  exec           Execute a command from local node_modules/.bin
+  preview        Preview production build
+  cache          Manage the task cache
+  config         Configure hooks and agent integration
+  hooks          Manage the Git hook dispatcher
+  staged         Run linters on staged files
+  toolchain      Show Vite+ tool versions and relationships
 
 包管理器命令：
   install    安装所有依赖项，或在提供包名称时添加包

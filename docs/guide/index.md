@@ -127,8 +127,9 @@ Vite+ 可以从启动项目、开发、检查与测试，一直到构建生产�
 
 ### 维护
 
+- [`vp toolchain`](/guide/upgrade#show-the-toolchain) 显示活动 Vite+ 工具链中的版本和关系。
 - [`vp upgrade`](/guide/upgrade) 更新 `vp` 安装本身。
-- [`vp implode`](/guide/implode) 从你的机器中移除 `vp` 和相关的 Vite+ 数据。
+- [`vp implode`](/guide/implode) 从你的计算机中移除 `vp` 和相关的 Vite+ 数据。
 
 ::: info
 Vite+ 提供了许多预设命令，例如 `vp build`、`vp test` 和 `vp dev`。这些命令是内置的，无法更改。如果你想要运行 `package.json` 脚本中的命令，请使用 `vp run <命令>` 或 `vpr <命令>`。

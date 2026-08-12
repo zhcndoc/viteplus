@@ -100,6 +100,17 @@ Vite+ 安装程序（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已
 - **默认值**：无（启用验证）
 - **详细信息**：[Node.js 签名验证](/guide/env#node-js-signature-verification)
 
+### `VP_DOWNLOAD_TIMEOUT`
+
+- **用途**：Node.js 运行时和包管理器 tarball 等大型下载的单次请求超时时间，单位为秒
+- **取值**：正整数，最大为 `86400`（24 小时）；无效值将被忽略，并显示警告
+- **默认值**：`600`（10 分钟）
+- **示例**：
+  ```bash
+  # Allow up to 30 minutes per download on a slow connection
+  VP_DOWNLOAD_TIMEOUT=1800 vp env install 22
+  ```
+
 ### `VP_SHELL`
 
 - **用途**：指定当前 Shell

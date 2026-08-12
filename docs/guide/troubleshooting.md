@@ -15,7 +15,10 @@ Vite+ 期望使用现代的上游工具版本。
 
 如果你正在迁移一个现有项目，并且它仍然依赖旧版本的 Vite 或 Vitest，请先升级这些依赖，然后再采用 Vite+。
 
-## `vp check` 未运行类型感知 lint 规则或类型检查
+运行 `vp toolchain` 以显示本地 Vite+ 软件包中的版本。  
+运行 `vp toolchain --global` 以显示全局 Vite+ 版本中的版本。
+
+## `vp check` does not run type-aware lint rules or type checks
 
 - 确认 `vite.config.ts` 中已启用 `lint.options.typeAware` 和 `lint.options.typeCheck`
 - 检查你的 `tsconfig.json` 是否仍在使用 `compilerOptions.baseUrl`
@@ -59,7 +62,7 @@ Vite+ 期望使用现代的上游工具版本。
 - 如果状态显示 `Preference: disabled (local)`，请使用 `vp hooks enable` 重新启用
 - 检查是否通过 `VP_GIT_HOOKS=0` 有意跳过了钩子
 
-若要在此克隆版本中停止钩子而不删除项目策略文件，请运行 `vp hooks disable`。
+若要在此克隆版本中停止钩子而不删除项目策略文件，请运行 `vp hooks disable`。  
 完整的工作流程请参阅[提交钩子指南](/guide/commit-hooks)。
 
 一个最小的分阶段配置示例如下：
@@ -111,7 +114,7 @@ export default defineConfig({
 
 在报告问题时，请包含：
 
-- `vp env current` 和 `vp --version` 的完整输出
-- 项目使用的包管理器
-- 复现问题的具体步骤以及你的 `vite.config.ts`
-- 最小的可重现仓库或可运行沙箱。
+- `vp env current`、`vp --version` 和 `vp toolchain` 的完整输出
+- 项目使用的软件包管理器
+- 重现问题所需的准确步骤以及你的 `vite.config.ts`
+- 最小复现仓库或可运行的沙盒

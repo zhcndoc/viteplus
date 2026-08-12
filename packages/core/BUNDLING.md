@@ -53,10 +53,10 @@ await cp(join(rolldownPluginUtilsDir, 'dist'), join(projectDir, 'dist', 'pluginu
 
 这是最复杂的步骤，使用上游的 `vite-rolldown.config` 并做了如下修改：
 
-1. **过滤外部依赖** - 捆绑 `picomatch`、`tinyglobby`、`fdir`、`rolldown`、`yaml`，而不是将它们保持为外部依赖
+1. **筛选外部依赖** - 捆绑 `picomatch`、`tinyglobby`、`fdir`、`rolldown`、`yaml`，而不是将它们保留为外部依赖
 2. **添加 RewriteImportsPlugin** - 在构建时重写 vite/rolldown 导入
-3. **重写静态路径** - 修复 `VITE_PACKAGE_DIR`、`CLIENT_ENTRY`、`ENV_ENTRY` 常量
-4. **复制附加文件** - `misc/`、`.d.ts` 文件、`types/`、`client.d.ts`
+3. **重写静态路径** - 修复 `VITE_PACKAGE_DIR`、`CLIENT_ENTRY`、`BUNDLED_DEV_CLIENT_ENTRY`、`ENV_ENTRY` 常量
+4. **复制其他文件** - `misc/`、`.d.ts` 文件、`types/`、`client.d.ts`
 
 **输入**：`vite/packages/vite/`
 **输出**：`dist/vite/`
@@ -219,6 +219,7 @@ dist/
 │   │   ├── module-runner.js
 │   │   └── chunks/
 │   ├── client/
+│   │   ├── bundledDevClient.mjs
 │   │   ├── client.mjs
 │   │   └── env.mjs
 │   ├── misc/

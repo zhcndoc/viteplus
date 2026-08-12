@@ -21,8 +21,8 @@ Vite+ 使用严格的、按优先级排序的算法来检测包管理器。第�
 **格式**：`<name>@<semver>[+<hash>]`
 
 - `name` 必须是以下之一：`pnpm`、`yarn`、`npm`、`bun`
-- `semver` 必须是有效的（例如：`10.19.0`、`4.0.0`）
-- 可选的哈希后缀：`pnpm@10.0.0+sha512.abc123...`
+- `semver` 必须有效（例如：`10.19.0`、`4.0.0`）
+- 可选的完整性哈希后缀：`pnpm@10.0.0+sha512.abc123...`（参见[完整性哈希](#integrity-hashes)）
 
 **错误**：
 
@@ -55,7 +55,7 @@ Vite+ 使用严格的、按优先级排序的算法来检测包管理器。第�
 - `name` 必须是 `pnpm`、`yarn`、`npm`、`bun` 之一。数组形式中不支持的名称会被跳过。当没有任何条目命名了受支持的包管理器时，最后一个条目的有效 `onFail` 决定结果：`ignore`/`warn` 继续沿检测链向下，`error`/`download` 则以明确消息失败。
 - `version` 可以是精确版本、semver 范围，或者省略（任意版本都满足）。如果可能，范围会解析为一个已下载的满足版本；否则解析为 npm registry 中最新的满足版本（通过精简元数据文档获取）。除非范围本身包含预发布标记且没有稳定版本满足它，否则会排除预发布版本。
 - 范围来源不会被冻结为精确的 `packageManager` 字段；该范围仍是唯一事实来源。
-- `onFail` 其余部分会被解析并保留，但目前尚未生效：被选中的（受支持的）条目如果其版本无法解析或下载，会直接报错，而不会回退。参见该 RFC 的 [延期 / 未来工作](./dev-engines.md#deferred--future-work)。
+- `onFail` 其余部分会被解析并保留，但目前尚未生效：被选中的（受支持的）条目如果其版本无法解析或下载，会直接报错，而不会回退。参见该 RFC 的[延期 / 未来工作](./dev-engines.md#deferred--future-work)。
 
 完整语义（冲突处理、doctor 检查以及延期的 `onFail` 矩阵）请参见 [RFC：devEngines 支持](./dev-engines.md)。
 
@@ -180,10 +180,41 @@ vp create vite:monorepo --no-interactive --package-manager bun
 
 **特殊情况**：
 
-- **yarn ≥ 2.0.0**：从 `@yarnpkg/cli-dist` 下载，而不是 `yarn` npm 包
-- **bun**：从 `@oven/bun-{os}-{arch}` 下载平台相关的原生二进制文件（包括 Alpine Linux 的 musl 变体）。
+- **yarn ≥ 2.0.0**：从 `@yarnpkg/cli-dist` 下载，而不是从 `yarn` npm package 下载，并且只提取 `bin/yarn.js`。每个 2.x 预发布版本都算作 Yarn 2 或更高版本；参见 [Yarn 2 边界](#the-yarn-2-boundary)。
+- **bun**：从 `@oven/bun-{os}-{arch}` 下载特定于平台的原生二进制文件（包括适用于 Alpine Linux 的 musl 变体）
 
-## 工作区和 monorepo 检测
+## 完整性哈希
+
+`packageManager` 字段可以携带完整性哈希：`yarn@4.17.1+sha512.ccbf…`。`corepack use` 会写入该后缀。Vite+ 对与 Corepack 相同的制品进行哈希，因此同一个固定版本可以在两种工具下使用。
+
+| 包管理器                     | 声明的哈希涵盖的内容                              | Vite+ 还会验证的内容                                      |
+| ---------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| Yarn 2 及更高版本             | 提取后的 CLI，即 `bin/yarn.js`                    | —                                                          |
+| npm、pnpm ≤ 11、Yarn Classic | npm package tarball                               | —                                                          |
+| pnpm ≥ 12                   | 主 `pnpm` tarball                                 | 根据 registry 的 `dist.integrity` 验证平台 package         |
+| bun                          | 主 `bun` tarball，Vite+ 从不下载该文件            | 根据 registry 的 `dist.integrity` 验证平台 package         |
+
+Yarn 2 及更高版本是例外，因为 Corepack 从单个文件 `repo.yarnpkg.com/<version>/packages/yarnpkg-cli/bin/yarn.js` 安装 Berry，并对该文件进行哈希。Vite+ 则下载 `@yarnpkg/cli-dist` tarball，因此会提取 `bin/yarn.js` 并对该条目进行哈希。字节内容相同；只有依据不同。Vite+ 之前对 tarball 进行哈希，这会导致由 `corepack use` 写入的固定版本失败（问题 #2209）。
+
+该固定版本只覆盖未经身份验证的归档文件中的一个文件，因此 Vite+ 只将该条目写入磁盘。其他归档条目不会进入安装目录，并且由归档控制的路径或符号链接无法逃出该目录。
+
+### Vite+ 何时验证固定版本
+
+Vite+ 下载制品时会对其进行哈希，并将已验证的固定版本记录在安装目录旁的 `<version>/.verified-pin` 中。后续命令会将自身的固定版本与该记录进行比较：
+
+- 固定版本匹配。命令使用缓存，不再读取其他内容。
+- 固定版本不同，或记录缺失。Vite+ 会对缓存中的 CLI 进行一次哈希，然后重写该记录。
+- 哈希与固定版本不一致。命令会以 `Hash mismatch for <name>@<version>` 停止，并且消息会指出哈希所涵盖的制品。
+
+Vite+ 不会在每次命令执行时重新读取 CLI。Corepack 提供相同的保证：它读取自己的 `.corepack` 记录后返回。信任边界是对 `$VP_HOME` 的写入权限，该目录还存放 `vp` 二进制文件、生成的 shim 以及受管理的 Node.js 运行时。
+
+完整性验证失败会停止需要该包管理器的命令，包括 `vp run` 和 `vp exec`。在其他情况下，如果受管理的包管理器缺失（例如没有网络或版本未知），这些命令会继续执行。被吞掉的完整性验证失败最终会表现为“命令未找到”。
+
+### Yarn 2 边界
+
+Corepack 在 2.0.0 处分割 Yarn，并使用 `satisfiesWithPrereleases` 将该范围进行匹配；该函数会在比较前去除预发布标签。因此，对 Corepack 而言，每个 2.x 预发布版本都是 Berry 版本。Vite+ 只比较主版本号，结果一致：`yarn@4.0.0-rc.53` 会从 `@yarnpkg/cli-dist` 解析。`>=2.0.0` semver 范围会排除该版本，并将其发送到 Yarn Classic package，而该 package 从未发布过此版本。
+
+## 工作区和 Monorepo 检测
 
 工作区检测根据以下内容确定 `is_monorepo`：
 
@@ -224,8 +255,11 @@ vp create vite:monorepo --no-interactive --package-manager bun
 ### Rust（核心检测）
 
 - **文件**：`crates/vp_pm_cli/src/package_manager.rs`
-- **函数**：`get_package_manager_type_and_version()` —— 按优先级排序的检测
+- **函数**：`get_package_manager_type_and_version()` —— 按优先级顺序检测
 - **函数**：`prompt_package_manager_selection()` —— CI/TTY/交互式回退
+- **函数**：`download_package_manager()` —— 下载、哈希并记录已验证的固定版本
+- **函数**：`ensure_package_manager_bin()` —— 解析可执行文件，与全局 shim 共享
+- **函数**：`verify_cached_cli_hash()` —— 将固定版本与已记录的固定版本进行比较
 - **枚举**：`PackageManagerType` —— `Pnpm`、`Yarn`、`Npm`、`Bun`
 
 ### TypeScript（CLI 集成）
