@@ -1,4 +1,4 @@
-# 迁移现有的 pnpm exec lint-staged】【。
+# 迁移现有的 pnpm exec lint-staged
 
 ## `git init`
 

@@ -359,4 +359,4 @@ docker run --rm -it -v "$PWD:/app" -w /app ghcr.io/voidzero-dev/vite-plus vp bui
 - 分发先例：pnpm <https://pnpm.io/docker>, Deno <https://github.com/denoland/deno_docker>,
   mise <https://mise.jdx.dev/mise-cookbook/docker.html>, Turborepo
   <https://turborepo.dev/docs/guides/tools/docker>, distroless
-  <https://github.com/GoogleContainerTools/distroless/blob/main/nodejs/README.md>】【。
+  <https://github.com/GoogleContainerTools/distroless/blob/main/nodejs/README.md>

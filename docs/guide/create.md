@@ -341,4 +341,4 @@ export default defineConfig({
 3. （可选）提供一个 `bin` 启动器，以兼容 `npm create @org`。
 4. 发布。
 5. 验证：`vp create @org --no-interactive` 会打印清单表；`vp create @org` 会打开选择器。
-6. （可选）在你的内部模板仓库中提交 `create: { defaultTemplate: '@org' }`】【。
+6. （可选）在你的内部模板仓库中提交 `create: { defaultTemplate: '@org' }`
