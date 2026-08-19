@@ -51,45 +51,46 @@ VITE+ - Web 的统一工具链
 参数：
   [...files]  打包文件
 
-选项：
-  -f, --format <format>         打包格式：esm、cjs、iife、umd（默认：esm）
-  --clean                       清理输出目录，使用 --no-clean 可禁用
-  --deps.never-bundle <module>  将依赖标记为外部依赖
-  --minify                      压缩输出
-  --devtools                    启用 devtools 集成
-  --debug [feat]                显示调试日志
-  --target <target>             打包目标，例如 "es2015"、"esnext"
-  -l, --logLevel <level>        设置日志级别：info、warn、error、silent
-  --fail-on-warn                遇到警告时失败（默认：true）
-  --no-write                    禁止将文件写入磁盘，与监听模式不兼容（默认：true）
-  -d, --out-dir <dir>           输出目录（默认：dist）
-  --treeshake                   对包进行 Tree-shaking（默认：true）
-  --sourcemap                   生成 source map（默认：false）
-  --shims                       启用 cjs 和 esm 垫片（默认：false）
-  --platform <platform>         目标平台（默认：node）
-  --dts                         生成 dts 文件
-  --publint                     启用 publint（默认：false）
-  --attw                        启用 Are the types wrong 集成（默认：false）
-  --unused                      启用未使用依赖检查（默认：false）
-  -w, --watch [path]            监听模式
-  --ignore-watch <path>         在监听模式下忽略自定义路径
-  --from-vite [vitest]          复用 Vite 或 Vitest 的配置
-  --report                      大小报告（默认：true）
-  --env.* <value>               定义编译时环境变量
-  --env-file <file>             从文件加载环境变量，与 --env 一起使用时，--env 中的变量优先级更高
-  --env-prefix <prefix>         注入包中的环境变量前缀（默认：TSDOWN_）
-  --on-success <command>        成功时运行的命令
-  --copy <dir>                  将文件复制到输出目录
-  --public-dir <dir>            --copy 的别名，已弃用
-  --tsconfig <tsconfig>         设置 tsconfig 路径
-  --unbundle                    取消打包模式
-  --root <dir>                  输入文件的根目录
-  --exe                         将包构建为可执行文件
-  -W, --workspace [dir]         启用工作区模式
-  --concurrency <count>         并行运行的 Rolldown 构建任务的最大数量
-  -F, --filter <pattern>        筛选配置（cwd 或名称），例如 /pkg-name$/ 或 pkg-name
-  --exports                     为 package.json 生成与导出相关的元数据（实验性）
-  -h, --help                    显示此信息
+Options:
+  --no-config                   Disable config file
+  -f, --format <format>         Bundle format: esm, cjs, iife, umd (default: esm)
+  --clean                       Clean output directory, --no-clean to disable
+  --deps.never-bundle <module>  Mark dependencies as external
+  --minify                      Minify output
+  --devtools                    Enable devtools integration
+  --debug [feat]                Show debug logs
+  --target <target>             Bundle target, e.g "es2015", "esnext"
+  -l, --logLevel <level>        Set log level: info, warn, error, silent
+  --fail-on-warn                Fail on warnings (default: true)
+  --no-write                    Disable writing files to disk, incompatible with watch mode (default: true)
+  -d, --out-dir <dir>           Output directory (default: dist)
+  --treeshake                   Tree-shake bundle (default: true)
+  --sourcemap                   Generate source map (default: false)
+  --shims                       Enable cjs and esm shims (default: false)
+  --platform <platform>         Target platform (default: node)
+  --dts                         Generate dts files
+  --publint                     Enable publint (default: false)
+  --attw                        Enable Are the types wrong integration (default: false)
+  --unused                      Enable unused dependencies check (default: false)
+  -w, --watch [path]            Watch mode
+  --ignore-watch <path>         Ignore custom paths in watch mode
+  --from-vite [vitest]          Reuse config from Vite or Vitest
+  --report                      Size report (default: true)
+  --env.* <value>               Define compile-time env variables
+  --env-file <file>             Load environment variables from a file, when used together with --env, variables in --env take precedence
+  --env-prefix <prefix>         Prefix for env variables to inject into the bundle (default: TSDOWN_)
+  --on-success <command>        Command to run on success
+  --copy <dir>                  Copy files to output dir
+  --public-dir <dir>            Alias for --copy, deprecated
+  --tsconfig <tsconfig>         Set tsconfig path
+  --unbundle                    Unbundle mode
+  --root <dir>                  Root directory of input files
+  --exe                         Bundle as executable
+  -W, --workspace [dir]         Enable workspace mode
+  --concurrency <count>        Maximum number of Rolldown builds to run in parallel
+  -F, --filter <pattern>        Filter configs (cwd or name), e.g. /pkg-name$/ or pkg-name
+  --exports                     Generate export-related metadata for package.json (experimental)
+  -h, --help                    Display this message
 
 示例：
   vp pack

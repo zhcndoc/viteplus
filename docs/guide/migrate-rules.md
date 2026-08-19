@@ -1,25 +1,18 @@
 # 迁移规则
 
-本文档准确描述了 `vp migrate` 对项目所做的操作：它如何
-更新依赖项、重写源代码导入和 package 脚本，以及调整
-包管理器配置。有关命令概览和工作流程，请参阅 [迁移指南](./migrate.md)。
+本文档准确描述了 `vp migrate` 对项目所做的操作：它如何更新依赖项、重写源代码导入和 package 脚本，以及调整包管理器配置。有关命令概览和工作流程，请参阅 [迁移指南](./migrate.md)。
 
 除 [迁移前](#before-you-migrate) 外，该部分列出了需要你自己执行的步骤，下面的所有内容都描述自动化行为。
 
 ## 迁移前
 
-1. 运行 `vp upgrade`，以便全局 CLI 拥有最新的迁移规则。过时的
-   本地 `vite-plus` 不会成为阻碍：当项目的本地副本更旧时，
-   迁移会委托给全局 CLI。
+1. 运行 `vp upgrade`，以便全局 CLI 拥有最新的迁移规则。过时的本地 `vite-plus` 不会成为阻碍：当项目的本地副本更旧时，迁移会委托给全局 CLI。
 2. 在必要时，将项目升级到 Vite 8+ 和 Vitest 4.1+。
-3. 从工作区根目录运行 `vp migrate`。在
-   自动化环境中使用 `--no-interactive`。
-4. 检查每个已更改的清单文件、包管理器配置、源代码重写，以及
-   生成的锁定文件。
+3. 从工作区根目录运行 `vp migrate`。在自动化环境中使用 `--no-interactive`。
+4. 检查每个已更改的清单文件、包管理器配置、源代码重写，以及生成的锁定文件。
 5. 使用 `vp install`、`vp check`、`vp test` 和 `vp build` 进行验证。
 
-迁移是幂等的：在成功迁移后再次运行它，不应
-产生另一份 diff。
+迁移是幂等的：在成功迁移后再次运行它，不应产生另一份 diff。
 
 ## 升级 vs. 完整设置
 
@@ -56,9 +49,10 @@
 
 相关规则：
 
-- 即使存在根级 override，也绝不会仅仅因为这个原因就移除直接的 `vite` 声明。
-- 普通别名或过时别名会被规范化；命名目录引用会被保留。
-- 上面的直接条目规则仅适用于 pnpm。Bun 会将其核心别名镜像为直接依赖，以供其 peer resolver 使用，而 npm browser-provider 布局可能需要一个顶层的 `vite` 边，以便嵌套的 Vitest 包能够解析 `vite`。
+- 直接的 `vite` 声明绝不会仅仅因为存在根 override 而被移除。
+- 普通别名或过时别名会被规范化；命名的目录引用会被保留。
+- 在 pnpm 下，受管理的 override 键使用显式的 `@*` 范围（`vite@*`、`vitest@*`）。pnpm 会通过替换每个 manifest（包括导入方 manifest）中声明的 spec 来应用 override。裸键会匹配任何 spec，包括 `catalog:`，而 `vp up` 随后会将该引用重写为具体版本。`@*` 范围会将 override 保持在传递依赖和 peer 声明所使用的 semver 范围上。它会将 `catalog:` 引用保留为目录引用，而该目录已经会将其解析到 Vite+ core。对于仍保留裸键的项目，迁移会重新设置键，并保留其命名目录选择。
+- 上述直接条目规则仅适用于 pnpm。Bun 会将其 core 别名镜像为直接依赖，以供其 peer resolver 使用；而 npm 的 browser-provider 布局可能需要顶层 `vite` 依赖边，以便嵌套的 Vitest 包能够解析 `vite`。
 
 ### 何时直接需要 Vitest
 
@@ -122,8 +116,7 @@
 ### 永远不会被重写的内容
 
 - `declare module 'vitest'` 和 `declare module '@vitest/browser*'`：模块增强必须保留上游模块身份。
-- 仍然保留在原位置的引用，例如 `compilerOptions.types`、`require.resolve`、`import.meta.resolve` 和 `vitest/package.json`，需要包内本地的 Vitest（参见
-  [当 Vitest 被直接引用时](#when-vitest-is-directly-required)）。
+- 仍然保留在原位置的引用，例如 `compilerOptions.types`、`require.resolve`、`import.meta.resolve` 和 `vitest/package.json`，需要包内本地的 Vitest（参见[当 Vitest 被直接引用时](#when-vitest-is-directly-required)）。
 - 在声明了 `@nuxt/test-utils` 的包中，所有 `vitest` 和 `vitest/*` 模块 specifier 都会在整个包范围内被保留：Nuxt 转换需要上游身份，否则可能会额外注入一个 `vi` 导入。此例外不适用于兄弟包，也不适用于作用域化的 `@vitest/browser*` 导入。
 
 `prefer-vite-plus-imports` lint 规则遵循相同的 Nuxt 例外，因此 lint 自动修复也会保留这些导入。
@@ -136,12 +129,12 @@
 | ------------- | ------------------------------------------- |
 | `vite`        | `vp dev`，或对应的 `vp` 子命令             |
 | `vitest`      | `vp test`                                   |
-| `oxlint`      | `vp lint`                                   |
-| `oxfmt`       | `vp fmt`                                    |
-| `tsdown`      | `vp pack`                                   |
-| `lint-staged` | `vp staged`                                 |
+| `oxlint`      | `vp lint`                                    |
+| `oxfmt`       | `vp fmt`                                     |
+| `tsdown`      | `vp pack`                                    |
+| `lint-staged` | `vp staged`                                  |
 | `eslint`      | `vp lint`，当其可选迁移运行时               |
-| `prettier`    | `vp fmt`，当其可选迁移运行时               |
+| `prettier`    | `vp fmt`，当其可选迁移运行时                 |
 
 对于通过 `bunx` 启动的命令，迁移会保留 `bunx` 及其 `--bun` 标志（保持用户选择的运行时），并且只重写受管理的命令。这在 `bunx` 跟在命令启动分隔符之后时也适用，例如 `run` 或 `--`：
 
@@ -156,15 +149,10 @@
 
 ## Node.js 版本规则
 
-迁移会将旧版 Node.js 版本管理器文件转换为 `.node-version`，
-这是 Vite+ 读取的格式。在现有的 Vite+ 项目中，这种转换是完整设置包的一部分，因此会在执行 `vp migrate --full` 时运行；全新
-迁移则会无条件运行它。
+迁移会将旧版 Node.js 版本管理器文件转换为 `.node-version`，这是 Vite+ 读取的格式。在现有的 Vite+ 项目中，这种转换是完整设置包的一部分，因此会在执行 `vp migrate --full` 时运行；全新迁移则会无条件运行它。
 
 - `.nvmrc` 和 Volta 的 `volta.node` 固定版本会被转换为 `.node-version`。现有的 `.node-version` 会被保留。
-- 当 `.nvmrc` 被移除时，`.github/workflows/*.{yml,yaml}` 和复合操作
-  (`.github/actions/**/action.{yml,yaml}`) 中任何 `actions/setup-node` 的 `node-version-file:
-.nvmrc` 引用都会重定向到 `.node-version`，这样
-  CI 就不会因为 "node version file ... does not exist" 而失败。
+- 当 `.nvmrc` 被移除时，`.github/workflows/*.{yml,yaml}` 和复合操作（`.github/actions/**/action.{yml,yaml}`）中任何 `actions/setup-node` 的 `node-version-file: .nvmrc` 引用都会重定向到 `.node-version`，这样 CI 就不会因为 "node version file ... does not exist" 而失败。
 
 ## 包管理器规则
 
@@ -205,13 +193,6 @@
 
 ## 迁移后
 
-- 会检查每个 Vite 配置中是否存在与 Rolldown 不兼容的模式（例如
-  `manualChunks`）。发现的任何问题都会作为警告报告；配置不会
-  被更改。
-- 依赖项会重新安装一次以刷新 lockfile。如果安装
-  失败，迁移会报告错误并以非零状态退出。
-- 在迁移成功后，`vp fmt` 会在迁移期间更改的文件上运行，
-  排除那些在 Git 工作区中原本就已处于脏状态的路径。
-  Oxfmt 会选择受支持的格式；非 Git 项目会保留全项目
-  格式化。在项目仍使用 Prettier 时会跳过格式化。
-  格式化失败会作为警告报告，因此迁移结果和手动格式化命令仍然可用。
+- 会检查每个 Vite 配置中是否存在与 Rolldown 不兼容的模式（例如 `manualChunks`）。发现的任何问题都会作为警告报告；配置不会被更改。
+- 依赖项会重新安装一次以刷新 lockfile。如果安装失败，迁移会报告错误并以非零状态退出。
+- 在迁移成功后，`vp fmt` 会在迁移期间更改的文件上运行，排除那些在 Git 工作区中原本就已处于脏状态的路径。Oxfmt 会选择受支持的格式；非 Git 项目会保留全项目格式化。在项目仍使用 Prettier 时会跳过格式化。格式化失败会作为警告报告，因此迁移结果和手动格式化命令仍然可用。

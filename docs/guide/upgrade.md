@@ -22,17 +22,13 @@ vp toolchain vite rolldown oxc
 vp toolchain --json
 ```
 
-当项目中存在本地 `vite-plus` 包时，该命令会使用它。使用
-`--global` 可显示全局 `vp` 命令所对应的版本：
+当项目中存在本地 `vite-plus` 包时，该命令会使用它。使用 `--global` 可显示全局 `vp` 命令所对应的版本：
 
 ```bash
 vp toolchain --global
 ```
 
-`vp why <package>` 会显示包管理器中的依赖关系图。它
-无法显示打包进 `@voidzero-dev/vite-plus-core` 的代码，也无法
-显示编译进 Vite+ 的引擎。使用 `vp toolchain` 查看这些版本及其
-关系。
+`vp why <package>` 会显示包管理器中的依赖关系图。它无法显示打包进 `@voidzero-dev/vite-plus-core` 的代码，也无法显示编译进 Vite+ 的引擎。使用 `vp toolchain` 查看这些版本及其关系。
 
 ## 全局 `vp`
 
@@ -69,7 +65,9 @@ vp migrate
 
 - **npm / Bun：** `package.json` 中 `overrides` 下的 `vitest` 条目
 - **Yarn：** `package.json` 中 `resolutions` 下的 `vitest` 条目
-- **pnpm：** `pnpm-workspace.yaml` 中 `overrides` 下的 `vitest` 条目——除非你的 `package.json` 已经有 `pnpm` 字段；在这种情况下，它会位于 `package.json` 中的 `pnpm.overrides` 下（如果 `package.json` 定义了 `pnpm.overrides`，pnpm 会忽略 `pnpm-workspace.yaml` 中的 overrides）
+- **pnpm：** `pnpm-workspace.yaml` 中 `overrides` 下的 `vitest@*` 条目。如果你的 `package.json` 已经有 `pnpm` 字段，则该条目位于 `package.json` 的 `pnpm.overrides` 下。当 `package.json` 定义了 `pnpm.overrides` 时，pnpm 会忽略 `pnpm-workspace.yaml` 中的 overrides。
+
+在 pnpm 下，受管理的键使用显式的 `@*` 范围（`vite@*`、`vitest@*`）。pnpm 会通过替换每个清单（包括导入器清单）中声明的 spec 来应用 override。裸键会匹配任何 spec，包括 `catalog:`。`@*` 范围会让 override 保留在传递依赖和 peer 声明所使用的 semver 范围上，同时保留 `catalog:` 引用不变。因此，`vp up` 不再将它们重写为具体版本。
 
 Vite+ 的某个版本可能会提升内置的 Vitest 版本。由于这个固定版本也会应用到 `vite-plus` 自身的 `vitest` 依赖，如果固定版本过旧，即使你升级了 `vite-plus`，仍然会安装旧的运行器——这会把 Vitest 的内部实现（mocks、`expect`、运行器状态）分散到被固定的副本和 `vp test` 加载的副本之间。
 

@@ -6,7 +6,7 @@
   [packages/cli/BUNDLING.md](../packages/cli/BUNDLING.md)、
   [docs/guide/upgrade.md](../docs/guide/upgrade.md)
 
-## Summary
+## 摘要
 
 新增顶层 `vp toolchain` 命令。它会显示当前 Vite+ 发布版本中使用的确切工具和引擎：
 
@@ -22,7 +22,7 @@ vp toolchain --global
 
 `vp why` 保留其包管理器行为。对于可读输出，它会针对清单检查每个查询。如果查询匹配，则显示 `vp toolchain` 提示。
 
-## Motivation
+## 动机
 
 Vite+ 固定了 `vp build`、`vp test` 和 `vp check` 使用的工具。项目的 peer dependencies 不得更改这些版本。
 
@@ -44,7 +44,7 @@ Vite+ 固定了 `vp build`、`vp test` 和 `vp check` 使用的工具。项目�
 
 每个 Vite+ 发布版本都必须包含这些版本信息。
 
-## Goals
+## 目标
 
 - 显示当前目录所选中的确切工具链。
 - 显示包、捆绑工具和编译引擎之间的关系。
@@ -54,7 +54,7 @@ Vite+ 固定了 `vp build`、`vp test` 和 `vp check` 使用的工具。项目�
 - 在离线状态下工作，且无需运行受管理的 Node.js 运行时。
 - 从同一个清单生成 `vp toolchain`、`vp --version` 和公共导出。
 
-## Non-goals
+## 非目标
 
 - 替代 `vp why` 或复现包管理器的依赖解析。
 - 列出所有 npm 传递依赖、Rust crate、可选 peer 或平台绑定包。
@@ -64,7 +64,7 @@ Vite+ 固定了 `vp build`、`vp test` 和 `vp check` 使用的工具。项目�
 - 将 Vite+ 工具更改为 peer dependencies。
 - 生成软件物料清单。
 
-## Manifest Scope
+## 清单范围
 
 工具链清单包含会影响 Vite+ 行为或兼容性的组件：
 
@@ -81,7 +81,7 @@ Vite+ 固定了 `vp build`、`vp test` 和 `vp check` 使用的工具。项目�
 
 当 Vite+ 添加面向用户的工具时，维护者必须更新该图。当 Vite+ 添加会影响兼容性的隐藏引擎时，也必须更新该图。
 
-## Command Interface
+## 命令接口
 
 ```text
 Usage: vp toolchain [OPTIONS] [TOOLS]...
@@ -112,7 +112,7 @@ vp toolchain vite --json           # Stable JSON result
 
 版本 1 接受精确名称和已定义的别名。不接受 glob。
 
-## Source Resolution
+## 源解析
 
 默认情况下，`vp toolchain` 遵循正常的本地优先路由：
 
@@ -125,7 +125,7 @@ vp toolchain vite --json           # Stable JSON result
 
 项目 lockfile 无法描述 core 中捆绑的代码，也无法描述编译到原生 addon 中的 crate。lockfile 可能包含不相关的 Vite、Rolldown 或 Oxc 副本。因此，该命令不会将 lockfile 用作发布版本信息。
 
-## Readable Output
+## 可读输出
 
 该命令会打印带有关系标签的所有权树：
 
@@ -133,25 +133,25 @@ vp toolchain vite --json           # Stable JSON result
 Vite+ toolchain (local)
 
 vite-plus@0.2.4
-|-- depends on @voidzero-dev/vite-plus-core@0.2.4
-|   |-- bundles vite@8.1.3
-|   |   `-- uses rolldown@1.1.4
-|   |-- bundles rolldown@1.1.4
-|   |   |-- compiles oxc@0.138.0
-|   |   `-- compiles oxc-resolver@11.22.0
-|   `-- bundles tsdown@0.22.3
-|-- depends on vitest@4.1.10
-|-- depends on oxlint@1.72.0
-|-- depends on oxlint-tsgolint@0.24.0
-|-- depends on oxfmt@0.57.0
-`-- compiles vite-task (built 2026-08-06T09:30:00Z, revision <revision>)
+├── depends on @voidzero-dev/vite-plus-core@0.2.4
+│   ├── bundles vite@8.1.3
+│   │   └── uses rolldown@1.1.4
+│   ├── bundles rolldown@1.1.4
+│   │   ├── compiles oxc@0.138.0
+│   │   └── compiles oxc-resolver@11.22.0
+│   └── bundles tsdown@0.22.3
+├── depends on vitest@4.1.10
+├── depends on oxlint@1.72.0
+├── depends on oxlint-tsgolint@0.24.0
+├── depends on oxfmt@0.57.0
+└── compiles vite-task (built 2026-08-06T09:30:00Z, revision <revision>)
 ```
 
 这些版本显示的是编写此 RFC 时的仓库状态，不属于命令契约。
 
 可读树可以重复共享节点，以显示两种关系。JSON 中每个节点 ID 只有一个条目。
 
-### Filtered output
+### 筛选输出
 
 对于每个筛选条件，该命令会保留：
 
@@ -166,16 +166,16 @@ $ vp toolchain vite
 Vite+ toolchain (local)
 
 vite-plus@0.2.4
-`-- depends on @voidzero-dev/vite-plus-core@0.2.4
-    `-- bundles vite@8.1.3
-        `-- uses rolldown@1.1.4
-            |-- compiles oxc@0.138.0
-            `-- compiles oxc-resolver@11.22.0
+└── depends on @voidzero-dev/vite-plus-core@0.2.4
+    └── bundles vite@8.1.3
+        └── uses rolldown@1.1.4
+            ├── compiles oxc@0.138.0
+            └── compiles oxc-resolver@11.22.0
 ```
 
 对于多个筛选条件，该命令返回这些节点和边的并集。
 
-### Name matching
+### 名称匹配
 
 筛选条件匹配节点的：
 
@@ -203,7 +203,7 @@ hint: run `vp why rollup` to show project dependencies
 
 如果存在接近的匹配项，错误信息可以从清单中建议一个名称。
 
-## JSON Output
+## JSON 输出
 
 使用 `--json` 时，该命令不会显示 Vite+ 标题、样式或提示，而是写入一个 JSON 对象：
 
@@ -306,7 +306,7 @@ hint: run `vp why rollup` to show project dependencies
 
 破坏性 JSON 更改需要递增 `schemaVersion`。可选字段、节点、边、别名和枚举值不需要递增。
 
-## Published Toolchain Manifest
+## 发布的工具链清单
 
 CLI 包构建会写入：
 
@@ -331,7 +331,7 @@ packages/cli/dist/toolchain.d.ts
 
 构建还会从清单生成现有的 `vite-plus/versions` 导出。它保留当前键。构建过程和两个版本命令使用同一个版本列表。
 
-### Version sources
+### 版本来源
 
 构建过程从以下位置读取版本：
 
@@ -355,13 +355,13 @@ packages/cli/dist/toolchain.d.ts
 
 在运行时，`vp toolchain` 读取生成的文件。它不会读取仓库源文件，也不会在已安装的项目中运行 Cargo。
 
-## Older Local Vite+ Releases
+## 较旧的本地 Vite+ 发布版本
 
 本地优先路由会将 `vp toolchain` 发送到选定的本地 Vite+ 包。旧版本地发布版本会拒绝该命令，并以非零状态退出。
 
 全局 CLI 不会从旧包数据创建不完整的图。升级本地 Vite+ 发布版本后才能使用该命令。要显示全局发布版本，请运行 `vp toolchain --global`。
 
-## Relationship to `vp --version`
+## 与 `vp --version` 的关系
 
 `vp --version` 保留其简洁的环境摘要：
 
@@ -373,7 +373,7 @@ packages/cli/dist/toolchain.d.ts
 
 它从清单中读取工具行。使用 `vp toolchain` 选择工具并显示关系或引擎详细信息。
 
-## Relationship to `vp why`
+## 与 `vp why` 的关系
 
 `vp why` 会将命令发送给检测到的包管理器。它保留现有参数、输出和退出状态，并显示已安装的包图。
 
@@ -386,15 +386,15 @@ Run `vp toolchain vite` to show this version and its relationships.
 
 提示使用“also provides”，因为项目也可能安装上游 Vite。Vite+ 不会更改包管理器输出。查询失败时不会显示提示。对于 JSON 或可解析输出，也会省略提示。一条提示会包含所有匹配名称。
 
-## Implementation
+## 实现
 
-### Manifest generation
+### 清单生成
 
 修改 `packages/cli/build.ts`。版本导出步骤首先生成工具链图，然后从图创建 `versions.js` 及其类型声明。
 
 Core 在构建 Vite、Rolldown 和 tsdown 时生成 `bundledVersions`。CLI 生成器将这些版本与 npm 包数据和 Cargo 数据组合起来。
 
-### Command implementation
+### 命令实现
 
 共享的 Rust 代码负责解析、筛选和渲染图。全局 CLI 和本地 NAPI CLI 使用这段代码。
 
@@ -404,7 +404,7 @@ Core 在构建 Vite、Rolldown 和 tsdown 时生成 `bundledVersions`。CLI 生�
 
 Rust 的 `--version` 实现读取共享清单，不再使用硬编码的 `TOOL_SPECS` 表。
 
-### Documentation
+### 文档
 
 将 `vp toolchain` 添加到：
 
@@ -417,9 +417,9 @@ Rust 的 `--version` 实现读取共享清单，不再使用硬编码的 `TOOL_S
 
 文档应说明 `vp why` 是包管理器操作。
 
-## Testing
+## 测试
 
-### Unit tests
+### 单元测试
 
 - 清单生成会解析所有必需的 npm 和 Cargo 节点。
 - 无效的 ID、别名、边、版本和修订版本会导致生成失败。
@@ -430,7 +430,7 @@ Rust 的 `--version` 实现读取共享清单，不再使用硬编码的 `TOOL_S
 - 可读输出对共享节点使用稳定顺序。
 - 未知筛选条件返回状态码 1，并提供包管理器提示。
 
-### CLI snapshot tests
+### CLI 快照测试
 
 新增案例应放在 `crates/vite_cli_snapshots/tests/cli_snapshots/` 中：
 
@@ -450,7 +450,7 @@ Rust 的 `--version` 实现读取共享清单，不再使用硬编码的 `TOOL_S
 
 发布产物测试会使用每个平台绑定加载同一个清单。测试会将原生版本与编译发布输入进行比较。
 
-## Performance and Security
+## 性能与安全
 
 - 该命令会解析选定的 `vite-plus` 包。
 - 它读取一个 JSON 文件，筛选一个小型图，并写入输出。
@@ -460,47 +460,47 @@ Rust 的 `--version` 实现读取共享清单，不再使用硬编码的 `TOOL_S
 - 该命令不会将工具筛选条件用作文件系统路径。
 - 清单包含公开的包版本和源修订版本。
 
-## Backward Compatibility
+## 向后兼容性
 
 新命令不会更改 `vp why` 标志或包管理器行为。JSON 输出不包含新提示。
 
 `vite-plus/versions` 保持当前扁平结构。此发布版本新增 `vite-plus/toolchain`。
 
-## Alternatives Considered
+## 考虑过的替代方案
 
-### Extend `vp --version`
+### 扩展 `vp --version`
 
 `vp --version` 为用户提供简短的环境摘要。它不会选择图中的部分，也不会显示关系。JSON 输出也需要单独的命令。
 
-### Name the command `vp versions`
+### 将命令命名为 `vp versions`
 
 `versions` 无法标识所有权，也会与管理 Node.js 版本的 `vp env list` 重名。
 
-### Name the command `vp deps` or `vp tree`
+### 将命令命名为 `vp deps` 或 `vp tree`
 
 这两个名称都暗示已安装的项目图。`toolchain` 能标识由 Vite+ 所拥有的发布数据。
 
-### Change `vp why` to synthesize bundled nodes
+### 更改 `vp why` 以合成捆绑节点
 
 `vp why` 显示包管理器依赖数据。合成节点会更改其可读输出和 JSON 输出。包管理器输出保持不变，因为 Vite+ 会单独打印提示。
 
-### Read package manifests at runtime
+### 在运行时读取包清单
 
 运行时读取包可以找到 Vite、Rolldown、tsdown 和受管理的 npm 工具，但无法找到已编译的 Oxc 或 Vite Task 输入。这样还会重复清单生成器的工作。
 
-### Query GitHub or the npm registry
+### 查询 GitHub 或 npm registry
 
 远程查询在用户离线时会失败。它们描述的是 registry 数据，而不是已安装的文件。清单描述的是已安装的发布版本。
 
-### Expose all Cargo and npm transitive dependencies
+### 暴露所有 Cargo 和 npm 传递依赖
 
 完整的传递依赖图会重复包管理器和 SBOM 工具的功能。清单只包含会影响 Vite+ 行为的组件。
 
-### Use peer dependencies for bundled tools
+### 对捆绑工具使用 peer dependencies
 
 peer dependencies 会允许项目解析更改 Vite+ 的运行时行为。该命令只显示版本，不会更改其所有权。
 
-## Rollout
+## 发布流程
 
 1. 生成并发布工具链清单和 `vite-plus/toolchain` 导出。
 2. 从清单派生 `vite-plus/versions` 和 `vp --version` 中的工具行。

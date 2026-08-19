@@ -2,7 +2,7 @@
 
 ## `vp migrate --no-interactive --no-hooks`
 
-vite-plus declared in dependencies must NOT be duplicated into devDependencies
+dependencies 中声明的 vite-plus 不得重复添加到 devDependencies 中
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -47,7 +47,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: 'catalog:'
+  vite@*: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite

@@ -233,41 +233,42 @@ VITE+ - Web 统一工具链
   [...files]  打包文件
 
 选项：
+  --no-config                   禁用配置文件
   -f, --format <format>         打包格式：esm、cjs、iife、umd（默认：esm）
-  --clean                       清理输出目录，使用 --no-clean 可禁用
-  --deps.never-bundle <module>  将依赖标记为外部依赖
+  --clean                       清理输出目录，使用 --no-clean 禁用
+  --deps.never-bundle <module>  将依赖项标记为外部依赖
   --minify                      压缩输出
   --devtools                    启用 devtools 集成
   --debug [feat]                显示调试日志
   --target <target>             打包目标，例如 "es2015"、"esnext"
   -l, --logLevel <level>        设置日志级别：info、warn、error、silent
   --fail-on-warn                遇到警告时失败（默认：true）
-  --no-write                    禁止将文件写入磁盘，与监听模式不兼容（默认：true）
+  --no-write                    禁止将文件写入磁盘，与监视模式不兼容（默认：true）
   -d, --out-dir <dir>           输出目录（默认：dist）
-  --treeshake                   对打包结果进行 Tree-shaking（默认：true）
+  --treeshake                   对打包结果执行 Tree-shaking（默认：true）
   --sourcemap                   生成源映射（默认：false）
   --shims                       启用 cjs 和 esm 垫片（默认：false）
   --platform <platform>         目标平台（默认：node）
   --dts                         生成 dts 文件
   --publint                     启用 publint（默认：false）
   --attw                        启用 Are the types wrong 集成（默认：false）
-  --unused                      启用未使用依赖检查（默认：false）
-  -w, --watch [path]            监听模式
-  --ignore-watch <path>         在监听模式下忽略自定义路径
-  --from-vite [vitest]          复用 Vite 或 Vitest 的配置
+  --unused                      启用未使用依赖项检查（默认：false）
+  -w, --watch [path]            监视模式
+  --ignore-watch <path>         忽略自定义监视路径
+  --from-vite [vitest]          复用 Vite 或 Vitest 配置
   --report                      大小报告（默认：true）
   --env.* <value>               定义编译时环境变量
   --env-file <file>             从文件加载环境变量，与 --env 一起使用时，--env 中的变量优先级更高
-  --env-prefix <prefix>         注入到打包结果中的环境变量前缀（默认：TSDOWN_）
-  --on-success <command>        成功后运行的命令
+  --env-prefix <prefix>         注入打包结果的环境变量前缀（默认：TSDOWN_）
+  --on-success <command>        成功时运行的命令
   --copy <dir>                  将文件复制到输出目录
   --public-dir <dir>            --copy 的别名，已弃用
   --tsconfig <tsconfig>         设置 tsconfig 路径
-  --unbundle                    取消打包模式
+  --unbundle                    非打包模式
   --root <dir>                  输入文件的根目录
   --exe                         打包为可执行文件
   -W, --workspace [dir]         启用工作区模式
-  --concurrency <count>         可并行运行的 Rolldown 构建的最大数量
+  --concurrency <count>         可并行运行的 Rolldown 构建最大数量
   -F, --filter <pattern>        筛选配置（cwd 或名称），例如 /pkg-name$/ 或 pkg-name
   --exports                     为 package.json 生成与导出相关的元数据（实验性）
   -h, --help                    显示此消息
@@ -283,17 +284,17 @@ VITE+ - Web 统一工具链
 ## `vp cache --help`
 
 ```
-VITE+ - The Unified Toolchain for the Web
+VITE+ - Web 统一工具链
 
-Usage: vp cache <COMMAND>
+用法：vp cache <COMMAND>
 
-Manage the task cache.
+管理任务缓存。
 
-Commands:
-  clean  Clean up all the cache
+命令：
+  clean  清理所有缓存
 
-Options:
-  -h, --help  Print help
+选项：
+  -h, --help  显示帮助
 
-Documentation: https://viteplus.dev/guide/cache
+文档：https://viteplus.dev/guide/cache
 ```

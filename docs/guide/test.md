@@ -6,6 +6,14 @@
 
 `vp test` 基于 [Vitest](https://vitest.dev/) 构建，因此你获得了一个 Vite 原生的测试运行器，可以复用你的 Vite 配置和插件，支持 Jest 风格的断言、快照和覆盖率，并且能干净地处理现代 ESM、TypeScript 和 JSX 项目。
 
+Vitest API 可从 `vite-plus/test` 获取，因此只需安装一个 `vite-plus` 即可——无需直接安装 `vitest`：
+
+```ts [src/example.test.ts]
+import { describe, expect, it, vi } from 'vite-plus/test';
+```
+
+对于浏览器模式的子路径（`vite-plus/test/browser*`），请参阅 [迁移 Vitest](/guide/migrate#vitest)。
+
 ::: info
 `vp test` 始终运行内置的 Vitest 命令。如果你的项目在 `package.json` 中也有一个 `test` 脚本，而你想运行该脚本，请运行 `vp run test`。请参阅[内置命令与脚本](/guide/run#built-in-commands-vs-scripts)。
 :::

@@ -93,7 +93,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: "catalog:"
+  vite@*: "catalog:"
 peerDependencyRules:
   allowAny:
     - vite
@@ -180,7 +180,7 @@ website
 
 ## `vpt print-file vite-plus-monorepo/apps/website/package.json`
 
-Verify that website keeps the vite alias for pnpm (the workspace override remains effective)
+验证 website 为 pnpm 保留了 vite 别名（工作区覆盖仍然有效）
 
 ```
 {

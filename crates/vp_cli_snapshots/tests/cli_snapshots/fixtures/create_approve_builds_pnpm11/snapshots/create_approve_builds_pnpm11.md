@@ -22,7 +22,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: "catalog:"
+  vite@*: "catalog:"
 peerDependencyRules:
   allowAny:
     - vite
@@ -32,7 +32,7 @@ peerDependencyRules:
 
 ## `vp create @your-org:with-build-dep --no-interactive --directory default-app`
 
-default run 会展示受限的构建并提供指导，但不会将其标记为已批准
+默认运行会展示受限的构建并提供指导，但不会将其标记为已批准
 
 ```
 
@@ -56,7 +56,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: "catalog:"
+  vite@*: "catalog:"
 peerDependencyRules:
   allowAny:
     - vite
@@ -66,7 +66,7 @@ peerDependencyRules:
 
 ## `cd default-app && vp pm approve-builds core-js`
 
-guidance 中的 `vp pm approve-builds` 命令会批准受限构建
+指导信息中的 `vp pm approve-builds` 命令会批准受限构建
 
 ```
 node_modules/.pnpm/core-js@3.39.0/node_modules/core-js: 正在运行 postinstall 脚本，已在 <duration> 内完成
@@ -83,7 +83,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: "catalog:"
+  vite@*: "catalog:"
 peerDependencyRules:
   allowAny:
     - vite

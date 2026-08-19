@@ -43,7 +43,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ```
 overrides:
-  vite: 'catalog:'
+  vite@*: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite

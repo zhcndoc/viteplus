@@ -24,7 +24,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: "catalog:"
+  vite@*: "catalog:"
 peerDependencyRules:
   allowAny:
     - vite
@@ -34,7 +34,7 @@ peerDependencyRules:
 
 ## `vp create @your-org:with-build-dep --no-interactive --directory default-app`
 
-default run 会展示带有指导信息的受限构建，但保持未批准状态
+默认运行会展示带有指导信息的受限构建，但保持未批准状态
 
 ```
 
@@ -61,7 +61,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: "catalog:"
+  vite@*: "catalog:"
 peerDependencyRules:
   allowAny:
     - vite
@@ -88,7 +88,7 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: "catalog:"
+  vite@*: "catalog:"
 peerDependencyRules:
   allowAny:
     - vite

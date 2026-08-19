@@ -45,7 +45,7 @@ pnpm 设置应集中于此处
 
 ```
 overrides:
-  vite: 'catalog:'
+  vite@*: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite

@@ -124,8 +124,8 @@ catalog:
 
 minimumReleaseAge: 1440
 overrides:
-  vite: 'catalog:'
-  vitest: 'catalog:'
+  vite@*: 'catalog:'
+  vitest@*: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite
@@ -248,5 +248,5 @@ export default defineConfig({
 检查 only-oxlint .oxlintrc.json 是否已删除
 
 ```
-packages/only-oxlint/.oxlintrc.json: missing
+packages/only-oxlintrc.json: missing
 ```

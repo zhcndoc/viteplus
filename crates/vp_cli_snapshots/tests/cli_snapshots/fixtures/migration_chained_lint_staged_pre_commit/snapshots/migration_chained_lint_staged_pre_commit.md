@@ -47,14 +47,14 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-Check whether pnpm-workspace.yaml contains overrides and catalog
+检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
 
 ```
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
 overrides:
-  vite: 'catalog:'
+  vite@*: 'catalog:'
 peerDependencyRules:
   allowAny:
     - vite
