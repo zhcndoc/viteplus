@@ -182,29 +182,42 @@ vp-setup.exe --version 0.3.0 --no-node-manager --registry https://registry.npmmi
 
 ### CLI 标志
 
-| 标志                   | 描述                    | 默认                         |
-| ---------------------- | ----------------------- | ---------------------------- |
-| `-y` / `--yes`         | 接受默认值，无提示      | 交互式                       |
-| `-q` / `--quiet`       | 除错误外抑制输出        | false                        |
-| `--version <VER>`      | 安装指定版本            | latest                       |
-| `--tag <TAG>`          | npm dist-tag            | latest                       |
-| `--install-dir <PATH>` | 安装目录                | `%USERPROFILE%\.vite-plus`   |
-| `--registry <URL>`     | npm 注册表 URL          | `https://registry.npmjs.org` |
-| `--no-node-manager`    | 跳过 Node.js 管理器设置 | 自动检测                     |
-| `--no-modify-path`     | 不修改用户 PATH         | 修改                         |
+| Flag                | Description                   | Default                      |
+| ------------------- | ----------------------------- | ---------------------------- |
+| `-y` / `--yes`      | Accept defaults, no prompts   | interactive                  |
+| `-q` / `--quiet`    | Suppress output except errors | false                        |
+| `--version <VER>`   | Install specific version      | latest                       |
+| `--tag <TAG>`       | npm dist-tag                  | latest                       |
+| `--registry <URL>`  | npm registry URL              | `https://registry.npmjs.org` |
+| `--no-node-manager` | Skip Node.js manager setup    | auto-detect                  |
+| `--no-modify-path`  | Don't modify User PATH        | modify                       |
 
 ### 环境变量（与 `install.ps1` 兼容）
 
 | 变量                      | 映射到              |
 | ------------------------- | ------------------- |
 | `VP_VERSION`              | `--version`         |
-| `VP_HOME`                 | `--install-dir`     |
+| `VP_HOME`                 | single-root layout  |
+| `VP_BIN_DIR`              | split bin root      |
+| `VP_DATA_DIR`             | split data root     |
+| `VP_CACHE_DIR`            | split cache root    |
 | `NPM_CONFIG_REGISTRY`     | `--registry`        |
 | `VP_NODE_MANAGER=yes\|no` | `--no-node-manager` |
 
 CLI 标志的优先级高于环境变量。
 
-## 安装流程
+`vp-setup.exe` requires an absolute `VP_HOME`. If callers set one split root,
+they must set all three `VP_*_DIR` variables. Each variable must contain an
+absolute path. The installer calls `vp_shared::validate_vp_dir_env` before it
+resolves or creates installation roots. The installer returns exit code 1 for
+invalid configuration.
+
+The installer supports Vite+ 0.3.0 and later. This includes 0.3.0 prereleases.
+It also supports internal preview versions that use the
+`0.0.0-commit.<sha>` format. It rejects older versions before it downloads the
+platform payload or creates an installation root.
+
+## Installation Flow
 
 安装器通过 `vp_setup` 使用 Rust 实现，复现与 `install.ps1` 相同的结果。
 
@@ -215,7 +228,7 @@ CLI 标志的优先级高于环境变量。
 │  ┌─ 检测平台 ────────────── win32-x64-msvc                  │
 │  │                          win32-arm64-msvc                │
 │  │                                                          │
-│  ├─ 检查现有安装 ────────── 读取 %VP_HOME%\current           │
+│  ├─ check existing ──────── read <DATA>\current              │
 │  │                                                          │
 │  └─ 解析版本 ────────────── resolve_version_string()        │
 │                             1 次 HTTP 调用：“latest” → “0.3.0”│
@@ -242,7 +255,7 @@ CLI 标志的优先级高于环境变量。
 ┌─────────────────────────────────────────────────────────────┐
 │                      安装                                   │
 │                                                             │
-│  ┌─ 提取二进制文件 ──────── %VP_HOME%\{version}\bin\         │
+│  ┌─ extract binary ──────── <DATA>\{version}\bin\            │
 │  │                          vp.exe + vp-shim.exe             │
 │  │                                                          │
 │  ├─ 生成 package.json ───── 带有 vite-plus 依赖的包装器       │
@@ -274,18 +287,18 @@ CLI 标志的优先级高于环境变量。
 │       配置              （尽力执行，总是运行，              │
 │                          即使同版本也用于修复）              │
 │                                                             │
-│  ┌─ 创建 bin shim ──────── 将 vp-shim.exe 复制到 bin\vp.exe  │
-│  │                          （如果正在运行则重命名为 .old）   │
+│  ┌─ create bin shims ────── copy vp-shim.exe → <BIN>\vp.exe │
+│  │                          (rename-to-.old if running)      │
 │  │                                                          │
 │  ├─ Node.js 管理器 ─────── 如果已启用（预先计算）：           │
 │  │                            启动：vp env setup --refresh   │
 │  │                          如果已禁用：                     │
 │  │                            启动：vp env setup --env-only  │
 │  │                                                          │
-│  └─ 修改用户 PATH ──────── 如果未设置 --no-modify-path：     │
-│                             HKCU\Environment\Path           │
-│                             将 %VP_HOME%\bin 放在开头         │
-│                             广播 WM_SETTINGCHANGE            │
+│  └─ modify User PATH ────── if --no-modify-path not set:     │
+│                              HKCU\Environment\Path           │
+│                              prepend <BIN>                   │
+│                              broadcast WM_SETTINGCHANGE      │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -316,7 +329,10 @@ CLI 标志的优先级高于环境变量。
 
 **失败恢复**：在 **激活** 阶段之前，失败会清理版本目录，并保持现有安装不受影响。在 **激活** 之后，所有配置步骤都是尽力而为——失败会记录警告，但不会导致退出码为 1。重新运行安装器会始终重试配置。
 
-## Node.js 管理器自动检测
+On Windows, activation checks the `current` entry without following its target.
+The installer removes a dangling junction before it creates the new junction.
+
+## Node.js Manager Auto-Detection
 
 Node.js 管理器的决策（`enabled`/`disabled`）会在展示交互式菜单之前预先计算完成，因此用户看到的是已解析的值，并可通过“自定义（customize）”子菜单进行覆盖。在安装阶段不会出现任何提示。
 
@@ -376,7 +392,11 @@ fn init_dll_security() {
 
 该二进制使用控制台子系统（这是 Windows 上 Rust 二进制的默认行为）。当双击运行时，Windows 会自动分配一个控制台窗口。不需要特殊处理。
 
-### 现有安装处理
+The installer applies colors only when the output stream supports them. If the
+`NO_COLOR` variable is present, stdout and stderr contain no ANSI escape
+sequences. This rule also applies when callers redirect output to files.
+
+### Existing Installation Handling
 
 | 场景                             | 行为                                                    |
 | -------------------------------- | ------------------------------------------------------- |
@@ -455,17 +475,30 @@ test-vp-setup-exe:
     - uses: oxc-project/setup-rust@v1
     - name: Build vp-setup.exe
       run: cargo build --release -p vp_installer
-    - name: Install via vp-setup.exe (silent)
+    - name: Start local preview registry
+      # packs the current vp.exe and vp-shim.exe as 0.0.0-commit.<sha>
+    - name: Install local preview via vp-setup.exe (silent)
       shell: pwsh
-      run: ./target/release/vp-setup.exe
-      env:
-        VP_VERSION: alpha
+      run: ./target/release/vp-setup.exe --version $VP_SETUP_TEST_VERSION --registry $VP_SETUP_TEST_REGISTRY
     - name: Verify installation (pwsh/cmd/bash)
       # 从单次安装后在三个 shell 中进行验证
 ```
 
-该工作流会在 `crates/vp_installer/**`、`crates/vp_pm_cli/**` 和
-`crates/vp_setup/**` 发生变更时触发。
+The workflow path filter includes these files:
+
+- the installer and setup helpers
+- shared directory resolution
+- shims and the global CLI
+- install scripts
+- the workflow file
+
+The job tests invalid directory overrides and versions older than 0.3.0. The
+installer must not create requested or default roots for invalid overrides. A
+request for version `0.2.9` must fail without creating an installation root.
+For the successful test, the job installs a local
+`0.0.0-commit.<sha>` preview package. This test starts with a dangling `current`
+junction. It also sets `NO_COLOR` and checks the redirected output for ANSI
+escape sequences.
 
 ## 代码签名
 
@@ -567,7 +600,16 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 
 这是一个组织层面的决策（成本：约 $300-500/年），不在实现范围之内，但对用户体验至关重要。
 
-## 二进制大小预算
+- Fresh install from cmd.exe, PowerShell, Git Bash
+- Silent mode (`-y`) installation
+- Custom registry, custom install dir
+- Invalid `VP_HOME` and `VP_*_DIR` configuration
+- Rejection of releases before 0.3.0
+- Repair of a dangling `current` junction
+- `NO_COLOR` output without ANSI escape sequences
+- Upgrade over existing installation
+- Verify `vp --version` works after install
+- Verify PATH is modified correctly
 
 目标：3-5 MB（发布版，去符号，LTO）。
 

@@ -12,12 +12,13 @@ VITE+ - Web 的统一工具链
 参数：
   [PATHS]...  要传递给 fmt 和 lint 的文件路径
 
-选项：
-  --fix                            自动修复格式和代码检查问题
-  --no-fmt                         跳过格式检查
-  --no-lint                        跳过 lint 规则；当 `lint.options.typeCheck` 为 true 时仍会执行类型检查
-  --no-error-on-unmatched-pattern  当模式未匹配时不要退出并报错
-  -h, --help                       显示帮助
+Options:
+  --fix                            Auto-fix format and lint issues
+  --quiet                          Disable reporting on warnings, only errors are reported
+  --no-fmt                         Skip format check
+  --no-lint                        Skip lint rules; type-check still runs when `lint.options.typeCheck` is true
+  --no-error-on-unmatched-pattern  Do not exit with error when pattern is unmatched
+  -h, --help                       Print help
 
 示例：
   vp check
@@ -39,12 +40,13 @@ VITE+ - Web 的统一工具链
 参数：
   [PATHS]...  传递给 fmt 和 lint 的文件路径
 
-选项：
-  --fix                            自动修复格式和代码检查问题
-  --no-fmt                         跳过格式检查
-  --no-lint                        跳过 lint 规则；当 `lint.options.typeCheck` 为 true 时仍会运行类型检查
-  --no-error-on-unmatched-pattern  当模式不匹配时不要以错误退出
-  -h, --help                       显示帮助
+Options:
+  --fix                            Auto-fix format and lint issues
+  --quiet                          Disable reporting on warnings, only errors are reported
+  --no-fmt                         Skip format check
+  --no-lint                        Skip lint rules; type-check still runs when `lint.options.typeCheck` is true
+  --no-error-on-unmatched-pattern  Do not exit with error when pattern is unmatched
+  -h, --help                       Print help
 
 示例：
   vp check
@@ -66,12 +68,13 @@ VITE+ - Web 统一工具链
 参数：
   [PATHS]...  要传递给 fmt 和 lint 的文件路径
 
-选项：
-  --fix                            自动修复格式和代码检查问题
-  --no-fmt                         跳过格式检查
-  --no-lint                        跳过 lint 规则；当 `lint.options.typeCheck` 为 true 时仍会运行类型检查
-  --no-error-on-unmatched-pattern  当模式未匹配时不以错误退出
-  -h, --help                       显示帮助
+Options:
+  --fix                            Auto-fix format and lint issues
+  --quiet                          Disable reporting on warnings, only errors are reported
+  --no-fmt                         Skip format check
+  --no-lint                        Skip lint rules; type-check still runs when `lint.options.typeCheck` is true
+  --no-error-on-unmatched-pattern  Do not exit with error when pattern is unmatched
+  -h, --help                       Print help
 
 示例：
   vp check

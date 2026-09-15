@@ -13,6 +13,11 @@
 ## `vpt chmod +x external/vp`
 
 
+## `vpt touch-file external/.vp-setup-complete`
+
+外部软件包管理器已设置此二进制文件
+
+
 ## `vpt write-file .node-version '22.18.0
 '`
 

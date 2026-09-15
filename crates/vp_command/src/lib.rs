@@ -399,6 +399,137 @@ mod tests {
         tempdir().expect("Failed to create temp directory")
     }
 
+    #[cfg(unix)]
+    fn create_executable(path: &std::path::Path) {
+        use std::{fs, os::unix::fs::PermissionsExt};
+
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, "#!/bin/sh\nexit 0\n").unwrap();
+        let mut permissions = fs::metadata(path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(path, permissions).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_resolve_bin_with_relative_path_entry() {
+        use std::path::PathBuf;
+
+        let temp_dir = create_temp_dir();
+        let cwd_path = temp_dir.path().canonicalize().unwrap();
+        let cwd = AbsolutePathBuf::new(cwd_path.clone()).unwrap();
+        let bin_dir = cwd_path.join("node_modules/.bin");
+        let bin_path = bin_dir.join("fake-node");
+        let fallback_bin_dir = cwd_path.join("fallback-bin");
+        let fallback_bin_path = fallback_bin_dir.join("fake-node");
+
+        create_executable(&bin_path);
+        create_executable(&fallback_bin_path);
+
+        let path_env =
+            std::env::join_paths([PathBuf::from("./node_modules/.bin"), fallback_bin_dir]).unwrap();
+        let resolved = resolve_bin("fake-node", Some(&path_env), &cwd).unwrap();
+
+        assert_eq!(resolved.into_path_buf(), bin_path);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_resolve_bin_continues_after_missing_relative_path_entry() {
+        use std::path::PathBuf;
+
+        let temp_dir = create_temp_dir();
+        let cwd_path = temp_dir.path().canonicalize().unwrap();
+        let cwd = AbsolutePathBuf::new(cwd_path.clone()).unwrap();
+        let fallback_bin_dir = cwd_path.join("fallback-bin");
+        let fallback_bin_path = fallback_bin_dir.join("fake-node");
+
+        create_executable(&fallback_bin_path);
+
+        let path_env =
+            std::env::join_paths([PathBuf::from("./missing-bin"), fallback_bin_dir]).unwrap();
+        let resolved = resolve_bin("fake-node", Some(&path_env), &cwd).unwrap();
+
+        assert_eq!(resolved.into_path_buf(), fallback_bin_path);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_resolve_bin_with_empty_path_entry() {
+        use std::path::PathBuf;
+
+        let temp_dir = create_temp_dir();
+        let cwd_path = temp_dir.path().canonicalize().unwrap();
+        let cwd = AbsolutePathBuf::new(cwd_path.clone()).unwrap();
+        let bin_path = cwd_path.join("fake-node");
+
+        create_executable(&bin_path);
+
+        let path_env = std::env::join_paths([PathBuf::new()]).unwrap();
+        let resolved = resolve_bin("fake-node", Some(&path_env), &cwd).unwrap();
+
+        assert_eq!(resolved.into_path_buf(), bin_path);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_resolve_bin_with_relative_path_entry_when_cwd_contains_path_separator() {
+        use std::path::PathBuf;
+
+        let temp_dir = create_temp_dir();
+        let cwd_path = temp_dir.path().join("project:fixture");
+        std::fs::create_dir_all(&cwd_path).unwrap();
+        let cwd_path = cwd_path.canonicalize().unwrap();
+        let cwd = AbsolutePathBuf::new(cwd_path.clone()).unwrap();
+        let bin_path = cwd_path.join("tools/fake-node");
+        create_executable(&bin_path);
+        let path_env = std::env::join_paths([PathBuf::from("./tools")]).unwrap();
+
+        let resolved = resolve_bin("fake-node", Some(&path_env), &cwd).unwrap();
+
+        assert_eq!(resolved.into_path_buf(), bin_path);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_resolve_bin_continues_after_relative_entry_when_cwd_contains_path_separator() {
+        use std::path::PathBuf;
+
+        let temp_dir = create_temp_dir();
+        let cwd_path = temp_dir.path().join("project:fixture");
+        std::fs::create_dir_all(&cwd_path).unwrap();
+        let cwd_path = cwd_path.canonicalize().unwrap();
+        let cwd = AbsolutePathBuf::new(cwd_path).unwrap();
+        let fallback_bin_dir = temp_dir.path().join("fallback-bin");
+        let fallback_bin_path = fallback_bin_dir.join("fake-node");
+        create_executable(&fallback_bin_path);
+        let path_env =
+            std::env::join_paths([PathBuf::from("./missing-bin"), fallback_bin_dir]).unwrap();
+
+        let resolved = resolve_bin("fake-node", Some(&path_env), &cwd).unwrap();
+
+        assert_eq!(resolved.into_path_buf(), fallback_bin_path);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_resolve_bin_with_explicit_relative_program_path() {
+        use std::path::PathBuf;
+
+        let temp_dir = create_temp_dir();
+        let cwd_path = temp_dir.path().join("project:fixture");
+        std::fs::create_dir_all(&cwd_path).unwrap();
+        let cwd_path = cwd_path.canonicalize().unwrap();
+        let cwd = AbsolutePathBuf::new(cwd_path.clone()).unwrap();
+        let bin_path = cwd_path.join("scripts/fake-node");
+        create_executable(&bin_path);
+        let path_env = std::env::join_paths([PathBuf::from("./tools")]).unwrap();
+
+        let resolved = resolve_bin("./scripts/fake-node", Some(&path_env), &cwd).unwrap();
+
+        assert_eq!(resolved.into_path_buf(), bin_path);
+    }
+
     mod run_command_tests {
 
         use super::*;

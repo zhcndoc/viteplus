@@ -18,7 +18,7 @@
 
 use std::{collections::HashMap, io::BufReader};
 
-use vp_shared::{PrependOptions, output, prepend_to_path_env};
+use vp_shared::{PrependOptions, output, prepend_tools_to_path_env};
 use vt_path::{AbsolutePath, AbsolutePathBuf};
 
 use crate::{error::Error, js_executor::JsExecutor};
@@ -108,27 +108,62 @@ pub(crate) fn warn_missing_local_cli_if_project(cwd: &AbsolutePath) {
     }
 }
 
-/// Ensure the JS runtime is downloaded and prepend its bin directory to PATH.
+/// Select the configured JS runtime and prepend its bin directory to PATH.
 /// This should be called before executing any package manager command.
 ///
 /// If `project_path` contains a package.json, uses the project's runtime
 /// (based on devEngines.runtime). Otherwise, falls back to the CLI's runtime.
 pub async fn prepend_js_runtime_to_path_env(project_path: &AbsolutePath) -> Result<(), Error> {
+    let config = env::config::load_config().await?;
     let mut executor = JsExecutor::new(None);
 
-    // Use project runtime if package.json exists, otherwise use CLI runtime
-    let package_json_path = project_path.join("package.json");
-    let runtime = if package_json_path.as_path().exists() {
-        executor.ensure_project_runtime(project_path).await?
+    let node_bin_prefix = if config.node_shim_mode == env::config::ShimMode::SystemFirst
+        && let Some(system_node) = crate::shim::dispatch::find_system_tool("node")
+        && let Some(bin_dir) = system_node.parent()
+    {
+        bin_dir.to_absolute_path_buf()
     } else {
-        executor.ensure_cli_runtime().await?
+        // Use project runtime if package.json exists, otherwise use CLI runtime
+        let package_json_path = project_path.join("package.json");
+        let runtime = if package_json_path.as_path().exists() {
+            executor.ensure_project_runtime(project_path).await?
+        } else {
+            executor.ensure_cli_runtime().await?
+        };
+        runtime.get_bin_prefix()
     };
 
-    let node_bin_prefix = runtime.get_bin_prefix();
-    // Use dedupe_anywhere=true to check if node bin already exists anywhere in PATH
-    let options = PrependOptions { dedupe_anywhere: true };
-    if prepend_to_path_env(&node_bin_prefix, options) {
-        tracing::debug!("Set PATH to include {:?}", node_bin_prefix);
+    prepend_tools_to_path_env(
+        &node_bin_prefix,
+        &["node"],
+        PrependOptions { dedupe_anywhere: true },
+    )?;
+    if let Some(package_manager) = env::package_manager::resolve_current_spec(project_path).await? {
+        if config.package_manager_shim_mode_for(package_manager.package_manager_type)
+            == env::config::ShimMode::SystemFirst
+            && let Some(system_path) = crate::shim::dispatch::find_system_tool(
+                &package_manager.package_manager_type.to_string(),
+            )
+            && let Some(bin_dir) = system_path.parent()
+        {
+            let tool = package_manager.package_manager_type.to_string();
+            prepend_tools_to_path_env(bin_dir, &[&tool], PrependOptions { dedupe_anywhere: true })?;
+            return Ok(());
+        }
+    }
+    if let Some(package_manager) = env::package_manager::resolve_current(project_path).await? {
+        let (install_dir, _, _) = vp_pm_cli::download_package_manager(
+            package_manager.package_manager_type,
+            &package_manager.version,
+            package_manager.hash.as_deref(),
+        )
+        .await?;
+        let bin_dir = install_dir.join("bin");
+        prepend_tools_to_path_env(
+            &bin_dir,
+            package_manager.package_manager_type.bin_names(),
+            PrependOptions { dedupe_anywhere: true },
+        )?;
     }
 
     Ok(())
@@ -143,6 +178,7 @@ pub mod create;
 pub mod hooks;
 pub mod migrate;
 pub mod staged;
+pub mod sync_versions;
 pub mod toolchain;
 pub mod version;
 

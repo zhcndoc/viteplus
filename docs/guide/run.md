@@ -1,6 +1,6 @@
 # 运行
 
-`vp run` 会执行 `package.json` 中定义的脚本以及 `vite.config.ts` 中定义的任务。它的工作方式类似于 `pnpm run`，但内置了缓存、依赖排序和 workspace 感知执行功能。
+`vp run` 运行 `package.json` 脚本和 `vite.config.ts` 中定义的任务。它的工作方式类似于 `pnpm run`，内置缓存、依赖顺序和工作区感知执行功能。任务运行器可通过[全局 CLI](/guide/global-cli)和[项目本地 CLI](/guide/local-cli)使用。
 
 ::: tip
 `vpr` 是 `vp run` 的独立简写形式。以下所有示例都适用于 `vp run` 和 `vpr`。
@@ -84,7 +84,7 @@ $ node compile-legacy-app.js ✗ 未命中缓存：'legacy/index.js' 已修改�
 
 ## 任务定义
 
-Vite 任务 [自动跟踪](/guide/automatic-data-tracking) 每个任务进行缓存所需的内容。您可以直接在 `vite.config.ts` 中定义任务，以默认启用缓存，或者控制哪些文件和环境变量会影响缓存行为。
+Vite 任务[自动跟踪](/guide/automatic-data-tracking)每个任务进行缓存所需的内容。您可以直接在 `vite.config.ts` 中定义任务，以默认启用缓存，或者控制哪些文件和环境变量会影响缓存行为。
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
@@ -110,14 +110,14 @@ export default defineConfig({
 如果您想直接运行现有的 `package.json` 脚本，请使用 `vp run <script>`。如果您需要任务级别的缓存、依赖关系或环境/输入控制，请使用显式的 `command` 定义任务。任务名称可以来自 `vite.config.ts` 或 `package.json`，但不能同时来自两者。
 
 ::: info
-在 `vite.config.ts` 中定义的任务默认启用缓存。`package.json` 脚本则不会。完整的解析顺序请参见 [何时启用缓存？](/guide/cache#when-is-caching-enabled)。
+在 `vite.config.ts` 中定义的任务默认启用缓存。`package.json` 脚本则不会。完整的解析顺序请参见[何时启用缓存？](/guide/cache#when-is-caching-enabled)。
 :::
 
-完整的 `run` 块参考请参见 [运行配置](/config/run)。
+完整的 `run` 块参考请参见[运行配置](/config/run)。
 
 ## 任务依赖
 
-使用 [`dependsOn`](/config/run#dependson) 以正确顺序运行任务。使用上面的配置运行 `vp run deploy` 时，会先运行 `build` 和 `test`。
+使用[`dependsOn`](/config/run#dependson)以正确顺序运行任务。使用上面的配置运行 `vp run deploy` 时，会先运行 `build` 和 `test`。
 
 `dependsOn` 中的字符串任务名引用当前包或另一个包中的任务：
 

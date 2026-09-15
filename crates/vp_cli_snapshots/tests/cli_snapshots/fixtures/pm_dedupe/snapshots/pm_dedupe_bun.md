@@ -5,7 +5,7 @@
 由于 Bun 不支持去重，因此回退到安装
 
 ```
-warn: bun does not support dedupe, falling back to bun install
+warn: bun dedupe requires bun >= 1.4, falling back to bun install
 ```
 
 ## `vpt print-file package.json`

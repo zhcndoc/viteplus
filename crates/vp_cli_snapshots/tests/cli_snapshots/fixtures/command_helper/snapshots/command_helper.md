@@ -81,7 +81,6 @@ Options:
   --env-prefix <prefix>         Prefix for env variables to inject into the bundle (default: TSDOWN_)
   --on-success <command>        Command to run on success
   --copy <dir>                  Copy files to output dir
-  --public-dir <dir>            Alias for --copy, deprecated
   --tsconfig <tsconfig>         Set tsconfig path
   --unbundle                    Unbundle mode
   --root <dir>                  Root directory of input files
@@ -190,7 +189,7 @@ VITE+ - Web 的统一工具链
   --react-perf-plugin          启用 React 性能插件并检测渲染性能问题
   --promise-plugin             启用 promise 插件并检测 promise 使用问题
   --node-plugin                启用 node 插件并检测 node 使用问题
-  --vue-plugin                 启用 vue 插件并检测 vue 使用问题
+  --vue-plugin                启用 vue 插件并检测 vue 使用问题
 
 修复问题：
   --fix              尽可能修复问题。输出中只报告未修复的问题。
@@ -268,7 +267,7 @@ VITE+ - Web 的统一工具链
   --base <path>                 [string] 公共基础路径（默认：/）
   -l, --logLevel <level>        [string] info | warn | error | silent
   --clearScreen                 [boolean] 允许/禁用日志记录时清屏
-  -d, --debug [feat]            [string | boolean] 显示调试日志
+  -d, --debug [feat]             [string | boolean] 显示调试日志
   -f, --filter <filter>         [string] 过滤调试日志
   -m, --mode <mode>             [string] 设置环境模式
   -h, --help                    显示此消息

@@ -2,9 +2,9 @@ import path from 'node:path';
 import { styleText } from 'node:util';
 
 import * as prompts from '@voidzero-dev/vite-plus-prompts';
-import mri from 'mri';
 import semver from 'semver';
 
+import { parseMigrateArgs } from '../../binding/index.js';
 import {
   PackageManager,
   type WorkspaceInfo,
@@ -12,9 +12,9 @@ import {
   type WorkspacePackage,
 } from '../types/index.ts';
 import { writeAgentInstructions } from '../utils/agent.ts';
-import { isForceOverrideMode, VITE_PLUS_VERSION } from '../utils/constants.ts';
+import { unwrapCliParseOutcome } from '../utils/cli-parse.ts';
+import { isForceOverrideMode, SETUP_VP_VERSION, VITE_PLUS_VERSION } from '../utils/constants.ts';
 import { writeEditorConfigs } from '../utils/editor.ts';
-import { renderCliDoc } from '../utils/help.ts';
 import { hasVitePlusDependency, readNearestPackageJson } from '../utils/package.ts';
 import { displayRelative } from '../utils/path.ts';
 import {
@@ -47,6 +47,7 @@ import {
   detectNodeVersionManagerFile,
   detectPendingCoreMigration,
   detectPrettierProject,
+  detectTsupProject,
   detectVitePlusBootstrapPending,
   detectYarnPnpMode,
   ensureVitePlusBootstrap,
@@ -55,10 +56,13 @@ import {
   detectLegacyGitHooksMigrationCandidate,
   injectLintTypeCheckDefaults,
   installGitHooks,
+  mergeTsdownConfigFile,
   mergeViteConfigFiles,
   migrateEslintToOxlint,
   migrateNodeVersionManagerFile,
   migratePrettierToOxfmt,
+  migrateSetupVpVersion,
+  migrateTsupToTsdown,
   configureYarnNodeModulesMode,
   rewriteMonorepo,
   rewriteStandaloneProject,
@@ -70,7 +74,11 @@ import {
 import { prepareNpmViteAliasReinstall } from './npm-reinstall.ts';
 import type { MigrationOptions } from './options.ts';
 import { addMigrationWarning, createMigrationReport, type MigrationReport } from './report.ts';
-import { collectMigrationSetupPlan, type MigrationSetupPlan } from './setup-plan.ts';
+import {
+  collectMigrationSetupPlan,
+  collectTsupMigrationDecision,
+  type MigrationSetupPlan,
+} from './setup-plan.ts';
 
 async function confirmNodeVersionFileMigration(
   interactive: boolean,
@@ -234,142 +242,19 @@ async function checkWorkspaceRolldownCompatibility(
   }
 }
 
-const helpMessage = renderCliDoc({
-  usage: 'vp migrate [PATH] [OPTIONS]',
-  summary:
-    'Migrate standalone Vite, Vitest, Oxlint, Oxfmt, and Prettier projects to unified Vite+.',
-  documentationUrl: 'https://viteplus.dev/guide/migrate',
-  sections: [
-    {
-      title: 'Arguments',
-      rows: [
-        {
-          label: 'PATH',
-          description: 'Target directory to migrate (default: current directory)',
-        },
-      ],
-    },
-    {
-      title: 'Options',
-      rows: [
-        {
-          label: '--agent NAME',
-          description: 'Write coding agent instructions to AGENTS.md, CLAUDE.md, etc.',
-        },
-        { label: '--no-agent', description: 'Skip writing coding agent instructions' },
-        {
-          label: '--editor NAME',
-          description: 'Write editor config files into the project.',
-        },
-        { label: '--no-editor', description: 'Skip writing editor config files' },
-        {
-          label: '--hooks',
-          description: 'Set up pre-commit hooks (default in non-interactive mode)',
-        },
-        { label: '--no-hooks', description: 'Skip pre-commit hooks setup' },
-        {
-          label: '--full',
-          description:
-            'Existing Vite+ projects: also run the full setup (hooks, editor, agent files, ESLint/Prettier migration, framework shims, tsconfig baseUrl, .node-version). Without it, `vp migrate` only upgrades the toolchain version.',
-        },
-        {
-          label: '--no-interactive',
-          description: 'Run in non-interactive mode (skip prompts and use defaults)',
-        },
-        { label: '-h, --help', description: 'Show this help message' },
-      ],
-    },
-    {
-      title: 'Examples',
-      lines: [
-        `  ${muted('# Migrate current package')}`,
-        `  ${accent('vp migrate')}`,
-        '',
-        `  ${muted('# Migrate specific directory')}`,
-        `  ${accent('vp migrate my-app')}`,
-        '',
-        `  ${muted('# Non-interactive mode')}`,
-        `  ${accent('vp migrate --no-interactive')}`,
-      ],
-    },
-    {
-      title: 'Migration Prompt',
-      lines: [
-        '  Give this to a coding agent when you want it to drive the migration:',
-        '',
-        '  Migrate this project to Vite+.',
-        '  Vite+ replaces the current split tooling around runtime management, package',
-        '  management, dev/build/test commands, linting, formatting, and packaging.',
-        '  Run `vp help` and `vp help migrate` before making changes.',
-        `  Use ${accent('vp migrate --no-interactive')} in the workspace root.`,
-        '  Make sure the project is using Vite 8+ and Vitest 4.1+ before migrating.',
-        '',
-        '  After the migration:',
-        '  - Confirm `vite` imports were rewritten to `vite-plus` where needed',
-        '  - Confirm `vitest` imports were rewritten to `vite-plus/test` where needed',
-        '  - On pnpm, keep the `vite` / `vitest` entries that `vp migrate` aliased to',
-        '    the Vite+ packages so the workspace override stays effective; with other',
-        '    package managers you can remove them once those rewrites are confirmed',
-        '  - Move remaining tool-specific config into the appropriate blocks in',
-        '    `vite.config.ts`',
-        '',
-        '  Command mapping:',
-        '  - `vp run <script>` is the equivalent of `pnpm run <script>`',
-        '  - `vp dev` and `vp test` always run the built-ins; `vp run dev` and',
-        '    `vp run test` run the `dev` and `test` scripts from `package.json`',
-        '  - `vp install`, `vp add`, and `vp remove` delegate through the package',
-        '    manager declared by `packageManager`',
-        '  - `vp dev`, `vp build`, `vp preview`, `vp lint`, `vp fmt`, `vp check`,',
-        '    and `vp pack` replace the corresponding standalone tools',
-        '  - Prefer `vp check` for validation loops',
-        '',
-        '  Finally, verify the migration by running:',
-        `  - ${accent('vp install')}`,
-        `  - ${accent('vp check')}`,
-        `  - ${accent('vp test')}`,
-        `  - ${accent('vp build')}`,
-        '',
-        '  Summarize the migration at the end and report any manual follow-up still',
-        '  required.',
-      ],
-    },
-  ],
-});
-
 function parseArgs() {
-  const args = process.argv.slice(3); // Skip 'node', 'vite', 'migrate'
-
-  const parsed = mri<{
-    help?: boolean;
-    interactive?: boolean;
-    agent?: string | string[] | false;
-    editor?: string | false;
-    hooks?: boolean;
-    full?: boolean;
-  }>(args, {
-    alias: { h: 'help' },
-    boolean: ['help', 'interactive', 'hooks', 'full'],
-    default: { interactive: defaultInteractive() },
-  });
-  const interactive = parsed.interactive;
-
-  let projectPath = parsed._[0];
-  if (projectPath) {
-    projectPath = path.resolve(process.cwd(), projectPath);
-  } else {
-    projectPath = process.cwd();
-  }
+  const parsed = unwrapCliParseOutcome(parseMigrateArgs(process.argv.slice(3)));
+  const projectPath = parsed.path ? path.resolve(process.cwd(), parsed.path) : process.cwd();
 
   return {
     projectPath,
     options: {
-      interactive,
-      help: parsed.help,
+      interactive: parsed.interactive ?? defaultInteractive(),
       agent: parsed.agent,
       editor: parsed.editor,
       hooks: parsed.hooks,
       full: parsed.full,
-    } as MigrationOptions,
+    } satisfies MigrationOptions,
   };
 }
 
@@ -379,6 +264,8 @@ interface MigrationPlan extends MigrationSetupPlan {
   migratePrettier: boolean;
   hasPrettierDependency: boolean;
   prettierConfigFile?: string;
+  migrateTsup: boolean;
+  tsupConfigFile?: string;
   fixBaseUrl: boolean;
   migrateNodeVersionFile: boolean;
   nodeVersionDetection?: NodeVersionManagerDetection;
@@ -467,12 +354,14 @@ function hasExistingVitePlusMigrationCandidates(
 ): boolean {
   const eslintProject = detectEslintProject(workspaceInfo.rootDir, workspaceInfo.packages);
   const prettierProject = detectPrettierProject(workspaceInfo.rootDir, workspaceInfo.packages);
+  const tsupProject = detectTsupProject(workspaceInfo.rootDir, workspaceInfo.packages);
   return (
     hasExplicitExistingVitePlusSetupRequest(options) ||
     detectLegacyGitHooksMigrationCandidate(workspaceInfo.rootDir) ||
     hasBaseUrlInWorkspace(workspaceInfo) ||
     eslintProject.hasDependency ||
     prettierProject.hasDependency ||
+    tsupProject.hasDependency ||
     detectNodeVersionManagerFile(workspaceInfo.rootDir) !== undefined ||
     getFrameworkShimCandidates(workspaceInfo.rootDir, workspaceInfo.packages).length > 0
   );
@@ -525,6 +414,13 @@ async function collectMigrationPlan(
     warnPackageLevelPrettier();
   }
 
+  // 3b. tsup detection + prompt (after Prettier so Prettier -> Oxfmt is checked first)
+  const { migrateTsup, tsupConfigFile } = await collectTsupMigrationDecision(
+    rootDir,
+    options,
+    packages,
+  );
+
   // 9. tsconfig baseUrl prompt
   const fixBaseUrl = hasBaseUrlInWorkspace({ rootDir, packages })
     ? await confirmBaseUrlFix(options.interactive)
@@ -550,6 +446,8 @@ async function collectMigrationPlan(
     migratePrettier,
     hasPrettierDependency: prettierProject.hasDependency,
     prettierConfigFile: prettierProject.configFile,
+    migrateTsup,
+    tsupConfigFile,
     fixBaseUrl,
     migrateNodeVersionFile,
     nodeVersionDetection,
@@ -691,8 +589,18 @@ function showMigrationSummary(options: {
   if (report.prettierMigrated) {
     log(`${styleText('gray', '•')} Prettier migrated to Oxfmt`);
   }
+  if (report.tsupMigrated) {
+    log(`${styleText('gray', '•')} tsup config migrated to tsdown (\`vp pack\`)`);
+  }
   if (report.nodeVersionFileMigrated) {
     log(`${styleText('gray', '•')} Node version manager file migrated to .node-version`);
+  }
+  const setupVpFileCount = report.setupVpVersionUpdatedFileCount;
+  if (setupVpFileCount > 0) {
+    const fileLabel = setupVpFileCount === 1 ? 'file' : 'files';
+    log(
+      `${styleText('gray', '•')} setup-vp updated to ${SETUP_VP_VERSION} in ${setupVpFileCount} GitHub Actions ${fileLabel}`,
+    );
   }
   if (report.wrappedPluginConfigCount > 0) {
     log(
@@ -846,6 +754,9 @@ async function executeMigrationPlan(
     migrateNodeVersionManagerFile(workspaceInfo.rootDir, plan.nodeVersionDetection, report);
   }
 
+  updateMigrationProgress('Updating setup-vp workflows');
+  migrateSetupVpVersion(workspaceInfo.rootDir, report);
+
   // 4. Run vp install to ensure the project is ready
   updateMigrationProgress('Installing dependencies');
   const initialInstallSummary = await runViteInstall(
@@ -902,6 +813,23 @@ async function executeMigrationPlan(
     if (!prettierOk) {
       failMigrationProgress('Migration failed');
       cancelAndExit('Prettier migration failed. Fix the issue and re-run `vp migrate`.', 1);
+    }
+  }
+
+  // 6b. tsup → tsdown migration (before main rewrite so tsdown.config.* gets picked up)
+  if (plan.migrateTsup) {
+    updateMigrationProgress('Migrating tsup');
+    const tsupOk = await migrateTsupToTsdown(
+      workspaceInfo.rootDir,
+      interactive,
+      plan.packageManager,
+      plan.tsupConfigFile,
+      workspaceInfo.packages,
+      { silent: true, report },
+    );
+    if (!tsupOk) {
+      failMigrationProgress('Migration failed');
+      cancelAndExit('Complete the tsup migration manually, then re-run `vp migrate`.', 1);
     }
   }
 
@@ -1035,12 +963,6 @@ async function executeMigrationPlan(
 async function main() {
   const { projectPath, options } = parseArgs();
 
-  if (options.help) {
-    printHeader();
-    log(helpMessage);
-    return;
-  }
-
   printHeader();
 
   const workspaceInfoOptional = await detectWorkspace(projectPath);
@@ -1105,6 +1027,11 @@ async function main() {
         migrationProgressStarted = false;
       }
     };
+
+    updateMigrationProgress('Updating setup-vp workflows');
+    if (migrateSetupVpVersion(workspaceInfoOptional.rootDir, report).length > 0) {
+      didMigrate = true;
+    }
 
     const pendingCoreMigration = detectPendingCoreMigration(workspaceInfoOptional);
     const vitePlusBootstrapPending = detectVitePlusBootstrapPending(
@@ -1187,7 +1114,8 @@ async function main() {
     if (
       coreMigrationResult.scripts ||
       coreMigrationResult.tsconfigTypes ||
-      coreMigrationResult.imports
+      coreMigrationResult.imports ||
+      coreMigrationResult.tsdownConfig
     ) {
       didMigrate = true;
     }
@@ -1345,6 +1273,37 @@ async function main() {
       }
     }
 
+    let tsupMigrated = false;
+    if (fullSetup) {
+      // Interactive only: stop any active spinner (e.g. "Migrating Prettier") so
+      // it does not animate beneath the confirm prompt.
+      if (options.interactive) {
+        clearMigrationProgress();
+      }
+      const { migrateTsup, tsupConfigFile } = await collectTsupMigrationDecision(
+        workspaceInfoOptional.rootDir,
+        setupOptions,
+        workspaceInfoOptional.packages,
+      );
+      if (migrateTsup) {
+        await ensureExistingPackageManager();
+        updateMigrationProgress('Migrating tsup');
+        const tsupOk = await migrateTsupToTsdown(
+          workspaceInfoOptional.rootDir,
+          options.interactive,
+          packageManager!, // is it safe to do this?
+          tsupConfigFile,
+          workspaceInfoOptional.packages,
+          { silent: true, report },
+        );
+        if (!tsupOk) {
+          clearMigrationProgress();
+          cancelAndExit('Complete the tsup migration manually, then re-run `vp migrate`.', 1);
+        }
+        tsupMigrated = true;
+      }
+    }
+
     // Check if node version manager file migration is needed (full setup only)
     if (fullSetup) {
       const nodeVersionDetection = detectNodeVersionManagerFile(workspaceInfoOptional.rootDir);
@@ -1391,7 +1350,7 @@ async function main() {
     }
 
     // Merge configs and reinstall once if any tool or bootstrap migration happened
-    if (eslintMigrated || prettierMigrated) {
+    if (eslintMigrated || prettierMigrated || tsupMigrated) {
       updateMigrationProgress('Rewriting configs');
       mergeViteConfigFiles(
         workspaceInfoOptional.rootDir,
@@ -1399,10 +1358,17 @@ async function main() {
         report,
         workspaceInfoOptional.packages,
       );
+      if (tsupMigrated) {
+        mergeTsdownConfigFile(workspaceInfoOptional.rootDir, true, report);
+        for (const pkg of workspaceInfoOptional.packages ?? []) {
+          mergeTsdownConfigFile(path.join(workspaceInfoOptional.rootDir, pkg.path), true, report);
+        }
+      }
       needsInstall = true;
       didMigrate = true;
       report.eslintMigrated = eslintMigrated;
       report.prettierMigrated = prettierMigrated;
+      report.tsupMigrated = tsupMigrated;
     }
 
     if (plan.shouldSetupHooks) {

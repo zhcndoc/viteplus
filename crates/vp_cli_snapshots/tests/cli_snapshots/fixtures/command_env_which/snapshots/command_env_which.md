@@ -1,13 +1,5 @@
 # command_env_which
 
-## `vp remove -g corepack`
-
-**退出代码：** 1
-
-```
-卸载 corepack 失败：未安装 corepack 软件包
-```
-
 ## `vp env exec node --version`
 
 请先确保已安装 Node.js
@@ -50,18 +42,6 @@ VITE+ - Web 的统一工具链
 <home>/.vite-plus/js_runtime/node/<version>/bin/npx
   版本：      20.18.0
   来源：      <workspace>/.node-version
-```
-
-## `vp env which corepack`
-
-核心工具 - 与解析后的 Node.js 捆绑的 corepack
-
-```
-VITE+ - Web 的统一工具链
-
-<home>/.vite-plus/js_runtime/node/<version>/bin/corepack
-  Version:    20.18.0
-  Source:     <workspace>/.node-version
 ```
 
 ## `vp install -g cowsay@1.6.0`
@@ -108,6 +88,6 @@ VITE+ - Web 统一工具链
 VITE+ - The Unified Toolchain for the Web
 
 error: tool 'unknown-tool' not found
-Not a core tool (node, npm, npx, corepack) or installed global package.
+Not a core tool (node, npm, npx) or installed global package.
 Run 'vp list -g' to see installed packages.
 ```

@@ -30,7 +30,7 @@ VITE+ - 面向 Web 的统一工具链
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@<version>"
   },
-  "packageManager": "npm@10.9.2"
+  "packageManager": "npm@11.13.0"
 }
 ```
 

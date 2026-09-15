@@ -1,6 +1,6 @@
 # command_update_catalog_protocol_pnpm
 
-## `vp migrate --no-interactive --no-hooks --package-manager pnpm`
+## `vp migrate --no-interactive --no-hooks`
 
 migrate 通过工作区 catalog 固定工具链
 

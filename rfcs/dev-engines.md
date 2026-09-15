@@ -171,14 +171,15 @@ pub struct DevEngines {
 
 | 当前工作目录状态                                                         | 写入目标                                                              |
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| 存在 `.node-version`                                                     | 更新 `.node-version`（行为不变）                                      |
-| 不存在 `.node-version`；`package.json` 有 `devEngines.runtime` 的 node 条目 | 更新该条目的 `version`（保留 `onFail` 和兄弟条目）                     |
-| 不存在 `.node-version`；`package.json` 存在但没有 node runtime 条目     | 添加 `devEngines.runtime` 的 node 条目，并设 `onFail: "download"`     |
-| 当前目录没有 `package.json`                                              | 创建 `.node-version`（行为不变；没有别的地方可写）                     |
+| `.node-version` exists                                                   | Update `.node-version` (unchanged behavior)                           |
+| `.nvmrc` is the effective Node source in cwd                             | Update its version token, preserving comments and other content       |
+| No `.node-version`; `package.json` has a `devEngines.runtime` node entry | Update that entry's `version` (preserve `onFail`, sibling entries)    |
+| No `.node-version`; `package.json` exists without a node runtime entry   | Add `devEngines.runtime` node entry with `onFail: "download"`         |
+| No `package.json` in cwd                                                 | Create `.node-version` (unchanged behavior; nothing else to write to) |
 
-- `engines.node` **永远不是** pin 目标：它是面向使用者的约束，重写它会改变发布包的契约。更广泛地说，任何 Vite+ 写入路径（pin、unpin、自动锁定、create、migrate）都不会删除或修改已有的 `engines.node`；它始终保持不变。
-- 当更新数组形式中的现有 node 条目时，只修改该条目的 `version`；其他运行时和 `onFail` 值都保留。
-- 显式 `--target` 标志会覆盖选择：`vp env pin 24 --target node-version` 或 `--target dev-engines`。该标志始终优先生效：即使存在 `.node-version`，`--target dev-engines` 也会写入 `devEngines.runtime`，并附带说明：在删除 `.node-version` 之前，它仍然具有解析优先级。
+- `engines.node` is **never** a pin target: it is a consumer-facing constraint, and rewriting it would change the published package contract. More broadly, no Vite+ write path (pin, unpin, create, migrate) ever deletes or modifies an existing `engines.node`; it is always kept unchanged.
+- When updating an existing node entry in array form, only that entry's `version` changes; other runtimes and `onFail` values are preserved.
+- An explicit `--target` flag overrides the selection: `vp env pin 24 --target node-version`, `--target nvmrc`, or `--target dev-engines`. The flag always wins: `--target dev-engines` writes `devEngines.runtime` even when `.node-version` exists, with a note that `.node-version` still takes resolution precedence until removed. Likewise, an explicit `.nvmrc` target warns when a higher-priority source shadows it. The default `.nvmrc` selection uses local resolution only and does not change the priority of `.node-version`, `devEngines.runtime`, or `engines.node`.
 
 值语义（与已实现的 `vp env pin` 行为一致，即在 pin 时将所有输入解析为精确版本；两种目标完全相同）：
 
@@ -200,8 +201,8 @@ pin 始终写入精确版本（“pin”就是锁定；这也是当前 `.node-ve
 
 #### 2.5 `vp env pin`（显示）和 `vp env unpin`
 
-- 不带参数的 `vp env pin` 会报告当前活动 pin 及其来源，现在也包括 `devEngines.runtime` 这一可能来源（`VersionSource::DevEnginesRuntime` 的显示字符串已存在）。继承自父目录的 pin 对两种来源都会报告，按每个目录先检查 `.node-version`，再检查 `devEngines.runtime` 的 node 条目（与解析顺序一致）。
-- `vp env unpin` / `vp env pin --unpin` 会从 `vp env pin` 本应写入的同一目标中移除 pin：若存在则删除 `.node-version`；否则从 `devEngines.runtime` 中移除 node 条目（若其变为空，则删除整个 `devEngines.runtime` 键；若 `devEngines` 也变空，则删除 `devEngines`）。
+- `vp env pin` with no argument reports the active pin and its source, including an effective `.nvmrc`. Inherited pins from parent directories are reported in the same order: `.node-version`, the `devEngines.runtime` node entry, then an effective `.nvmrc`. A nearer `engines.node` stops the search and is displayed as a runtime constraint rather than inheriting a more distant pin.
+- `vp env unpin` / `vp env pin --unpin` removes the pin from the same target that `vp env pin` would write: delete `.node-version` if present, delete an effective `.nvmrc` in cwd, or remove the node entry from `devEngines.runtime` (removing the `devEngines.runtime` key entirely if it becomes empty, and `devEngines` if it becomes empty). An explicit `--target nvmrc` removes that file even if another source shadows it. Parent-directory files are never removed.
 
 ### 3. 包管理器
 
@@ -232,36 +233,13 @@ pin 始终写入精确版本（“pin”就是锁定；这也是当前 `.node-ve
   - 预发布版本会被排除在范围解析之外，除非需求本身包含预发布标记（例如 `^12.0.0-0`），且没有稳定版本满足它。
 - `onFail`（当前 PR）：**只有在数组中没有任何条目命名受支持的包管理器时**才会生效（上面的那一项）——`ignore`/`warn` 继续沿检测链向下，`error`/`download` 失败。一旦选中了受支持条目，就**尚未**查询其 `onFail`：后续无法解析的范围或下载/安装失败会直接作为错误暴露，而不是回退到下一项。按条目回退（按顺序尝试每个受支持条目，在失败时应用其有效 `onFail`）记录在 [Deferred / Future Work](#deferred--future-work) 中。
 
-#### 3.3 自动锁定行为变更
+#### 3.3 Non-mutating package-manager resolution
 
-当前：每当检测到的版本是 `latest`（lockfile / 配置 / 交互式检测）时，Vite+ 会把下载到的精确版本写回 `packageManager` 字段。
+Package-manager detection and download never rewrite `package.json`, regardless of whether selection came from a manifest field, lockfile, config file, or interactive choice. This avoids turning an environment lookup into an implicit project edit.
 
-提议：
+A `devEngines.packageManager` range stays as the user's source of truth. Lockfile, config, and interactive detection resolve a managed version for the current command without recording it in the manifest. Projects that need an explicit deterministic declaration use `vp env pin <package-manager>@<version>`.
 
-| 检测来源                        | 自动写入行为                                                                                                                                                 |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `packageManager` 字段            | 无需写入（已经是精确值）；不变                                                                                                                               |
-| `devEngines.packageManager` 精确 | 无需写入                                                                                                                                                     |
-| `devEngines.packageManager` 范围 | **不写入。** 该范围是用户选定的事实来源；把它冻结到 `packageManager` 会制造第二个冲突来源（#864 评审意见）                                                   |
-| Lockfile / 配置 / 交互式         | 将精确解析版本写入 **`devEngines.packageManager`**，并设 `onFail: "download"`（新的默认目标），而不是写入 `packageManager` 字段 |
-
-最后一行就是把“新项目默认使用 devEngines”的规则应用到自动锁定路径。已经有 `packageManager` 字段的项目不会走到这一行，因此 Corepack 锁定的仓库会保持当前行为。决定：自动写入的值是**精确版本**（保留今天的确定性保证）；如果团队更喜欢范围，可以之后手动编辑字段，Vite+ 会保留它（范围来源绝不会被冻结）。
-
-自动写入的形态：
-
-```json
-{
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "11.5.1",
-      "onFail": "download"
-    }
-  }
-}
-```
-
-自动锁定绝不会替换它未写入的条目：当 `devEngines.packageManager` 已经声明了 Vite+ 不会处理的条目（例如另一个包管理器且 `onFail: "ignore"`，其检测最终落到了 lockfile），解析出的条目会追加到现有数组；如果原本是单个条目，则会转换为数组形式，并保留原始条目在前。只有在该字段缺失或格式错误时，才会写入单个条目。
+Dependency-mutating commands such as `vp install` and `vp add` require an existing `package.json`; they never create one as a side effect.
 
 #### 3.4 暴露来源
 
@@ -348,7 +326,7 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 - 添加 `devEngines` 时，如存在 `engines`，则紧邻其后放置；否则追加到末尾。
 - TypeScript 侧复用现有的 `editJsonFile` 辅助函数。
 
-`vp_shared` 中的一个小型共享 Rust 辅助函数将负责“编辑 package.json 中的一个字段并保留格式”，供 pin、auto-pin 和 unpin 使用。
+A small shared Rust helper (in `vp_shared`) will own "edit one field in package.json, preserving formatting", used by pin and unpin.
 
 ## 规范符合性矩阵
 
@@ -364,10 +342,10 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 
 ## 非目标
 
-- 通过 `devEngines.runtime` 管理非 Node 运行时（`deno`，`bun` 作为运行时）。
-- 验证 `devEngines.os` / `cpu` / `libc`。
-- 作为针对 pnpm / yarn / npm / bun 之外任意包管理器名称的通用强制执行层。
-- 更改会话覆盖行为（`vp env use`，`VP_NODE_VERSION`）。
+- Managing non-Node runtimes (`deno`, `bun` as a runtime) via `devEngines.runtime`.
+- Validating `devEngines.os` / `cpu` / `libc`.
+- Acting as a general enforcement layer for arbitrary package manager names beyond pnpm / yarn / npm / bun.
+- Node session override behavior remains compatible; unified environments additionally support `VP_PACKAGE_MANAGER` and `.session-package-manager`.
 
 ## 延后 / 未来工作
 
@@ -387,15 +365,15 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 
 ## 兼容性影响摘要
 
-| 场景                                                                  | 之前                                                      | 之后                                                         |
-| --------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
-| 带有 `.node-version` 的项目                                            | `.node-version` 优先；pin 会更新它                        | 不变                                                         |
-| 带有 `packageManager` 字段的项目                                       | 该字段优先；不自动写入                                   | 不变（若 devEngines 冲突，还会额外给出一致性警告）            |
-| 带有 `devEngines.packageManager` + lockfile 的项目                    | devEngines 被忽略；自动 pin **注入** `packageManager`    | devEngines 驱动选择；不再注入字段                             |
-| 只有 lockfile 的项目（两个字段都没有）                                 | 自动 pin 写入精确的 `packageManager`                     | 自动 pin 写入精确的 `devEngines.packageManager`               |
-| 同时有 `engines.node` 和 `devEngines.runtime` 且二者不一致的项目      | `engines.node` 优先                                       | `devEngines.runtime` 优先；doctor 发出警告                    |
-| 在有 `package.json` 但没有 `.node-version` 的目录里执行 `vp env pin` | 创建 `.node-version`                                      | 写入 `devEngines.runtime`                                     |
-| `.nvmrc` / Volta pin 的 `vp migrate`                                   | 创建 `.node-version`                                      | 写入 `devEngines.runtime`（会把别名转换为 semver）            |
+| Scenario                                                               | Before                                                    | After                                                        |
+| ---------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
+| Project with `.node-version`                                           | `.node-version` wins; pin updates it                      | Unchanged                                                    |
+| Project with `packageManager` field                                    | Field wins; no auto-write                                 | Unchanged (plus consistency warning if devEngines conflicts) |
+| Project with `devEngines.packageManager` + lockfile                    | devEngines ignored; auto-pin **injects** `packageManager` | devEngines drives selection; no injected field               |
+| Project with lockfile only (neither field)                             | Auto-pin writes `packageManager` exact                    | Detection does not modify `package.json`                     |
+| Project with both `engines.node` and `devEngines.runtime`, disagreeing | `engines.node` wins                                       | `devEngines.runtime` wins; doctor warns                      |
+| `vp env pin` in a dir with `package.json`, no `.node-version`          | Creates `.node-version`                                   | Writes `devEngines.runtime`                                  |
+| `vp migrate` of `.nvmrc` / Volta pins                                  | Creates `.node-version`                                   | Writes `devEngines.runtime` (aliases converted to semver)    |
 
 ## 实施计划
 
@@ -406,11 +384,11 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 
 ### 阶段 2：包管理器检测
 
-1. 将 `devEngines.packageManager` 插入 `get_package_manager_type_and_version()`（替换 `crates/vp_pm_cli/src/package_manager.rs:288` 处的 TODO）；添加名称校验、数组处理和 `onFail` 处理。
-2. 根据已下载的版本解析范围，并通过 npm 简化元数据文档回退到注册表。
-3. 当来源为 `devEngines.packageManager` 时禁止自动写入；当两个字段都不存在时，将自动固定目标重新定向到 `devEngines.packageManager`。
-4. 当 `packageManager` 与 `devEngines.packageManager` 不一致时发出一致性警告（提供“当前警告、未来报错”的过渡提示）。
-5. 通过 NAPI 绑定和 `vp env --current --json` 暴露新的来源。
+1. Insert `devEngines.packageManager` into `get_package_manager_type_and_version()` (replacing the TODO at `crates/vp_pm_cli/src/package_manager.rs:288`); name validation; array handling; `onFail` handling.
+2. Range resolution against downloaded versions, with registry fallback via the npm abbreviated metadata document.
+3. Remove implicit package-manager writes for every detection source; explicit `vp env pin` remains the package-manager pinning path.
+4. Consistency warning when `packageManager` and `devEngines.packageManager` disagree (warn-now, error-later transition messaging).
+5. Expose the new source through the NAPI binding and `vp env --current --json`.
 
 ### 阶段 3：`vp env` 命令
 
@@ -437,16 +415,16 @@ Doctor 从不自动修复；它只会解释在优先级规则下哪个来源获�
 
 RFC 评审中的决定（2026-06-04）：
 
-| #   | 问题                                                             | 决定                                                                                                                                 |
-| --- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | `devEngines.runtime` 与 `engines.node` 的读取优先级              | 将 `devEngines.runtime` 提到 `engines.node` 之上，并随本 RFC 一起落地；doctor 会标记行为发生变化的项目                   |
-| 2   | 当两个字段都不存在时，自动 pin 的目标和值                      | 写入 `devEngines.packageManager`，使用精确解析版本并设置 `onFail: "download"`                                               |
-| 3   | 同时存在 `.node-version` 和 `devEngines.runtime` 时如何 pin   | 更新 `.node-version`；如果 devEngines 范围损坏，在交互式终端中提示同步，在非交互式环境中警告 |
-| 4   | pin 覆盖标志                                                    | `--target node-version` / `--target dev-engines`；显式标志始终优先，即使另一个来源存在                                    |
-| 5   | 不受支持的 `devEngines.packageManager` 名称                      | 由 `onFail` 驱动：`ignore` / `warn` 继续沿检测链向下；`error`（默认）和 `download` 以清晰消息失败                   |
-| 6   | 模板化 `engines.node`                                           | 修订为：现有的 `engines.node` 在任何地方都不会被删除或修改；模板会保持其不变，并在其旁边添加 `devEngines`          |
-| 7   | `.nvmrc` / Volta 的迁移目标                                     | `devEngines.runtime`；迁移时会将别名值转换为 semver（见第 5.2 节的转换表）                                                 |
-| 8   | `packageManager` 与 `devEngines.packageManager` 冲突的严重级别 | 先发出警告，并提示在未来版本中会变成错误，然后再切换为硬错误                                                            |
+| #   | Question                                                          | Decision                                                                                                                                 |
+| --- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `devEngines.runtime` vs `engines.node` read priority              | Move `devEngines.runtime` above `engines.node`, landing with this RFC; doctor flags the projects where behavior changes                  |
+| 2   | Package-manager behavior when neither field exists                | Resolve without modifying `package.json`; write only through an explicit `vp env pin`                                                    |
+| 3   | Pin when both `.node-version` and `devEngines.runtime` exist      | Update `.node-version`; if the devEngines range is broken, prompt to sync in interactive terminals, warn in non-interactive environments |
+| 4   | Pin override flag                                                 | `--target node-version` / `--target dev-engines`; an explicit flag always wins, even when the other source exists                        |
+| 5   | Unsupported `devEngines.packageManager` names                     | `onFail`-driven: `ignore`/`warn` continue down the detection chain; `error` (the default) and `download` fail with a clear message       |
+| 6   | Template `engines.node`                                           | Revised: existing `engines.node` is never deleted or modified anywhere; templates keep it unchanged and add `devEngines` alongside it    |
+| 7   | Migration target for `.nvmrc` / Volta                             | `devEngines.runtime`; alias values are converted to semver at migration time (see the conversion table in section 5.2)                   |
+| 8   | `packageManager` vs `devEngines.packageManager` conflict severity | Warn now with a notice that it becomes an error in a future release, then flip to hard error                                             |
 
 ## 参考资料
 

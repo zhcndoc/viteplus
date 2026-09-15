@@ -1,12 +1,12 @@
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 
-import mri from 'mri';
-
+import { parseConfigArgs } from '../../binding/index.js';
 import { updateExistingAgentInstructions } from '../utils/agent.ts';
-import { renderCliDoc } from '../utils/help.ts';
+import { unwrapCliParseOutcome } from '../utils/cli-parse.ts';
+import { findLegacyVitestAliasConfig } from '../utils/legacy-vitest-alias.ts';
 import { defaultInteractive, promptGitHooks } from '../utils/prompts.ts';
-import { log, printHeader } from '../utils/terminal.ts';
+import { errorMsg, log } from '../utils/terminal.ts';
 import {
   install,
   isGitHooksEnvDisabled,
@@ -15,49 +15,23 @@ import {
 } from './hooks.ts';
 
 async function main() {
-  const args = mri(process.argv.slice(3), {
-    boolean: ['help', 'hooks', 'agent'],
-    string: ['hooks-dir'],
-    alias: { h: 'help' },
-  });
-
-  if (args.help) {
-    const helpMessage = renderCliDoc({
-      usage: 'vp config [OPTIONS]',
-      summary: 'Configure Vite+ for the current project (hook dispatcher + agent integration).',
-      documentationUrl: 'https://viteplus.dev/guide/commit-hooks',
-      sections: [
-        {
-          title: 'Options',
-          rows: [
-            {
-              label: '--hooks-dir <path>',
-              description:
-                'Custom hooks directory (default: .vite-hooks, or last used in this clone)',
-            },
-            { label: '--no-hooks', description: 'Skip hook dispatcher installation' },
-            { label: '--no-agent', description: 'Skip updating coding agent instructions' },
-            { label: '-h, --help', description: 'Show this help message' },
-          ],
-        },
-        {
-          title: 'Environment',
-          rows: [{ label: 'VP_GIT_HOOKS=0', description: 'Skip hook dispatcher installation' }],
-        },
-      ],
-    });
-    printHeader();
-    log(helpMessage);
-    return;
-  }
-
-  const dir = args['hooks-dir'] as string | undefined;
+  const args = unwrapCliParseOutcome(parseConfigArgs(process.argv.slice(3)));
+  const dir = args.hooksDir;
   const skipHooks = args.hooks === false;
   const skipAgent = args.agent === false;
   const interactive = defaultInteractive();
   const lifecycleEvent = process.env.npm_lifecycle_event;
   const isLifecycleScript = lifecycleEvent === 'prepare' || lifecycleEvent === 'postinstall';
   const root = process.cwd();
+
+  const staleVitestAliasConfig = findLegacyVitestAliasConfig(root);
+  if (staleVitestAliasConfig) {
+    const relativeConfigPath = relative(root, staleVitestAliasConfig);
+    errorMsg(
+      `Found a stale Vitest alias in ${relativeConfigPath} that points to the removed \`@voidzero-dev/vite-plus-test\` package. Run \`vp migrate\` to update the project before installing dependencies.`,
+    );
+    process.exit(1);
+  }
 
   // --- Step 1: Hooks setup ---
   // Prefer CLI flag, then last-used dir from local git config, then default.

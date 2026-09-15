@@ -40,7 +40,7 @@ VITE+ - Web 的统一工具链
 ```
 VITE+ - Web 统一工具链
 
-bun install <version> (af24e281)
+bun install <version> (<hash>)
 
  test-vite-plus-top-package@1.0.0 (<version> 可用)
  test-vite-plus-other-optional@1.0.0 (<version> 可用)
@@ -54,7 +54,7 @@ bun install <version> (af24e281)
 应显示过时的软件包
 
 ```
-bun outdated <version> (af24e281)
+bun outdated <version> (<hash>)
 ┌──────────┬─────────┬────────┬────────┐
 │ Package  │ Current │ Update │ Latest │
 ├──────────┼─────────┼────────┼────────┤
@@ -67,7 +67,7 @@ bun outdated <version> (af24e281)
 应支持递归输出
 
 ```
-bun outdated <version> (af24e281)
+bun outdated <version> (<hash>)
 ┌──────────────────────────────────────────┬─────────┬────────┬────────┬──────────────────────┐
 │ Package                                  │ Current │ Update │ Latest │ Workspace            │
 ├──────────────────────────────────────────┼─────────┼────────┼────────┼──────────────────────┤

@@ -56,6 +56,12 @@ cases). Prerequisites: both flavors need `cargo build -p vp_global_cli`
 older than `src`, so a forgotten rebuild never silently tests stale
 local-CLI code.
 
+CI runs three shards per platform. Linux and macOS use `VP_SNAP_SHARD=1/3`
+(then `2/3` and `3/3`) to distribute the ordered trials round-robin. Sharding
+happens before name filtering, so filtered runs keep the same assignment.
+Leave the variable unset to run the whole suite. Windows uses the existing
+nextest runner with `--partition hash:1/3` (then `2/3` and `3/3`).
+
 Environment overrides, mainly for CI:
 
 | Variable                    | Effect                                                              |
@@ -63,7 +69,13 @@ Environment overrides, mainly for CI:
 | `VP_SNAP_GLOBAL_VP`         | Path to a prebuilt global `vp` binary (skips the target-dir lookup) |
 | `VP_SNAP_LOCAL_CLI_BIN_DIR` | Local CLI bin dir (default `<repo>/packages/cli/bin`)               |
 | `VP_SNAP_JS_RUNTIME_DIR`    | Provisioned managed runtime to seed case homes with                 |
+| `VP_SNAP_SH_BIN`            | POSIX `sh` binary for cases that execute the generated `env` file   |
+| `VP_SNAP_BASH_BIN`          | Bash binary for cases that execute the generated `env` file         |
+| `VP_SNAP_ZSH_BIN`           | Zsh binary for cases that execute the generated `env` file          |
+| `VP_SNAP_CMD_BIN`           | System cmd.exe for cases that execute generated batch files         |
+| `VP_SNAP_FISH_BIN`          | Fish binary for cases that execute generated `env.fish` files       |
 | `VP_SNAP_NU_BIN`            | Nushell binary for cases that execute generated `env.nu` files      |
+| `VP_SNAP_PWSH_BIN`          | PowerShell binary for cases that execute generated `env.ps1` files  |
 | `VP_SNAP_SKIP_FLAVORS`      | Comma-separated flavors to skip registering (e.g. `local`)          |
 
 ## Case reference
@@ -75,8 +87,9 @@ vp = "local"                  # "local" | "global" | ["local", "global"]
 comment = "What this proves." # rendered into the snapshot
 cwd = "packages/app"          # optional, relative to the fixture root
 skip-platforms = ["windows"]  # or { os = "linux", libc = "musl" }
-requires = ["nu"]             # ignore when an optional runner tool is absent
+requires = ["bash"]           # "sh" | "bash" | "zsh" | "cmd" | "fish" | "nu" | "pwsh"
 ignore = false                # true: only runs with `-- --ignored`
+serial = false                # true: run alone across cargo test/nextest workers
 seed-runtime = true           # false: start from an empty VP_HOME
 link-node-modules = false     # true: expose the run-root node_modules as
                               #   the workspace's parent-dir node_modules,
@@ -105,9 +118,10 @@ A step is a bare argv array or a table:
   comment = "...",            # rendered under the step heading
   envs = [["K", "V"]],        # per-step env; values expand `${NAME}`:
                               #   `${workspace}` is the step's working dir,
+                              #   `${PATH_SEPARATOR}` is `:` on Unix and `;` on Windows,
                               #   any other name resolves from the case env
-                              #   (`PATH = "${workspace}/bin:${PATH}"` is
-                              #   the shell's `PATH="$(pwd)/bin:$PATH"`)
+                              #   (`PATH = "${workspace}/bin${PATH_SEPARATOR}${PATH}"`
+                              #   is the shell's `PATH="$(pwd)/bin:$PATH"`)
   timeout = 120000,           # ms, default 50s
   snapshot = false,           # omit the screen while the step succeeds
                               #   (failures always keep their output)
@@ -118,10 +132,10 @@ A step is a bare argv array or a table:
   interactions = [ ... ] }
 ```
 
-`argv[0]` may be `vpt`, a runner-provisioned tool such as `nu`, or any
-executable exposed by the case's Vite+ installation, including default shims
-such as `vp`, `node`, and `corepack` and globally installed package binaries.
-There is no shell: no `&&`, no
+`argv[0]` may be `vpt`, a runner-approved shell (including system `cmd.exe`
+exposed as `cmd`), or any executable exposed by the case's Vite+ installation,
+such as `vp`, `node`, `npm`, and `pnpm` and globally installed package
+binaries. There is no shell: no `&&`, no
 redirects, no globs. File setup and assertions go through `vpt` so behavior
 is identical on every platform:
 
@@ -185,9 +199,12 @@ case-owned tool dirs, then a system tail for child processes and direct `git` st
 `TERM=xterm-256color`, `VP_CLI_TEST=1`, `VP_EMIT_MILESTONES=1`, a fresh
 `HOME`, `VP_HOME`, and npm prefix. The runner still rejects direct step tools
 that resolve outside the case-owned dirs, except for `git`; `vpt` is the only
-required runner helper on PATH, while optional tools such as `nu` are linked
-there when available. `CI` and `NO_COLOR` are deliberately NOT set: with a PTY
-attached, the CLI behaves interactively by default, which is the point.
+required runner helper on PATH, while optional POSIX, Fish, and Nushell binaries
+are linked there when available. PowerShell runs from its canonical path so it
+can load files installed beside `pwsh.exe`. `cmd.exe` also runs from its
+canonical system path. `CI` and `NO_COLOR` are deliberately NOT
+set: with a PTY attached, the CLI behaves interactively by default, which is
+the point.
 `seed-runtime = true` (default) symlinks a provisioned managed Node runtime
 into the case `VP_HOME` so commands do not download ~50MB per case.
 

@@ -5,7 +5,7 @@
 ## `vp test --help --coverage`
 
 ```
-vitest/4.1.10
+vitest/4.1.11
 
 用法：
   $ vitest [...filters]

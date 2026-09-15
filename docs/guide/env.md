@@ -1,33 +1,118 @@
 # 环境
 
-`vp env` 用于在全局和每个项目中管理 Node.js 版本。
+`vp env` 管理完整的 JavaScript 环境：一个 Node.js 运行时和一个选定的包管理器。npm、pnpm、Yarn 和 Bun 是同级的包管理器系列。它属于[全局 CLI](/guide/global-cli)，不包含在项目本地的 `vite-plus` 包中。
 
 ## 概述
 
-默认情况下托管模式处于开启状态，因此 `node`、`npm` 和相关的 shim 会通过 Vite+ 解析，并为当前项目选择正确的 Node.js 版本。
+可以将项目环境视为两个独立选择的组件：
 
-Vite+ 首先检查当前目录，然后逐级向上检查其父目录。包含受支持声明的最近目录优先。在每个目录中，按以下顺序检查来源：
+- **Node.js** 是用于执行 JavaScript 工具和脚本的运行时。每个项目都可以声明所需的 Node.js 版本。
+- **包管理器** 用于安装和管理项目依赖。每个项目都可以选择 npm、pnpm、Yarn 或 Bun，并声明其版本。
+
+例如，项目可以使用 Node.js 24 和 pnpm 10。更改 Node.js 版本不会改变其包管理器选择，从 pnpm 切换到 Yarn 也不会改变其 Node.js 版本。当你运行命令时，Vite+ 会解析这两个组件，因此你可以在项目之间切换，而无需手动切换工具。
+
+Vite+ 通过 **shim** 将这些选择连接到你的 shell：这些 shim 是名为 `node`、`npm`、`pnpm`、`yarn` 和 `bun` 的小型启动器，以及它们的别名。在托管模式下，shim 会解析并启动当前项目所需的工具。`vp install` 等命令会使用项目选定的包管理器；直接调用 `pnpm` 始终会运行 pnpm，即使项目选择的是其他管理器。
+
+托管模式默认开启，因此 Node.js 和已配置的包管理器 shim 会通过 Vite+ 进行解析，并为当前项目选择正确的版本。用户启用环境管理后，新安装程序会为 npm、pnpm、Yarn 和 Bun 记录托管模式。
+
+使用 `vp env off` 可禁用 Node.js 和包管理器的托管模式。详情以及如何切换到系统工具，请参阅下文的[环境模式](#environment-modes)。
+
+未指定选择器时，大多数命令会同时操作两个组件。添加 `node`、`pm`、`npm`、`pnpm`、`yarn` 或 `bun` 可缩小命令范围。对于列出和清理操作，`pm` 表示全部四个系列；对于项目操作，则表示单个选定的包管理器。
+
+未限定的版本仍表示 Node.js 版本，以保持兼容性：
+
+```bash
+vp env pin 22.0.0               # Node.js only
+vp env pin pnpm@10.18.0         # pnpm only
+vp env pin node@24 pnpm@12      # Both components
+vp env pin 22.0.0 pnpm@10.18.0  # Also both components
+```
+
+使用 `vp env pin` 保存项目版本，使用 `vp env default` 设置回退版本，使用 `vp env use` 为当前 shell 覆盖版本。运行 `vp env current` 查看解析后的环境。
+
+## Node.js 选择
+
+为了选择项目的 Node.js 版本，Vite+ 会先检查当前目录，然后沿父目录向上遍历。距离最近的包含受支持声明的目录优先。在每个目录中，来源按以下顺序检查：
 
 1. `.node-version` 文件
 2. `package.json` 中的 `devEngines.runtime`（[devEngines 标准](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines)）
 3. `package.json` 中的 `engines.node`
 4. `.nvmrc` 文件
 
-如果没有任何目录声明版本，Vite+ 将使用全局默认版本（`vp env default`），然后使用最新的 LTS 版本。
+如果没有任何目录声明版本，Vite+ 会使用全局默认版本（`vp env default`），然后使用最新的 LTS 版本。
 
 `devEngines.runtime` 的优先级高于 `engines.node`，因为它声明的是开发环境需求，而 `engines.node` 是面向使用者的支持范围。`vp env doctor` 会在声明来源冲突时发出警告。
 
-当项目在 `package.json` 中声明 `packageManager`（或 `devEngines.packageManager`）时，匹配的包管理器 shim 也会使用该包管理器版本。例如，`packageManager: "npm@10.9.4"` 会让 `npm` 和 `npx` 都通过 npm 10.9.4 运行。别名对遵循已安装的包管理器 shim：`npm`/`npx`、`pnpm`/`pnpx`、`yarn`/`yarnpkg` 和 `bun`/`bunx`。Vite+ 不会转换不匹配的命令，因此固定到 `pnpm` 的项目仍会让 `npm` 回退到解析出的 Node.js 运行时自带的 npm。
+::: tip 在 Vite+ 运行时管理中使用 pnpm
+pnpm 也可以管理 `devEngines.runtime` 中声明的运行时。当 pnpm 和 Vite+ 同时管理 Node.js 时，它们可能分别下载相同版本或选择不同版本，导致不同命令之间的行为不一致。
 
-默认情况下，Vite+ 会将其受管理的运行时和相关文件存储在 `~/.vite-plus` 中。如有需要，你可以使用 `VP_HOME` 覆盖该位置。
+如果你希望由 Vite+ 管理 Node.js，pnpm 11+ 支持通过 [`runtimeOnFail`](https://pnpm.io/settings/cli#runtimeonfail) 全局禁用 pnpm 的自动运行时管理：
 
-如果希望保持这种行为，请运行：
+```bash
+pnpm config set --global runtimeOnFail ignore
+```
+
+此设置还会禁用 pnpm 对其他已声明运行时的自动管理，包括 Bun 和 Deno。在全局设置之前，请考虑你的项目是否依赖此行为。
+:::
+
+## 包管理器选择
+
+包管理器选择使用以下优先级：
+
+1. 显式命令覆盖
+2. `VP_PACKAGE_MANAGER`
+3. 顶层 `packageManager`
+4. `devEngines.packageManager`
+5. 锁文件或管理器专属配置
+6. 指定包管理器的全局默认版本
+7. 指定 shim 的最新版本
+
+`VP_PACKAGE_MANAGER` 为 `vp install` 等命令选择管理器和版本。直接调用的包管理器 shim 会忽略此变量，并使用独立的版本覆盖：
+
+| 变量              | Shim              |
+| ----------------- | ----------------- |
+| `VP_NPM_VERSION`  | `npm`、`npx`      |
+| `VP_PNPM_VERSION` | `pnpm`、`pnpx`    |
+| `VP_YARN_VERSION` | `yarn`、`yarnpkg` |
+| `VP_BUN_VERSION`  | `bun`、`bunx`     |
+
+这些变量接受版本或范围，例如 `10.18.0`、`10` 或 `latest`，并覆盖对应 shim 的项目版本和默认版本。它们不会改变 `vp install` 所选择的管理器或版本。
+
+`vp env use pnpm@10.20.0` 会为当前 shell 设置 `VP_PNPM_VERSION`，就像 `vp env use node@22` 会设置 `VP_NODE_VERSION` 一样。每个包管理器都有自己的覆盖，因此切换 Yarn 不会清除 pnpm 的覆盖。`vp env use` 不会设置或清除 `VP_PACKAGE_MANAGER`。
+
+直接调用的 shim 会先从匹配的环境变量解析版本；如果没有 shell 包装器，则从匹配的会话文件解析；随后依次使用项目配置和系列默认值。`vp env current pnpm` 和 `vp env which pnpm` 会检查此 shim 选择；`vp env current pm` 会报告为 vp 命令选择的管理器。
+
+```bash
+VP_PACKAGE_MANAGER=pnpm@10.18.0 vp install
+VP_PNPM_VERSION=10.20.0 pnpm --version
+```
+
+这些覆盖在托管模式下生效。包管理器也可以在 Vite+ 启动它之后自行执行版本切换；例如，pnpm 的 `managePackageManagerVersions` 设置可能会切换回 `package.json` 中的版本。
+
+项目选择仅适用于对应的 shim。例如，pnpm 控制 `pnpm` 和 `pnpx`；调用 `npm` 仍会独立解析 npm。如果没有匹配的项目选择，指定的 shim 会使用其配置的默认版本；如果没有配置，则使用最新版本且不会提示。直接调用的 npm shim 会保留其 Node.js 内置的回退版本，而显式使用 `vp env ... npm` 系列范围时，则使用独立 npm 的最新版本。
+
+::: details 最新版本缓存
+当指定的 shim 回退到最新版本时，解析出的版本会缓存一小时。当无法连接注册表时，过期的缓存仍可用。
+:::
+
+## 环境模式
+
+托管模式默认开启，因此 Node.js 和已配置的包管理器 shim 会通过 Vite+ 进行解析，并为当前项目选择正确的版本。用户启用环境管理后，新安装程序会为 npm、pnpm、Yarn 和 Bun 记录托管模式。
+
+要启用托管模式，请运行：
 
 ```bash
 vp env on
 ```
 
-这将启用托管模式，shim 将始终使用 Vite+ 管理的 Node.js 安装。
+这会为两个组件启用托管模式。也可以独立更改它们的模式，包括单个包管理器系列：
+
+```bash
+vp env on node
+vp env off pm
+vp env off pnpm
+vp env on bun
+```
 
 如果不希望 Vite+ 首先管理 Node.js，请运行：
 
@@ -35,24 +120,27 @@ vp env on
 vp env off
 ```
 
-这将切换到系统优先模式，shim 会优先使用系统 Node.js，仅在需要时回退到 Vite+ 托管的运行时。
+这会将两个组件切换为系统优先模式。Vite+ 会优先使用系统工具，并回退到托管安装。混合配置可以组合使用：系统包管理器启动器会接收由 Node.js 模式选择的 Node.js。
+
+使用 `pm` 会为当前支持的所有包管理器记录选定的模式，并替换它们各自的选择。未指定范围的 `on` 或 `off` 会执行相同操作，同时也会更改 Node.js。尚未记录模式的系列会保持未决定状态，直到首次使用其 shim，或通过 `on` / `off` 命令进行配置。
 
 ## 命令
 
 ### 设置
 
-- `vp env setup` 创建或更新 `VP_HOME/bin` 中的 shim（并将按 shell 区分的设置脚本写入 `VP_HOME`）
-- `vp env on` 启用托管模式，使 shim 始终使用 Vite+ 托管的 Node.js
-- `vp env off` 启用优先系统模式，使 shim 优先使用系统 Node.js
-- `vp env print` 输出当前会话的 shell 片段
+- `vp env setup` 在解析后的 bin 目录中创建或更新 `node`、`npm`、`npx`、`pnpm`、`pnpx`、`yarn`、`yarnpkg`、`bun`、`bunx`、`vpx` 和 `vpr` shim。它会在配置目录中写入 shell 设置脚本
+- `vp env on` / `vp env off` 更改两种模式；追加 `node`、`pm`、`npm`、`pnpm`、`yarn` 或 `bun` 可缩小更改范围
+- `vp env print` 打印两个组件的 PATH 设置；追加选择器可只打印一个组件的设置
 
 PowerShell 需要在 `vp env use` 之前，在当前 shell 中 dot-source 生成的设置脚本，才能只影响该 shell 会话：
 
 ```powershell
-. "$env:USERPROFILE\.vite-plus\env.ps1"
+. "$env:APPDATA\vite-plus\env.ps1"
 ```
 
-将该行添加到你的 PowerShell `$PROFILE` 末尾，以便在新 shell 中自动应用。它不需要提升权限。
+如果较旧的 Vite+ 安装使用 `%USERPROFILE%\.vite-plus`，请改为 source 该目录中的 `env.ps1` 文件。
+
+将该行添加到 PowerShell `$PROFILE` 的末尾，可在新 shell 中自动应用。此操作不需要提升权限。
 
 如果配置文件不存在，请创建它：
 
@@ -74,29 +162,29 @@ node --version
 vp-use --unset
 ```
 
-只有 `vp env use` 需要使用此替代命令。其他 `vp env` 命令在命令提示符中可以正常运行。在 Windows 上，`vp env setup` 会在 `VP_HOME/bin` 下创建 `vp-use.cmd`。
+只有 `vp env use` 需要使用此替代命令。其他 `vp env` 命令在命令提示符中均可正常工作。在 Windows 上，`vp env setup` 会在 bin 目录中创建 `vp-use.cmd`。
 
-在 CI 中，即使未初始化 shell，`vp env use` 仍然可以运行。它会在 `VP_HOME` 下写入临时会话文件，以便同一作业中后续的 shim 调用能够解析所选的 Node.js 版本。
+在 CI 中，`vp env use` 无需 shell 初始化即可运行。它会在解析后的状态目录中，为每个运行时或包管理器写入一个临时会话文件，例如 `.session-node-version` 或 `.session-pnpm-version`。同一任务中后续的 shim 调用会使用这些文件解析相同的环境。
 
 ### 管理
 
-- `vp env default` 设置或显示全局默认 Node.js 版本
-- `vp env pin` 在当前目录中固定 Node.js 版本：如果已有 `.node-version`，则继续更新它；否则将固定版本写入 `package.json#devEngines.runtime`；仅当目录中没有 `package.json` 时才会创建 `.node-version`。使用 `--target node-version` 或 `--target dev-engines` 可显式选择目标。现有的 `engines.node` 永远不会被修改。
-- `vp env unpin` 从 `vp env pin` 将写入的同一来源中移除版本固定
-- `vp env use` 为当前 shell 会话设置 Node.js 版本
-- `vp env install` 安装 Node.js 版本
-- `vp env uninstall` 移除已安装的 Node.js 版本
-- `vp env clean` 移除未使用的托管 Node.js 运行时、所有已下载的包管理器以及 Corepack 缓存。
-- `vp env exec` 使用指定的 Node.js 版本运行命令
-- `vp node` 运行 Node.js 脚本——`vp env exec node` 的简写
+- `vp env default` 显示全局 Node.js 默认版本和每个已配置的包管理器版本。裸版本设置 Node.js；`pnpm@10.18.0` 等限定规格设置该包管理器 shim 的默认版本，而不会替换 Bun、Yarn 或 npm 的默认版本。除非指定范围，否则 `--unset` 会清除所有默认值
+- `vp env pin` 显示或写入项目固定版本。现有的 `.node-version` 和顶层 `packageManager` 字段会继续更新，以保持兼容性。如果当前目录中现有的 `.nvmrc` 是有效的 Node.js 来源，则会更新它；其中的注释和其他非版本内容会被保留。否则，Vite+ 会写入匹配的 `devEngines` 条目。使用 `--target node-version`、`--target nvmrc`、`--target dev-engines` 或 `--target package-manager` 可显式选择目标。在子目录中固定版本不会修改继承的 `.nvmrc`
+- `vp env unpin` 默认移除两个有效的固定版本；追加选择器可移除其中一个。较低优先级的声明不会被删除
+- `vp env use` 激活完整的项目环境。显式规格会覆盖选定的组件；除非指定范围，否则 `--unset` 会清除两者
+- `vp env install` 安装完整的解析环境、选定的组件或显式规格
+- `vp env uninstall` 移除显式指定的精确 Node.js 版本或限定的包管理器版本
+- `vp env clean` 移除未使用的安装。使用 `clean node`、`clean pm` 或具体的管理器。当前版本和已配置的默认版本会被保留
+- `vp env exec` 在解析后的环境中运行命令。使用 `--node` 和 `--package-manager`；`--npm` 是 `--package-manager npm@…` 的别名
+- `vp node` 使用解析后的 Node.js 运行时，并将选定的包管理器路径暴露给子进程
 
 ### 检查
 
-- `vp env current` 显示当前已解析的环境
+- `vp env current` 显示当前解析后的环境
 - `vp env doctor` 运行环境诊断
 - `vp env which` 显示将使用的工具路径
-- `vp env list` 显示本地安装的 Node.js 版本
-- `vp env list-remote` 显示注册表中可用的 Node.js 版本。
+- `vp env list` 分别显示 Node.js、npm、pnpm、Yarn 和 Bun 部分；选择器可缩小输出范围
+- `vp env list-remote` 并发获取 Node.js 和全部四个包管理器注册表；选择器可缩小网络请求范围。`--lts` 会隐式选择 Node.js
 
 ## 项目设置
 
@@ -107,51 +195,85 @@ vp-use --unset
 ## 示例
 
 ```bash
-# 设置
-vp env setup                  # 为 node、npm、npx、corepack 创建 shim
-vp env on                     # 使用 Vite+ 管理的 Node.js
-vp env print                  # 打印此会话的 shell 片段
+# Setup
+vp env setup                  # Create Node.js and package-manager shims
+vp env on                     # Manage Node.js and package managers
+vp env off pm                 # Prefer system package managers only
+vp env off pnpm               # Prefer system pnpm only
+vp env print                  # Print PATH setup for both components
 
-# 管理
-vp env pin lts                # 将项目固定到最新的 LTS 版本
-vp env install                # 安装来自 .node-version、package.json 或 .nvmrc 的版本
-vp env default lts            # 设置全局默认版本
-vp env use 20                 # 在当前 shell 会话中使用 Node.js 20
-vp env use --unset            # 移除会话覆盖
-vp env clean                  # 移除未使用的托管缓存
+# Manage
+vp env pin lts pnpm@10        # Pin both project components to exact versions
+vp env install                # Install the complete resolved environment
+vp env default node@24        # Set the global Node.js default
+vp env default pnpm@10        # Set pnpm's global default version
+vp env use 20 pnpm@10         # Override both components for this shell
+vp env use --unset pnpm       # Remove only the pnpm session version
+vp env use --unset pm         # Remove all package-manager session versions
+vp env clean                  # Remove unused managed Node.js and package manager versions
 
-# 检查
-vp env current                # 显示当前已解析的环境
-vp env current --json         # 为自动化输出 JSON
-vp env which node             # 显示将使用哪个 node 二进制文件
-vp env which npx              # 当 packageManager 匹配时显示固定的包管理器别名
-vp env list-remote --lts      # 仅列出 LTS 版本
+# Inspect
+vp env current                # Show current resolved environment
+vp env current --json         # JSON output for automation
+vp env which node             # Show which node binary will be used
+vp env which npx              # Show pinned package-manager alias when packageManager matches
+vp env list                   # Show every locally installed component
+vp env list node              # Show only Node.js installations
+vp env list-remote --lts      # List only Node.js LTS versions
 
-# 执行
-vp env exec --node lts npm i  # 使用最新 LTS 执行 npm
-vp env exec node -v           # 使用 shim 模式并自动解析版本
-vp node script.js             # 等效：运行已解析版本的 Node.js 脚本
-vp node -e "console.log(1+1)" # 等效：传递任意 node 标志或参数
+# Execute
+vp env exec --node lts --package-manager pnpm@10 pnpm install
+vp env exec node -v           # Use shim mode with automatic version resolution
+vp node script.js             # Shorthand: run a Node.js script with the resolved version
+vp node -e "console.log(1+1)" # Shorthand: forward any node flag or argument
 ```
 
-## Corepack
+## JSON 输出
 
-Vite+ 默认会创建一个 `corepack` shim，因此 corepack 即使没有系统安装的 Node.js 也能工作：
+`current`、`list` 和 `list-remote` 的 JSON 输出按组件组织。`current --json` 返回同级的 `node` 和 `package_manager` 对象：
 
-- 在 Node.js 24 及更早版本中，shim 运行的是与已解析 Node.js 版本捆绑的 corepack。
-- 在 Node.js 25 及更高版本中，由于 corepack 不再随附，Vite+ 会在首次使用时将 corepack 作为受管理的全局包安装。只会链接 `corepack` 二进制文件；如果你还想直接暴露该包的 pnpm/yarn 启动器，请自行运行 `vp install -g corepack`。
-- 如果你通过 `vp install -g corepack` 显式安装了 corepack，则始终优先使用该安装。
-
-`corepack enable` 通常会在 corepack 二进制文件旁创建 `pnpm`/`yarn` 启动器，但在 Vite+ 下这些不会位于 `PATH` 中。shim 通过将 `--install-directory` 默认设置为 `VP_HOME/bin` 来修复这一点，因此在执行 `corepack enable` 后，这些启动器可在任何地方使用，并且仍然会解析项目的 Node.js 和包管理器版本：
-
-```bash
-corepack enable               # 现在 pnpm 和 yarn 通过 corepack 解析
-corepack disable              # 再次移除 pnpm/yarn 启动器
+```json
+{
+  "node": {
+    "version": "22.0.0",
+    "source": "devEngines.runtime",
+    "source_path": "/project/package.json",
+    "project_root": "/project",
+    "bin_path": "/home/.vite-plus/js_runtime/node/22.0.0/bin/node",
+    "installed": true,
+    "mode": "managed"
+  },
+  "package_manager": {
+    "name": "pnpm",
+    "version": "10.18.0",
+    "source": "packageManager",
+    "source_path": "/project/package.json",
+    "project_root": "/project",
+    "bin_paths": {
+      "pnpm": "/home/.vite-plus/package_manager/pnpm/10.18.0/pnpm/bin/pnpm",
+      "pnpx": "/home/.vite-plus/package_manager/pnpm/10.18.0/pnpm/bin/pnpx"
+    },
+    "installed": true,
+    "mode": "managed"
+  }
+}
 ```
 
-这些启动器引用的是创建它们的 corepack 副本。如果该副本之后被移除（例如卸载了其所附带的 Node.js 版本），请重新运行 `corepack enable` 以重新创建它们。
+`list --json` 和 `list-remote --json` 会将组件数组分组：
 
-Vite+ 所拥有的 shim（`npm`、`npx` 以及通过 `vp install -g` 安装的二进制文件）受保护：如果 corepack 删除或替换了它们，Vite+ 会恢复它们并打印警告。
+```json
+{
+  "node": [],
+  "package_managers": {
+    "npm": [],
+    "pnpm": [],
+    "yarn": [],
+    "bun": []
+  }
+}
+```
+
+选择器会省略未选择的顶层字段或包管理器系列。注册表列表采用全有或全无模式：当任意选定的注册表请求失败时，Vite+ 不会输出部分的人类可读结果或 JSON 结果。
 
 ## 自定义 Node.js 镜像
 

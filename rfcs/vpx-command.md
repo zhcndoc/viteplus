@@ -301,10 +301,9 @@ if tool == "vpx" {
 
 分发模块还将以下辅助函数暴露为 `pub(crate)`，供 vpx 复用：
 
-- `find_package_for_binary()` — 查找哪个全局安装的包提供了某个二进制文件
-- `locate_package_binary()` — 在包内定位实际的二进制路径
-- `ensure_installed()` — 确保已下载 Node.js 版本
-- `locate_tool()` — 在 Node.js 安装中定位工具二进制文件
+- `find_package_for_binary()` — 查找哪个全局安装的包提供某个二进制文件
+- `locate_package_binary()` — 定位包内实际的二进制文件路径
+- `ensure_installed()` — 确保某个 Node.js 版本已安装，并返回其可执行文件路径
 
 ### 3. 二进制解析（`commands/vpx.rs`）
 
@@ -319,13 +318,15 @@ if let Some(local_bin) = find_local_binary(cwd, &cmd_name) { ... }
 // 2. 全局 vp 包 — 使用 dispatch::find_package_for_binary()
 if let Some(global_bin) = find_global_binary(&cmd_name).await { ... }
 
-// 3. 系统 PATH — 使用经过过滤的 PATH 调用 which::which_in()
+// 3. System PATH — uses vp_command::resolve_bin() with filtered PATH
 if let Some(path_bin) = find_on_path(&cmd_name) { ... }
 
 // 4. 远程下载 — 委托给 DlxCommand
 ```
 
-在执行任何找到的二进制文件之前，`prepend_node_modules_bin_to_path()` 会从 cwd 向上遍历，并将所有已存在的 `node_modules/.bin` 目录追加到 PATH 前面。
+在执行通过本地、全局或系统 PATH 查找到的二进制文件之前，`prepend_node_modules_bin_to_path()` 会从 cwd 开始向上遍历，并将现有的 `node_modules/.bin` 目录添加到子进程的 `ToolPathEnv` 中。它会将缺失的目录置于 PATH 前面，同时保留 PATH 中已有目录的位置。继承的工具标记会被保留；这些本地目录不会将工具添加到 `VP_PATH_INJECTED_TOOLS` 中。
+
+对于全局安装的二进制文件，vpx 首先注入包所记录的 Node.js 版本对应的目录，并将 `node` 记录到 `VP_PATH_INJECTED_TOOLS` 中。执行时会将准备好的 PATH 和工具标记一并传递给子进程。
 
 ### 4. 设置
 
@@ -430,7 +431,7 @@ $ vpx non-existent-package-xyz
 
 4. **远程时自动确认**：在回退到远程下载时，`vpx` 会自动确认（类似 `vp dlx`）。这意味着未知包会在不提示的情况下被下载——这与 `vp dlx` 的行为一致。
 
-5. **版本锁定**：指定明确版本（例如 `vpx eslint@9`）会绕过所有本地解析，并始终从 registry 下载，确保使用的是请求的确切版本。
+5. **版本锁定**：指定明确版本（例如 `vpx eslint@9`）会绕过所有本地解析，并始终从注册表下载，确保使用的是请求的确切版本。
 
 ## 向后兼容性
 

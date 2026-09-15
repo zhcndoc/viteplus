@@ -4,7 +4,7 @@
 
 ## 概述
 
-该命令是将独立的 Vite、Vitest、Oxlint、Oxfmt、ESLint 和 Prettier 配置整合到 Vite+ 的起点。
+此命令是将独立的 Vite、Vitest、Oxlint、Oxfmt、ESLint、Prettier 和 tsup 设置整合到 Vite+ 的起点。
 
 当您想将一个现有项目迁移到 Vite+ 默认配置，而不是手动连接每个工具时，请使用此命令。
 
@@ -20,9 +20,9 @@ vp migrate --no-interactive
 
 位置参数 `PATH` 是可选的。
 
-- 如果省略，`vp migrate` 将迁移当前目录
-- 如果提供，则迁移该目标目录
-- 对于 monorepo，目标必须是工作区根目录。Vite+ 无法迁移单个工作区成员，因为迁移会更新所有成员共享的包管理器配置、catalog 和锁文件。
+- 如果省略，`vp migrate` 会迁移当前目录
+- 如果提供，则会迁移指定的目标目录
+- 对于 monorepo，目标必须是工作区根目录。Vite+ 无法迁移单个工作区成员，因为迁移会更新所有成员共享的包管理器配置、catalog 和 lockfile
 
 ```bash
 vp migrate
@@ -51,7 +51,7 @@ vp migrate my-app
 - 可以写入代理和编辑器配置文件
 - 格式化已迁移的项目
 
-有关确切的依赖、源码重写和包管理器行为，请参阅 [迁移规则](./migrate-rules.md)。
+有关确切的依赖、源代码重写和包管理器行为，请参见 [迁移规则](./migrate-rules.md)。
 
 大多数项目在运行 `vp migrate` 后仍需要进一步手动调整。
 
@@ -67,41 +67,7 @@ vp migrate my-app
 - 运行 `vp install`
 - 运行 `vp check`
 - 运行 `vp test`
-- 运行 `vp build`
-
-## 手动安装与迁移
-
-如果你要手动将项目迁移到 Vite+，请先安装以下开发依赖：
-
-```bash
-vp install -D vite-plus
-```
-
-你需要在包管理器中添加覆盖配置，以便其他包解析到 Vite+ 的版本：将 `vite` 别名指向 `@voidzero-dev/vite-plus-core`，并将 `vitest` 固定为 Vite+ 所捆绑的版本（运行 `vp --version`），从而让整个项目与 `vp test` 共享同一个 Vitest 副本。如果不固定 `vitest`，某个依赖或工作区包可能会引入与捆绑运行器不同的 Vitest，导致 Vitest 的内部机制（模拟、`expect`、运行器状态）被拆分：
-
-```json
-"overrides": {
-  "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "4.1.10"
-}
-```
-
-如果你使用的是 `pnpm`，请将以下内容添加到 `pnpm-workspace.yaml` 中：
-
-```yaml
-overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: 4.1.10
-```
-
-或者，如果你使用的是 Yarn：
-
-```json
-"resolutions": {
-  "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "4.1.10"
-}
-```
+- 运行 `vp build`（如果您要构建库，则运行 `vp pack`）
 
 ## 迁移提示
 
@@ -112,10 +78,10 @@ overrides:
 
 迁移完成后：
 
-- 确认在需要的地方，`vite` 导入已重写为 `vite-plus`
-- 确认在需要的地方，`vitest` 导入已重写为 `vite-plus/test`（`@vitest/browser*` 重写为 `vite-plus/test/browser*`）
-- 仅在确认这些重写后，再移除旧的 `vite`、`vitest` 和 `@vitest/browser*` 依赖——`vite-plus` 将它们作为直接依赖随包提供
-- 将剩余的工具特定配置移到 `vite.config.ts` 中相应的块里
+- Confirm `vite` imports were rewritten to `vite-plus` where needed
+- Confirm `vitest` imports were rewritten to `vite-plus/test` (and `@vitest/browser*` to `vite-plus/test/browser*`) where needed
+- On pnpm, keep the `vite`, `vitest` dependency entries configured by `vp migrate` so the workspace aliases and overrides stay effective; with other package managers, you can remove them once those rewrites are confirmed
+- Move remaining tool-specific config into the appropriate blocks in `vite.config.ts`
 
 命令映射（需牢记）：
 
@@ -202,13 +168,13 @@ export default defineConfig({
 });
 ```
 
-当没有现有的钩子策略负责该工作流时，`vp migrate` 可以迁移受支持的 lint-staged 规则，并移除旧配置和依赖。如果保留了现有的钩子工具，请先继续使用 lint-staged，直到您手动转换该钩子策略。详情请参见[提交钩子指南](/guide/commit-hooks)和 [Staged 配置参考](/config/staged)。
+当没有现有的钩子策略负责此工作流时，`vp migrate` 可以迁移受支持的 lint-staged 规则，并删除旧配置和依赖。如果保留了现有的钩子工具，请继续保留 lint-staged，直到您手动转换该钩子策略。有关详情，请参见[提交钩子指南](/guide/commit-hooks)和[Staged 配置参考](/config/staged)。
 
 ### Git 钩子工具
 
-`vp migrate` 命令不会自动转换 Husky 配置。检测到 Husky 时，Vite+ 会保留其钩子、生命周期脚本、配置和依赖不变，并显示警告。您可以按照[提交钩子指南](/guide/commit-hooks)手动迁移项目。
+`vp migrate` 命令不会自动转换 Husky 设置。检测到 Husky 时，Vite+ 会保留其钩子、生命周期脚本、配置和依赖不变，并显示警告。您可以使用[提交钩子指南](/guide/commit-hooks)手动迁移项目。
 
-项目现有的 Vite+ 钩子也会被保留。仅当未发现现有的钩子策略时，才会引入默认的 staged 工作流。
+项目现有的 Vite+ 钩子也会被保留。仅当未找到现有钩子策略时，才会引入默认的 staged 工作流。
 
 如果您的项目当前使用 `lefthook`、`simple-git-hooks` 或 `yorkie`，`vp migrate` 会保留您现有的配置不变并显示警告。即使您选择在提示过程中设置钩子，或包含 `--hooks` 标志，也会如此。
 

@@ -19,10 +19,11 @@
 
 ```bash
 vp check
-vp check --fix             # 格式化并运行自动修复器。
-vp check --no-fmt          # 跳过格式化；运行 lint（如果启用了类型检查，则也运行类型检查）。
-vp check --no-lint         # 跳过 lint 规则；启用时保留类型检查。
-vp check --no-fmt --no-lint # 仅类型检查（需要启用 `typeCheck`）。
+vp check --fix             # Format and run autofixers.
+vp check --quiet           # Hide lint warnings; still report and fail on errors.
+vp check --no-fmt          # Skip format; run lint (and type-check if enabled).
+vp check --no-lint         # Skip lint rules; keep type-check when enabled.
+vp check --no-fmt --no-lint # Type-check only (requires `typeCheck` enabled).
 ```
 
 ## 配置
@@ -62,4 +63,4 @@ export default defineConfig({
 });
 ```
 
-这些选项只影响 `vp check`；单独运行的 `vp fmt` 和 `vp lint` 仍会正常执行。如果在配置中禁用了某个步骤，或者传入了匹配的 `--no-fmt` / `--no-lint` 标志，则该步骤会被跳过。由于这些默认值会应用于每次 `vp check` 运行，因此调用 `vp check` 的 pre-commit hook 也会跳过被禁用的步骤。完整参考请参阅 [Check config](/config/check)。
+这些选项只影响 `vp check`；单独运行的 `vp fmt` 和 `vp lint` 仍会正常执行。如果在配置中禁用了某个步骤，或者传入了匹配的 `--no-fmt` / `--no-lint` 标志，则该步骤会被跳过。由于这些默认值会应用于每次 `vp check` 运行，因此调用 `vp check` 的 pre-commit hook 也会跳过被禁用的步骤。完整参考请参阅 [检查配置](/config/check)。

@@ -15,7 +15,14 @@ export const VITE_CONFIG_FILES = [
   'vite.config.cts',
 ] as const;
 
-export const VITEST_VERSION = '4.1.10';
+export const VITEST_VERSION = '4.1.11';
+
+// Exact action release used by generated workflows and the @v1 migration.
+// The Renovate custom manager keeps this value current.
+export const SETUP_VP_VERSION = 'v1.20.0';
+
+export const TSDOWN_MIGRATION_SKILL_URL =
+  'https://github.com/rolldown/tsdown/blob/main/skills/tsdown-migrate/SKILL.md';
 
 export const VITE_PLUS_OVERRIDE_PACKAGES: Record<string, string> = process.env.VP_OVERRIDE_PACKAGES
   ? JSON.parse(process.env.VP_OVERRIDE_PACKAGES)

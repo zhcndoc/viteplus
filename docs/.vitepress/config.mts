@@ -27,71 +27,68 @@ function rewriteInstallUrls(text: string): string {
     .replaceAll('https://vite.plus', installShUrl);
 }
 
-const taskRunnerGuideItems = [
-  {
-    text: '运行',
-    link: '/guide/run',
-  },
-  {
-    text: '任务缓存',
-    link: '/guide/cache',
-    items: [
-      { text: 'Automatic Data Tracking', link: '/guide/automatic-data-tracking' },
-      { text: 'GitHub Actions Cache', link: '/guide/github-actions-cache' },
-    ],
-  },
-  {
-    text: '运行二进制',
-    link: '/guide/vpx',
-  },
-];
-
 const guideSidebar = [
   {
     text: '入门',
     items: [
       { text: '开始使用', link: '/guide/' },
+      { text: '全局 CLI', link: '/guide/global-cli' },
+      { text: '项目本地 CLI', link: '/guide/local-cli' },
+      { text: '为什么选择 Vite+', link: '/guide/why' },
+    ],
+  },
+  {
+    text: '设置项目',
+    items: [
       { text: '创建项目', link: '/guide/create' },
       {
         text: '迁移到 Vite+',
         link: '/guide/migrate',
         items: [{ text: '迁移规则', link: '/guide/migrate-rules' }],
       },
-      { text: '安装依赖', link: '/guide/install' },
-      { text: '环境', link: '/guide/env' },
-      { text: '安装程序环境变量', link: '/guide/installer-env-vars' },
-      { text: '为什么选择 Vite+', link: '/guide/why' },
+      { text: '更新 Vite+', link: '/guide/upgrade-project' },
+      { text: '包管理', link: '/guide/install' },
     ],
   },
   {
-    text: '开发',
+    text: '项目工具链',
     items: [
-      { text: '开发', link: '/guide/dev' },
       {
         text: '检查',
         link: '/guide/check',
         items: [
-          { text: 'Lint', link: '/guide/lint' },
+          { text: '代码检查', link: '/guide/lint' },
           { text: '格式化', link: '/guide/fmt' },
         ],
       },
       { text: '测试', link: '/guide/test' },
-    ],
-  },
-  {
-    text: '执行',
-    items: taskRunnerGuideItems,
-  },
-  {
-    text: '构建',
-    items: [
+      { text: '开发', link: '/guide/dev' },
       { text: '构建', link: '/guide/build' },
       { text: '打包', link: '/guide/pack' },
+      {
+        text: '运行',
+        link: '/guide/run',
+      },
+      {
+        text: '任务缓存',
+        link: '/guide/cache',
+        items: [
+          { text: '自动数据跟踪', link: '/guide/automatic-data-tracking' },
+          { text: 'GitHub Actions 缓存', link: '/guide/github-actions-cache' },
+        ],
+      },
+      {
+        text: '运行二进制文件',
+        link: '/guide/vpx',
+      },
+      { text: '提交钩子', link: '/guide/commit-hooks' },
+      { text: '多包仓库指南', link: '/guide/monorepo' },
     ],
   },
   {
-    text: '维护',
+    text: '全局 CLI',
     items: [
+      { text: '环境', link: '/guide/env' },
       { text: '升级 Vite+', link: '/guide/upgrade' },
       { text: '移除 Vite+', link: '/guide/implode' },
     ],
@@ -102,16 +99,18 @@ const guideSidebar = [
       { text: 'IDE 集成', link: '/guide/ide-integration' },
       { text: 'CI', link: '/guide/ci' },
       { text: 'Docker', link: '/guide/docker' },
-      { text: '提交钩子', link: '/guide/commit-hooks' },
-      { text: 'Monorepo 指南', link: '/guide/monorepo' },
-      { text: '故障排查', link: '/guide/troubleshooting' },
     ],
+  },
+  {
+    text: '参考',
+    items: [{ text: '故障排查', link: '/guide/troubleshooting' }],
   },
 ];
 
 export default extendConfig(
   withMermaid(
     defineConfig({
+      lang: 'zh-CN',
       title: 'Vite+ 中文文档',
       // titleTemplate: ':title - Vite+ 中文文档',
       description: 'Web 的统一工具链，用一个工具管理运行时、包管理器和前端技术栈。',
@@ -180,7 +179,7 @@ export default extendConfig(
           {
             text: '资源',
             items: [
-              { text: 'Team', link: '/team' },
+              { text: '团队', link: '/team' },
               { text: 'GitHub', link: 'https://github.com/voidzero-dev/vite-plus' },
               { text: '版本发布', link: 'https://github.com/voidzero-dev/vite-plus/releases' },
               {
@@ -194,7 +193,7 @@ export default extendConfig(
             ],
           },
           {
-            text: '简中文档',
+            text: '中文文档',
             link: 'https://www.zhcndoc.com',
             target: '_blank',
           },
@@ -209,8 +208,8 @@ export default extendConfig(
                 { text: '创建', link: '/config/create' },
                 { text: '运行', link: '/config/run' },
                 { text: '格式化', link: '/config/fmt' },
-                { text: 'Lint', link: '/config/lint' },
-                { text: 'Check', link: '/config/check' },
+                { text: '代码检查', link: '/config/lint' },
+                { text: '检查', link: '/config/check' },
                 { text: '测试', link: '/config/test' },
                 { text: '构建', link: '/config/build' },
                 { text: '打包', link: '/config/pack' },
@@ -227,9 +226,44 @@ export default extendConfig(
         ],
         outline: {
           level: [2, 3],
+          label: '本页内容',
+        },
+        sidebarMenuLabel: '目录',
+        returnToTopLabel: '返回顶部',
+        langMenuLabel: '切换语言',
+        skipToContentLabel: '跳转到正文',
+        darkModeSwitchLabel: '外观',
+        lightModeSwitchTitle: '切换到浅色主题',
+        darkModeSwitchTitle: '切换到深色主题',
+        docFooter: {
+          prev: '上一页',
+          next: '下一页',
         },
         search: {
           provider: 'local',
+          options: {
+            translations: {
+              button: {
+                buttonText: '搜索',
+                buttonAriaLabel: '搜索',
+              },
+              modal: {
+                displayDetails: '显示详细列表',
+                resetButtonTitle: '重置搜索',
+                backButtonTitle: '关闭搜索',
+                noResultsText: '未找到结果：',
+                footer: {
+                  selectText: '选择',
+                  selectKeyAriaLabel: '回车',
+                  navigateText: '导航',
+                  navigateUpKeyAriaLabel: '向上箭头',
+                  navigateDownKeyAriaLabel: '向下箭头',
+                  closeText: '关闭',
+                  closeKeyAriaLabel: 'Esc',
+                },
+              },
+            },
+          },
         },
 
         footer: {

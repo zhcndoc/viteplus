@@ -198,7 +198,7 @@ GET {registry}/vite-plus-cli/{version_or_tag}
 1. **平台二进制**：`{registry}/@voidzero-dev/vite-plus-cli-{platform_suffix}/-/vite-plus-cli-{suffix}-{version}.tgz`
    - 包含：`vp` 二进制 + `.node` NAPI 文件
 2. **主包**：`{registry}/vite-plus-cli/-/vite-plus-cli-{version}.tgz`
-   - 包含：`dist/`（JS bundles）、`package.json`、`templates/`、`rules/`、`AGENTS.md`
+   - 包含 `dist/`（JS bundles）、`package.json`、`templates/`、`rules/`、`AGENTS.md`
 
 **完整性校验**：每个 tarball 都会使用 npm registry 元数据中的 `integrity` 字段进行校验。npm registry 以 [Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/) 格式提供 SHA-512 哈希：
 
@@ -302,8 +302,8 @@ Windows 上的关键差异：
 
 在符号链接切换之后（**不可回头点**），后续更新操作都视为非致命。错误会打印到 stderr 作为警告，但不会触发外层错误处理器（否则会删除现在已生效的版本目录）。
 
-1. **刷新 shim**：运行等价于 `vp env setup --refresh` 的操作，确保 node/npm/npx/corepack shim 指向新版本。如果失败，用户可以手动运行它。
-2. **清理旧版本**：移除旧版本目录，按**创建时间**保留最近 3 个版本（与 `install.sh` 行为一致）。新版本和上一个版本始终受保护，不会被清理，即使它们不在前 3 名之内（例如通过 `--rollback` 降级之后）。
+1. **刷新 shims**：运行等效于 `vp env setup --refresh` 的命令，确保 node/npm/npx shims 指向新版本。该操作还会通过扫描 `BinConfig` 条目，刷新全局安装包 shims 的 trampoline `.exe` 文件（例如 `tsc.exe`）。如果失败，用户可以手动运行该命令。
+2. **清理旧版本**：删除旧版本目录，按照**创建时间**保留最近的 3 个版本（与 `install.sh` 的行为一致）。新版本和上一个版本始终受到清理保护，即使它们不在最近 3 个版本之内（例如通过 `--rollback` 降级后）。
 
 #### 步骤 7：正在运行的二进制考虑
 

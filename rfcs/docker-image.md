@@ -124,25 +124,30 @@ ghcr.io/voidzero-dev/vite-plus vp <cmd>` 用于试用 vp，或在干净的工具
 
 ### 基础镜像、内容与变体
 
-- **基础镜像：** `debian:bookworm-slim`（glibc）。需要 Glibc，这样 vp 才能下载
-  官方、经签名验证的 Node.js，并确保原生扩展正常工作；debian-slim 是公认的小型
-  glibc 基础镜像（pnpm 的选择），并提供构建/CI/开发场景所需的 shell、`apt`
-  和 `git`。
-- **预装：** `vp`（在 `PATH` 中）、`ca-certificates`、`curl`、`git`，以及用于原生扩展
-  编译的构建工具链（`build-essential`、`python3`、`pkg-config`，例如
-  `better-sqlite3`）。包管理器由 vp 托管的 corepack/runtime 处理，因此它们会按项目
-  提供，而不是固化为某个固定版本。
-- **不内置默认 Node.js：** 安装器会预先提供一个默认 Node.js（约 190 MB）；镜像将其
-  删除（`rm -rf $VP_HOME/js_runtime`），因为每个项目都会在构建时提供自己固定版本的
-  Node.js，所以在构建器中默认版本只是累赘。`node`/`npm`/`npx` shim 会保留，并在首次
-  使用时获取正确版本。这样可使工具链镜像小约 190 MB，节省超过切换到 Alpine/musl
-  所能省下的空间（且无需承担 musl 的折衷）。
-- **用户：** 创建一个非 root 的 `vp` 用户（类似 Bun 的 `USER bun` 和 Deno 的 `USER deno`）；
-  对于需要 `apt` 的步骤，文档说明切换到 root。由于镜像以非 root 运行，文档中的多阶段
-  示例会使用 `COPY --chown=vp:vp ...` 复制源代码；如果不这样做，`COPY` 会写入 root 所有的
-  文件，而 `vp install` 无法更新这些文件（权限拒绝）。已针对公开的预览镜像完成端到端验证。
-- **未来可能的变体：** 一个 Alpine/musl 工具链镜像（已延期，见 Future Work）以及一个
-  不含原生构建工具链、适用于无原生依赖项目的 `-slim` 镜像。
+- **Base:** `debian:bookworm-slim` (glibc). Glibc is required so vp downloads the
+  official signature-verified Node.js and so native addons behave; debian-slim is
+  the consensus small glibc base (pnpm's choice) and provides the shell, `apt`,
+  and `git` that build/CI/dev scenarios need.
+- **Preinstalled:** `vp` (on `PATH`), `ca-certificates`, `curl`, `git`, and a
+  build toolchain (`build-essential`, `python3`, `pkg-config`) for native addon
+  compilation (for example `better-sqlite3`). Package managers are handled by
+  vp's package-manager support, so they are provisioned per-project rather than
+  baked to a fixed version.
+- **No baked default Node.js:** the installer pre-provisions a default Node.js
+  (~190 MB); the image drops it (`rm -rf $VP_HOME/js_runtime`) because each
+  project provisions its own pinned Node.js at build time, so a default is dead
+  weight in a builder. The `node`/`npm`/`npx` shims remain and fetch the right
+  version on first use. This keeps the toolchain image ~190 MB smaller, more than
+  a switch to Alpine/musl would save (and without the musl tradeoffs).
+- **User:** create a non-root `vp` user (mirroring Bun's `USER bun` and Deno's
+  `USER deno`); document switching to root for steps that need `apt`. Because the
+  image runs as non-root, the documented multi-stage examples copy sources with
+  `COPY --chown=vp:vp ...`; without it `COPY` writes root-owned files that
+  `vp install` cannot update (permission denied). Verified end to end against the
+  published preview image.
+- **Possible later variants:** an Alpine/musl toolchain image (deferred, see
+  Future Work) and a `-slim` image without the native build toolchain for
+  projects with no native deps.
 
 ### `vp` 如何进入镜像
 

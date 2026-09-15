@@ -75,6 +75,55 @@ export default defineConfig({
 安装工作区依赖，以便生成器的 bin 可以导入 bingo
 
 
+## `vp exec node assert_noninteractive.mjs`
+
+断言缺少参数时会在不提示的情况下失败，现有文件得以保留，并且两种模式都会生成文件
+
+
+## `vp create my-generator --no-interactive -- --name demo-pkg`
+
+缺少目录时会在不进入 Bingo 提示的情况下失败
+
+**退出代码：** 1
+
+```
+
+Generating project…
+
+Running: node <workspace>/tools/my-generator/bin/index.ts --name demo-pkg --skip-requests
+Missing --directory. Pass generator options after -- in vp create.
+```
+
+## `vp create my-generator --no-interactive -- --directory missing-name`
+
+缺少必需的模板选项时会在创建其目录之前失败
+
+**退出代码：** 1
+
+```
+
+Generating project…
+
+Running: node <workspace>/tools/my-generator/bin/index.ts --directory missing-name --skip-requests
+[
+  {
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": [
+      "name"
+    ],
+    "message": "Required"
+  }
+]
+```
+
+## `vpt stat-file tools/missing-name --assert missing`
+
+```
+tools/missing-name: missing
+```
+
 ## `vp create my-generator --no-interactive -- --name demo-pkg --directory demo-pkg --offline`
 
 通过已注册的 create.templates 条目解析
@@ -83,22 +132,7 @@ export default defineConfig({
 
 正在生成项目……
 
-运行：node <workspace>/tools/my-generator/bin/index.ts --name demo-pkg --directory demo-pkg --offline --skip-requests
-┌  my-generator@0.0.0 │
-◇  以 --setup 模式运行
-│
-│  已启用 --offline。你需要手动 git push 任何更改。
-│
-◇  从系统推断默认选项
-│
-◇  已运行 my-generator 模板
-│
-◇  已准备本地 Git 仓库
-│
-●  在 ./demo-pkg 中运行 npx index.ts --remote
-│  以在 GitHub 上创建并同步远程仓库。
-│
-└  感谢使用 my-generator！💝
+Running: node <workspace>/tools/my-generator/bin/index.ts --name demo-pkg --directory demo-pkg --offline --skip-requests
 
 Monorepo 集成中……
 

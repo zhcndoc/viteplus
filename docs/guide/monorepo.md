@@ -6,7 +6,9 @@ Vite+ 支持在根目录使用 `vite.config.ts` 的多仓库。你可以在根�
 
 ## 带覆盖配置的根配置
 
-使用 `lint.overrides` 来配置仅适用于某些包的 Oxlint 规则：
+Vite+ 目前不支持嵌套的 lint 或格式化配置。包级别的 `lint` 和 `fmt` 块不会自动应用。目前，请在根目录的 `vite.config.ts` 中使用 overrides 定义文件或包特定的设置。长期行为仍有待讨论；请[分享你的使用场景和预期](/guide/troubleshooting#nested-lint-or-format-config-is-not-applied)，帮助我们完善相关设计。
+
+对仅适用于部分包的 Oxlint 规则使用 `lint.overrides`：
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';

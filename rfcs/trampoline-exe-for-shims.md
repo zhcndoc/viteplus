@@ -6,7 +6,7 @@
 
 ## 摘要
 
-将 Windows 上的 `.cmd` 包装脚本替换为轻量级 trampoline `.exe` 二进制文件，适用于所有 shim 工具（`vp`、`node`、`npm`、`npx`、`corepack`、`vpx`、`vpr` 以及全局安装的包二进制文件）。这消除了用户按下 Ctrl+C 时出现的 `Terminate batch job (Y/N)?` 提示，并为直接调用 `.exe` 提供了同样干净的信号行为。
+将所有 shim 工具（`vp`、`node`、`npm`、`npx`、`vpx`、`vpr` 以及全局安装的软件包二进制文件）的 Windows `.cmd` 包装器脚本替换为轻量级的跳板 `.exe` 二进制文件。这消除了用户按下 Ctrl+C 时出现的 `Terminate batch job (Y/N)?` 提示，并提供与直接调用 `.exe` 相同的干净信号行为。
 
 ## 动机
 
@@ -41,9 +41,9 @@ Terminate batch job (Y/N)?
 如 [issue #835](https://github.com/voidzero-dev/vite-plus/issues/835) 所示：
 
 1. 运行 `vp dev`（通过 `vp.cmd`）时，按下 Ctrl+C 会显示 `Terminate batch job (Y/N)?`
-2. 直接运行 `~/.vite-plus/current/bin/vp.exe dev` **不会** 显示该提示
-3. 运行 `npm.cmd run dev` 会显示该提示；运行 `npm.ps1 run dev` 则不会
-4. 当 `.cmd` 包装器串联时（例如 `vp.cmd` → `npm.cmd`），该提示可能出现多次
+2. 直接运行 `<DATA>/current/bin/vp.exe dev` 时**不会**显示该提示
+3. 运行 `npm.cmd run dev` 时会显示该提示；运行 `npm.ps1 run dev` 时不会
+4. 当 `.cmd` 包装器相互链式调用时（例如 `vp.cmd` → `npm.cmd`），该提示可能出现多次
 
 ### 为什么 `.ps1` 脚本不够用
 
@@ -55,36 +55,60 @@ PowerShell `.ps1` 脚本可以避免 Ctrl+C 问题，但有关键限制：
 
 ## 架构
 
-### Unix（基于符号链接 — 不变）
+本 RFC 使用[目录布局 RFC](./directory-layout.md)中的 `<BIN>`、`<DATA>` 和 `<CACHE>` 根目录。
+
+### Unix（基于符号链接——不变）
 
 在 Unix 上，shims 是指向 `vp` 二进制文件的符号链接。二进制文件通过 `argv[0]` 检测工具名称：
 
 ```
-~/.vite-plus/bin/
-├── vp       → ../current/bin/vp     （符号链接）
-├── node     → ../current/bin/vp     （符号链接）
-├── npm      → ../current/bin/vp     （符号链接）
-├── npx      → ../current/bin/vp     （符号链接）
-├── corepack → ../current/bin/vp     （符号链接）
-├── vpx      → ../current/bin/vp     （符号链接）
-└── vpr      → ../current/bin/vp     （符号链接）
+<BIN>/
+├── vp       → <DATA>/current/bin/vp     (symlink)
+├── node     → <DATA>/current/bin/vp     (symlink)
+├── npm      → <DATA>/current/bin/vp     (symlink)
+├── npx      → <DATA>/current/bin/vp     (symlink)
+├── vpx      → <DATA>/current/bin/vp     (symlink)
+└── vpr      → <DATA>/current/bin/vp     (symlink)
 ```
 
-### Windows（Trampoline `.exe` 文件）
+### Windows（跳板 `.exe` 文件）
 
 ```
-~/.vite-plus/bin/
-├── vp.exe       # 启动器 → 生成 current\bin\vp.exe
-├── node.exe     # 启动器 → 设置 VP_SHIM_TOOL=node，生成 vp.exe
-├── npm.exe      # 启动器 → 设置 VP_SHIM_TOOL=npm，生成 vp.exe
-├── npx.exe      # 启动器 → 设置 VP_SHIM_TOOL=npx，生成 vp.exe
-├── corepack.exe # 启动器 → 设置 VP_SHIM_TOOL=corepack，生成 vp.exe
-├── vpx.exe      # 启动器 → 设置 VP_SHIM_TOOL=vpx，生成 vp.exe
-├── vpr.exe      # 启动器 → 设置 VP_SHIM_TOOL=vpr，生成 vp.exe
-└── tsc.exe      # 启动器 → 设置 VP_SHIM_TOOL=tsc，生成 vp.exe（包 shim）
+<BIN>/
+├── vp.exe       # Trampoline executable
+├── vp.shim      # Directory-layout sidecar for vp.exe
+├── node.exe     # Trampoline executable
+├── node.shim    # Directory-layout sidecar for node.exe
+├── npm.exe      # Trampoline executable
+├── npm.shim     # Directory-layout sidecar for npm.exe
+└── ...
+
+<DATA>/current/bin/
+├── vp.exe       # Main CLI binary
+└── vp-shim.exe  # Trampoline template
 ```
 
-每个 trampoline 都是 `vp-shim.exe` 的副本（与 `vp.exe` 一起分发的模板二进制文件）。
+每个跳板都是 `vp-shim.exe` 的副本。每个副本都有一个与其文件主名相同的 sidecar。例如，`node.exe` 会读取 `node.shim`。工具名称不会存储在 sidecar 中。
+
+拆分布局的 sidecar 格式如下：
+
+```text
+vite-plus-shim-v1
+layout=split
+data=C:\Users\alice\AppData\Local\vite-plus\data
+cache=C:\Users\alice\AppData\Local\vite-plus\cache
+```
+
+使用 `VP_HOME=C:\Tools\vite-plus` 的安装采用单根布局：
+
+```text
+vite-plus-shim-v1
+layout=single-root
+data=C:\Tools\vite-plus
+cache=C:\Tools\vite-plus\cache
+```
+
+必须使用准确的 `vite-plus-shim-v1` 标头。跳板和所有权检查会拒绝未版本化的 sidecar。sidecar 是布局的事实来源，同时也记录相邻的可执行文件由 Vite+ 所有。
 
 **注意**：通过 `npm install -g` 安装的包仍然使用 `.cmd` 包装器，因为它们缺少 `PackageMetadata`，并且需要直接指向 npm 生成的脚本。
 
@@ -94,87 +118,74 @@ PowerShell `.ps1` 脚本可以避免 Ctrl+C 问题，但有关键限制：
 
 ```
 crates/vp_trampoline/
-├── Cargo.toml      # Zero external dependencies
+├── Cargo.toml           # Package settings and release profile
+├── Cargo.lock           # Lockfile for this standalone crate
+├── .cargo/
+│   └── config.toml      # build-std and artifact directory settings
 ├── src/
-│   └── main.rs     # ~90 行，单文件二进制
+│   ├── main.rs          # Entry points and portable implementation
+│   ├── win.rs           # Raw Win32 code for the no_main entry point
+│   └── cmdline.rs       # Portable parsers and tests
 ```
 
-### Trampoline 二进制
+根目录的 `Cargo.toml` 会将此 crate 排除在工作区之外。由于以下两个原因，该 crate 必须位于工作区之外：
 
-该 trampoline **没有任何外部依赖**——Win32 FFI 调用（`SetConsoleCtrlHandler`）以内联方式声明，以避免引入庞大的 `windows`/`windows-core` crate。它还通过从不使用 `format!`、`eprintln!`、`println!` 或 `.unwrap()` 来避免 `core::fmt`（约 100KB 的开销）。
+- 发布配置将 `panic` 设置为 `"immediate-abort"`。Cargo 会忽略按软件包设置的配置覆盖中的 `panic`。因此，该 crate 需要单独的配置。
+- 该 crate 本地的 `.cargo/config.toml` 启用了 build-std。Cargo 只有在从 crate 目录运行时才会读取此文件。
 
-```rust
-use std::{env, process::{self, Command}};
+在仓库根目录中运行：
 
-fn main() {
-    // 1. 从自身文件名确定工具名称（例如，node.exe → "node"）
-    let exe_path = env::current_exe().unwrap_or_else(|_| process::exit(1));
-    let tool_name = exe_path.file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or_else(|| process::exit(1));
-
-    // 2. 定位 ../current/bin/vp.exe
-    let bin_dir = exe_path.parent().unwrap_or_else(|| process::exit(1));
-    let vp_home = bin_dir.parent().unwrap_or_else(|| process::exit(1));
-    let vp_exe = vp_home.join("current").join("bin").join("vp.exe");
-
-    // 3. 安装 Ctrl+C 处理器（忽略信号；子进程处理它）
-    install_ctrl_handler();
-
-    // 4. 使用环境变量启动 vp.exe
-    let mut cmd = Command::new(&vp_exe);
-    cmd.args(env::args_os().skip(1));
-    cmd.env("VP_HOME", vp_home);
-
-    if tool_name != "vp" {
-        cmd.env("VP_SHIM_TOOL", tool_name);
-        cmd.env_remove("VP_TOOL_RECURSION");
-    }
-
-    // 5. 传播退出码（错误消息通过 write_all 输出，而不是 eprintln!）
-    match cmd.status() {
-        Ok(status) => process::exit(exit_code_from_status(status)),
-        Err(_) => {
-            use std::io::Write;
-            let mut stderr = std::io::stderr().lock();
-            let _ = stderr.write_all(b"vite-plus: failed to execute ");
-            let _ = stderr.write_all(vp_exe.as_os_str().as_encoded_bytes());
-            let _ = stderr.write_all(b"\n");
-            process::exit(1);
-        }
-    }
-}
-
-fn install_ctrl_handler() {
-    type HandlerRoutine = unsafe extern "system" fn(ctrl_type: u32) -> i32;
-    unsafe extern "system" {
-        fn SetConsoleCtrlHandler(handler: Option<HandlerRoutine>, add: i32) -> i32;
-    }
-    unsafe extern "system" fn handler(_ctrl_type: u32) -> i32 { 1 }
-    unsafe { SetConsoleCtrlHandler(Some(handler), 1); }
-}
+```bash
+node packages/tools/src/build-trampoline.ts --release [--target <triple>]
 ```
+
+crate 配置会将构建产物存储在仓库的 `target/` 目录中。它设置 `target-dir = "../../target"`。CI 和 `install-global-cli` 会在与工作区二进制文件相同的目录中查找 `vp-shim.exe`。构建使用固定版本的 nightly 工具链和 `rust-src` 组件。仓库的 `rust-toolchain.toml` 提供这两项内容。
+
+### 跳板二进制文件
+
+跳板没有外部依赖。它将所有 Win32 调用声明为来自 KERNEL32 的原始 `extern "system"` 函数。因此，它不使用 `windows` 或 `windows-core` crate。它也不使用 `core::fmt`。诊断信息使用 `WriteFile` 和一个小型十进制格式化器。
+
+在 Windows 上，二进制文件使用 `#![no_main]` 并导出 `mainCRTStartup`。因此，CRT 启动过程和 `std` 运行时不会初始化。`src/win.rs` 使用以下流程：
+
+1. `GetModuleFileNameW` 返回 shim 路径和工具名称。代码将 `.exe` 扩展名替换为 `.shim`，以查找 sidecar。
+2. `CreateFileW` 和 `ReadFile` 读取 UTF-8 sidecar。`GetFullPathNameW` 将长路径转换为绝对路径。随后代码添加 `\\?\` 驱动器前缀或 `\\?\UNC\` 网络前缀。解析器要求存在版本化标头，并接受 `single-root` 和 `split` 布局。
+3. `SetEnvironmentVariableW` 设置目录布局。单根指针会设置 `VP_HOME`。拆分指针会移除 `VP_HOME`。代码会设置 `VP_DATA_DIR`、`VP_BIN_DIR` 和 `VP_CACHE_DIR`。工具 shim 还会设置 `VP_SHIM_TOOL`。它们会保留 `VP_PATH_INJECTED_TOOLS`，以便复用特定工具的 PATH。
+4. 子命令行以 `"<DATA>\current\bin\vp.exe"` 开始。代码会将原始的 `GetCommandLineW` 文本追加到程序参数之后。它使用 MSVC 的 `argv[0]` 规则。引号会开始或结束引用模式。反斜杠不会转义字符。这样可以保留调用方传入的完整 UTF-16 参数文本。
+5. `SetConsoleCtrlHandler` 安装一个忽略 Ctrl+C 和 Ctrl+Break 的处理器。子进程会处理这些事件。
+6. `CreateProcessW` 使用继承的句柄和启动信息启动子进程。负载和 sidecar 路径使用相同的扩展长度规范化。如果父进程重定向标准 I/O，代码会使标准句柄可继承。它会在 `CreateProcessW` 之前执行此操作，与 uv-trampoline 和 distlib 的做法一致。
+7. `WaitForSingleObject` 等待子进程。`GetExitCodeProcess` 读取其退出码。`ExitProcess` 原样返回该退出码。
+
+对于关键的启动失败，跳板会报告失败的操作和适用的路径。如果 Windows 提供了错误代码，它也会包含该错误代码。如果缺少 `vp.exe`，它会提示用户重新安装 Vite+ 或运行 `vp env setup`。
+
+非 Windows 实现使用 `std::process::Command`。可移植测试使用相同的 sidecar 解析器。Unix shims 是符号链接，不使用此二进制文件。解析器会拒绝缺失、格式错误和未版本化的 sidecar。它不会根据目录路径推断布局。
 
 ### 大小优化
 
-| 技术                                                                             | 节省                      | 状态 |
-| -------------------------------------------------------------------------------- | ------------------------- | ---- |
-| 零外部依赖（原始 FFI）                                                           | ~20KB（相较 `windows` crate） | 完成 |
-| 不直接使用 `core::fmt`（避免 `eprintln!`/`format!`/`.unwrap()`）                 | 轻微                      | 完成 |
-| 工作区配置：`lto="fat"`、`codegen-units=1`、`strip="symbols"`、`panic="abort"` | 继承                      | 完成 |
-| 按包设置 `opt-level="z"`（优化体积）                                              | ~5-10%                    | 完成 |
+| 技术                                                                    | 状态 |
+| ----------------------------------------------------------------------- | ---- |
+| 零外部依赖（原始 FFI，不使用 `windows` crate）                           | 完成 |
+| 不使用 `core::fmt`（通过 `WriteFile` + 手动十进制格式化器输出诊断信息） | 完成 |
+| 独立配置：`opt-level="z"`、`lto="fat"`、`codegen-units=1`、`strip`     | 完成 |
+| build-std：使用此配置重新编译 `std`（`-Zbuild-std`）                   | 完成 |
+| `panic = "immediate-abort"`（无 panic 格式化、展开和回溯）              | 完成 |
+| `#![no_main]` + `mainCRTStartup`（无 CRT 启动和 `std` 运行时初始化）    | 完成 |
+| 使用原始 `CreateProcessW`，而不是 `std::process::Command`                | 完成 |
 
-**二进制大小**：Windows 上约 200KB。下限由 `std::process::Command` 决定，因为它在内部会无论我们的代码是否使用，都会拉入用于错误格式化的 `core::fmt`。若要进一步缩小到约 40-50KB（与 uv-trampoline 相当），需要用原始 `CreateProcessW` 替换 `Command` 并使用 nightly Rust（参见未来优化）。
+**二进制大小**：在 x86_64-pc-windows-msvc 和 aarch64-pc-windows-msvc 上均为 14,336 B。此大小包含 sidecar 解析器和诊断信息。x86_64 上的 `std::process::Command` 实现大小为 221,696 B。所有测量结果请参阅“大小测量和构建限制”。该可执行文件只导入 KERNEL32。
 
 ### 环境变量
 
-在启动 `vp.exe` 之前，trampoline 会设置三个环境变量：
+sidecar 控制由 `vp.exe` 继承的目录环境：
 
-| 变量                | 适用时机                   | 用途                                                                         |
-| ------------------- | -------------------------- | ------------------------------------------------------------------------------ |
-| `VP_HOME`           | 始终                       | 告诉 vp.exe 安装目录（由 `bin_dir.parent()` 推导）                            |
-| `VP_SHIM_TOOL`      | 仅工具 shim（不是 "vp"）   | 告诉 vp.exe 为指定工具进入 shim 分发模式                                       |
-| `VP_TOOL_RECURSION` | 为工具 shim 移除            | 清除递归标记，以便在嵌套调用中进行全新的版本解析                                |
+| 变量                     | 适用情况               | 跳板操作                                         |
+| ------------------------ | ---------------------- | ------------------------------------------------ |
+| `VP_HOME`                | 单根布局               | 从 sidecar 数据根目录设置所有 Vite+ 目录         |
+| `VP_HOME`                | 拆分布局               | 移除该值，使其无法覆盖单独的根目录               |
+| `VP_DATA_DIR`            | 拆分布局               | 设置负载和状态根目录                             |
+| `VP_BIN_DIR`             | 拆分布局               | 设置包含 shim 的目录                             |
+| `VP_CACHE_DIR`           | 拆分布局               | 设置缓存根目录                                   |
+| `VP_SHIM_TOOL`           | 工具 shim，`vp` 除外   | 选择用于 shim 分派的指定工具                     |
+| `VP_PATH_INJECTED_TOOLS` | 工具 shim               | 保留已经注入 PATH 的工具                         |
 
 ### Ctrl+C 处理
 
@@ -190,12 +201,14 @@ trampoline 安装一个返回 `TRUE`（1）的控制台控制处理器：
 
 ### 与 Shim 检测的集成
 
-`shim/mod.rs` 中的 `detect_shim_tool()` 会在检查 `argv[0]` 之前检查 `VP_SHIM_TOOL` 环境变量：
+`shim/mod.rs` 中的 `detect_shim_tool()` 会先检查 `VP_SHIM_TOOL`，然后才检查 `argv[0]`：
 
 ```
-Trampoline (node.exe)
-  → sets VP_SHIM_TOOL=node, VP_HOME=..., removes VP_TOOL_RECURSION
-  → spawns current/bin/vp.exe with original args
+Trampoline (node.exe + node.shim)
+  → loads the recorded directory layout
+  → sets VP_SHIM_TOOL=node and the directory variables
+  → preserves VP_PATH_INJECTED_TOOLS
+  → spawns <DATA>/current/bin/vp.exe with the original argument tail
     → detect_shim_tool() reads env var → "node"
     → dispatch("node", args)
     → 解析 Node.js 版本，执行真实的 node
@@ -203,7 +216,7 @@ Trampoline (node.exe)
 
 ### 运行中的 exe 覆盖
 
-当通过 trampoline（`~/.vite-plus/bin/vp.exe`）执行 `vp env setup --refresh` 时，trampoline 仍在运行。Windows 不允许覆盖正在运行的 `.exe`。解决方案：
+当通过 trampoline（`<BIN>/vp.exe`）调用 `vp env setup --refresh` 时，trampoline 仍在运行。Windows 不允许覆盖正在运行的 `.exe`。解决方案：
 
 1. 将现有的 `vp.exe` 重命名为 `vp.exe.<unix_timestamp>.old`
 2. 将新的 trampoline 复制为 `vp.exe`
@@ -213,8 +226,8 @@ Trampoline (node.exe)
 
 在 `vp upgrade` 期间，在 `current` 链接切换到新版本后，会调用 `vp env setup --refresh` 来重新生成所有 trampoline `.exe` 文件。这样可确保当版本之间的 trampoline 二进制文件（`vp-shim.exe`）发生变化时，所有 shims 都能获取到新版本：
 
-1. **核心 shims**（`vp.exe`、`node.exe`、`npm.exe`、`npx.exe`、`corepack.exe`、`vpx.exe`、`vpr.exe`）通过标准的 `--refresh` 逻辑刷新。
-2. **包 shims**（例如 `tsc.exe`、`eslint.exe`，通过 `vp install -g` 安装）会通过扫描 `~/.vite-plus/bins/` 中 `source: Vp` 的 `BinConfig` 条目进行发现，并将每个 `.exe` 替换为新的 trampoline。
+1. **Core shims**（`vp.exe`、`node.exe`、`npm.exe`、`npx.exe`、`vpx.exe`、`vpr.exe`）由标准的 `--refresh` 逻辑刷新。
+2. **Package shims**（例如通过 `vp install -g` 安装的 `tsc.exe`、`eslint.exe`）会通过扫描 `<DATA>/bins/`，查找 `source: Vp` 的 `BinConfig` 条目来发现，并将每个 `.exe` 替换为新的 trampoline。
 
 通过 npm 拦截安装的包 shims（`source: Npm`）使用的是 `.cmd` 包装器，而不是 trampoline `.exe` 文件，因此不受此刷新影响。
 
@@ -225,9 +238,9 @@ Trampoline (node.exe)
 trampoline 二进制文件（`vp-shim.exe`）与 `vp.exe` 一起分发：
 
 ```
-~/.vite-plus/current/bin/
-├── vp.exe          # 主 CLI 二进制文件
-└── vp-shim.exe     # trampoline 模板（作为 shims 复制）
+<DATA>/current/bin/
+├── vp.exe          # Main CLI binary
+└── vp-shim.exe     # Trampoline template (copied as shims)
 ```
 
 包含于：
@@ -237,7 +250,7 @@ trampoline 二进制文件（`vp-shim.exe`）与 `vp.exe` 一起分发：
 - `install.ps1` 和 `install.sh`（本地开发与下载路径均包括）
 - 升级路径中的 `extract_platform_package()`
 
-### 旧版回退
+### Pre-Trampoline Release Fallback
 
 在安装一个不含 trampoline 的旧版本（包中没有 `vp-shim.exe`）时：
 
@@ -246,20 +259,20 @@ trampoline 二进制文件（`vp-shim.exe`）与 `vp.exe` 一起分发：
 
 ## 与 uv-trampoline 的比较
 
-| 方面              | uv-trampoline                            | vite-plus trampoline                 |
-| ----------------- | ---------------------------------------- | ------------------------------------ |
-| **用途**           | 启动带内嵌脚本的 Python                  | 转发到 `vp.exe`                      |
+| 方面               | uv-trampoline                            | vite-plus trampoline                 |
+| ------------------ | ---------------------------------------- | ------------------------------------ |
+| **用途**           | 使用嵌入式脚本启动 Python                 | 转发到 `vp.exe`                      |
 | **复杂度**         | 高（PE 资源、zipimport）                 | 低（文件名 + spawn）                 |
-| **数据嵌入**       | PE 资源（kind、path、script ZIP）        | 无（使用文件名 + 相对路径）          |
-| **依赖**           | `windows` crate（unsafe、无 CRT）        | 零（原始 FFI 声明）                  |
-| **工具链**         | Nightly Rust（`panic="immediate-abort"`） | Stable Rust                          |
-| **二进制大小**     | 39-47 KB                                 | ~200 KB                              |
-| **入口点**         | `#![no_main]` + `mainCRTStartup`         | 标准 `fn main()`                     |
-| **错误输出**       | `ufmt`（无 `core::fmt`）                 | `write_all`（无 `core::fmt`）        |
-| **Ctrl+C 处理**    | `SetConsoleCtrlHandler` → 忽略           | 相同方法                             |
-| **退出码**         | `GetExitCodeProcess` → `exit()`          | `Command::status()` → `exit()`       |
+| **数据嵌入**       | PE 资源（类型、路径、脚本 ZIP）           | 相邻的目录布局 sidecar               |
+| **依赖**           | `windows` crate（不安全、无 CRT）         | 无（原始 FFI 声明）                  |
+| **工具链**         | Nightly Rust（`panic="immediate-abort"`） | Nightly Rust（相同技术）             |
+| **二进制大小**     | 39-47 KiB                                | 14 KiB                               |
+| **入口点**         | `#![no_main]` + `mainCRTStartup`         | `#![no_main]` + `mainCRTStartup`     |
+| **错误输出**       | `ufmt`（无 `core::fmt`）                 | `WriteFile` + Win32 错误代码         |
+| **Ctrl+C 处理**    | `SetConsoleCtrlHandler` → ignore         | `SetConsoleCtrlHandler` → ignore     |
+| **退出码**         | `GetExitCodeProcess` → `exit()`          | `GetExitCodeProcess` → `ExitProcess` |
 
-vite-plus trampoline 之所以显著更简单，是因为它不需要将数据嵌入到 PE 资源中——它只读取自身文件名，在固定的相对路径下找到 `vp.exe`，然后启动它。与 uv-trampoline 相比，约 150KB 的大小差异来自 `std::process::Command`（其内部会引入 `core::fmt`）与使用 nightly-only 的 `#![no_main]` 配合原始 `CreateProcessW` 之间的区别。
+Vite+ trampoline 更小，因为它不嵌入 PE 资源。它只规范化较长的 sidecar 和负载路径。它不需要作业对象或 GUI 子系统支持。它会读取文件旁边的小型 sidecar，在记录的数据根目录下查找 `vp.exe` 并启动它。两个项目使用相同的构建方法和入口点结构。
 
 ## 备选方案
 
@@ -277,25 +290,52 @@ vite-plus trampoline 之所以显著更简单，是因为它不需要将数据�
 
 ### 4. 将 `vp.exe` 复制为每个 shim（已拒绝）
 
-每份副本约 5-10MB。跳板能以约 100KB 达到相同结果。
+每个副本约 5-10MB。trampoline 只用 14 KiB 就能实现相同结果。
 
 ### 5. 用 `windows` crate 做 FFI（已拒绝）
 
 仅为一次 `SetConsoleCtrlHandler` 调用就会让二进制增加约 100KB。原始 FFI 声明已经足够。
 
-## 未来优化
+## 大小测量和构建限制
 
-如果需要进一步缩小约 100KB 的二进制大小：
+我们使用 cargo-xwin 构建了以下每个变体。每个变体均在 x86_64-pc-windows-msvc 上测量。前两行使用支持 sidecar 的 `std` 实现。接下来的五行展示了早期的固定布局实验。最后一行展示当前支持 sidecar 的原始实现。
 
-1. **切换到 nightly Rust**，使用 `panic="immediate-abort"` 和 `#![no_main]` + `mainCRTStartup`（可节省约 50KB）
-2. **使用原始 Win32 `CreateProcessW`**，而不是 `std::process::Command`（可消除大部分 std 的进程机制）
-3. **预构建并提交** trampoline 二进制（像 uv 那样），以将 trampoline 构建与工作区工具链解耦
+| 变体                                                                      | 工具链  | 大小      |
+| ------------------------------------------------------------------------- | ------- | --------- |
+| 支持 Sidecar 的 `std::process::Command`，预编译 `std`                    | stable  | 221,696 B |
+| 相同源码 + build-std + `panic="immediate-abort"`                         | nightly | 82,432 B  |
+| 固定布局 `std` 源码 + `#![no_main]` + `mainCRTStartup` + `atexit` 存根   | nightly | 69,632 B  |
+| 原始 Win32 重写、普通 `main`、stable、不使用 build-std                   | stable  | 105,984 B |
+| 原始 Win32 重写、普通 `main` + build-std                                | nightly | 13,824 B  |
+| 原始 Win32 重写 + `#![no_main]`，无诊断信息                              | nightly | 6,656 B   |
+| 固定布局原始 Win32 + `#![no_main]` + 完整诊断信息                        | nightly | 8,192 B   |
+| 支持 Sidecar 的原始 Win32 + `#![no_main]` + 完整诊断信息（已发布）       | nightly | 14,336 B  |
 
-这些做法可以将二进制体积降到约 40-50KB，与 uv-trampoline 持平，但代价是需要 nightly 工具链和更多 unsafe 代码。
+作为比较，uv-trampoline x64 控制台二进制文件为 45,056 B。默认的 Scoop kiennq shim 为 136,192 B，并使用静态链接的 MSVC C。Scoop 还曾添加后又移除了一个 317,952 B 的 Rust shim。
+
+### 构建限制
+
+1. **`atexit` 链接失败**：当前的 nightly 工具链通过 C `atexit` 注册 TLS 清理。使用 `#![no_main]` 时，该符号会链接 `msvcrt.lib(utility.obj)`。随后链接会因未定义的 `__vcrt_*` 和 `__acrt_*` CRT 初始化符号而失败。导出以下无操作函数：
+
+   ```rust
+   extern "C" fn atexit(...) -> i32 { 0 }
+   ```
+
+   请参阅 `src/win.rs`。trampoline 不会在进程退出时运行 TLS 析构函数。文档中的 `rustc-link-lib=ucrt` 解决方法无法修复此链接问题。请参阅 rust-lang/rust#143172。uv 使用的较旧 nightly 工具链不会注册 `atexit`。
+
+2. **子系统**：`#![no_main]` 需要 `#![windows_subsystem = "console"]`。没有此属性时，lld 会报告未定义子系统。
+3. **静态 CRT**：不要使用 `+crt-static`。它会链接静态 CRT，并使二进制大小增加到约 115 KiB。
+4. **开发配置**：使用 `opt-level = 1` 和 LTO。在 `opt-level = 0` 下，编译器可能会引用 MSVC 辅助函数 `__CxxFrameHandler3`。即使使用 `panic = "immediate-abort"`，这也会导致链接失败。uv 使用相同的配置。
+
+### 剩余选项
+
+- 使用带有 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 的作业对象分配子进程。uv 使用此选项。它会使 Windows 在停止 shim 时停止子进程，但会使二进制大小增加几 KiB。
+- 提交可复现的 trampoline 二进制文件。uv 提交经过 `/Brepro` 规范化的可执行文件，并在 CI 中逐字节比较。此选项可以将 shim 与工具链变化隔离开来。
 
 ## 参考
 
-- [Issue #835](https://github.com/voidzero-dev/vite-plus/issues/835)：带视频复现的原始功能请求
-- [uv-trampoline](https://github.com/astral-sh/uv/tree/main/crates/uv-trampoline)：astral-sh 的参考实现（使用 nightly Rust，约 40KB）
-- [RFC: env-command](./env-command.md)：shim 架构文档
-- [RFC: upgrade-command](./upgrade-command.md)：升级/回滚流程。
+- [Issue #835](https://github.com/voidzero-dev/vite-plus/issues/835)：包含视频复现的原始功能请求
+- [uv-trampoline](https://github.com/astral-sh/uv/tree/main/crates/uv-trampoline)：由 astral-sh 提供的参考实现。它使用工作区排除、build-std、`panic="immediate-abort"`、cargo-xwin、`#![no_main]` 和原始 Win32。其 CI 会拒绝 `core::fmt` 和 `std::panicking` 符号。
+- [Scoop shims](https://github.com/ScoopInstaller/Scoop/tree/master/supporting/shims)：来自 kiennq/scoop-better-shimexe 的原生 C shim 和 C# .NET shim。C shim 为 136 KiB。C# shim 为 9.7 KiB。相邻的 `.shim` 文件指定启动目标。
+- [RFC：env-command](./env-command.md)：Shim 架构文档
+- [RFC：upgrade-command](./upgrade-command.md)：升级／回滚流程

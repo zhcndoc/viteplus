@@ -82,10 +82,22 @@ Vite+ 通过编辑器特定设置支持 VS Code 和 Zed，`vp create` 和 `vp mi
     "JavaScript": {
       "format_on_save": "on",
       "prettier": { "allowed": false },
-      "formatter": [{ "language_server": { "name": "oxfmt" } }],
-      "code_action": "source.fixAll.oxc"
+      "formatter": [
+        { "language_server": { "name": "oxfmt" } },
+        { "code_action": "source.fixAll.oxc" }
+      ]
+    },
+    "JSX": {
+      "format_on_save": "on",
+      "prettier": { "allowed": false },
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
     },
     "TypeScript": {
+      "format_on_save": "on",
+      "prettier": { "allowed": false },
+      "formatter": [{ "language_server": { "name": "oxfmt" } }]
+    },
+    "TSX": {
       "format_on_save": "on",
       "prettier": { "allowed": false },
       "formatter": [{ "language_server": { "name": "oxfmt" } }]
@@ -108,8 +120,7 @@ Vite+ 通过编辑器特定设置支持 VS Code 和 Zed，`vp create` 和 `vp mi
 创建或迁移项目时，Vite+ 会提示你选择是否为 JetBrains IDE 写入编辑器配置。
 
 ::: tip Vite+ 不会与现有配置文件合并
-由于合并 XML 文件较为复杂，Vite+ 目前不会在文件已存在时合并你当前的文件。
-你将有机会替换任何现有文件，而不是进行合并。
+由于合并 XML 文件存在一些复杂性，Vite+ 目前不会在文件已存在时合并你的现有文件。系统会提供替换任何现有文件的机会，而不是进行合并
 :::
 
 你也可以手动设置 IDE 配置，使其与 Vite+ 设置保持一致：

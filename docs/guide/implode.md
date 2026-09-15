@@ -1,6 +1,6 @@
 # 移除 Vite+
 
-使用 `vp implode` 从您的机器中移除 `vp` 和所有相关的 Vite+ 数据。
+使用 `vp implode` 从您的计算机中移除[全局 `vp` 安装](/guide/global-cli)以及所有相关的 Vite+ 数据。它不会从项目中移除 `vite-plus` 依赖。
 
 ## 概述
 

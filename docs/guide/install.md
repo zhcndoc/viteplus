@@ -1,6 +1,6 @@
-# 安装依赖
+# 包管理
 
-`vp install` 使用当前工作区的包管理器来安装依赖。
+`vp` 会检测并运行当前工作区的包管理器。这些命令可通过[全局 CLI](/guide/global-cli)和[项目本地 CLI](/guide/local-cli)使用。
 
 ## 概述
 
@@ -19,7 +19,7 @@ Vite+ 按照以下顺序检测包管理器：
 9. `bunfig.toml`
 10. `yarn.config.cjs`
 
-如果这些文件都不存在，`vp` 默认回退到 `pnpm`。Vite+ 会自动下载匹配的包管理器并将其用于你运行的命令。当检测结果来自锁文件或配置文件时，解析出的版本会写入 `devEngines.packageManager`，以便后续运行保持确定性；已经声明了 `packageManager` 或 `devEngines.packageManager` 的项目会保持原样。
+如果上述文件均不存在，`vp` 默认回退到 `pnpm`。Vite+ 会自动下载匹配的包管理器并使用它来运行你执行的命令，但包管理器检测过程绝不会重写 `package.json`。当项目需要显式声明确切版本时，请使用 `vp env pin <package-manager>@<version>`。
 
 [`devEngines.packageManager`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#devengines) 字段接受单个对象或对象数组，其 `version` 可以是 semver 范围：
 
@@ -39,14 +39,7 @@ Vite+ 按照以下顺序检测包管理器：
 
 Vite+ 当前会下载所声明的包管理器（即 `onFail: "download"` 的行为）；其他 `onFail` 值虽被接受，但尚未做区分处理。
 
-`packageManager` 固定版本可以携带完整性哈希（`yarn@4.17.1+sha512.…`）。`corepack use` 会写入该哈希。Vite+ 使用与 Corepack 相同的工件进行哈希处理：
-
-- Yarn 2 及更高版本使用提取后的 CLI 二进制文件（`bin/yarn.js`）
-- npm、pnpm 和 Yarn Classic 使用 npm 包 tarball
-
-Vite+ 在安装 Yarn 时对 CLI 进行一次哈希处理，并记录它验证过的固定版本。后续命令会将自身的固定版本与该记录进行比较。不匹配记录的固定版本会导致检查失败，并停止命令。Corepack 也会在其自身的缓存中保留相同类型的记录。
-
-显式的 `packageManager` 字段（或 `devEngines.packageManager` 声明）也会影响匹配的包管理器 shim。如果项目具有 `packageManager: "npm@10.9.4"`，则 `npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也遵循相同方式：`pnpm`/`pnpx`、`yarn`/`yarnpkg` 以及 `bun`/`bunx`。不匹配的工具不会被转换；`pnpm` 项目中的 `npm` 仍会解析为 npm。
+显式的 `packageManager` 字段（或 `devEngines.packageManager` 声明）也会影响匹配的包管理器 shim。如果项目包含 `packageManager: "npm@10.9.4"`，`npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也遵循相同方式：`pnpm`/`pnpx`、`yarn`/`yarnpkg` 以及 `bun`/`bunx`。不匹配的工具不会被转换；在 `pnpm` 项目中使用 `npm` 仍然会解析为 npm。
 
 ## 用法
 
@@ -81,7 +74,7 @@ vp install -w
 ::: warning
 这些命令**不会**与底层包管理器的全局安装目录交互。
 
-相反，Vite+ 会在 `VP_HOME/packages` 下管理自己的全局包，使其能够在不同的 Node.js 版本之间保持可用。
+相反，Vite+ 会将其全局包存储在已解析数据目录下的 `packages/` 中。这些包在不同的 Node.js 版本之间仍然可用。
 
 因此，诸如 `vp link` 之类的命令不会影响 Vite+ 的全局包，并且不会出现在 `vp list -g` 中。
 :::
@@ -119,6 +112,10 @@ Vite+ 提供了所有熟悉的包管理命令：
 - `vp install --filter <pattern>` 在 monorepo 中限制安装范围
 - `vp install -w` 在工作区根目录安装
 
+##### Git 和远程 tarball 依赖（npm v12+）
+
+npm v12 默认不再解析 Git 依赖（`github:`、`git+https:`）和远程 tarball URL；此类安装会失败并显示 `EALLOWGIT` / `EALLOWREMOTE`。使用 npm 的 `allow-git` / `allow-remote` 配置，即可按项目选择重新启用。
+
 #### 全局安装
 
 当你想让包管理器管理的工具在单个项目之外可用时，使用这些命令：
@@ -137,6 +134,7 @@ Vite+ 提供了所有熟悉的包管理命令：
 - `vp add -D typescript vitest`
 - `vp add -O fsevents`
 - `vp add --save-peer react`
+- `vp add react --ignore-scripts`
 - `vp remove react`
 - `vp remove --filter web react`
 
@@ -156,7 +154,7 @@ Vite+ 提供了所有熟悉的包管理命令：
 - `vp why react` 解释为什么安装了 `react`
 - `vp info react` 显示注册表元数据，如版本和 dist-tags
 
-这些命令会显示包管理器安装的包。它们不会显示 Vite+ 打包或编译的工具。运行 `vp toolchain [tool]` 可显示这些工具，包括 Vite、Rolldown 和 Oxc。为了便于阅读输出，当 Vite+ 也提供该包时，`vp why` 会显示提示。
+这些命令会显示包管理器安装的包。它们不会显示 Vite+ 捆绑或编译的工具。运行 `vp toolchain [tool]` 可显示这些工具，包括 Vite、Rolldown 和 Oxc。为了输出易于阅读，`vp why` 会在 Vite+ 同时提供该包时显示提示。
 
 #### 重建
 
@@ -187,8 +185,6 @@ npm v12 会跳过依赖安装脚本（`preinstall` / `install` / `postinstall`�
 
 批准操作只会记录允许列表：较早安装过程中被跳过的脚本不会运行，直到你执行 `vp rebuild <pkg>`。在 npm 11.16 - 11.x 中，相同的命令也能正常工作，但 npm 会将允许列表视为建议，仍然会运行脚本。
 
-npm v12 还默认停止解析 Git 依赖（`github:`、`git+https:`）和远程 tarball URL；此类安装会失败，并出现 `EALLOWGIT` / `EALLOWREMOTE`。可以通过 npm 的 `allow-git` / `allow-remote` 配置，按项目重新启用。
-
 #### 高级
 
 当你需要更低级别的包管理器行为时，使用这些命令：
@@ -218,6 +214,15 @@ vp pm stage approve <stage-id>   # 推送到正式注册表（2FA）
 vp pm stage reject <stage-id>    # 丢弃暂存版本（2FA）
 ```
 
-- pnpm（`pnpm stage`，要求 pnpm ≥ 11.3）和 npm（`npm stage`，要求 npm ≥ 11.15 且 Node ≥ 22.14）会直接透传。
+- pnpm（`pnpm stage`，需要 pnpm ≥ 11.3）和 npm（`npm stage`，需要 npm ≥ 11.15 且 Node ≥ 22.14）会直接透传。
 - yarn（Berry）使用其 npm 插件（`yarn npm publish --staged`、`yarn npm stage …`）；`view`/`download` 会回退到 npm。
-- yarn Classic 和 bun 不支持分阶段发布，因此会回退到 `npm stage`。
+- yarn Classic 和 bun 不支持分阶段发布，会回退到 `npm stage`。
+
+## 包管理器完整性验证
+
+`packageManager` 固定版本可以携带完整性哈希（`yarn@4.17.1+sha512.…`）。`corepack use` 会写入该哈希。Vite+ 会对与 Corepack 相同的构件进行哈希处理：
+
+- Yarn 2 及更高版本提取出的 CLI 二进制文件（`bin/yarn.js`）
+- npm、pnpm 和 Yarn Classic 的 npm 包 tarball
+
+Vite+ 会在安装 Yarn 时对 CLI 进行一次哈希处理，并记录它验证过的固定版本。后续命令会将自身的固定版本与该记录进行比较。不匹配记录的固定版本会导致检查失败，并停止命令。Corepack 也会为自己的缓存保留同类记录。

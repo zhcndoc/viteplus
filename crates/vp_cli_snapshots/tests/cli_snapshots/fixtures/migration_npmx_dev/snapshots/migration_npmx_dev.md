@@ -9,10 +9,13 @@ VITE+ - Web 的统一工具链
 
 ◇ 已将 . 更新为 Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖项：
-    vite-plus  最新版本 → <version>
-    vite              → <version>
-• 已配置包管理器设置
+• Dependencies:
+    vite-plus                   latest → <version>
+    vite                               → <version>
+    vitest                      4.1.10 → <version>
+    @vitest/browser-playwright  4.1.10 → <version>
+    @vitest/coverage-v8         4.1.10 → <version>
+• Package manager settings configured
 ```
 
 ## `vpt print-file package.json`

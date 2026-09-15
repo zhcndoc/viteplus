@@ -246,14 +246,19 @@ vp [-C <dir>] <command> [args...]
 
 ### 目标目录解析
 
-当应用命令调用不包含 `-C` 且没有位置参数目标（没有 Vite `[root]`，也没有 pack 条目）时，该调用是**裸调用**。此分类方式与工具自身的 cac 解析方式一致：任何非布尔选项之后的非标记 token 都是该选项的值，包括必需值和可选值（`--port 3000`、`--host 0.0.0.0`），因为工具自身绝不会将其视为位置参数；只有没有被任何选项消费的 token 才是位置目标，而任何位置参数都会禁用交互式询问。布尔选项表来自各工具随附的 `--help`，并且按命令区分（`--minify` 对 Vite build 是可选值选项，但对 pack 是布尔选项）。pack 的目标选择器（`-W`/`--workspace`、`-F`/`--filter`、`--root`）已经定义了自己的目标，并始终禁用交互式询问。对于 `vp dev` / `build` / `preview` / `pack`，目标目录按以下顺序解析：
+An app command is **bare** only when the user does not specify `-C` and does not pass arguments to the subcommand. Before bare-command resolution, Vite+ applies these rules:
 
-1. **`-C <dir>`**：在该目录运行。永远不会触发选择器。
-2. **存在位置目标**：按当前方式转发，遵循上游语义，vp 不进行干预。
-3. **`defaultPackage`**：当在根配置所在目录中进行裸调用时（工作区根目录，或非工作区仓库的根目录），使用该配置；隐式执行 `-C`，并打印一行提示。
-4. **交互式选择器**：在工作区根目录进行裸调用、处于交互式 TTY 且不在 CI 环境中时，进行选择，打印提示，并以隐式 `-C` 运行。
-5. **在工作区根目录进行非交互式裸调用**：打印包列表和 `-C` 提示，退出码为 1。
-6. **其他位置**：保持当前行为，在当前目录运行。
+1. An explicit `-C <dir>` runs the command in `<dir>`.
+2. Any argument passed to the subcommand is explicit command intent. Vite+ forwards it and runs the command in the current directory.
+
+Vite+ does not parse Vite or tsdown options for target selection. For an exact bare `vp dev` / `build` / `preview` / `pack`, Vite+ uses this order:
+
+1. Apply **`defaultPackage`** in the directory that contains the root config. This directory can be a workspace root or a non-workspace repo root. Run with an implicit `-C` and print a one-line note.
+2. Run directly when the workspace root has a root intent signal.
+3. At another workspace root, show the interactive picker or the non-interactive list. Put the `.` fallback last.
+4. Anywhere else, run in the current directory.
+
+This feature protects exact bare invocations only. Commands such as `vp dev --host` and `vp build --watch` do not use workspace target selection.
 
 “工作区根目录”是指当前目录中的包为工作区根包，由 `vt_workspace::find_workspace_root` 确定（该函数已在 `packages/cli/binding/src/cli/mod.rs` 的每次调用中执行）。
 
@@ -276,14 +281,22 @@ vp -C <dir> <cmd> [args...]  ===  cd <dir> && vp <cmd> [args...]
 
 ### 选择器内容
 
-- 每个工作区包占一行：显示名称和相对路径。不隐藏任何内容；可能可运行的包（见下方规则）优先排序，然后按路径排序，因此应用会显示在顶部，同时所有包都可搜索。
-- 通过 `vt_select::fuzzy_match` 对名称和路径进行模糊搜索，分页方式与任务选择器相同。
-- 可运行的工作区根不会触发询问：无论是否处于 TTY，都直接在原地运行，行为与本 RFC 之前完全一致。该调用已经拥有其配置的目标：根应用，或其 `pnpm-workspace.yaml` 仅包含设置项（catalogs、`minimumReleaseAge`）的单个包。仅当根目录不太可能是目标时才进行询问，这使该功能完全具有增量性。根目录需要比成员包更强的可运行信号：对于 `dev`/`build`/`preview`，需要存在 `index.html`（共享的根配置通常用于 lint/fmt/tasks，这是标准的 monorepo 设置，并不会使根目录成为应用）；对于 `pack`，则遵循通常的显式 `pack` 或 default-entry 规则。
-- 当恰好有一个可能可运行的包时，选择器会自动选择它，只打印 `Selected package:` 行和提示。
+- One row per workspace member: name plus relative path. Nothing is filtered out. Likely-runnable members rank first, then by path.
+- If the workspace root has no root intent signal, a `.` row appears after all member rows. This row is a fallback. It does not count when Vite+ checks for one likely-runnable member to auto-select. Selecting it runs the command in the original workspace root. The non-interactive list also shows this row last.
+- Fuzzy search over name and path via `vt_select::fuzzy_match`, paging identical to the task picker.
+- A workspace root with a root intent signal never elicits. The command runs in place, with or without a TTY.
+- With exactly one likely-runnable member, the picker auto-selects it, printing only the `Selected package:` line and the tip.
+- An explicit `-C` always runs in the selected directory. Target classification does not run again after either CLI entry point consumes the option.
 
-### 可能可运行的启发式规则
+### Root intent signals and member ranking
 
-仅用于排序和单候选自动选择，绝不会用于隐藏包：即使判断错误，包仍会出现在选择器和列表中，只是排序更靠后。根据文件是否存在和静态配置提取结果，针对每个包目录分别判断；不会执行任何内容，父目录也不计入。
+Vite+ uses root intent signals to select the workspace root. A signal identifies the intended target. It does not prove that the command will succeed.
+
+For `pack`, the root has an intent signal when `src/index.ts` exists or the root config declares `pack`.
+
+The `dev`, `build`, and `preview` commands use the same root intent signals. The config can declare `root`, `build`, `input`, `environments`, or `appType`. A source `index.html` is also sufficient. Vite+ does not validate declared values. Vite reports invalid values after the command starts.
+
+Member-package signals are used only for ranking and single-member auto-select. They never hide a member. Vite+ checks each member directory. It does not execute the config, and parent directories do not count.
 
 | 命令                     | 当包满足以下条件时，认为其可能可运行                                                                                                                                                                                                            |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -292,12 +305,12 @@ vp -C <dir> <cmd> [args...]  ===  cd <dir> && vp <cmd> [args...]
 
 这两个基于文件的信号都来自上游默认行为，而非 vp 的自定义规则：项目根目录中的 `index.html` 是 Vite 的入口（[index.html 和项目根目录](https://vite.dev/guide/#index-html-and-project-root)），配置文件名称是 Vite 解析的列表（[配置 Vite](https://vite.dev/config/)，由 `vp_static_config::CONFIG_FILE_NAMES` 镜像实现，并附有上游源码链接），而 `src/index.ts` 是未配置入口时 tsdown 的默认入口（[tsdown 入口](https://tsdown.dev/options/entry)；tsdown 中的 `src/features/entry.ts` 正是解析这一唯一路径）。
 
-“恰好一个可能可运行的包”意味着：按可运行优先排序后，第一行可运行而第二行不可运行。自动选择还要求终端处于交互模式。
+"Exactly one likely-runnable package" means that the first row is likely runnable and the second row is not after sorting. Auto-select also requires an interactive terminal.
 
 以下权衡是可以接受的，因为该信号不会隐藏任何内容，错误的自动选择也会立即可见（`Selected package:` 行，以及显示显式 `-C` 形式的 `Tip:` 行）：
 
-- 仅为 Vitest 或 lint 设置而存在 `vite.config.*` 的库，会被 `dev`/`build`/`preview` 认为是可运行的。可以通过相同的静态提取方式，将仅包含工具块的配置顶层键降级；在实际遇到问题之前暂不处理。
-- `index.html` 位于包根目录之外的应用（自定义 Vite `root`），或其配置继承自父目录的应用，不会排在首位，也永远不会被自动选择。
+- A library whose `vite.config.*` exists only for Vitest or lint settings ranks as likely runnable for `dev`/`build`/`preview`. A refinement could demote configs whose only top-level keys are tool blocks, via the same static extraction; deferred until it bites in practice.
+- Static extraction cannot see values that a plugin adds. If no other root intent signal exists, a bare command starts package selection. The workspace-root fallback row keeps the root selectable.
 
 ### `defaultPackage` 配置
 
@@ -336,39 +349,43 @@ export default defineConfig({
 
 ## 实现架构
 
-所有更改都位于 Rust 层；无需对上游 Vite 或 tsdown 进行更改。
+No upstream Vite or tsdown changes are required.
 
-- `crates/vp_global_cli/src/cli.rs`：解析全局 `-C <dir>`；从 `<dir>` 解析本地安装，并以 `<dir>` 作为有效工作目录进行委托。
-- `packages/cli/binding/src/cli/types.rs` / `mod.rs`：在本地二进制路径上解析 `-C`；在 `execute_direct_subcommand` 中加入裸调用解析顺序（工作区根目录检测已在此处完成）。
-- `packages/cli/binding/src/cli/execution.rs`：生成子进程时将 cwd 设置为目标目录。
-- Picker：复用 `vt_select` 和 `vt_workspace`，二者已通过 `vt` crates 作为依赖引入。
-- `defaultPackage`：以加载 `run` 配置的相同方式扩展 `VitePlusConfigLoader` 的静态提取，并在 `packages/cli/src/define-config.ts` 中添加 `defaultPackage?: string`。
-- `packages/cli/src/pack-bin.ts` 无需更改：位置参数处理保持不变，且 `-C` 永远不会传递到该文件。
-- 文档：在全局 CLI 文档、`docs/guide/monorepo.md` 的“应用命令”部分，以及 `docs/config/` 中新增的配置项页面中添加 `-C` 条目。
+- `crates/vp_global_cli/src/main.rs` / `cli.rs`: parse the global `-C <dir>`, resolve the local install from `<dir>`, and delegate with `<dir>` as the effective cwd. Preserve an explicit-target marker for the local CLI.
+- `packages/cli/src/bin.ts`: parse `-C` for direct local invocations and pass the explicit-target marker to the binding.
+- `packages/cli/binding/src/cli/app_target.rs` / `mod.rs`: apply the exact-bare command resolution order. Skip target selection when `-C` or a subcommand argument is present.
+- `packages/cli/binding/src/cli/execution.rs`: spawn the child with cwd set to the target directory.
+- Picker: reuse `vt_select` and `vt_workspace`, both already dependencies via the `vt` crates.
+- `defaultPackage`: extend the `VitePlusConfigLoader` static extraction the same way `run` config is loaded, and add `defaultPackage?: string` to `packages/cli/src/define-config.ts`.
+- `packages/cli/src/pack-bin.ts` needs no change: positional handling is untouched and `-C` never reaches it.
+- Docs: a `-C` entry in the global CLI docs, `docs/guide/monorepo.md` "App Commands", and a `docs/config/` page for the new key.
 
 ## 兼容性
 
-所有现有调用均保持不变。唯一的行为变化是：在工作区根目录执行不带参数的应用命令时，行为从“静默地提供服务或构建根目录”变为选择器 / 配置 / 明确报错。可运行的根目录仍会作为选择器条目提供，而 `defaultPackage: '.'` 可无条件恢复旧行为。
+The behavior change applies to an exact bare app command at a workspace root. A root intent signal makes the command run in place. Otherwise, Vite+ shows the picker or a clear non-interactive error. The workspace root is the last fallback target. Use `vp -C . <command>` or `defaultPackage: '.'` to select it directly.
 
 ## Snap 测试
 
-非交互式分支通过 Snap 测试覆盖：
+Snapshot cases cover:
 
-- `vp -C <dir> build` / `vp -C <dir> pack` / `vp -C <dir> run <task>`，以及使用不存在目录的 `-C`。
-- 一致性回归：`vp dev <dir>` 仍将位置参数作为 Vite 的 `root` 转发，同时保持 cwd 不变。
-- 在没有 TTY 的工作区根目录中执行裸应用命令：验证包列表和退出代码。
-- `defaultPackage`：正常路径和目录不存在错误。
-- 等价性检查：在配置读取 `process.cwd()` 的测试夹具中，`vp -C <dir> build` 和 `cd <dir> && vp build` 产生相同的输出。
+- `vp -C <dir> build` / `vp -C <dir> pack` / `vp -C <dir> run <task>`, plus `-C` with a missing directory.
+- Parity regression: `vp dev <dir>` still forwards the positional as Vite `root` with cwd untouched.
+- Bare app commands at a workspace root without a TTY: package listing and exit code.
+- Workspace-root fallback: last picker and listing row, direct selection, and explicit `vp -C . build`.
+- Vite root intent signals: declared `root`, build inputs, custom app type, and the `preview` command.
+- Explicit arguments: `build --ssr <entry>` and pack `--root` bypass target selection.
+- `defaultPackage`: happy path and missing-directory error.
+- Equivalence checks: `vp -C <dir> build` and `cd <dir> && vp build` produce the same output in a fixture whose config reads `process.cwd()`.
 
 如果选择器最终接近 `vt_select`，交互式选择器将按照 `vt` 仓库的风格（`task_select` 测试夹具）通过 pty 快照覆盖；否则将通过 tmux 驱动的交互式运行进行手动验证。
 
 ## 待解决问题
 
-1. 排名加搜索是否足够，还是有时确实需要直接过滤掉不可运行的软件包？
-2. 之后是否添加 `VP_DEFAULT_PACKAGE` 环境变量覆盖？环境变量配套项已有成熟模式（`NX_DEFAULT_PROJECT`）；已从 v1 延后。
-3. `vp test` 是否应加入询问集合？可能不应：Vitest 已在根目录提供一流的 `projects` 语义（无论是否配合 `-C` 使用都有效）。
-4. 精确的非交互式判定：使用 `vp run` 选择器的 TTY 检查，加上全局命令选择器使用的 `CI` 检查？
-5. 评审期间已解决：`vp dev <dir>` 搭配目录位置参数时，会打印一行提示，指向 `vp -C <dir> dev`（仅适用于 dev/build/preview；pack 的位置参数是条目，仅包含标志或帮助的调用保持静默）。
+1. Does ranking plus search suffice, or is filtering of lower-ranked packages ever wanted?
+2. Add a `VP_DEFAULT_PACKAGE` env override later? Env companions are an established pattern (`NX_DEFAULT_PROJECT`); deferred from v1.
+3. Should `vp test` join the elicitation set? Probably not: Vitest already has first-class `projects` semantics at the root (`-C` works with it regardless).
+4. Exact non-interactive gate: the `vp run` picker's TTY check plus the `CI` check used by the global command picker?
+5. Resolved during review: any subcommand argument bypasses target selection. Vite+ does not add positional-path guidance.
 
 ## 附录：`defaultPackage` 命名调研
 

@@ -18,11 +18,11 @@ OK: <version>
 ```
 VITE+ - Web 统一工具链
 
-✓ Node.js 管理已设置为系统优先。
+✓ Node.js and package-manager management set to system-first.
 
-所有 vp 命令和垫片现在将优先使用系统 Node.js，找不到时才回退到托管版本。
+Selected commands and shims will now prefer system tools, falling back to managed tools.
 
-运行 `vp env on` 以始终使用 Vite+ 托管的 Node.js。
+Run `vp env on` to always use Vite+ managed tools.
 ```
 
 ## `vp run assert-not-managed`
@@ -45,11 +45,11 @@ $ node src/assert-not-managed.mjs ⊘ 缓存已禁用
 ```
 VITE+ - Web 的统一工具链
 
-✓ Node.js 管理已设置为托管模式。
+✓ Node.js and package-manager management set to managed.
 
-所有 vp 命令和 shim 现在都将始终使用 Vite+ 托管的 Node.js。
+Selected commands and shims will now use Vite+ managed tools.
 
-运行 `vp env off` 以优先使用系统 Node.js。
+Run `vp env off` to prefer system tools instead.
 ```
 
 ## `vp run assert-managed`

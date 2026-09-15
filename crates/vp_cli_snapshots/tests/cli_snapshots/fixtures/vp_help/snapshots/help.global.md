@@ -9,14 +9,14 @@ VITE+ - 面向 Web 的统一工具链
 
 用法：vp [COMMAND]
 
-启动：
-  create      从模板创建新项目
-  migrate     将现有项目迁移到 Vite+
-  config      配置钩子和代理集成
-  hooks       管理 Git 钩子分发器
-  staged      对暂存文件运行代码检查器
-  install, i  安装所有依赖，或在提供包名称时添加包
-  env         管理 Node.js 版本
+Start:
+  create      Create a new project from a template
+  migrate     Migrate an existing project to Vite+
+  config      Configure hooks and agent integration
+  hooks       Manage the Git hook dispatcher
+  staged      Run linters on staged files
+  install, i  Install all dependencies, or add packages if package names are provided
+  env         Manage Node.js and package managers
 
 开发：
   dev          运行开发服务器

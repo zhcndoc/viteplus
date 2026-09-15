@@ -9,11 +9,13 @@ VITE+ - 面向 Web 的统一工具链
 
 为当前项目配置 Vite+（钩子分发器 + 代理集成）。
 
-选项：
-  --hooks-dir <path>  自定义钩子目录（默认为 .vite-hooks，或此克隆中上次使用的目录）
-  --no-hooks          跳过钩子分发器安装
-  --no-agent          跳过更新编码代理指令
-  -h, --help          显示此帮助信息
+Options:
+  --hooks-dir <path>  Custom hooks directory (default: .vite-hooks, or last used in this clone)
+  --hooks             Install the hook dispatcher
+  --no-hooks          Skip hook dispatcher installation
+  --agent             Update coding agent instructions
+  --no-agent          Skip updating coding agent instructions
+  -h, --help          Show this help message
 
 环境变量：
   VP_GIT_HOOKS=0  跳过钩子分发器安装
@@ -30,11 +32,13 @@ VITE+ - 统一的 Web 工具链
 
 为当前项目配置 Vite+（钩子分发器 + 代理集成）。
 
-选项：
-  --hooks-dir <path>  自定义钩子目录（默认：.vite-hooks，或此克隆中上次使用的目录）
-  --no-hooks          跳过钩子分发器安装
-  --no-agent          跳过更新编码代理说明
-  -h, --help          显示此帮助信息
+Options:
+  --hooks-dir <path>  Custom hooks directory (default: .vite-hooks, or last used in this clone)
+  --hooks             Install the hook dispatcher
+  --no-hooks          Skip hook dispatcher installation
+  --agent             Update coding agent instructions
+  --no-agent          Skip updating coding agent instructions
+  -h, --help          Show this help message
 
 环境变量：
   VP_GIT_HOOKS=0  跳过钩子分发器安装
@@ -51,11 +55,13 @@ VITE+ - 面向 Web 的统一工具链
 
 为当前项目配置 Vite+（钩子调度器 + 编程代理集成）。
 
-选项：
-  --hooks-dir <path>  自定义钩子目录（默认：.vite-hooks，或此克隆中上次使用的目录）
-  --no-hooks          跳过钩子调度器安装
-  --no-agent          跳过更新编程代理指令
-  -h, --help          显示此帮助信息
+Options:
+  --hooks-dir <path>  Custom hooks directory (default: .vite-hooks, or last used in this clone)
+  --hooks             Install the hook dispatcher
+  --no-hooks          Skip hook dispatcher installation
+  --agent             Update coding agent instructions
+  --no-agent          Skip updating coding agent instructions
+  -h, --help          Show this help message
 
 环境变量：
   VP_GIT_HOOKS=0  跳过钩子调度器安装

@@ -33,3 +33,13 @@
 
 在 2 个文件中发现 0 个错误和 1 个警告（<duration>，<n> 个线程）
 ```
+
+## `vp check --fix --quiet`
+
+quiet 与修复流程结合使用
+
+```
+
+Found 0 errors and 1 warning in 2 files (<duration>, <n> threads)
+pass: Formatting completed for checked files (<duration>)
+```

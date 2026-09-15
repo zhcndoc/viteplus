@@ -1,25 +1,68 @@
 # 命令环境包管理器诊断
 
-## `node -e 'const {execFileSync}=require('\''node:child_process'\'');const info=JSON.parse(execFileSync('\''vp'\'',['\''env'\'','\''current'\'','\''--json'\''],{encoding:'\''utf8'\''}));if(info.package_manager?.name'\!'=='\''npm'\''||info.package_manager?.version'\!'=='\''10.9.4'\''||info.package_manager?.source'\!'=='\''packageManager'\'')process.exit(1);console.log('\''current reports npm packageManager'\'')'`
+## `node prepare-npm.cjs`
+
+
+## `vp env current pm --json`
 
 当前报告了 npm packageManager 固定版本
 
 ```
-current reports npm packageManager
+{
+  "package_manager": {
+    "name": "npm",
+    "version": "<version>",
+    "source": "packageManager",
+    "source_path": "<workspace>/package.json",
+    "project_root": "<workspace>",
+    "bin_paths": {
+      "npm": "<home>/.vite-plus/package_manager/npm/<version>/npm/bin/npm",
+      "npx": "<home>/.vite-plus/package_manager/npm/<version>/npm/bin/npx"
+    },
+    "installed": true,
+    "mode": "managed"
+  }
+}
 ```
 
-## `node -e 'const {execFileSync}=require('\''node:child_process'\'');const text=execFileSync('\''vp'\'',['\''env'\'','\''which'\'','\''npm'\''],{encoding:'\''utf8'\''});if('\!'text.includes('\''Package:'\'')||'\!'text.includes('\''npm@10.9.4'\'')||'\!'text.includes('\''package.json'\''))process.exit(1);console.log('\''which reports npm packageManager'\'')'`
+## `vp env current pm`
 
-which reports the npm packageManager pin
-
-```
-which reports npm packageManager
-```
-
-## `node -e 'const {execFileSync}=require('\''node:child_process'\'');const text=execFileSync('\''vp'\'',['\''env'\'','\''which'\'','\''npx'\''],{encoding:'\''utf8'\''});if('\!'text.includes('\''Package:'\'')||'\!'text.includes('\''npm@10.9.4'\'')||'\!'text.includes('\''package.json'\''))process.exit(1);console.log('\''which reports npx packageManager'\'')'`
-
-which 报告 npx packageManager 固定版本
+当前会列出所选包管理器系列公开的每个二进制文件
 
 ```
-which reports npx packageManager
+VITE+ - The Unified Toolchain for the Web
+
+Package Manager:
+  Name       npm
+  Version    10.9.4
+  Source     packageManager
+  Bin Paths
+    npm      <home>/.vite-plus/package_manager/npm/<version>/npm/bin/npm
+    npx      <home>/.vite-plus/package_manager/npm/<version>/npm/bin/npx
+  Installed  true
+  Mode       managed
+```
+
+## `vp env which npm`
+
+which 报告 npm packageManager 固定版本
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+<home>/.vite-plus/package_manager/npm/<version>/npm/bin/npm
+  Package:    npm@10.9.4
+  Source:     <workspace>/package.json
+```
+
+## `vp env which npx`
+
+npx 别名报告相同的 npm packageManager 固定版本
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+<home>/.vite-plus/package_manager/npm/<version>/npm/bin/npx
+  Package:    npm@10.9.4
+  Source:     <workspace>/package.json
 ```

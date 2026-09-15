@@ -15,21 +15,21 @@ catalog:
   '@emnapi/runtime': 2.0.0-alpha.4
   '@iconify/vue': ^5.0.0
   '@jridgewell/trace-mapping': ^0.3.31
-  '@napi-rs/cli': ^3.8.2
+  '@napi-rs/cli': ^3.9.0
   '@napi-rs/wasm-runtime': ^1.2.2
   '@nkzw/safe-word-list': ^3.1.0
   '@oxc-node/cli': ^0.1.0
   '@oxc-node/core': ^0.1.0
-  '@oxc-project/runtime': =0.144.0
-  '@oxc-project/types': =0.144.0
-  '@oxlint/plugins': =1.73.0
+  '@oxc-project/runtime': =0.149.0
+  '@oxc-project/types': =0.149.0
+  '@oxlint/plugins': =1.79.0
   '@pnpm/find-workspace-packages': ^6.0.9
   '@rolldown/pluginutils': ^1.0.0
   '@rollup/plugin-commonjs': ^29.0.0
   '@rollup/plugin-json': ^6.1.0
   '@rollup/plugin-node-resolve': ^16.0.0
-  '@tsdown/css': ^0.22.14
-  '@tsdown/exe': ^0.22.14
+  '@tsdown/css': ^0.23.0
+  '@tsdown/exe': ^0.23.0
   '@types/babel__core': 7.20.5
   '@types/connect': ^3.4.38
   '@types/cross-spawn': ^6.0.6
@@ -47,17 +47,17 @@ catalog:
   '@types/ws': ^8.18.0
   '@typescript/native-preview': 7.0.0-dev.20260605.1
   '@vitejs/plugin-react': ^5.1.2
-  '@vitest/browser': 4.1.10
-  '@vitest/browser-playwright': 4.1.10
-  '@vitest/browser-preview': 4.1.10
-  '@vitest/browser-webdriverio': 4.1.10
-  '@vitest/expect': 4.1.10
-  '@vitest/mocker': 4.1.10
-  '@vitest/pretty-format': 4.1.10
-  '@vitest/runner': 4.1.10
-  '@vitest/snapshot': 4.1.10
-  '@vitest/spy': 4.1.10
-  '@vitest/utils': 4.1.10
+  '@vitest/browser': 4.1.11
+  '@vitest/browser-playwright': 4.1.11
+  '@vitest/browser-preview': 4.1.11
+  '@vitest/browser-webdriverio': 4.1.11
+  '@vitest/expect': 4.1.11
+  '@vitest/mocker': 4.1.11
+  '@vitest/pretty-format': 4.1.11
+  '@vitest/runner': 4.1.11
+  '@vitest/snapshot': 4.1.11
+  '@vitest/spy': 4.1.11
+  '@vitest/utils': 4.1.11
   '@voidzero-dev/vitepress-theme': 4.8.4
   '@vueuse/core': ^14.0.0
   acorn: ^8.17.0
@@ -94,14 +94,13 @@ catalog:
   micromatch: ^4.0.9
   minimatch: ^10.0.3
   mocha: ^11.7.5
-  mri: ^1.2.0
   nanotar: ^0.3.0
   next: ^15.4.3
-  oxc-minify: =0.144.0
-  oxc-parser: =0.144.0
-  oxc-transform: =0.144.0
-  oxfmt: =0.63.0
-  oxlint: =1.78.0
+  oxc-minify: =0.149.0
+  oxc-parser: =0.149.0
+  oxc-transform: =0.149.0
+  oxfmt: =0.67.0
+  oxlint: =1.82.0
   oxlint-tsgolint: =7.0.2001
   pathe: ^2.0.3
   picocolors: ^1.1.1
@@ -110,9 +109,9 @@ catalog:
   react: ^19.1.0
   react-dom: ^19.1.0
   remark-parse: ^11.0.0
-  remeda: ^2.34.1
+  remeda: ^2.45.0
   rolldown-plugin-dts: ^0.28.0
-  rollup: ^4.60.4
+  rollup: ^4.63.0
   semver: ^7.8.0
   serve-static: ^2.0.0
   signal-exit: 4.1.0
@@ -122,7 +121,7 @@ catalog:
   terser: ^5.44.1
   tinybench: ^6.0.0
   tinyexec: ^1.0.1
-  tsdown: ^0.22.14
+  tsdown: ^0.23.0
   tsx: ^4.22.0
   typescript: ^6.0.0
   unified: ^11.0.5
@@ -133,9 +132,9 @@ catalog:
   vitepress-plugin-group-icons: ^1.7.1
   vitepress-plugin-llms: ^1.1.0
   vitepress-plugin-og: ^0.0.5
-  vitest: 4.1.10
+  vitest: 4.1.11
   vue: ^3.5.35
-  web-tree-sitter: ^0.26.0
+  web-tree-sitter: ^0.27.0
   ws: ^8.20.1
   yaml: ^2.8.1
   # bingo introspects template option schemas via zod 3 internals;
@@ -202,6 +201,8 @@ minimumReleaseAgeExclude:
   - '@napi-rs/wasm-runtime'
   - '@emnapi/*'
   - emnapi
+  - '@vitejs/devtools'
+  - '@vitejs/devtools-*'
 overrides:
   rolldown: workspace:rolldown@*
   vite: workspace:@voidzero-dev/vite-plus-core@*

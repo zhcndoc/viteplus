@@ -40,7 +40,7 @@ VITE+ - Web 的统一工具链
 应在 semver 范围内更新软件包
 
 ```
-bun update <version> (af24e281)
+bun update <version> (<hash>)
 
  test-vite-plus-package@1.0.0
  test-vite-plus-package-optional@1.0.0
@@ -74,7 +74,7 @@ installed testnpm2@1.0.1
 应更新到绝对最新版本
 
 ```
-bun update <version> (af24e281)
+bun update <version> (<hash>)
 
 installed testnpm2@1.0.1
 

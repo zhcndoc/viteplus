@@ -1,6 +1,6 @@
 # 迁移_standalone_pnpm
 
-## `vp migrate --no-interactive --no-hooks --package-manager pnpm`
+## `vp migrate --no-interactive --no-hooks`
 
 迁移应支持 pnpm，将 overrides 和 peerDependencyRules 写入 pnpm-workspace.yaml
 

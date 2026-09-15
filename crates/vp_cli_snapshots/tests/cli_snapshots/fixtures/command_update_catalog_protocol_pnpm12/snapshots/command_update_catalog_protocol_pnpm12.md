@@ -2,7 +2,7 @@
 
 pnpm 12 上的 #2309。pnpm 12 修复了上游的覆盖问题（裸覆盖键不再剥离 `catalog:` 导入器规范），因此这里固定了 vite-plus 写入的范围限定键在 pnpm 12 上也同样正确，而不只是 pnpm 9-11 的变通方案。
 
-## `vp migrate --no-interactive --no-hooks --package-manager pnpm`
+## `vp migrate --no-interactive --no-hooks`
 
 migrate 通过工作区 catalog 固定工具链
 

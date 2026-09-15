@@ -110,8 +110,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - name: 设置 Vite+
-        uses: voidzero-dev/setup-vp@v1
+      - name: Set up Vite+
+        uses: voidzero-dev/setup-vp@<version>
         with:
           cache: true
           run-install: true

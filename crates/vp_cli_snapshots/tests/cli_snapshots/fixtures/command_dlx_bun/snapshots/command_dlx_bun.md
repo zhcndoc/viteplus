@@ -23,7 +23,7 @@ VITE+ - Web 的统一工具链
 文档：https://viteplus.dev/guide/vpx
 ```
 
-## `vp dlx -s cowsay hello`
+## `TMPDIR=${workspace} vp dlx -s cowsay hello`
 
 应使用 bun x 运行 cowsay
 
@@ -38,7 +38,7 @@ VITE+ - Web 的统一工具链
                 ||     ||
 ```
 
-## `vp dlx -s cowsay@1.6.0 hello`
+## `TMPDIR=${workspace} vp dlx -s cowsay@1.6.0 hello`
 
 应运行指定版本
 

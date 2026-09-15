@@ -2,12 +2,12 @@
 
 ## `vp create vite@9.0.5 --no-interactive -- my-react-ts --template react-ts`
 
-create vite app with pinned version + react-ts template, should auto-migrate ESLint -> Oxlint and merge lint config into vite.config.ts
+使用固定版本和 react-ts 模板创建 vite 应用，应自动将 ESLint 迁移到 Oxlint，并将 lint 配置合并到 vite.config.ts 中
 
 
 ## `vpt stat-file my-react-ts/eslint.config.js --assert-not file`
 
-eslint config deleted
+eslint 配置已删除
 
 ```
 my-react-ts/eslint.config.js: missing
@@ -15,7 +15,7 @@ my-react-ts/eslint.config.js: missing
 
 ## `vpt stat-file my-react-ts/.oxlintrc.json --assert-not file`
 
-migration output merged by rewrite step (matches vp migrate)
+迁移输出已通过重写步骤合并（与 vp migrate 一致）
 
 ```
 my-react-ts/.oxlintrc.json: missing
@@ -23,7 +23,7 @@ my-react-ts/.oxlintrc.json: missing
 
 ## `vpt print-file my-react-ts/vite.config.ts`
 
-merged vite config should contain lint and fmt sections
+合并后的 vite 配置应包含 lint 和 fmt 部分
 
 ```
 import { defineConfig, lazyPlugins } from "vite-plus";
@@ -128,6 +128,18 @@ export default defineConfig({
           "typescript/triple-slash-reference": "error",
           "react/rules-of-hooks": "error",
           "react/exhaustive-deps": "warn",
+          "react/static-components": "error",
+          "react/use-memo": "error",
+          "react/preserve-manual-memoization": "error",
+          "react/incompatible-library": "warn",
+          "react/immutability": "error",
+          "react/globals": "error",
+          "react/refs": "error",
+          "react/set-state-in-effect": "error",
+          "react/error-boundaries": "error",
+          "react/purity": "error",
+          "react/set-state-in-render": "error",
+          "react/unsupported-syntax": "warn",
           "react/only-export-components": [
             "error",
             {
@@ -159,9 +171,14 @@ export default defineConfig({
 });
 ```
 
+## `cd my-react-ts && vp check`
+
+迁移后的规则选项必须能被捆绑的 Oxlint 接受
+
+
 ## `node check-pkg.cjs`
 
-scripts rewritten, eslint dep removed, vite-plus added
+脚本已重写，eslint 依赖已移除，vite-plus 已添加
 
 ```
 lint: vp lint .

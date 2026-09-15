@@ -11,10 +11,11 @@ $ vp build ⊘ 缓存已禁用
 
 [1m[31m错误：[39m[0m 工作区根目录中的 `vp build` 需要指定目标包。
 
-  此工作区中的包：
-    admin  apps/admin
-    web    apps/web
-    ui     packages/ui
+  Packages in this workspace:
+    admin             apps/admin
+    web               apps/web
+    ui                packages/ui
+    app-root-listing  .
 
   传入目录：  vp -C apps/admin build
   或运行每个包的构建脚本：  vp run -r build

@@ -24,6 +24,7 @@ Options:
   --save-catalog-name <CATALOG_NAME>  Save the new dependency to the specified catalog name
   --save-catalog                      Save the new dependency to the default catalog
   --allow-build <NAMES>               A list of package names allowed to run postinstall
+  --ignore-scripts                    Do not run lifecycle scripts
   --filter <PATTERN>                  Filter packages in monorepo (can be used multiple times)
   -w, --workspace-root                Add to workspace root
   --workspace                         Only add if package exists in workspace (pnpm-specific)
@@ -55,7 +56,7 @@ For more information, try '--help'.
 应将软件包添加为开发依赖项
 
 ```
-bun add <version> (af24e281)
+bun add <version> (<hash>)
 
 installed testnpm2@1.0.1
 
@@ -80,7 +81,7 @@ installed testnpm2@1.0.1
 应将软件包添加到依赖项中
 
 ```
-bun add <version> (af24e281)
+bun add <version> (<hash>)
 
 已安装 testnpm2@1.0.1
 已安装 test-vite-plus-install@1.0.0
@@ -111,7 +112,7 @@ bun add <version> (af24e281)
 ```
 VITE+ - Web 的统一工具链
 
-bun add <version> (af24e281)
+bun add <version> (<hash>)
 
 已安装 test-vite-plus-package@1.0.0
 
@@ -142,7 +143,7 @@ bun add <version> (af24e281)
 应将软件包添加为可选依赖
 
 ```
-bun add <version> (af24e281)
+bun add <version> (<hash>)
 
 installed test-vite-plus-package-optional@1.0.0
 

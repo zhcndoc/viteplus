@@ -98,7 +98,7 @@ core-js 已记录在 trustedDependencies 中
 指导中的 `vp pm approve-builds` 命令会批准受限构建
 
 ```
-bun pm trust <version> (0d9b296a)
+bun pm trust <version> (<hash>)
 
 ./node_modules/core-js @3.39.0
  ✓ [postinstall]: node -e "try{require('./postinstall')}catch(e){}"

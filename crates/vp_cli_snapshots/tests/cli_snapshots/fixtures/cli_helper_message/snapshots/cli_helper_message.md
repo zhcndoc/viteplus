@@ -12,11 +12,11 @@ VITE+ - Web 的统一工具链
 启动：
   create      从模板创建新项目
   migrate     将现有项目迁移到 Vite+
-  config      配置钩子和代理集成
-  hooks       管理 Git 钩子分发器
-  staged      在暂存文件上运行代码检查工具
-  install, i  安装所有依赖项，或在提供软件包名称时添加软件包
-  env         管理 Node.js 版本
+  config      配置钩子和 agent 集成
+  hooks       管理 Git 钩子调度器
+  staged      对暂存文件运行代码检查器
+  install, i   安装所有依赖项，或在提供软件包名称时添加软件包
+  env         管理 Node.js 和软件包管理器环境
 
 开发：
   dev          运行开发服务器
@@ -51,10 +51,10 @@ VITE+ - Web 的统一工具链
   rebuild                    重新构建原生模块
   pm                         将命令转发给软件包管理器
 
-Maintain:
-  toolchain  Show active Vite+ tools, versions, and relationships
-  upgrade    Update vp itself to the latest version
-  implode    Remove vp and all related data
+维护：
+  toolchain  显示活动的 Vite+ 工具、版本及其关系
+  upgrade    将 vp 自身更新到最新版本
+  implode    移除 vp 及所有相关数据
 
 文档：https://viteplus.dev/guide/
 
@@ -155,17 +155,18 @@ VITE+ - Web 的统一工具链
   -D, --save-dev                      保存到 `devDependencies`
   --save-peer                         保存到 `peerDependencies` 和 `devDependencies`
   -O, --save-optional                 保存到 `optionalDependencies`
-  -E, --save-exact                     保存确切版本，而不是 semver 范围
-  --save-catalog-name <CATALOG_NAME>  将新依赖项保存到指定的 catalog 名称
-  --save-catalog                      将新依赖项保存到默认 catalog
+  -E, --save-exact                    保存精确版本，而不是 semver 范围
+  --save-catalog-name <CATALOG_NAME>  将新依赖项保存到指定的目录名称
+  --save-catalog                      将新依赖项保存到默认目录
   --allow-build <NAMES>               允许运行 postinstall 的软件包名称列表
-  --filter <PATTERN>                  过滤 monorepo 中的软件包（可多次使用）
+  --ignore-scripts                    不运行生命周期脚本
+  --filter <PATTERN>                  筛选 monorepo 中的软件包（可多次使用）
   -w, --workspace-root                添加到工作区根目录
-  --workspace                         仅当软件包存在于工作区中时添加（pnpm 专用）
+  --workspace                         仅在工作区中存在软件包时添加（pnpm 特有）
   -g, --global                        全局安装
   --node <NODE>                       用于全局安装的 Node.js 版本（仅与 -g 一起使用）
-  --concurrency <CONCURRENCY>         并行执行的全局软件包安装数量（仅与 -g 一起使用）
-  -h, --help                          打印帮助信息
+  --concurrency <CONCURRENCY>         要并行运行的全局软件包安装数量（仅与 -g 一起使用）
+  -h, --help                          打印帮助
 
 文档：https://viteplus.dev/guide/install
 ```
@@ -206,15 +207,15 @@ VITE+ - Web 的统一工具链
 ```
 VITE+ - Web 统一工具链
 
-用法: vp update [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
+用法：vp update [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
 将软件包更新到最新版本
 
-参数:
+参数：
   [PACKAGES]...           要更新的软件包（可选——省略时更新全部软件包）
   [PASS_THROUGH_ARGS]...  传递给软件包管理器的其他参数
 
-选项:
+选项：
   -L, --latest                 更新到最新版本（忽略 semver 范围）
   -g, --global                 更新全局软件包
   --concurrency <CONCURRENCY>  并行执行的全局软件包更新数量（仅与 -g 一起使用）
@@ -460,54 +461,58 @@ VITE+ - Web 的统一工具链
 
 用法：vp env [COMMAND]
 
-管理 Node.js 版本
+管理 Node.js 和软件包管理器环境
 
 设置：
   setup  在 VP_HOME/bin 中创建或更新 shim
-  on     启用托管模式 - shim 始终使用 vite-plus 托管的 Node.js
-  off    启用系统优先模式 - shim 优先使用系统 Node.js，回退到托管版本
-  print  输出用于为当前会话设置环境的 shell 片段
+  on     为选定的环境范围启用托管模式
+  off    为选定的环境范围启用系统优先模式
+  print  打印已解析环境的 PATH 设置
 
 管理：
-  default         设置或显示全局默认 Node.js 版本
-  pin             在当前目录中固定 Node.js 版本
-  unpin           移除当前目录中的 Node.js 版本固定（`pin --unpin` 的别名）
-  use             为当前 shell 会话使用指定的 Node.js 版本
-  install, i      安装 Node.js 版本
-  uninstall, uni  卸载 Node.js 版本
-  clean           移除未使用的托管运行时和包管理器缓存
-  exec, run       使用指定的 Node.js 版本执行命令
+  default         设置或显示全局环境默认值
+  pin             在项目中固定 Node.js 和软件包管理器版本
+  unpin           移除项目环境固定版本（`pin --unpin` 的别名）
+  use             为此 shell 会话激活环境
+  install, i      安装已解析或明确指定的环境
+  uninstall, uni  卸载明确指定的组件版本
+  clean           移除未使用的运行时和软件包管理器
+  exec, run       在已解析或明确指定的环境中执行命令
 
 检查：
   current                 显示当前环境信息
   doctor                  运行诊断并显示环境状态
   which                   显示将要执行的工具路径
-  list, ls                列出本地已安装的 Node.js 版本
-  list-remote, ls-remote  从注册表列出可用的 Node.js 版本
+  list, ls                列出本地已安装的环境组件
+  list-remote, ls-remote  列出组件注册表中的可用版本
 
 示例：
   设置：
-    vp env setup                  # 为 node、npm、npx、corepack 创建 shim
-    vp env on                     # 使用 vite-plus 托管的 Node.js
-    vp env print                  # 输出当前会话的 shell 片段
+    vp env setup                  # 创建 Node.js 和软件包管理器 shim
+    vp env on                     # 管理 Node.js 和软件包管理器
+    vp env off pm                 # 仅优先使用系统软件包管理器
+    vp env off pnpm               # 仅优先使用系统 pnpm
+    vp env print                  # 打印两个组件的 PATH 设置
 
   管理：
-    vp env pin lts                # 固定到最新的 LTS 版本
-    vp env install                # 从 .node-version / package.json / .nvmrc 安装版本
-    vp env use 20                 # 为当前 shell 会话使用 Node.js 20
-    vp env use --unset            # 移除会话覆盖设置
-    vp env clean                  # 移除未使用的托管缓存
+    vp env default 22.19.0        # 设置 Node.js 默认版本
+    vp env default pnpm@12        # 设置 pnpm 默认版本
+    vp env pin 22.19.0            # 为此项目固定 Node.js 版本
+    vp env use 22.19.0            # 在此 shell 中使用 Node.js
+    vp env clean                  # 清理所有未使用的托管版本
 
   检查：
-    vp env current                # 显示当前解析出的环境
+    vp env current                # 显示当前已解析的环境
     vp env current --json         # 用于自动化的 JSON 输出
     vp env doctor                 # 检查环境配置
-    vp env which node             # 显示将要使用的 node 二进制文件
-    vp env list-remote --lts      # 仅列出 LTS 版本
+    vp env which node             # 显示将使用的 node 二进制文件
+    vp env list node              # 仅列出 Node.js 安装
+    vp env list-remote --lts      # 仅列出 Node.js LTS 版本
 
   执行：
-    vp env exec --node lts npm i  # 使用最新的 LTS 版本执行“npm i”
-    vp env exec node -v           # shim 模式（自动解析版本）
+    vp env exec --node lts node -v               # 覆盖 Node.js
+    vp env exec --package-manager pnpm@12 pnpm i # 覆盖软件包管理器
+    vp env exec node -v                          # 解析两个组件
 
 相关命令：
   vp install -g <package>       # 全局安装包

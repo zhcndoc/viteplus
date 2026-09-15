@@ -13,7 +13,21 @@ CLI 包使用一个 **4 步构建流程**：
 
 这种架构允许用户从单个包（`vite-plus`）中导入所有内容，作为 `vite` 的直接替代品，而无需了解单独的 `@voidzero-dev/vite-plus-core` 打包产物或 `vitest`。
 
-## 构建步骤
+## Core Dependency Identity
+
+The CLI declares its core dependency as `vite`, using
+`workspace:@voidzero-dev/vite-plus-core@*` in the workspace and an exact npm
+alias in packed releases. Runtime imports and generated shims use `vite` and
+its subpaths. This gives the CLI and plugins the same dependency name and
+avoids separate core instances under the alias and canonical package name.
+
+`resolve-core.ts` resolves the alias from the selected CLI package and checks
+its core version. It also checks any Vite dependency declared by the command's
+target project. An incidental hoisted peer does not trigger project validation.
+These checks run before Vite or packaging commands start. Keep the canonical
+name in release metadata and alias targets to identify the published package.
+
+## Build Steps
 
 ### 第 1 步：tsdown 构建（`buildWithTsdown`）
 
@@ -21,12 +35,12 @@ CLI 包使用一个 **4 步构建流程**：
 
 **ESM 构建** — 将所有入口点打包到 `dist/`：
 
-- 公共 API 入口：`bin`、`index`、`define-config`、`fmt`、`lint`、`pack`、`pack-bin`
-- 全局命令入口：`create`、`migrate`、`version`、`config`、`hooks`、`mcp`、`staged`
-- 所有第三方依赖都会在构建时内联
-- 仅必须在运行时解析的包保持外部依赖（NAPI 绑定、`@voidzero-dev/vite-plus-core`、`vitest`、`oxfmt`、`oxlint`）
-- 代码分割会为多个入口共用的代码创建共享 chunk
-- 为所有入口生成 DTS（`.d.ts`）文件
+- Public API entries: `bin`, `index`, `define-config`, `fmt`, `lint`, `pack`, `pack-bin`
+- Global command entries: `create`, `migrate`, `version`, `config`, `hooks`, `mcp`, `staged`
+- All third-party dependencies are inlined at build time
+- Only packages that must be resolved at runtime stay external (NAPI binding, `vite`, `vitest`, `oxfmt`, `oxlint`)
+- Code splitting creates shared chunks for code used by multiple entries
+- DTS (`.d.ts`) files are generated for all entries
 
 **CJS 构建** — 为以下内容生成双格式输出：
 
@@ -76,14 +90,14 @@ await cli.build({
 **Shim 文件示例**：
 
 ```typescript
-// dist/client.d.ts（用于环境类型的三斜杠引用）
-/// <reference types="@voidzero-dev/vite-plus-core/client" />
+// dist/client.d.ts (triple-slash reference for ambient types)
+/// <reference types="vite/client" />
 
 // dist/module-runner.js
-export * from '@voidzero-dev/vite-plus-core/module-runner';
+export * from 'vite/module-runner';
 
-// dist/types/importMeta.d.ts（仅类型导出）
-export type * from '@voidzero-dev/vite-plus-core/types/importMeta.d.ts';
+// dist/types/importMeta.d.ts (type-only export)
+export type * from 'vite/types/importMeta.d.ts';
 ```
 
 **关于导出顺序的说明**：在 `package.json` 中，`./types/internal/*` 导出（设为 `null`）必须出现在 `./types/*` 之前，以确保正确的优先级。更具体的模式必须排在通配符之前。
@@ -305,7 +319,7 @@ CLI 包会创建轻量的 shim 文件，从 `@voidzero-dev/vite-plus-core` 重�
 
 ```typescript
 // dist/types/importMeta.d.ts
-export type * from '@voidzero-dev/vite-plus-core/types/importMeta.d.ts';
+export type * from 'vite/types/importMeta.d.ts';
 ```
 
 这一点很重要，因为 `./types/*` 只暴露 `.d.ts` 文件，绝不应包含运行时代码。
@@ -327,7 +341,7 @@ export type * from '@voidzero-dev/vite-plus-core/types/importMeta.d.ts';
 
 ```typescript
 // dist/client.d.ts
-/// <reference types="@voidzero-dev/vite-plus-core/client" />
+/// <reference types="vite/client" />
 ```
 
 这使 TypeScript 能够获取诸如 `import.meta.hot`、CSS 模块类型以及资源导入等类型，而无需显式导入。
@@ -519,6 +533,7 @@ VP_CLI_DEBUG=1 pnpm -C packages/cli build
 ```typescript
 // 用于 Vite 兼容导出的核心包名称
 const CORE_PACKAGE_NAME = '@voidzero-dev/vite-plus-core';
+const CORE_IMPORT_SPECIFIER = 'vite';
 
 // 用于重新导出的测试包名称（vitest 本身，而不是打包后的包装器）
 const TEST_PACKAGE_NAME = 'vitest';
@@ -560,8 +575,8 @@ const TEST_PACKAGE_NAME = 'vitest';
 
 所有 `./test*` 导出都由 `syncTestPackageExports()` 全权管理。构建脚本会：
 
-1. 读取 vitest 的 `package.json` 导出配置（通过 `createRequire` 解析）
-2. 在 `dist/test/` 中创建 shim 文件
-3. 从 `package.json` 中移除旧的 `./test*` 导出
-4. 合并新生成的测试导出
-5. 确保 `dist/test` 在 `files` 数组中。
+1. Reads vitest's `package.json` exports (resolved via `createRequire`)
+2. Creates shim files in `dist/test/`
+3. Removes old `./test*` exports from `package.json`
+4. Merges in newly generated test exports
+5. Relies on the existing `dist` entry to include the generated `dist/test` shims

@@ -152,21 +152,11 @@ vp create vite:monorepo --no-interactive --package-manager bun
 
 这样既能确保 monorepo 的一致性，又允许独立项目显式覆盖环境检测到的包管理器。
 
-## 自动更新行为
+## 非变更式解析
 
-在检测并下载之后，Vite+ 会将解析出的版本写回 `package.json`，以便后续运行具有确定性：
+检测和下载永远不会重写 `package.json`。`devEngines.packageManager` 范围仍然是事实来源，而锁文件、配置和交互式检测会为当前命令解析受管理的包管理器，但不会向清单字段中添加内容。
 
-- 从 `packageManager` 字段或精确的 `devEngines.packageManager` 版本检测：已经是精确版本，无需写入。
-- 从 `devEngines.packageManager` 范围检测：不写入；该范围是用户的唯一事实来源，不会被冻结为精确版本。
-- 从锁文件、配置文件或交互式选择检测：会将精确解析版本写入 `devEngines.packageManager`，并设置 `onFail: "download"`。
-
-写入时会保留 Vite+ 不处理的现有条目（例如，另一个包管理器声明为 `onFail: "ignore"`）：解析出的条目会追加到现有数组中；现有单个条目会转换为数组形式，并保留原始条目在前；只有在字段缺失或格式错误时，才会写入单个条目。
-
-这可以确保：
-
-- 未来运行使用确定性的版本（匹配优先级 1 或 2）
-- 团队成员获得一致的版本
-- CI 环境使用确定性的版本
+需要确定性声明的项目可以使用 `vp env pin <package-manager>@<version>` 显式固定。修改依赖的命令（包括 `vp install` 和 `vp add`）要求已有 `package.json`，而不是自动创建一个。
 
 ## 版本解析
 

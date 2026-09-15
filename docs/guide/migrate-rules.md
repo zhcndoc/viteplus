@@ -1,27 +1,53 @@
 # 迁移规则
 
-本文档准确描述了 `vp migrate` 对项目所做的操作：它如何更新依赖项、重写源代码导入和 package 脚本，以及调整包管理器配置。有关命令概览和工作流程，请参阅 [迁移指南](./migrate.md)。
+This reference describes exactly what `vp migrate` does to a project: how it updates dependencies, rewrites source imports and package scripts, and adjusts package-manager configuration. See the [migration guide](./migrate.md) for the command overview and workflow.
 
-除 [迁移前](#before-you-migrate) 外，该部分列出了需要你自己执行的步骤，下面的所有内容都描述自动化行为。
+Except for [Before You Migrate](#before-you-migrate), which lists steps you take yourself, everything below describes automatic behavior.
 
 ## 迁移前
 
-1. 运行 `vp upgrade`，以便全局 CLI 拥有最新的迁移规则。过时的本地 `vite-plus` 不会成为阻碍：当项目的本地副本更旧时，迁移会委托给全局 CLI。
-2. 在必要时，将项目升级到 Vite 8+ 和 Vitest 4.1+。
+1. 运行 `vp upgrade`，以便全局 CLI 使用最新的迁移规则。过时的本地 `vite-plus` 并不会阻止迁移：当项目的本地副本版本较旧时，迁移会委托给全局 CLI。
+2. 在必要时将项目升级到 Vite 8+ 和 Vitest 4.1+。
 3. 从工作区根目录运行 `vp migrate`。在自动化环境中使用 `--no-interactive`。
-4. 检查每个已更改的清单文件、包管理器配置、源代码重写，以及生成的锁定文件。
+4. 检查每个发生变更的清单、包管理器配置、源码重写结果和生成的锁文件。
 5. 使用 `vp install`、`vp check`、`vp test` 和 `vp build` 进行验证。
 
-迁移是幂等的：在成功迁移后再次运行它，不应产生另一份 diff。
+迁移具有幂等性：成功迁移后再次运行，不应产生新的差异。
 
 ## 升级 vs. 完整设置
 
-对于一个已经依赖 `vite-plus` 的项目，`vp migrate` 只执行升级：它会更新依赖和包管理器配置，并完成导入的收尾工作。它不会触及项目设置。
+对于已经依赖 `vite-plus` 的项目，`vp migrate` 只执行升级：它会更新依赖和包管理器配置，并完成导入。它不会修改项目设置。
 
-- `--full` 还会执行设置相关操作：git hooks、编辑器配置、agent 文件、ESLint 和 Prettier 迁移、框架 shim、tsconfig 的 `baseUrl` 修复，以及将 `.nvmrc`/Volta 转换为 `.node-version`。
-- `--hooks`、`--agent` 和 `--editor` 可在不使用 `--full` 的情况下启用单个设置操作。
+- `--full` 还会运行设置操作：Git hooks、编辑器配置、代理文件、ESLint 和 Prettier 迁移、框架 shim、tsconfig 的 `baseUrl` 修复，以及从 `.nvmrc`/Volta 到 `.node-version` 的转换。
+- `--hooks`、`--agent` 和 `--editor` 可在不使用 `--full` 的情况下选择单个设置操作。
+- 当默认升级跳过了本应执行的设置操作时，它会提示运行 `vp migrate --full`。全新的（非 Vite+）项目始终会运行完整迁移。
 
-当默认升级跳过了本应适用的设置操作时，它会提示运行 `vp migrate --full`。新的（非 Vite+）项目始终会执行完整迁移。
+## Pack 配置
+
+`vp migrate` 会更新 `vite.config.*` 中的静态 `pack` 对象，以及 `tsdown.config.*` 中导出的对象，以适配 [tsdown 0.23](https://github.com/rolldown/tsdown/releases/tag/v0.23.0)。对于已有的 Vite+ 项目，即使不使用 `--full` 也会执行此操作，包括工作区包。支持数组和由 `defineConfig` 回调返回的直接对象。JSON tsdown 配置会在合并到 `vite.config.ts` 后接收相同的更新。
+
+| 之前的选项                                                       | 更新后的选项                                                                           |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `bundle: false`                                                  | `unbundle: true`                                                                       |
+| `bundle: true`                                                   | 移除；打包仍然是默认行为                                                               |
+| `outExtension`                                                   | `outExtensions`                                                                        |
+| `publicDir`                                                      | `copy`                                                                                 |
+| `removeNodeProtocol: true`                                       | `nodeProtocol: 'strip'`                                                                |
+| `injectStyle`                                                    | `css.inject`                                                                           |
+| `inlineOnly` / `deps.onlyAllowBundle`                            | `deps.onlyBundle`                                                                      |
+| `noExternal`                                                     | `deps.alwaysBundle`                                                                    |
+| `skipNodeModulesBundle: true` / `deps.skipNodeModulesBundle: true` | `deps.neverBundle: true`                                                               |
+| `dts.tsgo` / `dts.oxc`                                           | 使用 `dts.generator` 选择；保留生成器选项对象并移除布尔标志                             |
+| `dts.cjsReexport`                                                | 移除；tsdown 会单独生成 CJS 声明                                                         |
+| `tsdown` 或 `vp pack` 脚本中的 `--public-dir`                    | `--copy`                                                                               |
+
+当缺少 `deps.resolveDepSubpath` 时，迁移会将其设置为 `true`，以保留之前的默认行为。如果已启用 ATTW 检查且未设置 profile，则会添加 `profile: 'strict'`。显式值（包括 `false`）保持不变。
+
+`noExternal` 会移动到 `deps.alwaysBundle`，并保留匹配器表达式、引用和回调方法。现有的 `deps.alwaysBundle` 值保持不变。
+
+当 `external` 与任一种 `skipNodeModulesBundle` 形式同时存在时，静态匹配器和对本地常量的引用会在设置 `deps.neverBundle` 之前移动到 `inputOptions.external`。常量声明和引用保持不变。这会保留原始的匹配规则，包括外部文件路径。不支持的匹配器、冲突的 `inputOptions` 以及特定于声明的依赖规则会使 pack 对象保持不变，并产生手动迁移警告。
+
+转换过程不会执行配置代码。包含展开属性、计算键或重复键的对象，以及冲突的新旧选项，都需要手动检查。动态布尔选择器保持不变。不相关的 Vite 和插件选项保持不变。迁移后运行 `vp pack` 检查结果。Node.js 要求、TypeScript 模块解析和程序化 `build()` 返回值需要单独检查。
 
 ## 依赖规则
 
@@ -37,106 +63,129 @@
 
 ### 版本选择
 
-- `vite-plus` 会固定为执行迁移的 CLI 所运行的具体版本，绝不会是 `latest` dist-tag。
-- `vite` 别名指向同一 Vite+ 发布中的 `@voidzero-dev/vite-plus-core`。
-- 支持目录的 manifest 可能包含 `catalog:` 或命名的目录引用。迁移会保留该引用，并将被引用的目录值更新为具体的工具链目标。
-- 有意的协议固定会被保留：`workspace:`、`file:`、`link:`、`npm:`、`github:`、Git URL 和 HTTP URL。
-- 迁移会协调每个工作区包，而不仅仅是根 manifest。共享的 overrides 和目录保留在工作区根；提供 peer 的依赖应放在需要它们的每个包中。
+- `vite-plus` 固定为执行迁移的 CLI 的具体版本，绝不会使用 `latest` dist-tag。
+- `vite` 别名指向同一 Vite+ 版本中的 `@voidzero-dev/vite-plus-core`。
+- 基于 catalog 的清单可能包含 `catalog:` 或命名 catalog 引用。迁移会保留该引用，并将所引用的 catalog 值更新为具体的工具链目标版本。
+- 有意指定的协议固定会被保留：`workspace:`、`file:`、`link:`、`npm:`、`github:`、Git URL 和 HTTP URL。
+- 迁移会协调每个工作区包，而不只是根清单。共享的 overrides 和 catalogs 保留在工作区根目录；提供 peer 的依赖属于每个需要它的包。
 
 ### Vite 和 Overrides
 
-包管理器的 overrides 本身不会创建依赖边。在 pnpm 下，任何在 `dependencies` 或 `devDependencies` 中列出 `vite-plus`、但在任何位置都没有 `vite` 条目（`dependencies`、`devDependencies`、`optionalDependencies` 或 `peerDependencies`）的包，都会让 pnpm 自动安装上游 Vite，以满足 Vitest 所需的 `vite` peer，从而把项目拆分成独立的 Vite+、Vite 和 Vitest 实例。为防止这种情况，`vp migrate` 会把缺失的 `vite` 条目添加到所有此类包的 `devDependencies` 中；随后工作区 override 会将其重定向到 Vite+ core。
+包管理器的 overrides 本身不会创建依赖边。在 pnpm 下，如果某个包在 `dependencies` 或 `devDependencies` 中列出 `vite-plus`，但在任何位置（`dependencies`、`devDependencies`、`optionalDependencies` 或 `peerDependencies`）都没有 `vite` 条目，pnpm 会自动安装上游 Vite，以满足 Vitest 所需的 `vite` peer，从而使项目分裂为独立的 Vite+、Vite 和 Vitest 实例。为防止这种情况，`vp migrate` 会将缺失的 `vite` 条目添加到每个此类包的 `devDependencies` 中；工作区 override 随后会将其重定向到 Vite+ core。
 
 相关规则：
 
-- 直接的 `vite` 声明绝不会仅仅因为存在根 override 而被移除。
-- 普通别名或过时别名会被规范化；命名的目录引用会被保留。
-- 在 pnpm 下，受管理的 override 键使用显式的 `@*` 范围（`vite@*`、`vitest@*`）。pnpm 会通过替换每个 manifest（包括导入方 manifest）中声明的 spec 来应用 override。裸键会匹配任何 spec，包括 `catalog:`，而 `vp up` 随后会将该引用重写为具体版本。`@*` 范围会将 override 保持在传递依赖和 peer 声明所使用的 semver 范围上。它会将 `catalog:` 引用保留为目录引用，而该目录已经会将其解析到 Vite+ core。对于仍保留裸键的项目，迁移会重新设置键，并保留其命名目录选择。
-- 上述直接条目规则仅适用于 pnpm。Bun 会将其 core 别名镜像为直接依赖，以供其 peer resolver 使用；而 npm 的 browser-provider 布局可能需要顶层 `vite` 依赖边，以便嵌套的 Vitest 包能够解析 `vite`。
+- 仅仅因为根 override 存在，直接的 `vite` 声明也绝不会被移除。
+- 普通别名或过时别名会被规范化；命名 catalog 引用会被保留。
+- 在 pnpm 下，受管理的 override 键使用显式的 `@*` 范围（`vite@*`、`vitest@*`）。pnpm 会通过替换每个清单（包括 importer 清单）中声明的 spec 来应用 override。裸键会匹配任意 spec，包括 `catalog:`，随后 `vp up` 会将该引用重写为具体版本。`@*` 范围会使 override 作用于传递依赖和 peer 声明所使用的 semver 范围，同时将 `catalog:` 引用留给 catalog，因为 catalog 已经会将它们解析到 Vite+ core。对于仍然使用裸键的项目，迁移会重新设置其键，并保留其命名 catalog 选择。
+- 上述直接条目规则仅适用于 pnpm。Bun 会将其 core 别名镜像为直接依赖，以供其 peer resolver 使用；而 npm 的浏览器提供程序布局可能需要顶层 `vite` 边，以便嵌套的 Vitest 包解析 `vite`。
 
 ### 何时直接需要 Vitest
 
-当满足以下任一条件时，迁移会在包本地保留或添加精确的捆绑版本 `vitest`：
+当满足以下任一条件时，迁移会以精确的捆绑版本保留或添加包本地的 `vitest`：
 
 - 已安装的依赖具有非可选的 `vitest` peer，无论是精确版本还是范围；
-- 该包使用 Vitest browser 模式或可选启用的 browser provider；
+- 该包使用 Vitest 浏览器模式或选择加入的浏览器提供程序；
 - 源码或 TypeScript 配置保留了上游 `vitest` 引用；
-- 该包声明了 `@nuxt/test-utils`；或者
-- 无法获取依赖元数据，而现有的直接 `vitest` 可能正在满足某个未知的必需 peer。
+- 该包声明了 `@nuxt/test-utils`；或
+- 依赖元数据不可用，且已有的直接 `vitest` 可能正在满足未知的必需 peer。
 
-检测会读取已安装的 peer 元数据，因此像 `vite-plugin-gherkin` 这样的集成也会被处理，即使它们的名称中不包含 `vitest`。
+检测会读取已安装的 peer 元数据，因此即使 `vite-plugin-gherkin` 这类集成的名称不包含 `vitest`，也能正确处理。
 
 当某个包符合条件时，迁移会：
 
-- 将 `vitest` 添加到该包中，而不是不加区分地添加到每个工作区包；
-- 在支持时使用现有的目录引用，否则使用精确的捆绑版本；并且
-- 保留匹配的工作区 override 或 resolution，以便依赖图解析为单一 Vitest 版本。
+- 将 `vitest` 添加到该包，而不是不加区分地添加到每个工作区包；
+- 在支持时使用现有的 catalog 引用，否则使用精确的捆绑版本；并且
+- 保留匹配的工作区 override 或 resolution，使依赖图解析为单一的 Vitest 版本。
 
-仅有 peer 声明并不会安装 Vitest。如果一个保留下来的 `peerDependencies.vitest` 使用了迁移将要移除的目录条目，它会先被解析为公开的 peer 范围。
+仅有 peer 声明并不会安装 Vitest。如果保留下来的 `peerDependencies.vitest` 使用了迁移将移除的 catalog 条目，则会先将其解析为公开的 peer 范围。
 
 ### Vitest 生态包
 
-官方当前的 `@vitest/*` 包通常与 Vitest 同步发布。迁移会对项目直接安装的包进行对齐，包括 `@vitest/coverage-v8`、`@vitest/coverage-istanbul`、`@vitest/ui` 和 `@vitest/web-worker`：
+官方当前的 `@vitest/*` 包通常与 Vitest 同步发布。迁移会对项目直接安装的包进行版本对齐，包括 `@vitest/coverage-v8`、`@vitest/coverage-istanbul`、`@vitest/ui` 和 `@vitest/web-worker`：
 
-- 当包管理器支持目录时，它们会通过工具链目录引用：保留现有的 `catalog:` / `catalog:<name>` 引用，为任何缺少引用的包添加目录条目，并将每个条目更新为捆绑的 Vitest 版本；
-- 当不支持目录时（npm、独立的 bun 项目，或目录功能出现之前的 pnpm/Yarn），则改为写入具体的捆绑版本。
+- 当包管理器支持 catalogs 时，会通过工具链 catalog 引用它们：保留现有的 `catalog:` / `catalog:<name>` 引用，为缺少 catalog 的包添加 catalog 条目，并将每个条目更新为捆绑的 Vitest 版本；
+- 当不支持 catalogs 时（npm、独立的 bun 项目，或预 catalog 版本的 pnpm/Yarn），会直接写入具体的捆绑版本。
 
 **不会**对齐的包：
 
-- `@vitest/eslint-plugin` 遵循其自己的版本线；
-- `@vitest/coverage-c8` 已停止在较早版本，且没有 Vitest 4 版本；并且
-- 第三方 `vitest-*` 集成会保留它们自己兼容的版本，不过它们所需的 Vitest peer 仍可能触发[直接提供](#when-vitest-is-directly-required)。
+- `@vitest/eslint-plugin` 遵循自己的版本线；
+- `@vitest/coverage-c8` 停留在较早版本，没有 Vitest 4 版本；以及
+- 第三方 `vitest-*` 集成保留各自兼容的版本，但它们所需的 Vitest peer 仍可能触发[直接提供](#when-vitest-is-directly-required)。
 
-对于 browser 模式，基础的 `@vitest/browser` 运行时和 `@vitest/browser-preview` 由 Vite+ 内置，并会作为直接依赖移除。Playwright 和 WebdriverIO provider 保持可选：保留或注入的 provider 会通过首选工具链目录引用到捆绑的 Vitest 版本（若不支持目录，则写入具体版本），并且会一并安装其 `playwright` 或 `webdriverio` peer。
+对于浏览器模式，基础的 `@vitest/browser` runtime 和 `@vitest/browser-preview` 由 Vite+ 捆绑，并作为直接依赖移除。Playwright 和 WebdriverIO 提供程序仍需选择加入：保留或注入的提供程序会通过首选工具链 catalog 以捆绑的 Vitest 版本引用（不支持 catalogs 时则具体写入），并且其 `playwright` 或 `webdriverio` peer 会一并安装。
 
-在重写导入之前会先检测 provider。这覆盖了旧项目中将 `vitest` 别名为 `@voidzero-dev/vite-plus-test`，并从 `vitest/browser-<provider>`、`vitest/browser/providers/<provider>` 或 `vitest/plugins/browser-<provider>` 导入的情况：这些导入仍会安装相应的 `@vitest/browser-playwright` 或 `@vitest/browser-webdriverio` 依赖及其框架 peer。
+在重写导入之前会检测提供程序。这涵盖了将 `vitest` 别名指向 `@voidzero-dev/vite-plus-test` 的旧项目，以及从 `vitest/browser-<provider>`、`vitest/browser/providers/<provider>` 或 `vitest/plugins/browser-<provider>` 导入的项目：这些导入仍会安装相应的 `@vitest/browser-playwright` 或 `@vitest/browser-webdriverio` 依赖及其框架 peer。
 
-对象值的嵌套 npm 和 Bun overrides 会被保留：它们是用户定义的作用域，而不是标量版本固定值。
+对象值的嵌套 npm 和 Bun overrides 会被保留：它们是用户定义的作用域，而不是标量版本固定。
 
 ## 源码重写规则
 
 ### `vite` 导入
 
-`vite` 和 `vite/*` 导入仅在配置入口文件中重写为 `vite-plus`：`vite.config.*`、`vitest.config.*`，以及迁移过程中解析到的任何配置文件。其他所有文件都保留其 `vite` 导入，原因有两个：
+`vite` 和 `vite/*` 导入仅在配置入口文件中重写为 `vite-plus`：`vite.config.*`、`vitest.config.*` 以及迁移解析出的任何配置文件。其他所有文件都会保留其 `vite` 导入，原因有二：
 
-- `vite-plus` 并不是 Vite 对外暴露表面的完整超集。它只拥有 `defineConfig`、`defineProject` 和 `lazyPlugins`，因此像 `createBuilder` 或 `loadConfigFromFile` 这样的透传符号（包括 `typeof import('vite')` 这类类型位置）如果被重写，可能会导致问题。
-- 未重写的 `vite` 导入在 Vite+ 项目中仍会通过 `@voidzero-dev/vite-plus-core` 别名正常解析。
+- `vite-plus` 并不保证是 Vite 暴露接口的超集。它只拥有 `defineConfig`、`defineProject` 和 `lazyPlugins`，因此重写诸如 `createBuilder` 或 `loadConfigFromFile` 这样的透传符号（包括 `typeof import('vite')` 类型位置中的符号）可能导致破坏。
+- 未重写的 `vite` 导入仍会通过 Vite+ 项目中的 `@voidzero-dev/vite-plus-core` 别名解析。
 
-插件包（即以 `vite-plugin-` 或 `unplugin-` 开头的未加作用域名称，或者在 `peerDependencies`/`dependencies` 中包含 `vite`）即使在配置文件中也会跳过重写。此规则的适用范围仅限于 `vite` 这个 specifier。
+插件包（以 `vite-plugin-` 或 `unplugin-` 开头的非 scoped 名称，或在 `peerDependencies`/`dependencies` 中包含 `vite` 的包）即使位于配置文件中，也会跳过重写。此规则仅适用于 `vite` specifier。
 
-`declare module 'vite'` 的增强遵循同样的规则，并且在配置文件之外会被保留。通过 core 别名，它们会指向同一个 `@voidzero-dev/vite-plus-core` 模块，而该模块的 `UserConfig` 类型由 `vite-plus` 中的 `defineConfig` 提供，因此迁移后仍可正常工作；`vite-plus` 本身并不导出 `UserConfig` 符号，所以重写后的 `declare module 'vite-plus'` 增强将无法合并到任何对象上。面向 `vite-plus` 自身表面的扩展则需要手动按 `vite-plus` 来编写。
+`declare module 'vite'` 扩展遵循相同规则，并在配置文件之外保留。通过 core 别名，它们会到达同一个 `@voidzero-dev/vite-plus-core` 模块；该模块的 `UserConfig` 类型会从 `vite-plus` 获取 `defineConfig`，因此迁移后仍可正常工作；`vite-plus` 自身不导出 `UserConfig` 符号，因此重写后的 `declare module 'vite-plus'` 扩展将无法合并到任何内容。针对 `vite-plus` 自身接口的扩展需要手动针对 `vite-plus` 编写。
 
 ### `vitest` 和浏览器导入
 
-- 普通的 `vitest` 和 `vitest/*` 导入会被重写为 `vite-plus/test*`。
-- 旧版 Playwright 和 WebdriverIO provider 导入会在此重写之前被检测出来，从而不会丢失它们可选的 provider 依赖。
-- 作用域化的 `@vitest/browser*` 导入会被重写为对应的 `vite-plus/test/browser*` 导出，并在需要时提供可选的 provider。
-- 现有的 `vite-plus/test*` 导入会保持不变。
+- 普通的 `vitest` 和 `vitest/*` 导入会重写为 `vite-plus/test*`。
+- 旧版 Playwright 和 WebdriverIO 提供程序导入会在此次重写之前检测，以免丢失其可选提供程序依赖。
+- scoped 的 `@vitest/browser*` 导入会重写为对应的 `vite-plus/test/browser*` 导出，并在需要时提供选择加入的提供程序。
+- 已有的 `vite-plus/test*` 导入保持不变。
 
-### 永远不会被重写的内容
+### Oxlint JS Plugin 导入
 
-- `declare module 'vitest'` 和 `declare module '@vitest/browser*'`：模块增强必须保留上游模块身份。
-- 仍然保留在原位置的引用，例如 `compilerOptions.types`、`require.resolve`、`import.meta.resolve` 和 `vitest/package.json`，需要包内本地的 Vitest（参见[当 Vitest 被直接引用时](#when-vitest-is-directly-required)）。
-- 在声明了 `@nuxt/test-utils` 的包中，所有 `vitest` 和 `vitest/*` 模块 specifier 都会在整个包范围内被保留：Nuxt 转换需要上游身份，否则可能会额外注入一个 `vi` 导入。此例外不适用于兄弟包，也不适用于作用域化的 `@vitest/browser*` 导入。
+Vite+ 捆绑了 Oxlint，因此迁移会移除独立的 `oxlint` 依赖。你自己的 Oxlint JS 插件会按名称导入 authoring API。当该依赖消失后，此导入将无法解析。随后 `vp lint` 会加载插件失败。
+
+迁移会将这些导入重新指向 Vite+：
+
+- 它会将 `@oxlint/plugins` 重写为 `vite-plus/lint/plugins`。
+- 它会将 `oxlint/plugins-dev` 重写为 `vite-plus/lint/plugins-dev`。
+- 当 `oxlint` 导入命名的是 authoring API 中的绑定（例如 `defineRule`、`definePlugin` 或 `Context`）时，会将其重写为 `vite-plus/lint/plugins`。旧版 Oxlint 从主入口暴露该 API。现在它位于 `@oxlint/plugins` 中。
+
+通过 Vite+ 导入始终匹配 Vite+ 捆绑的 Oxlint 版本。你无需再固定第二个包。该导入也能从任何已经依赖 `vite-plus` 的包中解析。
+
+迁移会保留以下三种形式：
+
+- 仅命名配置接口的 `oxlint` 导入，例如 `defineConfig`、`OxlintConfig` 或 `OxlintOverride`。这些导入仍会针对独立包解析。
+- 默认和 namespace `oxlint` 导入。它们没有命名绑定，因此迁移无法区分这两个接口。
+- 裸副作用 `oxlint` 导入，原因相同。
+
+如果某个包在 `dependencies` 或 `peerDependencies` 中声明了 `oxlint` 或 `@oxlint/plugins`，或者在 `optionalDependencies` 中声明了 `@oxlint/plugins`，迁移也会跳过该包。这些依赖可以提供已发布的 Oxlint 插件，而使用它们的消费者可能不会运行 Vite+。
+
+当源码、包导入别名或构建后的插件仍引用 `@oxlint/plugins` 时，清理过程会保留对 `@oxlint/plugins` 的开发依赖。这包括 `dist`、`build` 和 `out` 等目录中被忽略的输出。
+
+### 永远不会重写的内容
+
+- `declare module 'vitest'` 和 `declare module '@vitest/browser*'`：模块扩展必须保留上游模块身份。
+- 保留下来的引用，例如 `compilerOptions.types`、`require.resolve`、`import.meta.resolve` 和 `vitest/package.json`，需要包本地的 Vitest（见[何时直接需要 Vitest](#when-vitest-is-directly-required)）。
+- 在声明了 `@nuxt/test-utils` 的包中，所有 `vitest` 和 `vitest/*` 模块 specifier 都会在整个包范围内保留：Nuxt 转换需要上游身份，否则可能注入重复的 `vi` 导入。此例外不适用于同级包，也不适用于 scoped 的 `@vitest/browser*` 导入。
 
 `prefer-vite-plus-imports` lint 规则遵循相同的 Nuxt 例外，因此 lint 自动修复也会保留这些导入。
 
 ## 包脚本重写规则
 
-迁移会重写 `package.json` 中由 Vite+ 工具链提供的命令脚本，同时保留它们的参数：
+迁移会重写 `package.json` 脚本中由 Vite+ 工具链提供的命令，同时保留其参数：
 
 | 之前          | 之后                                        |
 | ------------- | ------------------------------------------- |
 | `vite`        | `vp dev`，或对应的 `vp` 子命令             |
 | `vitest`      | `vp test`                                   |
-| `oxlint`      | `vp lint`                                    |
-| `oxfmt`       | `vp fmt`                                     |
-| `tsdown`      | `vp pack`                                    |
-| `lint-staged` | `vp staged`                                  |
+| `oxlint`      | `vp lint`                                   |
+| `oxfmt`       | `vp fmt`                                    |
+| `tsdown`      | `vp pack`                                   |
+| `lint-staged` | `vp staged`                                 |
 | `eslint`      | `vp lint`，当其可选迁移运行时               |
-| `prettier`    | `vp fmt`，当其可选迁移运行时                 |
+| `prettier`    | `vp fmt`，当其可选迁移运行时                |
+| `tsup`        | `vp pack`，当其可选迁移运行时               |
 
-对于通过 `bunx` 启动的命令，迁移会保留 `bunx` 及其 `--bun` 标志（保持用户选择的运行时），并且只重写受管理的命令。这在 `bunx` 跟在命令启动分隔符之后时也适用，例如 `run` 或 `--`：
+对于通过 `bunx` 启动的命令，迁移会保留 `bunx` 及其 `--bun` 标志（保留用户选择的 runtime），只重写受管理的命令。当 `bunx` 位于 `run` 或 `--` 等命令启动器分隔符之后时，同样有效：
 
 | 之前                                                    | 之后                                                     |
 | ------------------------------------------------------- | -------------------------------------------------------- |
@@ -145,54 +194,58 @@
 | `portless --tailscale run bunx --bun vite`              | `portless --tailscale run bunx --bun vp dev`             |
 | `dotenv -e .env.test -- bunx --bun oxlint --type-aware` | `dotenv -e .env.test -- bunx --bun vp lint --type-aware` |
 
-无关的 `bunx` 命令以及其他包执行器形式保持不变。
+不相关的 `bunx` 命令以及其他包执行器形式保持不变。
+
+## 持续集成规则
+
+迁移会将 `.github` 下 GitHub Actions 工作流和复合操作中的精确 `voidzero-dev/setup-vp@v1` 引用替换为该 Vite+ 版本已知的最新精确 `setup-vp` 版本。冻结的 `v1` 标签不会接收新版本。已有的精确版本和 commit SHA 保持不变。
 
 ## Node.js 版本规则
 
-迁移会将旧版 Node.js 版本管理器文件转换为 `.node-version`，这是 Vite+ 读取的格式。在现有的 Vite+ 项目中，这种转换是完整设置包的一部分，因此会在执行 `vp migrate --full` 时运行；全新迁移则会无条件运行它。
+迁移会将旧版 Node.js 版本管理器文件转换为 `.node-version`，这是 Vite+ 读取的格式。对于已有的 Vite+ 项目，此转换属于完整设置范围，因此会通过 `vp migrate --full` 运行；全新迁移则会无条件运行。
 
-- `.nvmrc` 和 Volta 的 `volta.node` 固定版本会被转换为 `.node-version`。现有的 `.node-version` 会被保留。
-- 当 `.nvmrc` 被移除时，`.github/workflows/*.{yml,yaml}` 和复合操作（`.github/actions/**/action.{yml,yaml}`）中任何 `actions/setup-node` 的 `node-version-file: .nvmrc` 引用都会重定向到 `.node-version`，这样 CI 就不会因为 "node version file ... does not exist" 而失败。
+- `.nvmrc` 和 Volta 的 `volta.node` 固定会转换为 `.node-version`。已有的 `.node-version` 会被保留。
+- 移除 `.nvmrc` 时，`.github/workflows/*.{yml,yaml}` 以及 `.github` 下复合操作（`.github/**/action.{yml,yaml}`）中的任何 `actions/setup-node` `node-version-file: .nvmrc` 引用都会改指向 `.node-version`，以免 CI 因“node version file ... does not exist”而失败。
 
 ## 包管理器规则
 
 ### pnpm
 
-**根设置位置。** pnpm 10.6.2+ 使用 `pnpm-workspace.yaml` 作为受支持根设置的唯一来源。迁移会将识别到的 `package.json#pnpm` 字段移动到那里，包括 overrides、peer 规则、patch 设置、package 扩展、架构和构建策略、审计/更新配置以及配置依赖项。当 `pnpm` 对象变为空时会将其移除，并保留可能属于其他工具链的未知键。
+**根设置位置。** pnpm 10.6.2+ 使用 `pnpm-workspace.yaml` 作为受支持根设置的唯一来源。迁移会将已识别的 `package.json#pnpm` 字段移动到该文件中，包括 overrides、peer 规则、patch 设置、包扩展、架构和构建策略、审计/更新配置以及配置依赖。迁移会在 `pnpm` 对象为空时移除它，并保留可能属于其他工具的未知键。
 
-- 当两个文件定义了相同的已迁移设置时，对象条目会递归合并，数组中的唯一条目会被保留。冲突的标量叶子节点以 `package.json#pnpm` 中的值为准，而仅存在于 workspace 的同级条目会被保留。
-- 在 pnpm 10.6.2 之前，这些设置保留在 `package.json#pnpm` 中。（Workspace 设置支持是逐步加入的：10.5.0 提供通用支持，10.5.1 支持 overrides，10.6.2 支持 `peerDependencyRules`。pnpm 11 不再读取旧的 `package.json` 设置。）
+- 当两个文件定义了相同的迁移设置时，会递归合并对象条目并保留不重复的数组条目。在冲突的标量叶节点上，`package.json#pnpm` 中的值优先，同时保留仅存在于工作区文件中的同级条目。
+- 在 pnpm 10.6.2 之前，这些设置保留在 `package.json#pnpm` 中。（工作区设置支持是逐步加入的：一般设置从 10.5.0 开始，overrides 从 10.5.1 开始，`peerDependencyRules` 从 10.6.2 开始。pnpm 11 不再读取旧版 `package.json` 设置。）
 
-**Catalogs。** Catalogs 是一个独立功能，自 pnpm 9.5.0 起受支持，且不受上述设置边界影响。即使在 10.6.2 之前、overrides 仍保留在 `package.json#pnpm` 中时，迁移仍会将 workspace catalog 从过时的包装器别名中重写出来，并将 `catalog:` overrides 保持为引用，而不是内联为具体版本。
+**Catalogs。** Catalogs 是从 pnpm 9.5.0 开始支持的独立功能，与上述设置边界无关。即使在 10.6.2 以下的版本中，overrides 仍保留在 `package.json#pnpm`，迁移也会将工作区 catalog 从过时的 wrapper 别名中重写出来，并将 `catalog:` overrides 保留为引用，而不是内联为具体版本。
 
-- 依赖引用、默认和命名 catalog、overrides 以及 `peerDependencyRules` 彼此保持一致。
-- pnpm 接受逻辑上的默认 catalog 既可以是顶层 `catalog`，也可以是 `catalogs.default`，但不能同时存在。迁移会保留现有形式，并且绝不会在其旁边创建另一种形式。
-- 当现有命名 catalog 已经拥有 `vite-plus`、`vite` 或 `vitest` 时，迁移会复用该已管理的工具链 catalog，为新添加的依赖和 overrides 提供支持。只有在没有可复用的已管理或默认 catalog 时，才会创建顶层默认 catalog。
+- 依赖引用、默认和命名 catalogs、overrides 以及 `peerDependencyRules` 会彼此保持一致。
+- pnpm 接受顶层 `catalog` 或 `catalogs.default` 作为逻辑默认 catalog，但不能同时使用二者。迁移会保留现有形式，不会在其旁边创建另一种形式。
+- 当已有的命名 catalog 已拥有 `vite-plus`、`vite` 或 `vitest` 时，迁移会复用该受管理的工具链 catalog，用于新添加的依赖和 overrides。只有在没有可复用的受管理或默认 catalog 时，才会创建顶层默认 catalog。
 
 **其他规则。**
 
-- 每个声明了 `vite-plus` 的包也会获得一个直接的 `vite` 开发依赖（见 [Vite 和 Overrides](#vite-and-overrides)）。
-- 不相关的、选择器形状和对象值类型的 overrides 会被保留。
+- 每个声明 `vite-plus` 的包也会获得直接的 `vite` dev 依赖（见 [Vite 和 Overrides](#vite-and-overrides)）。
+- 不相关的选择器形式和对象值 overrides 会被保留。
 
 ### npm
 
-- 在添加匹配的 override 之前，会先规范化直接别名，因此 npm 不会因 `EOVERRIDE` 而失败。
-- 当真实的 Vite 安装切换为核心别名时，会先移除过时的 Vite 安装和 lockfile 状态，然后再重新安装。
-- 对浏览器提供者布局的可选启用会在顶层添加一条 `vite` 依赖边，否则嵌套的 Vitest 包将无法解析它。
+- 在添加匹配的 override 之前，会先规范化直接别名，以免 npm 因 `EOVERRIDE` 失败。
+- 当真实的 Vite 安装切换为 core 别名时，会先移除过时的 Vite 安装和锁文件状态，然后再重新安装。
+- 当嵌套的 Vitest 包无法解析 `vite` 时，选择加入的浏览器提供程序布局会获得顶层的 `vite` 边。
 
 ### Yarn
 
-- Vite+ 不支持 Plug'n'Play。迁移会检测显式和隐式的 PnP，并将项目转换为 `nodeLinker: node-modules`，同时保留所有无关的 `.yarnrc.yml` 设置。`--no-interactive` 会接受该转换；如果是进程级别的 `YARN_NODE_LINKER=pnp`，则必须由调用方修复。
+- Vite+ 不支持 Plug'n'Play。迁移会检测显式和隐式 PnP，并将项目转换为 `nodeLinker: node-modules`，同时保留所有不相关的 `.yarnrc.yml` 设置。`--no-interactive` 会接受此转换；进程级别的 `YARN_NODE_LINKER=pnp` 必须由调用方修复。
 - Catalog 引用和用户的 hoisting 设置会被保留。
-- 迁移会避免在 workspace hoisting 隔离下产生分裂的 Vitest 副本：在可能的情况下会应用包级修复，而当无法安全更改隔离时会发出警告。
+- 为避免工作区 hoisting 隔离下出现多个 Vitest 副本，迁移会在可能时应用包级修复；当无法安全更改隔离时则发出警告。
 
 ### Bun
 
-- Bun catalogs 只能在 workspace 内部解析（即根 `package.json` 具有非空 `workspaces`）。在 bun workspace 中，现有的顶层或 workspace catalog 位置以及命名 catalog 引用都会被保留。独立（单包）的 bun 项目会保留具体规格，并且不会获得 catalog 字段，因为 `bun install` 无法在 workspace 外解析 `catalog:`。
-- 核心别名会镜像为直接的 `vite` 依赖，这样 Bun 在应用 overrides 之前就能看到 peer 提供者。
+- Bun catalogs 仅能在工作区内解析（根 `package.json` 中包含非空的 `workspaces`）。在 bun 工作区中，现有的顶层或工作区 catalog 位置以及命名 catalog 引用都会被保留。独立的（单包）bun 项目会保留具体 spec，并且不会获得 catalog 字段，因为 `bun install` 无法在工作区之外解析 `catalog:`。
+- core 别名会被镜像为直接的 `vite` 依赖，使 Bun 在应用 overrides 之前能够看到 peer provider。
 
 ## 迁移后
 
-- 会检查每个 Vite 配置中是否存在与 Rolldown 不兼容的模式（例如 `manualChunks`）。发现的任何问题都会作为警告报告；配置不会被更改。
-- 依赖项会重新安装一次以刷新 lockfile。如果安装失败，迁移会报告错误并以非零状态退出。
-- 在迁移成功后，`vp fmt` 会在迁移期间更改的文件上运行，排除那些在 Git 工作区中原本就已处于脏状态的路径。Oxfmt 会选择受支持的格式；非 Git 项目会保留全项目格式化。在项目仍使用 Prettier 时会跳过格式化。格式化失败会作为警告报告，因此迁移结果和手动格式化命令仍然可用。
+- 每个 Vite 配置都会检查是否存在与 Rolldown 不兼容的模式（例如 `manualChunks`）。发现的任何内容都会作为警告报告；配置不会被修改。
+- 依赖会重新安装一次，以刷新锁文件。如果安装失败，迁移会报告错误并以非零状态退出。
+- 成功迁移后，`vp fmt` 会运行于迁移过程中发生变更的文件上，但会排除 Git 工作区中原本就处于脏状态的路径。Oxfmt 会选择受支持的格式；非 Git 项目会保留全项目格式化。项目仍使用 Prettier 时会跳过格式化。格式化失败会作为警告报告，因此迁移结果和手动格式化命令仍然可用。

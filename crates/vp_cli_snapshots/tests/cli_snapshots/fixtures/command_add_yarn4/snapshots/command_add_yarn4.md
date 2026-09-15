@@ -15,22 +15,23 @@ VITE+ - Web 统一工具链
   <PACKAGES>...           要添加的软件包
   [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
 
-选项:
-  -P, --save-prod                     保存到 `dependencies`（默认）
-  -D, --save-dev                      保存到 `devDependencies`
-  --save-peer                         保存到 `peerDependencies` 和 `devDependencies`
-  -O, --save-optional                 保存到 `optionalDependencies`
-  -E, --save-exact                     保存确切版本，而非 semver 范围
-  --save-catalog-name <CATALOG_NAME>  将新依赖项保存到指定的 catalog 名称
-  --save-catalog                      将新依赖项保存到默认 catalog
-  --allow-build <NAMES>               允许运行 postinstall 的软件包名称列表
-  --filter <PATTERN>                  过滤 monorepo 中的软件包（可多次使用）
-  -w, --workspace-root                添加到工作区根目录
-  --workspace                         仅当软件包存在于工作区中时添加（pnpm 专用）
-  -g, --global                        全局安装
-  --node <NODE>                       用于全局安装的 Node.js 版本（仅与 -g 一起使用）
-  --concurrency <CONCURRENCY>         并行运行的全局软件包安装数量（仅与 -g 一起使用）
-  -h, --help                          显示帮助
+Options:
+  -P, --save-prod                     Save to `dependencies` (default)
+  -D, --save-dev                      Save to `devDependencies`
+  --save-peer                         Save to `peerDependencies` and `devDependencies`
+  -O, --save-optional                 Save to `optionalDependencies`
+  -E, --save-exact                    Save exact version rather than semver range
+  --save-catalog-name <CATALOG_NAME>  Save the new dependency to the specified catalog name
+  --save-catalog                      Save the new dependency to the default catalog
+  --allow-build <NAMES>               A list of package names allowed to run postinstall
+  --ignore-scripts                    Do not run lifecycle scripts
+  --filter <PATTERN>                  Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root                Add to workspace root
+  --workspace                         Only add if package exists in workspace (pnpm-specific)
+  -g, --global                        Install globally
+  --node <NODE>                       Node.js version to use for global installation (only with -g)
+  --concurrency <CONCURRENCY>         Number of global package installs to run in parallel (only with -g)
+  -h, --help                          Print help
 
 文档：https://viteplus.dev/guide/install
 ```

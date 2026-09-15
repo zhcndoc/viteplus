@@ -12,9 +12,10 @@
 提示：您正在运行 Vite+ 内置命令 `vp build`。如果您想运行 build npm 脚本，请改用 `vpr build`。
 选择要构建的软件包（↑/↓，回车运行，输入以搜索）：
 
-  › admin apps/admin
-    web   apps/web
-    ui    packages/ui
+  › admin            apps/admin
+    web              apps/web
+    ui               packages/ui
+    app-root-listing .
 ```
 
 **← write:** `web`

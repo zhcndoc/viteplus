@@ -57,8 +57,7 @@ Vite+ 提供以下内置模板：
 - `--hooks` 启用提交前钩子设置（调度器 + `.vite-hooks` + `staged` 配置）
 - `--no-hooks` 跳过钩子设置
 
-创建完成后，使用 `vp hooks status`、`vp hooks disable` 和 `vp hooks enable` 管理调度器。  
-请参阅[提交钩子指南](/guide/commit-hooks)。
+创建完成后，使用 `vp hooks status`、`vp hooks disable` 和 `vp hooks enable` 管理调度器。请参见[提交钩子指南](/guide/commit-hooks)。
 
 ### 依赖构建脚本
 
@@ -341,4 +340,4 @@ export default defineConfig({
 3. （可选）提供一个 `bin` 启动器，以兼容 `npm create @org`。
 4. 发布。
 5. 验证：`vp create @org --no-interactive` 会打印清单表；`vp create @org` 会打开选择器。
-6. （可选）在你的内部模板仓库中提交 `create: { defaultTemplate: '@org' }`
+6. （可选）在你的内部模板仓库中提交 `create: { defaultTemplate: '@org' }`。

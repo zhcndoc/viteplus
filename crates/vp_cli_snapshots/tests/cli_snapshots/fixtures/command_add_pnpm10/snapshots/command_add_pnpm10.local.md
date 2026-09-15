@@ -29,7 +29,9 @@
       --save-catalog
           将新的依赖项保存到默认目录
       --allow-build <NAMES>
-          允许运行 postinstall 的软件包名称列表
+          A list of package names allowed to run postinstall
+      --ignore-scripts
+          Do not run lifecycle scripts
       --filter <PATTERN>
           筛选 monorepo 中的软件包（可多次使用）
   -w, --workspace-root

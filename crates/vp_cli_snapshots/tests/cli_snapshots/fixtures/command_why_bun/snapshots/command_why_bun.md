@@ -40,7 +40,7 @@ VITE+ - 面向 Web 的统一工具链
 ```
 VITE+ - 面向 Web 的统一工具链
 
-bun install <version>（af24e281）
+bun install <version> (<hash>)
 
  test-vite-plus-package@1.0.0
  test-vite-plus-package-optional@1.0.0

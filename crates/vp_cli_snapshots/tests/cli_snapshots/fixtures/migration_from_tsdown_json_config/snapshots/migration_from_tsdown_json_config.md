@@ -7,9 +7,9 @@
 ```
 VITE+ - Web 的统一工具链
 
-◇ 已将 . 迁移至 Vite+ <版本>
-• Node <版本>  pnpm <版本>
-• 已应用 2 项配置更新
+◇ Migrated . to Vite+ <version>
+• Node <version>  pnpm <version>
+• 2 config updates applied, 1 file had imports rewritten
 ```
 
 ## `vpt stat-file tsdown.config.json --assert-not file`
@@ -35,7 +35,11 @@ export default defineConfig({
     "entry": "src/index.ts",
     "outDir": "dist",
     "format": ["esm", "cjs"],
-    "dts": true,
+    "dts": { generator: 'oxc',  },
+    unbundle: true,
+    copy: "public",
+    css: { inject: true },
+    "deps": { resolveDepSubpath: true, onlyBundle: false },
     "inputOptions": {
       "cwd": "./src"
     }
@@ -117,7 +121,11 @@ export default defineConfig({
     "entry": "src/index.ts",
     "outDir": "dist",
     "format": ["esm", "cjs"],
-    "dts": true,
+    "dts": { generator: 'oxc',  },
+    unbundle: true,
+    copy: "public",
+    css: { inject: true },
+    "deps": { resolveDepSubpath: true, onlyBundle: false },
     "inputOptions": {
       "cwd": "./src"
     }

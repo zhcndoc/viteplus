@@ -2,7 +2,7 @@
 
 #2309 修复路径。先执行 migrate，使 catalog 保存真实的 PINNED 工具链版本（reporter 的形态），然后将 override key 降级为修复前的裸拼写，这是由旧版 Vite+ 迁移的项目仍会携带的形式。
 
-## `vp migrate --no-interactive --no-hooks --package-manager pnpm`
+## `vp migrate --no-interactive --no-hooks`
 
 migrate 通过 workspace catalog 固定工具链
 

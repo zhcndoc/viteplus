@@ -66,16 +66,8 @@ command-pack-pnpm11-with-workspace-1.0.0.tgz
 ]
 ```
 
-## `vpt print-file out.json`
+## `vpt rm -f command-pack-pnpm11-with-workspace-1.0.0.tgz app-1.0.0.tgz vite-plus-test-utils-1.0.0.tgz`
 
-**退出代码：** 1
-
-```
-out.json: not found
-missing file
-```
-
-*(跳过 1 个步骤到下一个行边界：步骤失败)*
 
 ## `vp pm pack --filter app`
 
@@ -121,16 +113,8 @@ Tarball Details
 ]
 ```
 
-## `vpt print-file out.json`
+## `vpt rm -f command-pack-pnpm11-with-workspace-1.0.0.tgz app-1.0.0.tgz vite-plus-test-utils-1.0.0.tgz`
 
-**退出代码：** 1
-
-```
-out.json: not found
-missing file
-```
-
-*（跳过 1 个步骤到下一个行边界：步骤失败）*
 
 ## `vp pm pack --out ./dist/package.tgz`
 
@@ -139,12 +123,10 @@ missing file
 ```
 package: command-pack-pnpm11-with-workspace@1.0.0
 Tarball Contents
-app-1.0.0.tgz
 package.json
 packages/app/package.json
 packages/utils/package.json
 pnpm-workspace.yaml
-vite-plus-test-utils-1.0.0.tgz
 Tarball Details
 <workspace>/dist/package.tgz
 ```
@@ -161,12 +143,10 @@ Tarball Details
 ```
 package: command-pack-pnpm11-with-workspace@1.0.0
 Tarball Contents
-app-1.0.0.tgz
 package.json
 packages/app/package.json
 packages/utils/package.json
 pnpm-workspace.yaml
-vite-plus-test-utils-1.0.0.tgz
 Tarball Details
 <workspace>/dist/command-pack-pnpm11-with-workspace-1.0.0.tgz
 ```
@@ -183,12 +163,10 @@ Tarball Details
 ```
 package: command-pack-pnpm11-with-workspace@1.0.0
 Tarball Contents
-app-1.0.0.tgz
 package.json
 packages/app/package.json
 packages/utils/package.json
 pnpm-workspace.yaml
-vite-plus-test-utils-1.0.0.tgz
 Tarball Details
 command-pack-pnpm11-with-workspace-1.0.0.tgz
 ```

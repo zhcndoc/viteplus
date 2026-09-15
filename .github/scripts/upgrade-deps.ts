@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { findLatestStableVersionForMajor } from './upgrade-deps-utils.ts';
+
 const ROOT = process.cwd();
 const META_DIR = process.env.UPGRADE_DEPS_META_DIR;
 
@@ -29,6 +31,10 @@ type LatestTagOptions = {
 type NpmLatestResponse = {
   version?: unknown;
   dependencies?: Record<string, string>;
+};
+
+type NpmPackumentResponse = {
+  versions?: Record<string, unknown>;
 };
 
 type UpstreamVersions = {
@@ -63,12 +69,10 @@ type PnpmWorkspaceEntry = {
   newVersion: string;
 };
 
-type PackageJson = {
-  devDependencies?: Record<string, string>;
-  peerDependencies?: Record<string, string>;
-};
-
 const STABLE_SEMVER_TAG_RE = /^v?\d+\.\d+\.\d+$/;
+// Vitest major upgrades can change the bundled API, export shims, and CLI
+// behavior. Advance this only after Vite+ has adapted to the new major.
+const SUPPORTED_VITEST_MAJOR = 4;
 
 const isFullSha = (s: string): boolean => /^[0-9a-f]{40}$/.test(s);
 
@@ -149,6 +153,23 @@ async function getLatestNpmVersion(packageName: string): Promise<string> {
     throw new Error(`Invalid npm response for ${packageName}: missing version field`);
   }
   return data.version;
+}
+
+async function getLatestNpmVersionForMajor(packageName: string, major: number): Promise<string> {
+  const res = await fetch(`https://registry.npmjs.org/${packageName}`, {
+    headers: { accept: 'application/vnd.npm.install-v1+json' },
+  });
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch npm metadata for ${packageName}: ${res.status} ${res.statusText}`,
+    );
+  }
+  const data = (await res.json()) as NpmPackumentResponse;
+  const version = findLatestStableVersionForMajor(Object.keys(data.versions ?? {}), major);
+  if (!version) {
+    throw new Error(`No stable ${major}.x version found for ${packageName}`);
+  }
+  return version;
 }
 
 // Read a dependency range from the latest published version of `packageName`,
@@ -421,23 +442,6 @@ async function updateReadmeVitestPins(vitestVersion: string): Promise<void> {
   recordChange('README vitest pins', oldVersion ?? null, vitestVersion);
 }
 
-// ============ Update packages/core/package.json ============
-async function updateCorePackage(devtoolsVersion: string): Promise<void> {
-  const filePath = path.join(ROOT, 'packages/core/package.json');
-  const pkg: PackageJson = readJsonFile(filePath);
-
-  const devDependencies = pkg.devDependencies;
-  const currentDevtools = devDependencies?.['@vitejs/devtools'];
-  if (!currentDevtools) {
-    return;
-  }
-  devDependencies['@vitejs/devtools'] = `^${devtoolsVersion}`;
-  recordChange('@vitejs/devtools', currentDevtools.replace(/^[\^~]/, ''), devtoolsVersion);
-
-  fs.writeFileSync(filePath, JSON.stringify(pkg, null, 2) + '\n');
-  console.log('Updated packages/core/package.json');
-}
-
 // ============ Write metadata files for PR description ============
 function writeMetaFiles(): void {
   if (!META_DIR) {
@@ -520,7 +524,6 @@ const [
   vitestVersion,
   tsdownVersion,
   lightningcssVersion,
-  devtoolsVersion,
   oxcNodeCliVersion,
   oxcNodeCoreVersion,
   oxfmtVersion,
@@ -532,11 +535,10 @@ const [
   oxcParserVersion,
   oxcTransformVersion,
 ] = await Promise.all([
-  getLatestNpmVersion('vitest'),
+  getLatestNpmVersionForMajor('vitest', SUPPORTED_VITEST_MAJOR),
   getLatestNpmVersion('tsdown'),
   // Mirror exactly what the bundled @tsdown/css depends on.
   getNpmDependencyRange('@tsdown/css', 'lightningcss'),
-  getLatestNpmVersion('@vitejs/devtools'),
   getLatestNpmVersion('@oxc-node/cli'),
   getLatestNpmVersion('@oxc-node/core'),
   getLatestNpmVersion('oxfmt'),
@@ -552,7 +554,6 @@ const [
 console.log(`vitest: ${vitestVersion}`);
 console.log(`tsdown: ${tsdownVersion}`);
 console.log(`lightningcss (from @tsdown/css): ${lightningcssVersion}`);
-console.log(`@vitejs/devtools: ${devtoolsVersion}`);
 console.log(`@oxc-node/cli: ${oxcNodeCliVersion}`);
 console.log(`@oxc-node/core: ${oxcNodeCoreVersion}`);
 console.log(`oxfmt: ${oxfmtVersion}`);
@@ -582,8 +583,6 @@ await updatePnpmWorkspace({
 });
 await updateVitestVersionConstant(vitestVersion);
 await updateReadmeVitestPins(vitestVersion);
-await updateCorePackage(devtoolsVersion);
-
 writeMetaFiles();
 
 console.log('Done!');

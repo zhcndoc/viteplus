@@ -6,8 +6,9 @@
 
 ```
 ◇ 已搭建 my-mono
-• Node <version>  pnpm <version>
-→ 下一步：cd my-mono && vp run
+• Node <version} pnpm <version}
+→ Git (optional): git -C my-mono add -A && git -C my-mono commit -m "chore: initial commit"
+→ Next: cd my-mono && vp run
 ```
 
 ## `vpt print-file my-mono/vite.config.ts`
@@ -41,8 +42,8 @@ packages:
   - apps/*
   - packages/*
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@<version>
-  vite-plus: <version>
+  vite: npm:@voidzero-dev/vite-plus-core@<<version}
+  vite-plus: <version}
 overrides:
   vite@*: "catalog:"
 peerDependencyRules:

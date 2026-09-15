@@ -366,6 +366,21 @@ async function resolveLocalPackument(name: string): Promise<Packument> {
   return merged;
 }
 
+function resolveLocalVersion(key: string): unknown {
+  const separator = key.lastIndexOf('/');
+  if (separator === -1) {
+    return undefined;
+  }
+  const name = key.slice(0, separator);
+  const specifier = key.slice(separator + 1);
+  const packument = localPackuments.get(name);
+  if (!packument) {
+    return undefined;
+  }
+  const version = packument['dist-tags'][specifier] ?? specifier;
+  return packument.versions[version];
+}
+
 // Stream the upstream response byte-for-byte. Unlike `fetch`, `https` does not
 // auto-decompress, so the tarball reaches the client exactly as the registry
 // served it (content-encoding and all). bun verifies tarball integrity and
@@ -475,6 +490,15 @@ const server = createServer(async (req, res) => {
     res.end(serializeForRegistry(packument, registry));
     return;
   }
+  const localVersion = resolveLocalVersion(key);
+  if (localVersion) {
+    const address = server.address();
+    const registry =
+      address && typeof address !== 'string' ? `http://127.0.0.1:${address.port}` : '';
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(serializeForRegistry(localVersion, registry));
+    return;
+  }
   const tarMatch = key.match(/\/-\/([^/]+\.tgz)$/);
   if (tarMatch) {
     try {
@@ -499,7 +523,8 @@ const server = createServer(async (req, res) => {
 
 // Registry env for every package manager, each of which reads its own
 // spelling: npm and bun honor NPM_CONFIG_REGISTRY, pnpm >= 10.6 only reads
-// PNPM_CONFIG_* (older pnpm read the lowercase npm_config_* form), and Yarn
+// PNPM_CONFIG_* (pnpm 11.0 requires lowercase pnpm_config_*; older pnpm
+// read the lowercase npm_config_* form), and Yarn
 // Berry only reads YARN_-prefixed settings and refuses plain-http registries
 // unless the host is whitelisted.
 //
@@ -515,10 +540,17 @@ function buildRegistryEnv(registry: string): Record<string, string> {
   const noProxy = [process.env.NO_PROXY ?? process.env.no_proxy, '127.0.0.1']
     .filter(Boolean)
     .join(',');
+  // Windows CI snapshot jobs put TEMP on a ReFS Dev Drive, where Bun's
+  // cache/temp renames can fail with ENOTSUP. Keep its throwaway cache in
+  // the user profile and its temporary files on the same filesystem.
+  const bunCacheRoot =
+    process.platform === 'win32' && process.env.CI != null ? homedir() : tmpdir();
+  const bunCacheDir = mkdtempSync(path.join(bunCacheRoot, 'vp-local-registry-bun-'));
   return {
     NPM_CONFIG_REGISTRY: registry,
     npm_config_registry: registry,
     PNPM_CONFIG_REGISTRY: registry,
+    pnpm_config_registry: registry,
     YARN_NPM_REGISTRY_SERVER: registry,
     YARN_UNSAFE_HTTP_WHITELIST: '127.0.0.1',
     NO_PROXY: noProxy,
@@ -526,7 +558,8 @@ function buildRegistryEnv(registry: string): Record<string, string> {
     NPM_CONFIG_NOPROXY: noProxy,
     npm_config_noproxy: noProxy,
     YARN_GLOBAL_FOLDER: mkdtempSync(path.join(tmpdir(), 'vp-local-registry-yarn-')),
-    BUN_INSTALL_CACHE_DIR: mkdtempSync(path.join(tmpdir(), 'vp-local-registry-bun-')),
+    BUN_INSTALL_CACHE_DIR: bunCacheDir,
+    BUN_TMPDIR: path.join(bunCacheDir, '.tmp'),
   };
 }
 

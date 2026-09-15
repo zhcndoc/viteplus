@@ -1,8 +1,6 @@
 # config_only_root_build
 
-回归测试：通过 vite.config.ts（build.lib，没有
-index.html）构建的工作区根目录是有效目标。直接运行 vp build 必须在
-根目录中执行构建，而不是选择成员，即使存在成员也是如此。
+声明的 `build` 字段是根意图信号。单独运行 `vp build` 时会在根目录执行，而不是要求选择成员。
 
 ## `vp build`
 

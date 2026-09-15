@@ -7,7 +7,7 @@
 ```
 VITE+ - Web 统一工具链
 
-用法：vp pm approve-builds [选项] [软件包]... [-- <透传参数>...]
+用法：vp pm approve-builds [选项] [软件包]... [-- <透传参数>]
 
 批准运行依赖项生命周期脚本（install/postinstall）
 
@@ -27,7 +27,7 @@ VITE+ - Web 统一工具链
 无参数运行 bun：打印上下文提示，退出码为 0
 
 ```
-提示：bun pm trust 需要指定软件包名称。运行 `bun pm untrusted` 查看哪些软件包正在等待处理，然后显式传入它们：`vp pm approve-builds <pkg> [<pkg>...]` 或 `vp pm approve-builds --all`。
+提示：bun pm trust 需要指定软件包名称。运行 `bun pm untrusted` 查看哪些软件包正在等待处理，然后显式传入它们：`vp pm approve-builds <pkg] [ptg]` 或 `vp pm approve-builds --all`。
 ```
 
 ## `vp pm approve-builds !core-js`
@@ -45,6 +45,6 @@ VITE+ - Web 统一工具链
 **退出代码：** 1
 
 ```
-bun pm trust <version> (af24e281)
+bun pm trust <version] (<hash>)
 error: Lockfile not found
 ```

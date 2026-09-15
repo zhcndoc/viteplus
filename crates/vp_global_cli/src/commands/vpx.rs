@@ -7,7 +7,7 @@
 //! 3. System PATH (excluding vite-plus bin directory)
 //! 4. Remote download via `vp dlx`
 
-use vp_shared::{PrependOptions, exit_code_from_status, output, prepend_to_path_env};
+use vp_shared::{PrependOptions, ToolPathEnv, exit_code_from_status, output};
 use vt_path::{AbsolutePath, AbsolutePathBuf};
 
 use crate::{commands::env::config, shim::dispatch};
@@ -88,9 +88,13 @@ pub async fn execute_vpx(args: &[String], cwd: &AbsolutePath) -> i32 {
         // 1. Try local node_modules/.bin
         if let Some(local_bin) = find_local_binary(cwd, &cmd_name) {
             tracing::debug!("vpx: found local binary at {}", local_bin.as_path().display());
-            prepend_node_modules_bin_to_path(cwd);
+            let mut child_env = ToolPathEnv::from_env();
+            if let Err(error) = prepend_node_modules_bin_to_path(cwd, &mut child_env) {
+                output::error(&format!("vpx: {error}"));
+                return 1;
+            }
             let cmd_args: Vec<String> = positional[1..].to_vec();
-            return crate::shim::exec::exec_tool(&local_bin, &cmd_args);
+            return crate::shim::exec::exec_tool(&local_bin, &cmd_args, child_env);
         }
 
         // 2. Try global vp packages
@@ -102,9 +106,13 @@ pub async fn execute_vpx(args: &[String], cwd: &AbsolutePath) -> i32 {
         // 3. Try system PATH (excluding vite-plus bin dir)
         if let Some(path_bin) = find_on_path(&cmd_name) {
             tracing::debug!("vpx: found on PATH at {}", path_bin.as_path().display());
-            prepend_node_modules_bin_to_path(cwd);
+            let mut child_env = ToolPathEnv::from_env();
+            if let Err(error) = prepend_node_modules_bin_to_path(cwd, &mut child_env) {
+                output::error(&format!("vpx: {error}"));
+                return 1;
+            }
             let cmd_args: Vec<String> = positional[1..].to_vec();
-            return crate::shim::exec::exec_tool(&path_bin, &cmd_args);
+            return crate::shim::exec::exec_tool(&path_bin, &cmd_args, child_env);
         }
     }
 
@@ -165,18 +173,24 @@ async fn execute_global_binary(bin: GlobalBinary, args: &[String], cwd: &Absolut
 
     // Prepend Node.js bin dir to PATH
     let node_bin_dir = node_path.parent().expect("Node has no parent directory");
-    let _ = prepend_to_path_env(node_bin_dir, PrependOptions::default());
+    let mut child_env = ToolPathEnv::from_env();
+    if let Err(error) = child_env.prepend(node_bin_dir, &["node"], PrependOptions::default()) {
+        output::error(&format!("vpx: {error}"));
+        return 1;
+    }
 
-    // Prepend local node_modules/.bin dirs to PATH
-    prepend_node_modules_bin_to_path(cwd);
+    if let Err(error) = prepend_node_modules_bin_to_path(cwd, &mut child_env) {
+        output::error(&format!("vpx: {error}"));
+        return 1;
+    }
 
     if bin.is_js {
         // Execute: node <binary_path> <args>
         let mut full_args = vec![bin.path.as_path().display().to_string()];
         full_args.extend(args.iter().cloned());
-        crate::shim::exec::exec_tool(&node_path, &full_args)
+        crate::shim::exec::exec_tool(&node_path, &full_args, child_env)
     } else {
-        crate::shim::exec::exec_tool(&bin.path, args)
+        crate::shim::exec::exec_tool(&bin.path, args, child_env)
     }
 }
 
@@ -208,7 +222,10 @@ fn find_on_path(cmd: &str) -> Option<AbsolutePathBuf> {
 ///
 /// Walks up from cwd and prepends each existing `node_modules/.bin` directory
 /// to PATH so that sub-processes also resolve local binaries first.
-fn prepend_node_modules_bin_to_path(cwd: &AbsolutePath) {
+fn prepend_node_modules_bin_to_path(
+    cwd: &AbsolutePath,
+    env: &mut ToolPathEnv,
+) -> std::io::Result<()> {
     // Collect dirs bottom-up, then prepend in reverse so nearest is first
     let mut bin_dirs = Vec::new();
     let mut current = cwd;
@@ -225,8 +242,9 @@ fn prepend_node_modules_bin_to_path(cwd: &AbsolutePath) {
 
     // Prepend in reverse order so the nearest (deepest) directory ends up first
     for dir in bin_dirs.iter().rev() {
-        let _ = prepend_to_path_env(dir, PrependOptions { dedupe_anywhere: true });
+        env.prepend(dir, &[], PrependOptions { dedupe_anywhere: true })?;
     }
+    Ok(())
 }
 
 /// Walk up from `cwd` looking for `node_modules/.bin/<cmd>`.
@@ -359,7 +377,7 @@ pub fn parse_vpx_args(args: &[String]) -> (VpxFlags, Vec<String>) {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
+    use vp_shared::env_vars;
 
     use super::*;
 
@@ -681,35 +699,20 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_find_on_path_finds_tool() {
-        let original_path = std::env::var_os("PATH");
         let temp = tempfile::tempdir().unwrap();
         let dir = temp.path().join("bin_test");
         std::fs::create_dir_all(&dir).unwrap();
         create_fake_executable(&dir, "vpx-test-tool-abc");
 
-        // SAFETY: serial test
-        unsafe {
-            std::env::set_var("PATH", &dir);
-        }
-
-        let result = find_on_path("vpx-test-tool-abc");
-        assert!(result.is_some());
-
-        unsafe {
-            match &original_path {
-                Some(v) => std::env::set_var("PATH", v),
-                None => std::env::remove_var("PATH"),
-            }
-        }
+        temp_env::with_var("PATH", Some(dir.as_os_str()), || {
+            let result = find_on_path("vpx-test-tool-abc");
+            assert!(result.is_some());
+        });
     }
 
     #[test]
-    #[serial]
     fn test_find_on_path_excludes_vp_bin_dir() {
-        let original_path = std::env::var_os("PATH");
-        let original_home = std::env::var_os("VP_HOME");
         let temp = tempfile::tempdir().unwrap();
 
         // Set up a fake vite-plus home with bin dir
@@ -725,30 +728,18 @@ mod tests {
 
         let path = std::env::join_paths([fake_bin.as_path(), other_dir.as_path()]).unwrap();
 
-        // SAFETY: serial test
-        unsafe {
-            std::env::set_var("PATH", &path);
-            std::env::set_var("VP_HOME", fake_home.as_os_str());
-        }
-
-        let result = find_on_path("vpx-excluded-tool");
-        assert!(result.is_some());
-        // Should find the one in other_dir, not fake_bin
-        assert!(
-            result.unwrap().as_path().starts_with(&other_dir),
-            "Should skip vite-plus bin dir and find tool in other directory"
+        vp_shared::EnvConfig::with_vars(
+            [("PATH", path.as_os_str()), (env_vars::VP_HOME, fake_home.as_os_str())],
+            |_| {
+                let result = find_on_path("vpx-excluded-tool");
+                assert!(result.is_some());
+                // Should find the one in other_dir, not fake_bin
+                assert!(
+                    result.unwrap().as_path().starts_with(&other_dir),
+                    "Should skip vite-plus bin dir and find tool in other directory"
+                );
+            },
         );
-
-        unsafe {
-            match &original_path {
-                Some(v) => std::env::set_var("PATH", v),
-                None => std::env::remove_var("PATH"),
-            }
-            match &original_home {
-                Some(v) => std::env::set_var("VP_HOME", v),
-                None => std::env::remove_var("VP_HOME"),
-            }
-        }
     }
 
     // =========================================================================
@@ -756,9 +747,7 @@ mod tests {
     // =========================================================================
 
     #[test]
-    #[serial]
     fn test_prepend_node_modules_bin_to_path() {
-        let original_path = std::env::var_os("PATH");
         let temp = tempfile::tempdir().unwrap();
         let temp_path = AbsolutePathBuf::new(temp.path().to_path_buf()).unwrap();
 
@@ -771,26 +760,12 @@ mod tests {
         let nested_bin = nested.join("node_modules").join(".bin");
         std::fs::create_dir_all(&nested_bin).unwrap();
 
-        // SAFETY: serial test
-        unsafe {
-            std::env::set_var("PATH", "/usr/bin");
-        }
-
-        prepend_node_modules_bin_to_path(&nested);
-
-        let new_path = std::env::var_os("PATH").unwrap();
-        let paths: Vec<_> = std::env::split_paths(&new_path).collect();
-
-        // Nearest (nested) should be first
+        let mut env = ToolPathEnv::new("/usr/bin".into(), "node");
+        prepend_node_modules_bin_to_path(&nested, &mut env).unwrap();
+        let envs = env.into_envs();
+        let paths: Vec<_> = std::env::split_paths(&envs[0].1).collect();
         assert_eq!(paths[0], nested_bin.as_path().to_path_buf());
-        // Root should be second
         assert_eq!(paths[1], root_bin.as_path().to_path_buf());
-
-        unsafe {
-            match &original_path {
-                Some(v) => std::env::set_var("PATH", v),
-                None => std::env::remove_var("PATH"),
-            }
-        }
+        assert_eq!(envs[1].1, "node");
     }
 }

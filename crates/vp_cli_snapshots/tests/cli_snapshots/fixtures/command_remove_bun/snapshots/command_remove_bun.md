@@ -49,8 +49,8 @@ For more information, try '--help'.
 从开发依赖中移除不存在的软件包时应报错
 
 ```
-bun remove <version> (af24e281)
-package.json 中没有依赖项，没有可移除的内容！
+bun remove <version> (<hash>)
+package.json doesn't have dependencies, there's nothing to remove!
 ```
 
 ## `vpt print-file package.json`
@@ -68,7 +68,7 @@ package.json 中没有依赖项，没有可移除的内容！
 应将软件包添加到依赖项中
 
 ```
-bun add <version> (af24e281)
+bun add <version> (<hash>)
 
 已安装 testnpm2@1.0.1
 
@@ -78,7 +78,7 @@ bun add <version> (af24e281)
 ## `vp add -D test-vite-plus-install`
 
 ```
-bun add <version> (af24e281)
+bun add <version> (<hash>)
 
 installed test-vite-plus-install@1.0.0
 
@@ -88,7 +88,7 @@ installed test-vite-plus-install@1.0.0
 ## `vp add -O test-vite-plus-package-optional`
 
 ```
-bun add <version> (af24e281)
+bun add <version> (<hash>)
 
 installed test-vite-plus-package-optional@1.0.0
 
@@ -119,7 +119,7 @@ installed test-vite-plus-package-optional@1.0.0
 应从依赖项中移除软件包
 
 ```
-bun remove <version> (af24e281)
+bun remove <version> (<hash>)
 
 - testnpm2
 - test-vite-plus-install
@@ -144,7 +144,7 @@ bun remove <version> (af24e281)
 应从可选依赖中移除软件包
 
 ```
-bun remove <version> (af24e281)
+bun remove <version> (<hash>)
 
 package.json has no dependencies! Deleted empty lockfile
 

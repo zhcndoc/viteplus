@@ -105,59 +105,46 @@ packages/cli/
 
 ### 命令路由
 
-Rust `vp` 二进制（`crates/vp_global_cli/`）将命令路由到两类之一：
+Rust `vp` 二进制（`crates/vp_global_cli/`）使用 clap 解析每个命令（`crates/vp_global_cli/src/cli.rs`），并将其路由到以下路径之一：
 
-```
-                       vp <command>
-                            │
-              ┌─────────────┴──────────────┐
-              │                            │
-              ▼                            ▼
-     ┌────────────────┐         ┌────────────────┐
-     │   类别 A       │         │   类别 B       │
-     │   包管理器     │         │   JavaScript   │
-     │    (Rust)      │         │    (Node.js)   │
-     └───────┬────────┘         └───────┬────────┘
-             │                          │
-       vp_pm_cli::                oxc_resolver finds
-       dispatch                     local vite-plus
-             │                          │
-             ▼                    ┌─────┴─────┐
-     ┌────────────────┐          │  found?   │
-     │ install        │          └─────┬─────┘
-     │ add            │           yes ╱ ╲ no
-     │ remove         │             ╱     ╲
-     │ update         │            ▼       ▼
-     │ ...            │      ┌────────┐ ┌────────┐
-     └────────────────┘      │ 本地   │ │ 全局   │
-                             │ bin.js │ │ bin.js │
-                             └───┬────┘ └───┬────┘
-                                 └─────┬────┘
-                                       │
-                                       ▼
-                              ┌────────────────┐
-                              │     bin.ts      │
-                              │   路由到：      │
-                              ├────────────────┤
-                              │ build, test,    │
-                              │ lint, fmt, run  │
-                              │   → NAPI        │
-                              ├────────────────┤
-                              │ install, add,   │
-                              │ remove, update  │
-                              │ dlx, pm <…>     │
-                              │   → NAPI        │
-                              │   → vp_pm_cli │
-                              ├────────────────┤
-                              │ create, migrate │
-                              │ --version       │
-                              │   → dist/       │
-                              │     global/*.js │
-                              └────────────────┘
+```mermaid
+flowchart TD
+    vp["vp &lt;command&gt;"]
+
+    vp --> A["Category A<br/>Package Manager (Rust)"]
+    vp --> B["Category B<br/>JS Script Commands"]
+    vp --> C["Category C<br/>Local CLI Delegation"]
+    vp --> G["Rust-native global commands"]
+
+    A -->|"--global"| managed["commands::global<br/>managed install store"]
+    A --> pm["vp_pm_cli::dispatch<br/>install, add, remove, update, ..."]
+
+    B --> resolve
+    B -->|"migrate: local older than global"| globalBin
+    C --> resolve["oxc_resolver finds local vite-plus"]
+    resolve -->|found| localBin["local dist/bin.js"]
+    resolve -->|not found| globalBin["global dist/bin.js"]
+    localBin --> binTs
+    globalBin --> binTs["bin.ts"]
+    binTs --> js["B: create, migrate, config, hooks, staged<br/>→ dist/*.js"]
+    binTs --> napi["C: dev, build, test, lint, fmt, check, pack, run, exec, preview, cache<br/>→ NAPI"]
+
+    G --> toolchain["toolchain<br/>commands::toolchain"]
+    toolchain -->|"local vite-plus found"| C
+    toolchain -->|"--global or no local"| manifest["render global toolchain.json in Rust"]
+    G --> version["--version<br/>commands::version"]
+    G --> env["env<br/>commands::env"]
+    G --> selfmgmt["upgrade, implode<br/>commands::{upgrade, implode}"]
 ```
 
-- **类别 A（包管理器）**：`install`、`add`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>` —— clap 定义和分发逻辑位于共享的 `crates/vp_pm_cli/` crate 中。全局 CLI 和本地 CLI 绑定都会将 `vp_pm_cli::PackageManagerCommand` 展平到各自顶层的参数解析器中，并调用 `vp_pm_cli::dispatch` 来运行底层包管理器（pnpm/npm/yarn/bun）。全局 CLI 还会针对 vite-plus 管理的安装额外拦截 `--global`，并在之后委托给 `commands::env::global_install`。
-- **类别 B（JavaScript）**：所有其他命令（`build`、`test`、`lint`、`create`、`migrate`、`--version` 等）——Rust 使用 `oxc_resolver` 查找项目本地的 `vite-plus/dist/bin.js` 并运行。如果不存在本地安装，则回退到全局安装中的 `dist/bin.js`。随后，统一的 `bin.ts` 入口点会将命令路由到 NAPI 绑定（任务命令和包管理器命令，后者通过 `vp_pm_cli::dispatch`），或路由到 `dist/global/` 中由 rolldown 打包的模块（create、migrate、version）。
+- **类别 A（包管理器）**：`install`、`add`、`remove`、`update`、`dedupe`、`outdated`、`why`、`info`、`link`、`unlink`、`dlx`、`pm <subcmd>` — clap 定义和分发逻辑位于共享的 `crates/vp_pm_cli/` crate 中。全局 CLI 和本地 CLI binding 都会将 `vp_pm_cli::PackageManagerCommand` 展平到其顶层参数解析器中，并调用 `vp_pm_cli::dispatch` 来运行底层包管理器（pnpm/npm/yarn/bun）。从全局 `vp` 二进制运行时，这些命令完全由 Rust 中的 `run_package_manager_command` 处理，不会到达 `bin.ts`；只有直接调用本地 JavaScript 入口点时才会采用 NAPI 路径（例如 `npx vp install`）。全局 CLI 还会拦截 `--global` 投影（`PackageManagerCommand::managed_global_command`），在委托之前通过 `commands::global` 从 vite-plus 管理的安装存储中提供服务。
+- **类别 B（JS 脚本命令）**：`create`、`migrate`、`config`、`hooks`、`staged` — 使用 JavaScript 实现。Rust 使用 `oxc_resolver` 查找项目本地的 `vite-plus/dist/bin.js`，并使用受管理的 Node.js 运行时运行它；如果不存在本地安装，则回退到全局安装中的 `dist/bin.js`。统一的 `bin.ts` 入口点随后会加载由 tsdown 打包的、对应命令的模块（入口在 `packages/cli/tsdown.config.ts` 中声明）。`migrate` 是本地优先解析规则的唯一例外：`JsExecutor::delegate_migrate` 会比较版本，如果项目的本地 `vite-plus` 版本低于全局 `vp`，则改为运行全局 CLI。
+- **类别 C（本地 CLI 委托）**：`dev`、`build`、`test`、`lint`、`fmt`、`check`、`pack`、`run`、`exec`、`preview`、`cache` — 通过 `commands::delegate` 转发到本地 vite-plus CLI，该命令以与类别 B 相同的方式解析 `bin.js`；随后 `bin.ts` 将这些命令路由到 NAPI binding。`lint --init` 和 `fmt --init`/`--migrate` 会强制使用全局安装（`commands::delegate::execute_global`）。
+- **Rust 原生全局命令**：其余顶层变体由全局二进制在 Rust 中处理。`env`、`upgrade` 和 `implode` 没有本地对应项；`--version` 和 `toolchain` 也存在于本地 CLI 中，当直接调用 JavaScript 入口点时会在那里执行（例如 `npx vp --version`）。
+  - `toolchain`（`commands::toolchain`）是混合命令：当未指定 `--global` 且解析到项目本地的 `vite-plus` 时，它会像类别 C 一样委托给本地 CLI；否则（指定了 `--global` 或不存在本地安装）会直接在 Rust 中加载并渲染全局安装的 `toolchain.json`，而不是通过全局 `bin.js` 回退。
+  - `--version`（`commands::version`）直接从 Rust 输出 `vp` 二进制版本和捆绑的工具版本；它永远不会到达 `bin.ts`。
+  - `env`（`commands::env`）管理 Node.js 版本、shims 和 pins。
+  - `upgrade` 和 `implode`（`commands::upgrade`、`commands::implode`）是用于管理 `vp` 二进制及其安装目录的自管理命令。
 
 ### 全局 scripts_dir 解析（Rust）
 
@@ -211,11 +198,11 @@ if (command === 'create') {
 ### 已完成
 
 1. **已将所有源代码合并** 从 `packages/global/` 到 `packages/cli/`：
-   - `src/create/`, `src/migration/`, `src/version.ts` — 全局命令
-   - `src/utils/`, `src/types/` — 共享工具和类型（从 `global-utils`、`global-types` 重命名而来）
+   - `src/create/`、`src/migration/`、`src/version.ts` — 全局命令
+   - `src/utils/`、`src/types/` — 共享工具和类型（从 `global-utils`、`global-types` 重命名而来）
    - `binding/` — 统一的 NAPI crate，包含 migration、package_manager、utils 模块
-   - `install.sh`, `install.ps1` — 安装脚本
-   - `templates/`, `rules/` — 资源文件
+   - `install.sh`、`install.ps1` — 安装脚本
+   - `templates/`、`rules/` — 资源文件
    - `snap-tests-global/` — 全局 snap 测试
 
 2. **已彻底删除 `packages/global/`**
@@ -279,4 +266,4 @@ if (command === 'create') {
 - `pnpm -F vite-plus snap-test-global` — 全局 CLI 快照测试通过
 - `pnpm bootstrap-cli` — 完整构建并成功进行全局安装
 - `VP_VERSION=test bash packages/cli/install.sh` — 从 npm 进行生产环境安装成功
-- 手动测试：`vp create`、`vp migrate`、`vp --version`、`vp build`、`vp test` 均运行正常
+- 手动测试：`vp create`、`vp migrate`、`vp --version`、`vp build`、`vp test` 均运行正常。

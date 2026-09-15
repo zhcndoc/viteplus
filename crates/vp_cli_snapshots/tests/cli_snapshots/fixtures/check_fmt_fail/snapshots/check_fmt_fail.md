@@ -11,6 +11,19 @@ src/index.js（<duration>）
 在 1 个文件中发现格式问题（<duration>，<n> 个线程）。运行 `vp check --fix` 以修复这些问题。
 ```
 
+## `vp check --quiet`
+
+quiet does not suppress formatting failures
+
+**退出代码：** 1
+
+```
+error: Formatting issues found
+src/index.js (<duration>)
+
+Found formatting issues in 1 file (<duration>, <n> threads). Run `vp check --fix` to fix them.
+```
+
 ## `vp check --fix`
 
 ```

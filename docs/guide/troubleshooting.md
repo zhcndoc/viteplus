@@ -15,18 +15,28 @@ Vite+ 期望使用现代的上游工具版本。
 
 如果你正在迁移一个现有项目，并且它仍然依赖旧版本的 Vite 或 Vitest，请先升级这些依赖，然后再采用 Vite+。
 
-运行 `vp toolchain` 以显示本地 Vite+ 软件包中的版本。  
-运行 `vp toolchain --global` 以显示全局 Vite+ 版本中的版本。
+运行 `vp toolchain` 可显示本地 Vite+ 软件包中的版本。运行 `vp toolchain --global` 可显示全局 Vite+ 版本中的版本。
 
-## `vp check` does not run type-aware lint rules or type checks
+## `vp check` 不会运行类型感知 lint 规则或类型检查
 
 - 确认 `vite.config.ts` 中已启用 `lint.options.typeAware` 和 `lint.options.typeCheck`
 - 检查你的 `tsconfig.json` 是否仍在使用 `compilerOptions.baseUrl`
 
-由 `tsgolint` 驱动的 Oxlint 类型检查器路径不支持 `baseUrl`。  
-`vp migrate` 和 `vp lint --init` 会尝试运行 `vp dlx @andrewbranch/ts5to6 --fixBaseUrl .`  
-以在启用类型感知 lint 之前修复该问题。如果该修复失败或被拒绝，Vite+  
-会跳过 `typeAware` 和 `typeCheck`。
+由 `tsgolint` 驱动的 Oxlint 类型检查器路径不支持 `baseUrl`。`vp migrate` 和 `vp lint --init` 会尝试在启用类型感知 lint 之前运行 `vp dlx @andrewbranch/ts5to6 --fixBaseUrl .` 修复。如果该修复失败或被拒绝，Vite+ 会跳过 `typeAware` 和 `typeCheck`。
+
+## 嵌套 lint 或格式配置未生效
+
+Vite+ 目前不支持嵌套 lint 或格式配置。从工作区根目录运行 `vp lint`、`vp fmt` 或 `vp check` 时，不要依赖子目录中的配置，也不要依赖软件包级 `vite.config.ts` 文件中的 `lint` 和 `fmt` 块来覆盖根设置。
+
+将 lint 和格式设置保存在根目录的 `vite.config.ts` 中。使用 [`lint.overrides`](/guide/monorepo#root-config-with-overrides) 和 [`fmt.overrides`](/guide/monorepo#format-overrides) 为特定文件或软件包设置专属配置。你还可以将[配置对象导入](/guide/monorepo#composing-configuration-files)根配置，以便将设置保存在单独的文件中。
+
+对于 IDE 集成，我们提供了 `disableNestedConfig` 和 `fmt.disableNestedConfig` 配置，用于禁用嵌套 lint 和格式配置，并使编辑器行为与根 Vite+ 配置保持一致。有关编辑器的设置说明，请参阅 [IDE 集成](/guide/ide-integration)。
+
+我们目前暂缓支持嵌套配置。我们正在考虑的一些因素包括：隐式配置发现会如何影响 lint 和格式化的可预测性，AI 代理需要哪些上下文才能理解适用的设置，以及查找和加载多个配置可能带来的性能成本。与此同时，我们也认识到，将特定于软件包的上下文保留在代码附近可能会带来好处。到目前为止我们听到的用例，还不足以让我们决定采用这些语义。暂缓支持为日后添加该功能留下了空间，我们也希望了解你的项目为什么需要嵌套配置，尤其是在根级覆盖无法满足需求的情况下。
+
+你需要嵌套配置吗？[在 GitHub 上分享你的用例和意见](https://github.com/voidzero-dev/vite-plus/discussions/2669)，包括你的项目结构、想要使用嵌套配置的原因，以及根级覆盖是否能满足你的需求。
+
+我们非常希望听到你的反馈。这将帮助我们决定未来是否改进当前情况。
 
 ## VS Code 扩展未读取 `vite.config.ts`
 
@@ -62,8 +72,7 @@ Vite+ 期望使用现代的上游工具版本。
 - 如果状态显示 `Preference: disabled (local)`，请使用 `vp hooks enable` 重新启用
 - 检查是否通过 `VP_GIT_HOOKS=0` 有意跳过了钩子
 
-若要在此克隆版本中停止钩子而不删除项目策略文件，请运行 `vp hooks disable`。  
-完整的工作流程请参阅[提交钩子指南](/guide/commit-hooks)。
+要在此克隆版本中停止钩子而不删除项目策略文件，请运行 `vp hooks disable`。有关完整工作流程，请参阅[提交钩子指南](/guide/commit-hooks)。
 
 一个最小的分阶段配置示例如下：
 
@@ -117,4 +126,4 @@ export default defineConfig({
 - `vp env current`、`vp --version` 和 `vp toolchain` 的完整输出
 - 项目使用的软件包管理器
 - 重现问题所需的准确步骤以及你的 `vite.config.ts`
-- 最小复现仓库或可运行的沙盒
+- 最小复现仓库或可运行的沙盒。

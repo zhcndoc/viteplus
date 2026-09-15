@@ -1,6 +1,6 @@
 # 提交钩子
 
-使用 `vp hooks` 管理 Git 钩子分发器，使用 `vp config` 进行项目设置（钩子 + 代理集成），并使用 `vp staged` 对已暂存的文件运行检查。
+使用 `vp hooks` 管理 Git 钩子分发器，使用 `vp config` 进行项目设置（钩子 + 代理集成），并使用 `vp staged` 检查暂存文件。
 
 ## 概述
 
@@ -63,7 +63,7 @@ vp hooks status
 
 ### `vp config`
 
-`vp config` 为当前项目配置 Vite+。它会安装生成的 Git 钩子分发器（除非已使用 `vp hooks disable` 禁用钩子），还可以处理相关的项目集成，例如代理设置。钩子目录默认为 `.vite-hooks`，或使用此克隆中最近一次由 `vp hooks` / `vp config` 使用的目录：
+`vp config` 为当前项目配置 Vite+。它会安装生成的 Git 钩子分发器（除非已使用 `vp hooks disable` 禁用钩子），还可以处理相关的项目集成，例如代理设置。钩子目录默认为 `.vite-hooks`，或者是此克隆中上次由 `vp hooks` / `vp config` 使用的目录：
 
 ```bash
 vp config
@@ -72,15 +72,15 @@ vp config --no-hooks
 vp config --no-agent
 ```
 
-当你希望 `vp config` 保持 Git 钩子分发器不变时，请使用 `--no-hooks`。当你希望跳过对现有编码代理指令文件的更新时，请使用 `--no-agent`。如果希望 `vp config` 跳过这两个设置步骤，可以同时传递这两个标志。执行 `vp hooks disable` 后，`vp config` 会跳过重新安装分发器，并引导你改用 `vp hooks enable`，而不是再次提示。
+当你希望 `vp config` 保持 Git 钩子分发器不变时，使用 `--no-hooks`。当你希望跳过对现有代码代理指令文件的更新时，使用 `--no-agent`。如果你希望 `vp config` 跳过这两个设置步骤，可以同时传递这两个标志。在执行 `vp hooks disable` 后，`vp config` 会跳过重新安装分发器，并引导你使用 `vp hooks enable`，而不是再次提示。
 
-你还可以将 `VP_GIT_HOOKS=0` 设置为禁用从 `prepare` 或 `postinstall` 等生命周期脚本中安装钩子。
+你还可以设置 `VP_GIT_HOOKS=0`，以禁止从 `prepare` 或 `postinstall` 等生命周期脚本中安装钩子。
 
-应将 `.vite-hooks/pre-commit` 等项目自有的钩子脚本提交到仓库中。`.vite-hooks/_` 下生成的分发器和垫片会被忽略，并由 `vp config` 或 `vp hooks enable` 重新创建。这两个命令都不会创建或修改项目钩子脚本或暂存文件配置。
+项目自有的钩子脚本（例如 `.vite-hooks/pre-commit`）应提交到仓库中。`.vite-hooks/_` 下生成的分发器和 shim 会被忽略，并由 `vp config` 或 `vp hooks enable` 重新创建。这两个命令都不会创建或修改项目钩子脚本或暂存文件配置。
 
 ### `vp staged`
 
-`vp staged` 使用 `vite.config.ts` 中的 `staged` 配置运行暂存文件检查。若要在每次提交前运行它，请将其添加到项目自有的 pre-commit 钩子中：
+`vp staged` 使用 `vite.config.ts` 中的 `staged` 配置运行暂存文件检查。要在每次提交前运行它，请将其添加到项目自有的 pre-commit 钩子中：
 
 ```bash
 vp staged
@@ -106,7 +106,7 @@ export default defineConfig({
 });
 ```
 
-这是 Vite+ 的默认方式，在大多数项目中应替代单独的 `lint-staged` 配置。当你在执行 `vp create` 时选择启用钩子，Vite+ 会同时生成此配置和相应的提交前钩子。在执行 `vp migrate` 时，会保留现有的钩子策略；只有在未找到现有钩子策略时，才会引入默认配置。由于 `vp staged` 会读取 `vite.config.ts`，你的暂存文件检查会与 lint、格式化、测试、构建和任务运行器配置保持在同一位置。
+这是 Vite+ 的默认方式，在大多数项目中应替代单独的 `lint-staged` 配置。当你在执行 `vp create` 时选择启用钩子，Vite+ 会同时生成此配置和相应的 pre-commit 钩子。在执行 `vp migrate` 时，会保留现有的钩子策略，并且只有在未找到现有钩子策略时才引入默认配置。由于 `vp staged` 从 `vite.config.ts` 读取配置，你的暂存文件检查会与 lint、格式化、测试、构建和任务运行器配置保持在同一位置。
 
 ## 在特定环境中禁用钩子
 
@@ -139,7 +139,7 @@ export VP_GIT_HOOKS=0
 
 ## 移除提交钩子
 
-要停止在此克隆中使用 Vite+ 钩子分发器（并防止 `prepare` / `vp config` 重新安装它）：
+要停止在此克隆中使用 Vite+ 钩子分发器（并阻止 `prepare` / `vp config` 重新安装它）：
 
 ```bash
 vp hooks disable
@@ -149,10 +149,9 @@ vp hooks disable --hooks-dir .custom-hooks
 
 此操作会：
 
-1. 当 `core.hooksPath` 指向 Vite+ 分发器时，取消设置该配置
-2. 删除生成的 `<hooks-dir>/_` 目录
-3. 记录一个**本地**禁用偏好，使生命周期脚本跳过重新安装，直到你再次运行
-   `vp hooks enable`
+1. 当 `core.hooksPath` 指向 Vite+ 分发器时，取消设置它
+2. 移除生成的 `<hooks-dir>/_` 目录
+3. 记录一个**本地**禁用偏好设置，使生命周期脚本跳过重新安装，直到你再次运行 `vp hooks enable`
 
 重新启用：
 
@@ -160,8 +159,7 @@ vp hooks disable --hooks-dir .custom-hooks
 vp hooks enable
 ```
 
-如果你不再希望项目使用钩子（包括与团队成员共享的情况），还需要从 `package.json` 中的
-`prepare` 或 `postinstall` 脚本里移除 `vp config`。
+如果你完全不再希望项目使用钩子（与团队成员共享），还应从 `package.json` 的 `prepare` 或 `postinstall` 脚本中移除 `vp config`。
 
 ### 手动等效操作
 
@@ -176,6 +174,4 @@ git config --local vp.hooks.disabled true
 # git config --local vp.hooks.dir .vite-hooks
 ```
 
-项目自有的脚本（例如 `.vite-hooks/pre-commit`）以及 `vite.config.ts` 中的
-`staged` 配置块可以保留以便日后使用；如果项目不再需要它们，也可以单独移除。
-`vp hooks disable` **不会**删除这些项目自有的文件。
+项目自有脚本（例如 `.vite-hooks/pre-commit`）以及 `vite.config.ts` 中的 `staged` 块可以保留以供日后使用；如果项目不再需要它们，也可以单独移除。`vp hooks disable` **不会**删除这些项目自有文件。
