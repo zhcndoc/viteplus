@@ -11,7 +11,7 @@ const props = withDefaults(
   }>(),
   {
     prompt: '',
-    label: 'View Prompt',
+    label: '查看提示',
   },
 );
 
@@ -24,7 +24,7 @@ const copyLabel = computed(() =>
   state.value === 'copied'
     ? '已复制提示！'
     : state.value === 'error'
-      ? 'Could not copy'
+      ? '无法复制'
       : '复制提示',
 );
 const copyIcon = computed(() =>
@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
   <button
     type="button"
     class="button"
-    :aria-label="`${label} for setting up Vite+ with an AI assistant`"
+    :aria-label="`${label}，用于通过 AI 助手设置 Vite+`"
     @mousedown="blurPointerTarget"
     @click="openView"
   >
@@ -104,11 +104,11 @@ onBeforeUnmount(() => {
     >
       <form class="flex min-h-0 flex-col" method="dialog">
         <header class="flex shrink-0 items-center justify-between gap-4 px-5 pt-4 pb-3">
-          <h2 :id="titleId" class="m-0 text-base font-medium">Setup prompt</h2>
+          <h2 :id="titleId" class="m-0 text-base font-medium">设置提示</h2>
           <button
             type="submit"
             class="inline-flex size-8 items-center justify-center rounded-md text-grey hover:bg-beige hover:text-primary dark:text-white dark:hover:bg-slate dark:hover:text-white"
-            aria-label="Close"
+            aria-label="关闭"
           >
             <Icon icon="lucide:x" class="size-4" aria-hidden="true" />
           </button>
