@@ -1,3 +1,4 @@
+import { documentationUrl } from './utils/documentation.ts';
 import { renderCliDoc, type CliDoc } from './utils/help.ts';
 import { log, printHeader } from './utils/terminal.ts';
 
@@ -53,7 +54,7 @@ const commandHelpDocs = {
         lines: ['  vp dev', '  vp dev --open', '  vp dev --host localhost --port 5173'],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/dev',
+    documentationUrl: documentationUrl('/guide/dev'),
   },
   build: {
     usage: 'vp build [ROOT] [OPTIONS]',
@@ -132,7 +133,7 @@ const commandHelpDocs = {
         lines: ['  vp build', '  vp build --watch', '  vp build --sourcemap'],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/build',
+    documentationUrl: documentationUrl('/guide/build'),
   },
   preview: {
     usage: 'vp preview [ROOT] [OPTIONS]',
@@ -172,7 +173,7 @@ const commandHelpDocs = {
       },
       { title: 'Examples', lines: ['  vp preview', '  vp preview --port 4173'] },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/build',
+    documentationUrl: documentationUrl('/guide/build'),
   },
   test: {
     usage: 'vp test [COMMAND] [FILTERS]... [OPTIONS]',
@@ -212,7 +213,7 @@ const commandHelpDocs = {
           {
             label: '--api [port]',
             description:
-              "Specify server port. Note if the port is already being used, Vite will automatically try the next available port so this may not be the actual port the server ends up listening on. If true will be set to 51204. Use '--help --api' for more info.",
+              "Specify server port. Note if the port is already being used, Vite will automatically try the next available port so this may not be the actual port the server ends up listening on. If true will be set to 51204 or 63315 in browser mode. Use '--help --api' for more info.",
           },
           {
             label: '--silent [value]',
@@ -236,7 +237,7 @@ const commandHelpDocs = {
           },
           {
             label: '--mode <name>',
-            description: 'Override Vite mode (default: test or benchmark)',
+            description: 'Override Vite mode (default: test)',
           },
           {
             label: '--isolate',
@@ -244,6 +245,11 @@ const commandHelpDocs = {
               'Run every test file in isolation. To disable isolation, use --no-isolate (default: true)',
           },
           { label: '--globals', description: 'Inject apis globally' },
+          {
+            label: '--injectCjsGlobals',
+            description:
+              'Inject CommonJS variables (module, exports, require, __filename, __dirname) into every test module. To disable, use --no-inject-cjs-globals (default: true)',
+          },
           { label: '--dom', description: 'Mock browser API with happy-dom' },
           {
             label: '--browser <name>',
@@ -338,6 +344,11 @@ const commandHelpDocs = {
               "Retry the test specific number of times if it fails (default: 0). Use '--help --retry' for more info.",
           },
           {
+            label: '--repeats <number>',
+            description:
+              'Repeat every test a specific number of times regardless of the result (default: 0)',
+          },
+          {
             label: '--diff <path>',
             description:
               "DiffOptions object or a path to a module which exports DiffOptions object. Use '--help --diff' for more info.",
@@ -360,9 +371,9 @@ const commandHelpDocs = {
               "Enable typechecking alongside tests (default: false). Use '--help --typecheck' for more info.",
           },
           {
-            label: '--project <name>',
+            label: '-p, --project <name>',
             description:
-              'The name of the project to run if you are using Vitest workspace feature. This can be repeated for multiple projects: --project=1 --project=2. You can also filter projects using wildcards like --project=packages*, and exclude projects with --project=!pattern.',
+              'The name of the project to run if you are using Vitest workspace feature. This can be repeated for multiple projects: --project=1 --project=2. You can also filter projects using wildcards like --project=packages*, and exclude projects with --project=!pattern. A project runs if it matches no negated pattern and, when regular patterns are also given, matches at least one of them.',
           },
           {
             label: '--slowTestThreshold <threshold>',
@@ -383,6 +394,16 @@ const commandHelpDocs = {
               'Maximum number of concurrent tests and suites during test file execution (default: 5)',
           },
           {
+            label: '--fsModuleCache',
+            description:
+              'Cache transformed modules on the file system and reuse them between reruns (default: false)',
+          },
+          {
+            label: '--fsModuleCachePath <path>',
+            description:
+              'Directory where the fsModuleCache is stored (default: node_modules/.vitest-cache)',
+          },
+          {
             label: '--expect',
             description:
               "Configuration options for expect() matches. Use '--help --expect' for more info.",
@@ -395,7 +416,7 @@ const commandHelpDocs = {
           {
             label: '--attachmentsDir <dir>',
             description:
-              'The directory where attachments from context.annotate are stored in (default: .vitest-attachments)',
+              'The directory where attachments from context.annotate are stored in (default: .vitest/attachments)',
           },
           { label: '--run', description: 'Disable watch mode' },
           {
@@ -425,7 +446,7 @@ const commandHelpDocs = {
           {
             label: '--clearCache',
             description:
-              'Delete all Vitest caches, including experimental.fsModuleCache, without running any tests. This will reduce the performance in the subsequent test run.',
+              'Delete all Vitest caches, including the fsModuleCache, without running any tests. This will reduce the performance in the subsequent test run.',
           },
           {
             label: '--tagsFilter <expression>',
@@ -438,20 +459,15 @@ const commandHelpDocs = {
               'Should Vitest throw an error if test has a tag that is not defined in the config. (default: true)',
           },
           {
+            label: '--sharedViteServer',
+            description:
+              "Let inline projects that don't modify the Vite config reuse the Vite server of the config that declares them. (default: true)",
+          },
+          {
             label: '--experimental <features>',
             description: "Experimental features.. Use '--help --experimental' for more info.",
           },
           { label: '-h, --help', description: 'Display this message' },
-        ],
-      },
-      {
-        title: 'Bench Options',
-        rows: [
-          {
-            label: '--compare <filename>',
-            description: 'Benchmark output file to compare against',
-          },
-          { label: '--outputJson <filename>', description: 'Benchmark output file' },
         ],
       },
       {
@@ -465,7 +481,7 @@ const commandHelpDocs = {
           {
             label: '--staticParse',
             description:
-              'Parse files statically instead of running them to collect tests (default: false)',
+              'Parse files statically instead of running them to collect tests (default: true)',
           },
           {
             label: '--staticParseConcurrency <limit>',
@@ -479,7 +495,7 @@ const commandHelpDocs = {
         lines: ['  vp test', '  vp test src/foo.test.ts', '  vp test watch --coverage'],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/test',
+    documentationUrl: documentationUrl('/guide/test'),
   },
   lint: {
     usage: 'vp lint [PATH]... [OPTIONS]',
@@ -720,7 +736,7 @@ const commandHelpDocs = {
         ],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/lint',
+    documentationUrl: documentationUrl('/guide/lint'),
   },
   fmt: {
     usage: 'vp fmt [PATH]... [OPTIONS]',
@@ -789,7 +805,7 @@ const commandHelpDocs = {
       },
       { title: 'Examples', lines: ['  vp fmt', '  vp fmt src --check', '  vp fmt . --write'] },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/fmt',
+    documentationUrl: documentationUrl('/guide/fmt'),
   },
   check: {
     usage: 'vp check [OPTIONS] [PATHS]...',
@@ -825,7 +841,7 @@ const commandHelpDocs = {
         lines: ['  vp check', '  vp check --fix', '  vp check --no-lint src/index.ts'],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/check',
+    documentationUrl: documentationUrl('/guide/check'),
   },
   pack: {
     usage: 'vp pack [...files] [OPTIONS]',
@@ -924,7 +940,7 @@ const commandHelpDocs = {
         lines: ['  vp pack', '  vp pack src/index.ts --dts', '  vp pack --watch'],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/pack',
+    documentationUrl: documentationUrl('/guide/pack'),
   },
   run: {
     usage: 'vp run [OPTIONS] [TASK_SPECIFIER] [ADDITIONAL_ARGS]...',
@@ -998,7 +1014,7 @@ const commandHelpDocs = {
         ],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/run',
+    documentationUrl: documentationUrl('/guide/run'),
   },
   exec: {
     usage: 'vp exec [OPTIONS] [COMMAND]...',
@@ -1062,7 +1078,7 @@ const commandHelpDocs = {
         ],
       },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/vpx',
+    documentationUrl: documentationUrl('/guide/vpx'),
   },
   cache: {
     usage: 'vp cache <COMMAND>',
@@ -1071,7 +1087,7 @@ const commandHelpDocs = {
       { title: 'Commands', rows: [{ label: 'clean', description: 'Clean up all the cache' }] },
       { title: 'Options', rows: [{ label: '-h, --help', description: 'Print help' }] },
     ],
-    documentationUrl: 'https://viteplus.dev/guide/cache',
+    documentationUrl: documentationUrl('/guide/cache'),
   },
 } satisfies Record<string, CliDoc>;
 

@@ -2,44 +2,45 @@
 
 ## `vp update --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp update [选项] [软件包]... [-- <透传参数>...]
+Usage: vp update [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-将软件包更新到最新版本
+Update packages to their latest versions
 
-参数：
-  [软件包]...              要更新的软件包（可选——省略时更新全部软件包）
-  [透传参数>...]           要传递给软件包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Packages to update (optional - updates all if omitted)
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -L, --latest                 更新到最新版本（忽略 semver 范围）
-  -g, --global                 更新全局软件包
-  --concurrency <并发数>      并行运行的全局软件包更新数量（仅与 -g 一起使用）
-  --reinstall-node-mismatch    重新安装使用不同 Node.js 版本安装的最新全局软件包
-  --ignore-node-mismatch       跳过使用不同 Node.js 版本安装的最新全局软件包
-  -r, --recursive              在所有工作区软件包中递归更新
-  --filter <模式>             筛选 monorepo 中的软件包（可多次使用）
-  -w, --workspace-root         包含工作区根目录
-  -D, --dev                    仅更新 devDependencies
-  -P, --prod                   仅更新 dependencies（生产环境）
-  -i, --interactive            交互模式
-  --no-optional                不更新 optionalDependencies
-  --no-save                    仅更新锁文件，不修改 package.json
-  --workspace                  仅在软件包存在于工作区时更新（pnpm 专用）
-  -h, --help                   显示帮助信息
+Options:
+  -L, --latest                 Update to latest version (ignore semver range)
+  -g, --global                 Update global packages
+  --concurrency <CONCURRENCY>  Number of global package updates to run in parallel (only with -g)
+  --reinstall-node-mismatch    Reinstall up-to-date global packages installed with a different Node.js version
+  --ignore-node-mismatch       Skip up-to-date global packages installed with a different Node.js version
+  -r, --recursive              Update recursively in all workspace packages
+  --filter <PATTERN>           Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root         Include workspace root
+  -D, --dev                    Update only devDependencies
+  -P, --prod                   Update only dependencies (production)
+  -i, --interactive            Interactive mode
+  --no-optional                Don't update optionalDependencies
+  --no-save                    Update lockfile only, don't modify package.json
+  --workspace                  Only update if package exists in workspace (pnpm-specific)
+  -h, --help                   Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
-## `vp update testnpm2`
+## `vp update testnpm2 --workspace-root`
 
-应在 semver 范围内更新软件包
+warns about unsupported --workspace-root and updates within semver range
 
 ```
+warn: bun does not support --workspace-root.
 bun update <version> (<hash>)
 
  test-vite-plus-package@1.0.0
@@ -71,7 +72,7 @@ installed testnpm2@1.0.1
 
 ## `vp up testnpm2 --latest`
 
-应更新到绝对最新版本
+should update to absolute latest version
 
 ```
 bun update <version> (<hash>)

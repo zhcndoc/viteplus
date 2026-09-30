@@ -36,6 +36,10 @@ vp check --no-fmt --no-lint # Type-check only (requires `typeCheck` enabled).
 
 推荐的 Lint 基础配置：
 
+从工作区包目录运行时，`vp check` 使用工作区根目录的 `lint` 和 `fmt` 配置块。包配置不能替换根配置中的格式设置、lint 规则或类型检查选项。文件路径和 TypeScript 项目仍以包的工作目录为基准解析。
+
+推荐的 Lint 基础配置：
+
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
 

@@ -24,7 +24,7 @@ mod unpin;
 mod r#use;
 mod which;
 
-use std::process::ExitStatus;
+use std::{io, process::ExitStatus};
 
 #[cfg(windows)]
 pub(crate) use setup::{cleanup_legacy_windows_shim, get_trampoline_path, remove_or_rename_to_old};
@@ -40,8 +40,9 @@ fn print_env_header() {
     vp_shared::header::print_header();
 }
 
+#[deny(clippy::print_stdout)]
 fn print_env_clean_tip() {
-    vp_shared::output::raw("");
+    vp_shared::output::print_and_flush(&mut io::stdout().lock(), "\n");
     vp_shared::output::note(
         "Run `vp env clean` to free disk space from unused managed runtimes and package manager caches.",
     );
@@ -179,6 +180,10 @@ async fn print_env(cwd: AbsolutePathBuf, scope: Option<String>) -> Result<ExitSt
             bin_dirs.insert(0, bin_dir.as_path().display().to_string());
         } else {
             let resolution = match scope.package_manager() {
+                Some(vp_pm_cli::PackageManagerType::Npm) => {
+                    package_manager::resolve_shim_for(&cwd, vp_pm_cli::PackageManagerType::Npm)
+                        .await?
+                }
                 Some(package_manager) => Some(
                     package_manager::resolve_current_or_fallback_for(&cwd, package_manager).await?,
                 ),
@@ -192,6 +197,13 @@ async fn print_env(cwd: AbsolutePathBuf, scope: Option<String>) -> Result<ExitSt
                 )
                 .await?;
                 bin_dirs.insert(0, install_dir.join("bin").as_path().display().to_string());
+            } else if selected_type == Some(vp_pm_cli::PackageManagerType::Npm)
+                && !scope.includes_node()
+            {
+                // Unpinned npm shares Node's bin directory, including in the pm-only scope.
+                bin_dirs.push(
+                    resolve_node_bin_dir(&cwd, &modes).await?.as_path().display().to_string(),
+                );
             }
         }
     }
@@ -201,8 +213,10 @@ async fn print_env(cwd: AbsolutePathBuf, scope: Option<String>) -> Result<ExitSt
     let snippet = format_path_snippet(detect_shell(), &bin_dirs);
 
     // Print shell snippet
-    println!("# Add to your shell to use this environment for this session:");
-    println!("{snippet}");
+    vp_shared::output::print_stdout_line(format_args!(
+        "# Add to your shell to use this environment for this session:"
+    ));
+    vp_shared::output::print_stdout_line(format_args!("{snippet}"));
 
     Ok(ExitStatus::default())
 }

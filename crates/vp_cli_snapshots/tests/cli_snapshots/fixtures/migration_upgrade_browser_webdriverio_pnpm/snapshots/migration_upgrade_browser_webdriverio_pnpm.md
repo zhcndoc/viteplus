@@ -1,33 +1,38 @@
-# 迁移升级浏览器 WebdriverIO pnpm
+# migration_upgrade_browser_webdriverio_pnpm
+
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
 
 ## `vp migrate --no-interactive`
 
-应恢复仅源代码的 WebdriverIO provider
+restore the community import and install a v5 provider
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖项：
-    vite-plus  最新版 → <version>
+• Dependencies:
+    vite-plus  latest → <version>
     vite              → <version>
-• 已配置包管理器设置
+• 1 file had imports rewritten
+• Package manager settings configured
 ```
 
 ## `vpt print-file package.json`
 
-应存在 provider、webdriverio 和本地 vitest
+ensure the provider and its framework peer are declared
 
 ```
 {
   "name": "migration-upgrade-browser-webdriverio-pnpm",
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:",
-    "@vitest/browser-webdriverio": "catalog:",
-    "webdriverio": "*",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/browser-webdriverio": "^5.0.0",
+    "webdriverio": "*"
   },
   "devEngines": {
     "packageManager": {
@@ -39,19 +44,37 @@ VITE+ - Web 的统一工具链
 }
 ```
 
+## `vpt print-file vite.config.ts`
+
+legacy Vite+ provider import points to the community package
+
+```
+import { defineConfig } from 'vite-plus';
+import { webdriverio } from '@vitest/browser-webdriverio';
+
+export default defineConfig({
+  test: {
+    browser: {
+      enabled: true,
+      provider: webdriverio(),
+    },
+  },
+});
+```
+
 ## `vpt print-file pnpm-workspace.yaml`
 
-应启用驱动构建和共享的 vitest
+driver builds and shared vitest should be enabled
 
 ```
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
   vitest: <version>
-  '@vitest/browser-webdriverio': <version>
 overrides:
   vite@*: 'catalog:'
   vitest@*: 'catalog:'
+  '@vitest/browser@*': 5.0.1
 peerDependencyRules:
   allowAny:
     - vite

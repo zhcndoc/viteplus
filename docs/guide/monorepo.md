@@ -6,7 +6,13 @@ Vite+ 支持在根目录使用 `vite.config.ts` 的多仓库。你可以在根�
 
 ## 带覆盖配置的根配置
 
-Vite+ 目前不支持嵌套的 lint 或格式化配置。包级别的 `lint` 和 `fmt` 块不会自动应用。目前，请在根目录的 `vite.config.ts` 中使用 overrides 定义文件或包特定的设置。长期行为仍有待讨论；请[分享你的使用场景和预期](/guide/troubleshooting#nested-lint-or-format-config-is-not-applied)，帮助我们完善相关设计。
+从工作区根目录运行 `vp lint`、`vp fmt` 和 `vp check`，即可在各个包中应用根目录的 lint 和格式设置。这些命令不会将嵌套配置应用到单个文件。请在根目录的 `vite.config.ts` 中使用 overrides 定义特定文件或包的设置。
+
+从包目录运行时，除非包配置定义了自己的 `lint` 或 `fmt` 块，否则 `vp lint` 和 `vp fmt` 仍使用根目录设置。我们不建议使用包级配置块，请改为在根配置中使用 overrides。文件参数仍相对于包的工作目录解析。
+
+如果根配置中存在 `lint` 和 `fmt` 块，`vp check` 会使用它们。包配置不能替换 `vp check` 中的根目录格式设置、lint 规则或类型检查选项。
+
+使用 `vp lint` 或 `vp fmt` 时，可通过 `-c <path>` 或 `--config <path>` 显式选择其他配置。
 
 对仅适用于部分包的 Oxlint 规则使用 `lint.overrides`：
 

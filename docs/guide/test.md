@@ -2,6 +2,8 @@
 
 `vp test` 使用 [Vitest](https://vitest.dev) 运行测试。
 
+Vitest 捆绑运行器版本为 `5.0.1`，要求 Node `^22.18.0 || ^24.11.0 || >=26.0.0`。对于现有项目，请先按照 [升级至 Vitest 5](./vitest-v5.md) 操作，再更新依赖。
+
 ## 概述
 
 `vp test` 基于 [Vitest](https://vitest.dev/) 构建，因此你获得了一个 Vite 原生的测试运行器，可以复用你的 Vite 配置和插件，支持 Jest 风格的断言、快照和覆盖率，并且能干净地处理现代 ESM、TypeScript 和 JSX 项目。

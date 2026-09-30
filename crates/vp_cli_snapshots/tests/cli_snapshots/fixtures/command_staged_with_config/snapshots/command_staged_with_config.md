@@ -1,4 +1,4 @@
-# 带配置的暂存命令
+# command_staged_with_config
 
 ## `git init`
 
@@ -13,7 +13,7 @@
 export const foo = 1;
 '`
 
-追加 foo（使用 write-file 写入完整的追加内容）
+append foo (write-file with the full appended content)
 
 
 ## `git add src/index.ts`
@@ -21,13 +21,22 @@ export const foo = 1;
 
 ## `vp staged`
 
-应能成功处理已暂存的 .ts 文件
+should succeed with staged .ts files
 
 ```
-✔ Backed up original state in git stash (<hash>)
-✔ Running tasks for staged files...
-✔ Applying modifications from tasks...
-✔ Cleaning up temporary files...
+⋯ Backing up original state…
+✔ Done backing up original state (<hash>)!
+⋯ Running tasks for staged files…
+    *.ts — 1 file
+      ⋯ vp check --fix
+
+✔ vp check --fix
+
+✔ Done running tasks for staged files!
+⋯ Staging changes from tasks…
+✔ Done staging changes from tasks!
+⋯ Cleaning up temporary files…
+✔ Done cleaning up temporary files!
 ```
 
 ## `git add -A`
@@ -41,7 +50,7 @@ export const foo = 1;
 export const bar = 2;
 '`
 
-追加 bar
+append bar
 
 
 ## `git add src/index.ts`
@@ -49,7 +58,7 @@ export const bar = 2;
 
 ## `vp staged --debug`
 
-应在启用调试功能的情况下成功
+should succeed with debug enabled
 
 
 ## `git add -A`
@@ -67,30 +76,35 @@ export const bar = 2;
 
 ## `vp staged`
 
-当暂存的 .js 文件存在 lint 错误时应失败
+should fail when staged .js file has lint errors
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-✔ 已在 git stash 中备份原始状态（<hash>）
-⚠ 正在为暂存文件运行任务...
-  ❯ 配置对象 — 1 个文件
-    ↓ *.ts — 没有文件
-    ❯ *.js — 1 个文件
-      ✖ vp lint [失败]
-↓ 由于任务出错而跳过。
-✔ 由于出错，正在还原到原始状态...
-✔ 正在清理临时文件...
+⋯ Backing up original state…
+✔ Done backing up original state (<hash>)!
+⋯ Running tasks for staged files…
+    *.js — 1 file
+      ⋯ vp lint
 
-✖ vp lint：
+✖ vp lint
 
-  × eslint(no-eval)：eval 可能有害。
+✖ Failed to run tasks for staged files!
+↓ Skipped staging changes from tasks…
+⋯ Reverting to original state because of errors…
+✔ Done reverting to original state!
+⋯ Cleaning up temporary files…
+✔ Done cleaning up temporary files!
+
+✖ vp lint:
+
+  × eslint(no-eval): eval can be harmful.
    ╭─[src/fail.js:1:1]
  1 │ eval("code");
    · ────
    ╰────
-  帮助：避免使用 eval()。对于 JSON 解析，请使用 JSON.parse()；对于动态属性访问，请使用括号表示法（obj[key]）；对于其他情况，请重构代码以避免将字符串作为代码执行。
+  help: Avoid eval(). For JSON parsing use JSON.parse(); for dynamic property access use bracket notation (obj[key]); for other cases refactor to avoid evaluating strings as code.
 
-发现 0 个警告和 1 个错误。
-在 1 个文件上使用 <n> 个规则和 <n> 个线程，于 <duration> 内完成。
+Found 0 warnings and 1 error.
+Finished in <duration> on 1 file with <n> rules using <n> threads.
 ```

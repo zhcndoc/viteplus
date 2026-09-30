@@ -1,10 +1,14 @@
+<script setup lang="ts">
+import { migrationPrompt, upgradePrompt } from '../.vitepress/theme/data/migration-prompts.ts';
+</script>
+
 # 迁移到 Vite+
 
 `vp migrate` 帮助将现有项目迁移到 Vite+。
 
 ## 概述
 
-此命令是将独立的 Vite、Vitest、Oxlint、Oxfmt、ESLint、Prettier 和 tsup 设置整合到 Vite+ 的起点。
+此命令是将独立的 Vite、Vitest、Oxlint、Oxfmt、ESLint、Prettier、tsdown 和 tsup 设置整合到 Vite+ 的起点。
 
 当您想将一个现有项目迁移到 Vite+ 默认配置，而不是手动连接每个工具时，请使用此命令。
 
@@ -55,12 +59,14 @@ vp migrate my-app
 
 大多数项目在运行 `vp migrate` 后仍需要进一步手动调整。
 
+升级至 Vitest 5 前，请阅读[兼容性设置与审查清单](./vitest-v5.md)和 [Vitest 上游迁移指南](https://vitest.dev/guide/migration/)。预检会在更新依赖前检查原有测试运行器版本和 Node 运行时。请保留原始锁文件，并在重试前解决阻塞项。
+
 ## 推荐工作流程
 
 运行迁移之前：
 
-- 升级到 Vite 8+ 和 Vitest 4.1+
-- 确保了解任何应予以保留的现有 lint、格式化或测试配置
+- 对于尚未使用 Vite+ 的项目，请先升级到 Vite 8+ 和 Vitest 4.1+
+- 确保了解需要保留的现有 lint、格式化或测试设置
 
 运行迁移之后：
 
@@ -71,38 +77,87 @@ vp migrate my-app
 
 ## 迁移提示
 
-如果您想将此工作交给编码代理（或阅读者是编码代理！），请使用以下迁移提示：
+查看并复制此提示到你的 coding agent，以将现有项目迁移到 Vite+：
 
-```md
-将此项目迁移到 Vite+。Vite+ 取代了围绕运行时管理、包管理、开发/构建/测试命令、代码检查、格式化和打包的当前拆分工具链。运行 `vp help` 了解 Vite+ 的能力，并在修改前运行 `vp help migrate`。在工作区根目录使用 `vp migrate --no-interactive`。确保项目在迁移前使用 Vite 8+ 和 Vitest 4.1+。
+<CopyPrompt :prompt="migrationPrompt" label="查看迁移提示" />
 
-迁移完成后：
+## 从 Vite+ 0.3 升级到 1.0
 
-- Confirm `vite` imports were rewritten to `vite-plus` where needed
-- Confirm `vitest` imports were rewritten to `vite-plus/test` (and `@vitest/browser*` to `vite-plus/test/browser*`) where needed
-- On pnpm, keep the `vite`, `vitest` dependency entries configured by `vp migrate` so the workspace aliases and overrides stay effective; with other package managers, you can remove them once those rewrites are confirmed
-- Move remaining tool-specific config into the appropriate blocks in `vite.config.ts`
+Vite+ 1.0 包含 Vitest 5 的破坏性变更。请同时阅读 [Vite+ 兼容性指南](./vitest-v5.md)和[上游迁移指南](https://vitest.dev/guide/migration/)。
 
-命令映射（需牢记）：
+库项目构建也会使用 tsdown 0.23。有关选项变更和新默认值，请查看 [pack 配置迁移规则](./migrate-rules.md#pack-configuration)和[上游发行说明](https://github.com/rolldown/tsdown/releases/tag/v0.23.0)。
 
-- `vp run <script>` 等价于 `pnpm run <script>`
-- `vp dev` 和 `vp test` 始终运行内置命令；`vp run dev` 和 `vp run test` 运行 `package.json` 中的 `dev` 和 `test` 脚本
-- `vp install`、`vp add` 和 `vp remove` 通过 `packageManager` 声明的包管理器执行
-- `vp dev`、`vp build`、`vp preview`、`vp lint`、`vp fmt`、`vp check` 和 `vp pack` 取代相应的独立工具
-- 优先使用 `vp check` 进行验证循环
+在迁移识别出旧测试运行器之前，请保留项目原有的依赖和锁文件。先更新项目依赖可能导致迁移无法保留 v4 行为。请从工作区根目录使用以下任一方式。
 
-最后，通过运行以下命令验证迁移：`vp install`、`vp check`、`vp test` 和 `vp build`
+### 使用全局 CLI
 
-最后总结迁移并报告仍需手动跟进的事项。
+将[全局 CLI](/guide/upgrade#global-vp)升级到目标 1.0 版本，然后运行 `vp migrate --no-interactive`。要使用预览版，请按照[预览安装说明](/guide/upgrade#global-vp-preview)操作。
+
+### 不使用全局 CLI
+
+使用满足 `^22.18.0 || ^24.11.0 || >=26.0.0` 的现有 Node.js 运行时。通过包管理器运行目标迁移器，无需先将它添加到项目中。对于 `1.0.0` 版本：
+
+::: code-group
+
+```bash [pnpm]
+pnpm dlx --package=vite-plus@1.0.0 vp migrate --no-interactive
 ```
+
+```bash [npm]
+npx --package=vite-plus@1.0.0 vp migrate --no-interactive
+```
+
+:::
+
+将 `1.0.0` 替换为目标版本。要使用预览版，请使用 PR 中的版本，并在 `vp` 命令之前向 `pnpm` 或 `npx` 传入 `--registry=https://registry-bridge.viteplus.dev`。请在 `--package` 中显式指定版本，以确保运行的是目标迁移器，而不是旧的本地 CLI。
+
+迁移后，完成依赖安装，并使用更新后的本地 CLI 验证：
+
+::: code-group
+
+```bash [pnpm]
+pnpm install
+pnpm exec vp check
+pnpm exec vp test
+pnpm exec vp build
+```
+
+```bash [npm]
+npm install
+npm exec -- vp check
+npm exec -- vp test
+npm exec -- vp build
+```
+
+:::
+
+如果库项目使用 pack 命令，请用 `vp pack` 代替 `vp build`。也请运行已配置的浏览器、覆盖率和基准测试套件。
+
+### 审查升级
+
+对于现有 Vite+ 项目，请使用默认升级流程。如果还要重新执行项目设置，请添加 `--full`。解决阻塞项，并在提交前审查按文件列出的报告。有关各模式的范围，请参阅[升级与完整设置](./migrate-rules.md#upgrade-vs-full-setup)。
+
+迁移后的项目通过验证后，请[检查是否可以移除生成的 v4 兼容性设置](./vitest-v5.md#remove-unneeded-compatibility-settings)，且无需改动代码或只需进行少量局部修复。如果移除需要大量测试变更或无法验证结果，请暂时保留兼容设置。
+
+对于库项目，在 `vp pack` 成功运行后，请审查生成的 [tsdown 兼容性设置](#tsdown)。采用新默认值前请先阅读链接的文档，并结合软件包使用方检查生成的导入和声明。
+
+### 复制升级提示
+
+查看并复制此提示到你的 coding agent，以升级现有的 Vite+ 0.3 项目：
+
+<CopyPrompt :prompt="upgradePrompt" label="查看升级提示" />
 
 ## 特定工具迁移
 
 ### Vitest
 
-Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会将上游 `vitest@4.x` 以 `vite-plus/test*` 的形式重新导出，因此对于 node 模式测试，只需安装一次 `vite-plus` 即可——您不再需要直接安装 `vitest`。
+Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会通过 `vite-plus/test*` 重新导出上游 `vitest@5.0.1`，因此对于 node 模式测试，只需安装一个 `vite-plus` 即可，无需直接安装 `vitest`。
 
-浏览器模式则更复杂一些。`vite-plus` 捆绑了基础浏览器运行时（`@vitest/browser`）和预览提供程序（`@vitest/browser-preview`），但 **Playwright** 和 **WebdriverIO** 提供程序仍需按需启用：`@vitest/browser-playwright`（及其 `playwright` peer）和 `@vitest/browser-webdriverio`（及其 `webdriverio` peer）**不会**随 `vite-plus` 一同提供，因此非浏览器项目不会拉取它们。`vp migrate` 会检测您实际使用的提供程序并将其添加进去——固定到捆绑的 vitest 版本——以及其对应框架。如果您手动迁移并使用其中一种提供程序，请自行安装该提供程序包及其框架，以便 `vite-plus/test/browser-playwright` / `vite-plus/test/browser-webdriverio` 能够解析。
+对于浏览器模式，可以使用 `vite-plus` 中包含的基础浏览器 runtime（`@vitest/browser`）和 Preview 提供程序（`@vitest/browser-preview`）。如果要使用 Playwright 或 WebdriverIO，还需要选择加入对应的提供程序（`@vitest/browser-playwright` 或 `@vitest/browser-webdriverio`）及其框架 peer（`playwright` 或 `webdriverio`）。
+
+`vp migrate` 会添加与捆绑 Vitest 版本一致的 Playwright 提供程序，并确保安装其框架 peer。可以从 `vite-plus/test/browser-playwright` 导入该提供程序。
+
+对于 WebdriverIO，请从社区维护的 `@vitest/browser-webdriverio` 导入。迁移会恢复旧版 Vite+ 提供程序导入，确保提供程序版本至少为 `5.0.0`，并添加与捆绑运行器相匹配的 `@vitest/browser` override。之后的提供程序升级和框架 peer 由你自行管理。请参阅[社区 WebdriverIO 提供程序](./vitest-v5.md#community-webdriverio-provider)。
 
 如果您是手动迁移，请改为将所有导入更新为 `vite-plus/test*`：
 
@@ -126,7 +181,18 @@ const { page } = await import('vite-plus/test/browser/context');
 
 ### tsdown
 
-如果项目使用 `tsdown.config.ts`，将其选项移动到 `vite.config.ts` 的 `pack` 块中：
+对于 tsdown 0.23，`vp migrate` 会更新 `pack` 块和 `tsdown.config.*` 中受支持的静态选项。现有 Vite+ 项目和工作区包即使不使用 `--full` 也会执行此迁移。选项映射和需要手动审查的情况，请参阅 [Pack 配置迁移规则](./migrate-rules.md#pack-configuration)。
+
+如果缺少 `deps.resolveDepSubpath: true`，迁移会插入该设置以保留此前的默认行为；启用了 ATTW 检查且没有显式设置时，也会插入 `attw.profile: 'strict'`。每个插入的设置都带有 `tsdown <0.23 compatibility` 注释，包含文档链接和移除说明。显式设置保持不变。
+
+首次运行 `vp pack` 时请保留这些设置。验证通过后，再检查软件包是否可以采用新的默认值：
+
+- 移除 `deps.resolveDepSubpath: true` 可[按原样保留外部子路径导入](https://tsdown.dev/options/dependencies#deps-resolvedepsubpath)。请确认使用者能够解析生成的导入。
+- 移除插入的 `attw.profile: 'strict'` 会选择 `esm-only` [解析配置](https://tsdown.dev/options/lint#profiles)，并跳过 `node10` 和 CommonJS 解析检查。如果软件包需要这些检查，请保留 `strict`。
+
+接受移除某个设置时，也请一并删除其生成的注释。每次变更后运行 `vp pack` 和软件包使用者检查。如果无法验证结果，请保留该设置。
+
+如果项目使用 `tsdown.config.ts`，请将其中的选项移动到 `vite.config.ts` 的 `pack` 块中：
 
 ```ts [tsdown.config.ts] {4-6}
 import { defineConfig } from 'tsdown';

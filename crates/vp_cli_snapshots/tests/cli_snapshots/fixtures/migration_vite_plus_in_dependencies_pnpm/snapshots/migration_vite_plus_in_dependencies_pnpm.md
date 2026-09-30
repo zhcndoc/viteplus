@@ -31,9 +31,6 @@ vite-plus 保留在 dependencies 中（已规范化为 catalog:）；devDependen
       "version": "<version>",
       "onFail": "download"
     }
-  },
-  "devDependencies": {
-    "vite": "catalog:"
   }
 }
 ```

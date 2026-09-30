@@ -1,16 +1,16 @@
-# RFC：包管理器检测
+# RFC: Package Manager Detection
 
-## 摘要
+## Summary
 
-本文档说明 Vite+ 如何判断项目使用的包管理器（pnpm/yarn/npm/bun）。该检测会在包管理命令（`vp install`、`vp add`、`vp remove` 等）执行前自动运行，并驱动与 PM 相关的行为，包括命令翻译、锁文件处理、工作区配置以及匹配的包管理器 shim。
+Document how Vite+ determines which package manager (pnpm/yarn/npm/bun) a project uses. This detection runs automatically before package management commands (`vp install`, `vp add`, `vp remove`, etc.) and drives PM-specific behavior including command translation, lockfile handling, workspace configuration, and matching package-manager shims.
 
-## 检测算法
+## Detection Algorithm
 
-Vite+ 使用严格的、按优先级排序的算法来检测包管理器。第一个匹配项获胜。
+Vite+ uses a strict priority-ordered algorithm to detect the package manager. The first match wins.
 
-### 优先级 1：`package.json` 中的 `packageManager` 字段
+### Priority 1: `packageManager` field in `package.json`
 
-最高优先级信号。如果根目录 `package.json` 包含 `packageManager` 字段，则无条件使用它。
+The highest-priority signal. If the root `package.json` contains a `packageManager` field, it is used unconditionally.
 
 ```json
 {
@@ -18,26 +18,26 @@ Vite+ 使用严格的、按优先级排序的算法来检测包管理器。第�
 }
 ```
 
-**格式**：`<name>@<semver>[+<hash>]`
+**Format**: `<name>@<semver>[+<hash>]`
 
-- `name` 必须是以下之一：`pnpm`、`yarn`、`npm`、`bun`
-- `semver` 必须有效（例如：`10.19.0`、`4.0.0`）
-- 可选的完整性哈希后缀：`pnpm@10.0.0+sha512.abc123...`（参见[完整性哈希](#integrity-hashes)）
+- `name` must be one of: `pnpm`, `yarn`, `npm`, `bun`
+- `semver` must be valid (e.g., `10.19.0`, `4.0.0`)
+- Optional integrity hash suffix: `pnpm@10.0.0+sha512.abc123...` (see [Integrity Hashes](#integrity-hashes))
 
-**错误**：
+**Errors**:
 
-- 无效的 semver → `PackageManagerVersionInvalid` 错误
-- 未知名称 → `UnsupportedPackageManager` 错误
+- Invalid semver → `PackageManagerVersionInvalid` error
+- Unknown name → `UnsupportedPackageManager` error
 
-**参考**：[Node.js Corepack packageManager 字段](https://nodejs.org/api/packages.html#packagemanager)
+**Reference**: [Node.js Corepack packageManager field](https://nodejs.org/api/packages.html#packagemanager)
 
-显式字段还会控制匹配的包管理器 shim，包括为该管理器生成的别名。如果项目声明 `packageManager: "npm@11.14.0"`，则 `npm` 和 `npx` shim 会运行 npm 11.14.0。其他别名遵循相同规则：`pnpm`/`pnpx`、`yarn`/`yarnpkg`，以及 `bun`/`bunx`。如果项目声明的是 `pnpm`、`yarn` 或 `bun`，调用 `npm` 仍然会运行 npm；Vite+ 从不把一个包管理器的 shim 命令翻译成另一个。
+The explicit field also controls matching package-manager shims, including aliases generated for that manager. If a project declares `packageManager: "npm@11.14.0"`, the `npm` and `npx` shims run npm 11.14.0. Other aliases follow the same rule: `pnpm`/`pnpx`, `yarn`/`yarnpkg`, and `bun`/`bunx`. If the project declares `pnpm`, `yarn`, or `bun`, invoking `npm` still runs npm; Vite+ never translates one package-manager shim command into another.
 
-当 `devEngines.packageManager` 也有声明时，`packageManager` 字段仍然决定选择结果，但如果该字段的名称或版本不满足 `devEngines` 约束，Vite+ 会发出警告（在未来版本中此警告将变为硬错误；npm 在这种情况下已经会报错）。参见 [RFC：devEngines 支持](./dev-engines.md)。
+When `devEngines.packageManager` is also declared, the `packageManager` field still drives selection, but Vite+ warns when the field's name or version does not satisfy the devEngines constraint (this warning becomes a hard error in a future release; npm already errors in this situation). See [RFC: devEngines Support](./dev-engines.md).
 
-### 优先级 2：`package.json` 中的 `devEngines.packageManager` 字段
+### Priority 2: `devEngines.packageManager` field in `package.json`
 
-如果没有 `packageManager` 字段，Vite+ 会按照 [devEngines 规范](https://github.com/openjs-foundation/package-metadata-interoperability-working-group/blob/main/devengines-field-proposal.md) 检查 `devEngines.packageManager`：
+If there is no `packageManager` field, Vite+ checks `devEngines.packageManager`, following the [devEngines spec](https://github.com/openjs-foundation/package-metadata-interoperability-working-group/blob/main/devengines-field-proposal.md):
 
 ```json
 {
@@ -51,219 +51,177 @@ Vite+ 使用严格的、按优先级排序的算法来检测包管理器。第�
 }
 ```
 
-- 支持单个对象或对象数组；条目按顺序求值，首个 `name` 受支持的条目获胜。
-- `name` 必须是 `pnpm`、`yarn`、`npm`、`bun` 之一。数组形式中不支持的名称会被跳过。当没有任何条目命名了受支持的包管理器时，最后一个条目的有效 `onFail` 决定结果：`ignore`/`warn` 继续沿检测链向下，`error`/`download` 则以明确消息失败。
-- `version` 可以是精确版本、semver 范围，或者省略（任意版本都满足）。如果可能，范围会解析为一个已下载的满足版本；否则解析为 npm registry 中最新的满足版本（通过精简元数据文档获取）。除非范围本身包含预发布标记且没有稳定版本满足它，否则会排除预发布版本。
-- 范围来源不会被冻结为精确的 `packageManager` 字段；该范围仍是唯一事实来源。
-- `onFail` 其余部分会被解析并保留，但目前尚未生效：被选中的（受支持的）条目如果其版本无法解析或下载，会直接报错，而不会回退。参见该 RFC 的[延期 / 未来工作](./dev-engines.md#deferred--future-work)。
+- Accepts a single object or an array of objects; entries are evaluated in order and the first entry with a supported `name` wins.
+- `name` must be one of `pnpm`, `yarn`, `npm`, `bun`. Unsupported names are skipped in array form. When no entry names a supported package manager, the effective `onFail` of the last entry decides: `ignore`/`warn` continue down the detection chain, `error`/`download` fail with a clear message.
+- `version` may be exact, a semver range, or absent (any version satisfies). Ranges resolve to an already-downloaded satisfying version when possible, otherwise to the latest satisfying version from the npm registry (fetched as the abbreviated metadata document). Prereleases are excluded unless the range itself contains a prerelease marker and no stable version satisfies it.
+- A range source is never frozen into an exact `packageManager` field; the range stays the source of truth.
+- `onFail` is otherwise parsed and preserved but not yet acted on: a selected (supported) entry whose version cannot be resolved or downloaded surfaces an error rather than falling back. See the RFC's [Deferred / Future Work](./dev-engines.md#deferred--future-work).
 
-完整语义（冲突处理、doctor 检查以及延期的 `onFail` 矩阵）请参见 [RFC：devEngines 支持](./dev-engines.md)。
+See [RFC: devEngines Support](./dev-engines.md) for the full semantics (conflict handling, doctor checks, and the deferred `onFail` matrix).
 
-### 优先级 3：锁文件
+### Priority 3: Lockfiles
 
-如果既没有找到 `packageManager` 也没有找到 `devEngines.packageManager`，Vite+ 会检查工作区根目录中的锁文件。按以下顺序检查：
+If neither `packageManager` nor `devEngines.packageManager` is found, Vite+ checks for lockfiles in the workspace root. Checked in this order:
 
-| 文件                  | 检测到的 PM | 备注                             |
+| File                  | Detected PM | Notes                            |
 | --------------------- | ----------- | -------------------------------- |
-| `pnpm-workspace.yaml` | pnpm        | 工作区定义文件                   |
-| `pnpm-lock.yaml`      | pnpm        | 锁文件                           |
-| `yarn.lock`           | yarn        | 锁文件                           |
-| `.yarnrc.yml`         | yarn        | Yarn Berry（v2+）配置            |
-| `package-lock.json`   | npm         | 锁文件                           |
-| `bun.lock`            | bun         | 文本格式锁文件（推荐）           |
-| `bun.lockb`           | bun         | 二进制格式锁文件（旧版）         |
+| `pnpm-workspace.yaml` | pnpm        | Workspace definition file        |
+| `pnpm-lock.yaml`      | pnpm        | Lockfile                         |
+| `yarn.lock`           | yarn        | Lockfile                         |
+| `.yarnrc.yml`         | yarn        | Yarn Berry (v2+) configuration   |
+| `package-lock.json`   | npm         | Lockfile                         |
+| `bun.lock`            | bun         | Text-format lockfile (preferred) |
+| `bun.lockb`           | bun         | Binary-format lockfile (legacy)  |
 
-当从锁文件检测到时，版本会设为 `"latest"`（在下载时解析）。
+When detected from lockfiles, version is set to `"latest"` (resolved during download).
 
-### 优先级 4：配置文件
+### Priority 4: Configuration files
 
-优先级较低、但可指示包管理器的配置文件：
+Lower-priority config files that indicate a package manager:
 
-| 文件              | 检测到的 PM | 备注                                        |
+| File              | Detected PM | Notes                                       |
 | ----------------- | ----------- | ------------------------------------------- |
 | `.pnpmfile.cjs`   | pnpm        | [pnpm hooks](https://pnpm.io/pnpmfile)      |
-| `pnpmfile.cjs`    | pnpm        | 旧格式（pnpm v5.x）                         |
-| `bunfig.toml`     | bun         | [Bun 配置](https://bun.sh/docs/pm)          |
-| `yarn.config.cjs` | yarn        | Yarn Berry（v2+）配置                       |
+| `pnpmfile.cjs`    | pnpm        | Legacy format (pnpm v5.x)                   |
+| `bunfig.toml`     | bun         | [Bun configuration](https://bun.sh/docs/pm) |
+| `yarn.config.cjs` | yarn        | Yarn Berry (v2+) configuration              |
 
-### 优先级 5：显式默认值
+### Priority 5: Explicit default
 
-如果调用方提供了默认包管理器类型（某些代码路径会在内部使用），则使用该默认值，并将版本设为 `"latest"`。
+If a caller provides a default package manager type (used internally by some code paths), that default is used with version `"latest"`.
 
-### 优先级 6：交互式选择
+Package-manager commands provide pnpm as the default, including outside a project, without prompting or creating a manifest. Without a caller-provided default, Rust detection returns an error when no manager is recognized.
 
-如果未检测到任何信号，且未提供默认值，则行为取决于环境：
+`vp create` and `vp migrate` retain their TypeScript package-manager selector when no manager is detected. In non-interactive mode, it defaults to pnpm.
 
-#### CI 环境
+## CLI Flag: `--package-manager`
 
-检查常见的 CI 环境变量：
-
-- `CI`、`CONTINUOUS_INTEGRATION`、`GITHUB_ACTIONS`、`GITLAB_CI`、`CIRCLECI`、`TRAVIS`、`JENKINS_URL`、`BUILDKITE`、`DRONE`、`CODEBUILD_BUILD_ID`（AWS CodeBuild）、`TF_BUILD`（Azure Pipelines）
-
-**结果**：自动选择 `pnpm`，不提示用户。
-
-#### 非交互式终端
-
-如果 stdin 不是 TTY（管道输入、非交互式 shell）：
-
-**结果**：自动选择 `pnpm`，不提示用户。
-
-#### 交互式终端
-
-显示一个可用键盘导航的菜单：
-
-```
-未检测到包管理器。请选择一个：
-   使用 ↑↓ 方向键导航，按 Enter 确认，按 1-4 快速选择
-
-  ▶ [1] pnpm（推荐）←
-    [2] npm
-    [3] yarn
-    [4] bun
-```
-
-如果交互式菜单失败（终端兼容性问题），则回退到简单文本提示：
-
-```
-未检测到包管理器。请选择一个：
-────────────────────────────────────────────────
-  [1] pnpm（推荐）
-  [2] npm
-  [3] yarn
-  [4] bun
-
-请输入你的选择（1-4）[默认：1]：
-```
-
-## CLI 标志：`--package-manager`
-
-`vp create` 命令支持 `--package-manager` 标志，用于显式指定包管理器：
+The `vp create` command supports a `--package-manager` flag for explicitly specifying the package manager:
 
 ```bash
 vp create vite:monorepo --no-interactive --package-manager bun
 ```
 
-**`vp create` 的解析优先级**：
+**Resolution priority for `vp create`**:
 
-1. 从现有 monorepo 中检测到的任何包管理器（来自清单字段、工作区文件、锁文件或包管理器配置）
-2. `--package-manager` CLI 标志
-3. 从非 monorepo 祖先目录中检测到的包管理器
-4. 交互式提示 / 自动默认值（pnpm）
+1. Any package manager detected for an existing monorepo (from manifest fields, workspace files, lockfiles, or package-manager configuration)
+2. `--package-manager` CLI flag
+3. Package manager detected from a non-monorepo ancestor
+4. Interactive prompt / auto-default (pnpm)
 
-这样既能确保 monorepo 的一致性，又允许独立项目显式覆盖环境检测到的包管理器。
+This ensures monorepo consistency while allowing standalone projects to override ambient detection explicitly.
 
-## 非变更式解析
+## Non-Mutating Resolution
 
-检测和下载永远不会重写 `package.json`。`devEngines.packageManager` 范围仍然是事实来源，而锁文件、配置和交互式检测会为当前命令解析受管理的包管理器，但不会向清单字段中添加内容。
+Detection and download never rewrite `package.json`. A `devEngines.packageManager` range remains the source of truth, while lockfile, config, and default detection resolve a managed package manager for the current command without adding a manifest field.
 
-需要确定性声明的项目可以使用 `vp env pin <package-manager>@<version>` 显式固定。修改依赖的命令（包括 `vp install` 和 `vp add`）要求已有 `package.json`，而不是自动创建一个。
+Projects that require a deterministic declaration can pin it explicitly with `vp env pin <package-manager>@<version>`. Commands that modify dependencies, including `vp install` and `vp add`, require an existing `package.json` instead of creating one automatically.
 
-## 版本解析
+## Version Resolution
 
-| 检测方法                                      | 使用的版本                                                                                             |
+| Detection method                              | Version used                                                                                             |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `packageManager` 字段                        | 字段中的精确版本（例如 `10.19.0`）                                                               |
-| `devEngines.packageManager`（精确版本）      | 字段中的精确版本                                                                                 |
-| `devEngines.packageManager`（范围或缺失）    | 已下载版本中最高的满足版本，否则为 npm registry 中最新的满足版本 |
-| 锁文件/配置检测                               | `"latest"`：解析为 npm registry 中最新的稳定版本                                          |
-| 交互式选择                                     | `"latest"`：解析为 npm registry 中最新的稳定版本                                          |
+| `packageManager` field                        | Exact version from field (e.g., `10.19.0`)                                                               |
+| `devEngines.packageManager` (exact version)   | Exact version from field                                                                                 |
+| `devEngines.packageManager` (range or absent) | Highest already-downloaded satisfying version, otherwise latest satisfying version from the npm registry |
+| Lockfile/config detection                     | `"latest"`: resolved to latest stable version from npm registry                                          |
+| Interactive selection                         | `"latest"`: resolved to latest stable version from npm registry                                          |
 
-**特殊情况**：
+**Special cases**:
 
-- **yarn ≥ 2.0.0**：从 `@yarnpkg/cli-dist` 下载，而不是从 `yarn` npm package 下载，并且只提取 `bin/yarn.js`。每个 2.x 预发布版本都算作 Yarn 2 或更高版本；参见 [Yarn 2 边界](#the-yarn-2-boundary)。
-- **bun**：从 `@oven/bun-{os}-{arch}` 下载特定于平台的原生二进制文件（包括适用于 Alpine Linux 的 musl 变体）
+- **yarn ≥ 2.0.0**: Downloads from `@yarnpkg/cli-dist` instead of the `yarn` npm package, and extracts only `bin/yarn.js`. Every 2.x prerelease counts as Yarn 2 or later; see [the Yarn 2 boundary](#the-yarn-2-boundary).
+- **bun**: Downloads platform-specific native binary from `@oven/bun-{os}-{arch}` (including musl variants for Alpine Linux)
 
-## 完整性哈希
+## Integrity Hashes
 
-`packageManager` 字段可以携带完整性哈希：`yarn@4.17.1+sha512.ccbf…`。`corepack use` 会写入该后缀。Vite+ 对与 Corepack 相同的制品进行哈希，因此同一个固定版本可以在两种工具下使用。
+A `packageManager` field can carry an integrity hash: `yarn@4.17.1+sha512.ccbf…`. `corepack use` writes that suffix. Vite+ hashes the same artifact as Corepack, so one pin works under both tools.
 
-| 包管理器                     | 声明的哈希涵盖的内容                              | Vite+ 还会验证的内容                                      |
-| ---------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
-| Yarn 2 及更高版本             | 提取后的 CLI，即 `bin/yarn.js`                    | —                                                          |
-| npm、pnpm ≤ 11、Yarn Classic | npm package tarball                               | —                                                          |
-| pnpm ≥ 12                   | 主 `pnpm` tarball                                 | 根据 registry 的 `dist.integrity` 验证平台 package         |
-| bun                          | 主 `bun` tarball，Vite+ 从不下载该文件            | 根据 registry 的 `dist.integrity` 验证平台 package         |
+| Package manager              | What the declared hash covers                       | What Vite+ also verifies                                   |
+| ---------------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| Yarn 2 and later             | the extracted CLI, `bin/yarn.js`                    | —                                                          |
+| npm, pnpm ≤ 11, Yarn Classic | the npm package tarball                             | —                                                          |
+| pnpm ≥ 12                    | the main `pnpm` tarball                             | the platform package against the registry `dist.integrity` |
+| bun                          | the main `bun` tarball, which Vite+ never downloads | the platform package against the registry `dist.integrity` |
 
-Yarn 2 及更高版本是例外，因为 Corepack 从单个文件 `repo.yarnpkg.com/<version>/packages/yarnpkg-cli/bin/yarn.js` 安装 Berry，并对该文件进行哈希。Vite+ 则下载 `@yarnpkg/cli-dist` tarball，因此会提取 `bin/yarn.js` 并对该条目进行哈希。字节内容相同；只有依据不同。Vite+ 之前对 tarball 进行哈希，这会导致由 `corepack use` 写入的固定版本失败（问题 #2209）。
+Yarn 2 and later is the exception because Corepack installs Berry from a single file, `repo.yarnpkg.com/<version>/packages/yarnpkg-cli/bin/yarn.js`, and hashes that file. Vite+ downloads the `@yarnpkg/cli-dist` tarball instead, so it extracts `bin/yarn.js` and hashes that entry. The bytes are the same; only the basis differs. Vite+ hashed the tarball before, which made a pin written by `corepack use` fail (issue #2209).
 
-该固定版本只覆盖未经身份验证的归档文件中的一个文件，因此 Vite+ 只将该条目写入磁盘。其他归档条目不会进入安装目录，并且由归档控制的路径或符号链接无法逃出该目录。
+That pin covers one file inside an otherwise unauthenticated archive, so Vite+ writes only that entry to disk. No other archive entry reaches the install directory, and an archive-controlled path or symlink cannot escape it.
 
-### Vite+ 何时验证固定版本
+### When Vite+ verifies a pin
 
-Vite+ 下载制品时会对其进行哈希，并将已验证的固定版本记录在安装目录旁的 `<version>/.verified-pin` 中。后续命令会将自身的固定版本与该记录进行比较：
+Vite+ hashes the artifact when it downloads it, and records the verified pin beside the install in `<version>/.verified-pin`. A later command compares its own pin against that record:
 
-- 固定版本匹配。命令使用缓存，不再读取其他内容。
-- 固定版本不同，或记录缺失。Vite+ 会对缓存中的 CLI 进行一次哈希，然后重写该记录。
-- 哈希与固定版本不一致。命令会以 `Hash mismatch for <name>@<version>` 停止，并且消息会指出哈希所涵盖的制品。
+- The pins match. The command uses the cache and reads no further.
+- The pins differ, or the record is missing. Vite+ hashes the cached CLI once, then rewrites the record.
+- The hash disagrees with the pin. The command stops with `Hash mismatch for <name>@<version>`, and the message names the artifact the hash covers.
 
-Vite+ 不会在每次命令执行时重新读取 CLI。Corepack 提供相同的保证：它读取自己的 `.corepack` 记录后返回。信任边界是对 `$VP_HOME` 的写入权限，该目录还存放 `vp` 二进制文件、生成的 shim 以及受管理的 Node.js 运行时。
+Vite+ does not read the CLI again on every command. Corepack gives the same guarantee: it reads its own `.corepack` record and returns. The trust boundary is write access to `$VP_HOME`, which also holds the `vp` binary, the generated shims, and the managed Node.js runtime.
 
-完整性验证失败会停止需要该包管理器的命令，包括 `vp run` 和 `vp exec`。在其他情况下，如果受管理的包管理器缺失（例如没有网络或版本未知），这些命令会继续执行。被吞掉的完整性验证失败最终会表现为“命令未找到”。
+An integrity failure stops the command that needs the package manager, including `vp run` and `vp exec`. Those commands otherwise continue when the managed package manager is missing, for example with no network or an unknown version. A swallowed integrity failure would surface later as "command not found".
 
-### Yarn 2 边界
+### The Yarn 2 boundary
 
-Corepack 在 2.0.0 处分割 Yarn，并使用 `satisfiesWithPrereleases` 将该范围进行匹配；该函数会在比较前去除预发布标签。因此，对 Corepack 而言，每个 2.x 预发布版本都是 Berry 版本。Vite+ 只比较主版本号，结果一致：`yarn@4.0.0-rc.53` 会从 `@yarnpkg/cli-dist` 解析。`>=2.0.0` semver 范围会排除该版本，并将其发送到 Yarn Classic package，而该 package 从未发布过此版本。
+Corepack splits Yarn at 2.0.0 and matches that range with `satisfiesWithPrereleases`, which drops the prerelease tag before it compares. Every 2.x prerelease is therefore a Berry version to Corepack. Vite+ compares the major number alone and agrees: `yarn@4.0.0-rc.53` resolves from `@yarnpkg/cli-dist`. A `>=2.0.0` semver range would exclude that version and send it to the Yarn Classic package, which never published it.
 
-## 工作区和 Monorepo 检测
+## Workspace and Monorepo Detection
 
-工作区检测根据以下内容确定 `is_monorepo`：
+Workspace detection determines `is_monorepo` based on:
 
-- `pnpm-workspace.yaml` → monorepo（pnpm）
-- 带有 `workspaces` 字段的 `package.json` → monorepo（npm/yarn/bun）
+- `pnpm-workspace.yaml` → monorepo (pnpm)
+- `package.json` with `workspaces` field → monorepo (npm/yarn/bun)
 
-包管理器类型和 monorepo 状态共同决定：
+The package manager type and monorepo status together drive:
 
-- 要监视哪些锁文件模式用于缓存失效
-- 是否支持 catalog（pnpm、yarn、bun 支持，npm 不支持）
-- 如何翻译 workspace 过滤器（`--filter`）。
+- Which lockfile patterns to watch for cache invalidation
+- Whether catalog support is available (pnpm, yarn, bun — not npm)
+- How workspace filters (`--filter`) are translated
 
-## 检测信号总结
+## Detection Signals Summary
 
-### 按包管理器分类
+### Per package manager
 
-| 包管理器 | 锁文件                   | 配置文件                                               | 字段                                         |
-| -------- | ------------------------ | ------------------------------------------------------ | -------------------------------------------- |
-| pnpm     | `pnpm-lock.yaml`         | `pnpm-workspace.yaml`、`.pnpmfile.cjs`、`pnpmfile.cjs` | `packageManager`、`devEngines.packageManager` |
-| yarn     | `yarn.lock`              | `.yarnrc.yml`、`.yarnrc`、`yarn.config.cjs`            | `packageManager`、`devEngines.packageManager` |
-| npm      | `package-lock.json`      | —                                                      | `packageManager`、`devEngines.packageManager` |
-| bun      | `bun.lock`、`bun.lockb`  | `bunfig.toml`                                          | `packageManager`、`devEngines.packageManager` |
+| Package Manager | Lockfiles               | Config Files                                           | Fields                                        |
+| --------------- | ----------------------- | ------------------------------------------------------ | --------------------------------------------- |
+| pnpm            | `pnpm-lock.yaml`        | `pnpm-workspace.yaml`, `.pnpmfile.cjs`, `pnpmfile.cjs` | `packageManager`, `devEngines.packageManager` |
+| yarn            | `yarn.lock`             | `.yarnrc.yml`, `.yarnrc`, `yarn.config.cjs`            | `packageManager`, `devEngines.packageManager` |
+| npm             | `package-lock.json`     | —                                                      | `packageManager`, `devEngines.packageManager` |
+| bun             | `bun.lock`, `bun.lockb` | `bunfig.toml`                                          | `packageManager`, `devEngines.packageManager` |
 
-### 缓存失效（忽略指纹的文件）
+### Cache invalidation (fingerprint ignores)
 
-每个包管理器都有特定文件，在变更时会触发缓存失效：
+Each package manager has specific files that trigger cache invalidation when changed:
 
-| 包管理器 | 监视的文件                                                                 |
-| -------- | -------------------------------------------------------------------------- |
-| pnpm     | `pnpm-workspace.yaml`、`pnpm-lock.yaml`、`.pnpmfile.cjs`、`pnpmfile.cjs`、`.pnp.cjs` |
-| yarn     | `.yarnrc`、`.yarnrc.yml`、`yarn.config.cjs`、`yarn.lock`、`.yarn/**/*`、`.pnp.cjs`   |
-| npm      | `package-lock.json`、`npm-shrinkwrap.json`                                 |
-| bun      | `bun.lock`、`bun.lockb`、`bunfig.toml`                                     |
-| 全部     | `**/package.json`、`.npmrc`                                                |
+| Package Manager | Watched Files                                                                        |
+| --------------- | ------------------------------------------------------------------------------------ |
+| pnpm            | `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.pnpmfile.cjs`, `pnpmfile.cjs`, `.pnp.cjs` |
+| yarn            | `.yarnrc`, `.yarnrc.yml`, `yarn.config.cjs`, `yarn.lock`, `.yarn/**/*`, `.pnp.cjs`   |
+| npm             | `package-lock.json`, `npm-shrinkwrap.json`                                           |
+| bun             | `bun.lock`, `bun.lockb`, `bunfig.toml`                                               |
+| All             | `**/package.json`, `.npmrc`                                                          |
 
-## 实现
+## Implementation
 
-### Rust（核心检测）
+### Rust (core detection)
 
-- **文件**：`crates/vp_pm_cli/src/package_manager.rs`
-- **函数**：`get_package_manager_type_and_version()` —— 按优先级顺序检测
-- **函数**：`prompt_package_manager_selection()` —— CI/TTY/交互式回退
-- **函数**：`download_package_manager()` —— 下载、哈希并记录已验证的固定版本
-- **函数**：`ensure_package_manager_bin()` —— 解析可执行文件，与全局 shim 共享
-- **函数**：`verify_cached_cli_hash()` —— 将固定版本与已记录的固定版本进行比较
-- **枚举**：`PackageManagerType` —— `Pnpm`、`Yarn`、`Npm`、`Bun`
+- **File**: `crates/vp_pm_cli/src/package_manager.rs`
+- **Function**: `get_package_manager_type_and_version()` — priority-ordered detection
+- **Function**: `download_package_manager()` — download, hash, and record the verified pin
+- **Function**: `ensure_package_manager_bin()` — resolve the executable, shared with the global shim
+- **Function**: `verify_cached_cli_hash()` — compare a pin against the recorded pin
+- **Enum**: `PackageManagerType` — `Pnpm`, `Yarn`, `Npm`, `Bun`
 
-### TypeScript（CLI 集成）
+### TypeScript (CLI integration)
 
-- **文件**：`packages/cli/src/utils/workspace.ts` —— 封装 NAPI 绑定的 `detectWorkspace()`
-- **文件**：`packages/cli/src/utils/prompts.ts` —— `selectPackageManager()` 用于非交互式默认值
-- **文件**：`packages/cli/src/create/bin.ts` —— 处理 `--package-manager` 标志
+- **File**: `packages/cli/src/utils/workspace.ts` — `detectWorkspace()` wraps NAPI binding
+- **File**: `packages/cli/src/utils/prompts.ts` — `selectPackageManager()` for create/migrate prompts and the non-interactive default
+- **File**: `packages/cli/src/create/bin.ts` — `--package-manager` flag handling
 
-### NAPI 绑定（桥接）
+### NAPI binding (bridge)
 
-- **文件**：`packages/cli/binding/src/package_manager.rs` —— 将 `detectWorkspace()` 导出到 JS。
+- **File**: `packages/cli/binding/src/package_manager.rs` — `detectWorkspace()` exports to JS
 
-## 未来增强
+## Future Enhancements
 
-### 多个锁文件冲突解决
+### Multiple lockfile conflict resolution
 
-当前，如果存在多个锁文件（例如同时存在 `pnpm-lock.yaml` 和 `package-lock.json`），则会按优先级顺序静默使用第一个找到的文件。未来的增强可以在发现冲突锁文件时发出警告，并建议清理。
+Currently, if multiple lockfiles exist (e.g., both `pnpm-lock.yaml` and `package-lock.json`), the first one found in priority order wins silently. A future enhancement could warn about conflicting lockfiles and suggest cleanup.

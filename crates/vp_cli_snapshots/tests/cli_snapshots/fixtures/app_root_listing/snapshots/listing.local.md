@@ -1,14 +1,16 @@
-# 列表
+# listing
 
-在工作区根目录中运行不带交互式终端的裸应用命令时，会打印带有 -C 提示的排序软件包列表，并以 1 退出，而不是构建根目录（rfcs/cwd-flag.md）。
+A bare app command at a workspace root without an interactive terminal prints
+the ranked package listing with -C hints and exits 1 instead of building the
+root (rfcs/cwd-flag.md).
 
 ## `vp build`
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-[1m[2m注意：[0m[0m 您正在将 [94m`vp build`[39m 作为 Vite+ 内置命令运行。如果您想运行 build npm 脚本，请改用 [94m`vpr build`[39m。
-[1m[31m错误：[39m[0m 工作区根目录中的 `vp build` 需要指定目标包。
+note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
+error: `vp build` at the workspace root needs a target package.
 
   Packages in this workspace:
     admin             apps/admin
@@ -16,18 +18,18 @@
     ui                packages/ui
     app-root-listing  .
 
-  传入目录：  vp -C apps/admin build
-  或运行每个包的 build 脚本：  vp run -r build
+  Pass a directory:  vp -C apps/admin build
+  Or run every package's build script:  vp run -r build
 ```
 
 ## `vp dev`
 
-在根目录执行 dev 不再针对根目录启动服务器
+dev at the root no longer starts a server against the root
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-[1m[31m错误：[39m[0m 在工作区根目录执行 `vp dev` 需要指定目标包。
+error: `vp dev` at the workspace root needs a target package.
 
   Packages in this workspace:
     admin             apps/admin
@@ -35,6 +37,6 @@
     ui                packages/ui
     app-root-listing  .
 
-  传入目录：  vp -C apps/admin dev
-  或运行每个包的 dev 脚本：  vp run -r dev
+  Pass a directory:  vp -C apps/admin dev
+  Or run every package's dev script:  vp run -r dev
 ```

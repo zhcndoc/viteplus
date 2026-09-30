@@ -4,15 +4,17 @@
 
 ```
 $ vp test
+Plugin "vitest:mocks:interceptor" defines Vite-specific hooks (configureServer) in a plugin returned from applyToEnvironment. These hooks will be ignored.
 
- 运行  <version> <workspace>
+ RUN  <version> <workspace>
+      API started at http://localhost:<port>/
 
- ✓  chromium  src/foo.test.js (1 个测试) <duration>
+ ✓  chromium  src/foo.test.js (1 test) <duration>
 
- 测试文件  1 个通过 (1)
-      测试  1 个通过 (1)
-   开始于  <time>
-   用时  <duration>（转换 <duration>，设置 <duration>，导入 <duration>，测试 <duration>，环境 <duration>）
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  <time>
+   Duration  <duration> (<timing>)
 ```
 
 ## `vpt write-file src/foo.js 'export default '\''foo'\'';
@@ -23,37 +25,41 @@ $ vp test
 ## `vp run test`
 
 ```
-$ vp test ○ 缓存未命中：'src/foo.js' 已修改，正在执行
+$ vp test ○ cache miss: 'src/foo.js' modified, executing
+Plugin "vitest:mocks:interceptor" defines Vite-specific hooks (configureServer) in a plugin returned from applyToEnvironment. These hooks will be ignored.
 
- 运行  <version> <workspace>
+ RUN  <version> <workspace>
+      API started at http://localhost:<port>/
 
- ✓  chromium  src/foo.test.js (1 个测试) <duration>
+ ✓  chromium  src/foo.test.js (1 test) <duration>
 
- 测试文件  通过 1 个 (1)
-      测试  通过 1 个 (1)
-   开始时间  <time>
-   时长  <duration> (转换 <duration>，设置 <duration>，导入 <duration>，测试 <duration>，环境 <duration>)
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  <time>
+   Duration  <duration> (<timing>)
 ```
 
 ## `vpt write-file src/bar.js 'export default '\''bar'\'';
-//注释
+//comment
 '`
 
 
 ## `vp run test`
 
 ```
-$ vp test ◉ 缓存命中，正在重放
+$ vp test ◉ cache hit, replaying
+Plugin "vitest:mocks:interceptor" defines Vite-specific hooks (configureServer) in a plugin returned from applyToEnvironment. These hooks will be ignored.
 
- 运行  <version> <workspace>
+ RUN  <version> <workspace>
+      API started at http://localhost:<port>/
 
- ✓  chromium  src/foo.test.js (1 个测试) <duration>
+ ✓  chromium  src/foo.test.js (1 test) <duration>
 
- 测试文件  通过 1 个 (1)
-      测试  通过 1 个 (1)
-   开始于  <time>
-   持续时间  <duration> (转换 <duration>，设置 <duration>，导入 <duration>，测试 <duration>，环境 <duration>)
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  <time>
+   Duration  <duration> (<timing>)
 
 ---
-vp run：缓存命中，节省了 <duration>。
+vp run: cache hit, <duration> saved.
 ```

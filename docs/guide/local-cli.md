@@ -52,20 +52,20 @@ vp install -D vite-plus
 ```yaml [pnpm-workspace.yaml]
 overrides:
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: 4.1.11
+  vitest: 5.0.1
 ```
 
 ```json [npm / Bun package.json]
 "overrides": {
   "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "4.1.11"
+  "vitest": "5.0.1"
 }
 ```
 
 ```json [Yarn package.json]
 "resolutions": {
   "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "4.1.11"
+  "vitest": "5.0.1"
 }
 ```
 

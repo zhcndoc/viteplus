@@ -4,7 +4,7 @@
 
 当你运行一个启用缓存的任务时，Vite Task 会观察任务的执行过程，并记录读取和写入了哪些文件，以及任务报告的任何元数据。在下一次运行时，Vite Task 会使用记录的指纹来决定是回放缓存还是重新运行任务。
 
-当你需要理解为什么某个任务命中或未命中缓存时，或者当你需要决定是否添加 `input`、`output`、`env` 或 `untrackedEnv` 配置时，请使用本页。
+当你需要了解任务为何命中或未命中缓存，或需要决定是否添加 `cache.input`、`cache.output`、`cache.env` 或 `cache.untrackedEnv` 配置时，请参阅本页。
 
 ## 跟踪层级
 
@@ -19,7 +19,7 @@ Vite Task 会对任何命令先启用文件系统跟踪。报告缓存的工具�
 
 ## 文件系统追踪
 
-文件系统追踪适用于每个启用缓存的任务。如果你省略 [`input`](/config/run#input)，Vite Task 会在命令运行时跟踪它读取的文件：
+文件系统追踪适用于每个启用缓存的任务。如果你省略 [`cache.input`](/config/run#cache-input)，Vite Task 会在命令运行时追踪它读取的文件：
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite-plus';
@@ -37,7 +37,7 @@ export default defineConfig({
 
 对于此任务，Vite Task 会记录源文件、配置文件、命令检查过的缺失文件，以及命令扫描过的目录。后续运行时，当这些被追踪的输入之一发生变化，就会重新执行该任务。
 
-文件系统追踪也会跟踪输出。如果你省略 [`output`](/config/run#output)，Vite Task 会在命令成功运行后归档其写入的文件，并在命中缓存时恢复这些文件。
+文件系统追踪也会跟踪输出。如果你省略 [`cache.output`](/config/run#cache-output)，Vite Task 会在命令成功运行后归档其写入的文件，并在命中缓存时恢复这些文件。
 
 ### 限制
 
@@ -45,13 +45,13 @@ Vite Task 无法跟踪对环境变量的读取，并且它也并不总能判断�
 
 当文件系统追踪包含了不应影响缓存的文件、遗漏了应当影响缓存的文件，或者恢复了错误的输出时，请使用 [覆盖输入和输出](#override-inputs-and-outputs)。
 
-当命令需要环境变量且该值应该影响缓存时，请使用 [`env`](/config/run#env)；当该值不应影响缓存时，请使用 [`untrackedEnv`](/config/run#untrackedenv)。
+当命令需要的环境变量应影响缓存时，请使用 [`cache.env`](/config/run#cache-env)；如果该值不应影响缓存，则使用 [`cache.untrackedEnv`](/config/run#cache-untrackedenv)。
 
 这些限制不适用于 `vp build`：Vite 会自动报告 [协作式追踪](#cooperative-tracking) 元数据，包括 `VITE_*`、`NODE_ENV`，以及不应成为输入或输出的 Vite 管理缓存路径。标准的 `vp build` 任务不需要手动设置 `input`、`output` 或 `env`。
 
 ### 覆盖输入和输出
 
-[`input`](/config/run#input) 控制哪些内容会使缓存失效。[`output`](/config/run#output) 控制 Vite Task 在命中缓存时恢复哪些文件。
+[`cache.input`](/config/run#cache-input) 决定哪些变化会使缓存失效。[`cache.output`](/config/run#cache-output) 决定 Vite Task 在命中缓存时恢复哪些文件。
 
 这两个选项使用相同的语法，并且可以分别配置。
 
@@ -65,12 +65,12 @@ Vite Task 无法跟踪对环境变量的读取，并且它也并不总能判断�
 tasks: {
   build: {
     command: 'node build.mjs',
-
-    // 保留自动输入追踪，但将 `dist` 从输入中排除。
-    input: [{ auto: true }, '!dist/**'],
-
-    // 禁用自动输出追踪，并且在命中缓存时仅恢复 `dist/**`。
-    output: ['dist/**'],
+    cache: {
+      // 保留自动输入追踪，但将 `dist` 从输入中排除。
+      input: [{ auto: true }, '!dist/**'],
+      // 禁用自动输出追踪，并且在命中缓存时仅恢复 `dist/**`。
+      output: ['dist/**'],
+    },
   },
 }
 ```
@@ -81,8 +81,10 @@ tasks: {
 tasks: {
   lint: {
     command: 'vp lint',
-    // 禁用自动输入追踪，并且只对这些文件进行指纹识别。
-    input: ['src/**', 'vite.config.ts'],
+    cache: {
+      // 禁用自动输入追踪，并且只对这些文件进行指纹识别。
+      input: ['src/**', 'vite.config.ts'],
+    },
   },
 }
 ```
@@ -93,7 +95,9 @@ tasks: {
 tasks: {
   downloadSchema: {
     command: 'curl -O https://example.com/schema.json',
-    input: [],
+    cache: {
+      input: [],
+    },
   },
 }
 ```
@@ -128,13 +132,13 @@ export default defineConfig({
 
 使用 `vpr frontendBuild` 或 `vp run frontendBuild` 运行此任务。
 
-手动配置会覆盖已报告的元数据。当你的项目存在 Vite 无法报告的行为时，添加 `input`、`output`、`env` 或 `untrackedEnv`。
+手动配置会覆盖已报告的元数据。当项目存在 Vite 无法报告的行为时，请添加 `cache.input`、`cache.output`、`cache.env` 或 `cache.untrackedEnv`。
 
 Vite+ 目前支持 `vp build` 的协作式跟踪。未来它将把这一支持扩展到更多第一方工具。第三方工具可以使用 [`@voidzero-dev/vite-task-client`](https://npmx.dev/package/@voidzero-dev/vite-task-client) 报告缓存元数据。
 
 ## 何时添加手动配置
 
-当你的项目具有命令或工具无法知晓的行为时，请添加配置。
+当项目存在命令或工具无法获知的行为时，请添加配置。这些选项应放在任务的 [`cache`](/config/run#cache) 对象中。
 
 | 情况                                                              | 示例                                                                                         |
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |

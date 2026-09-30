@@ -63,7 +63,6 @@ export default defineConfig({
 ```
 {
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

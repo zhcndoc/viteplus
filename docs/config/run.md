@@ -80,7 +80,7 @@ tasks: {
 }
 ```
 
-当任务需要其他字段，如 `cache`、`dependsOn`、`env` 或 `input` 时，请使用对象形式。
+当任务需要 `cache`、`dependsOn` 或 `cwd` 等其他字段时，请使用对象形式。
 
 ### `command`
 
@@ -156,10 +156,26 @@ tasks: {
 
 ### `cache`
 
-- **类型:** `boolean`
+- **类型:** `boolean | { env?: string[], untrackedEnv?: string[], input?: Array<...>, output?: Array<...> }`
 - **默认值:** `true`
 
-是否缓存此任务的输出。对于不应被缓存的任务（如开发服务器），请设置为 `false`：
+是否缓存此任务以及如何缓存。省略 `cache`、将其设为 `true` 或 `{}` 时，都会使用默认设置启用缓存。
+
+使用对象可通过 [`cache.env`](#cache-env)、[`cache.untrackedEnv`](#cache-untrackedenv)、[`cache.input`](#cache-input) 和 [`cache.output`](#cache-output) 配置任务的缓存方式：
+
+```ts [vite.config.ts]
+tasks: {
+  build: {
+    command: 'node build.mjs',
+    cache: {
+      env: ['NODE_ENV'],
+      input: [{ auto: true }, '!dist/**'],
+    },
+  },
+}
+```
+
+对于不应缓存的任务（例如开发服务器），请将 `cache` 设为 `false`：
 
 ```ts [vite.config.ts]
 tasks: {
@@ -170,7 +186,7 @@ tasks: {
 }
 ```
 
-### `env`
+### `cache.env`
 
 - **类型:** `string[]`
 - **默认值:** `[]`
@@ -181,7 +197,9 @@ tasks: {
 tasks: {
   build: {
     command: 'node build.mjs',
-    env: ['NODE_ENV'],
+    cache: {
+      env: ['NODE_ENV'],
+    },
   },
 }
 ```
@@ -195,7 +213,7 @@ $ NODE_ENV=development vp run build    # 首次运行
 $ NODE_ENV=production vp run build     # 缓存未命中：`NODE_ENV` 已更改
 ```
 
-### `untrackedEnv`
+### `cache.untrackedEnv`
 
 - **类型:** `string[]`
 - **默认值:** 见下文
@@ -206,12 +224,14 @@ $ NODE_ENV=production vp run build     # 缓存未命中：`NODE_ENV` 已更改
 tasks: {
   build: {
     command: 'node build.mjs',
-    untrackedEnv: ['CI', 'GITHUB_ACTIONS'],
+    cache: {
+      untrackedEnv: ['CI', 'GITHUB_ACTIONS'],
+    },
   },
 }
 ```
 
-`untrackedEnv` 接受与 [`env`](#env) 相同的通配符和 `!` 排除模式。
+`untrackedEnv` 接受与 [`env`](#cache-env) 相同的通配符和 `!` 排除模式。
 
 如果某个变量的值会改变任务结果，就不要把它放入 `untrackedEnv`。如果某个缓存报告工具已通过[自动跟踪](/guide/automatic-data-tracking#cooperative-tracking)覆盖了该变量，请不要将其放入 `env` 和 `untrackedEnv` 中。
 
@@ -219,10 +239,10 @@ Vite Task 会向所有任务传递一组常见环境变量：
 
 - **系统:** `HOME`, `USER`, `PATH`, `SHELL`, `LANG`, `TZ`
 - **Node.js:** `NODE_OPTIONS`, `COREPACK_HOME`, `PNPM_HOME`
-- **CI/CD:** `CI`, `VERCEL_*`, `NEXT_*`
-- **终端:** 颜色变量（`FORCE_COLOR`、`NO_COLOR`、`COLORTERM`、`TERM`、`TERM_PROGRAM`）不会传递给任务，除非你将它们列在 `env` 下（其值会被纳入指纹，因此更改后会使缓存失效）或 `untrackedEnv` 下（传递但不进行指纹识别）。如果 `FORCE_COLOR` 不在这两个列表中，子进程会获得 `FORCE_COLOR=1`，以便缓存日志保持彩色。当终端无法渲染颜色时，颜色会在显示时被去除。
+- **CI/CD：** `CI`、`VERCEL_*`、`NEXT_*`、`GITHUB_*`、`RUNNER_*`、`ACTIONS_ID_TOKEN_REQUEST_URL`、`ACTIONS_ID_TOKEN_REQUEST_TOKEN`
+- **终端：** 除非将颜色变量（`FORCE_COLOR`、`NO_COLOR`、`COLORTERM`、`TERM`、`TERM_PROGRAM`）列在 `env` 下（其值会被纳入指纹，更改后会使缓存失效）或 `untrackedEnv` 下（传递但不进行指纹识别），否则这些变量不会传递给任务。如果这两个列表中都没有 `FORCE_COLOR`，子进程会获得 `FORCE_COLOR=1`，以便缓存日志保持彩色。当终端无法渲染颜色时，显示时会移除颜色。
 
-### `input`
+### `cache.input`
 
 - **类型:** `Array<string | { auto: boolean } | { pattern: string, base: "workspace" | "package" }>`
 - **默认值:** `[{ auto: true }]`（自动推断）
@@ -235,8 +255,10 @@ Vite Task 会自动检测命令使用了哪些文件。有关详细信息以及�
 tasks: {
   build: {
     command: 'vp build',
-    // 使用 `{ auto: true }` 进行自动指纹识别（默认）。
-    input: [{ auto: true }, '!**/*.tsbuildinfo', '!dist/**'],
+    cache: {
+      // 使用 `{ auto: true }` 进行自动指纹识别（默认）。
+      input: [{ auto: true }, '!**/*.tsbuildinfo', '!dist/**'],
+    },
   },
 }
 ```
@@ -247,7 +269,9 @@ tasks: {
 tasks: {
   build: {
     command: 'vp build',
-    input: ['src/**/*.ts', 'vite.config.ts'],
+    cache: {
+      input: ['src/**/*.ts', 'vite.config.ts'],
+    },
   },
 }
 ```
@@ -258,10 +282,12 @@ tasks: {
 tasks: {
   build: {
     command: 'vp build',
-    input: [
-      { auto: true },
-      { pattern: 'shared-config/**', base: 'workspace' },
-    ],
+    cache: {
+      input: [
+        { auto: true },
+        { pattern: 'shared-config/**', base: 'workspace' },
+      ],
+    },
   },
 }
 ```
@@ -277,7 +303,9 @@ tasks: {
 tasks: {
   greet: {
     command: 'node greet.mjs',
-    input: [],
+    cache: {
+      input: [],
+    },
   },
 }
 ```
@@ -286,7 +314,7 @@ tasks: {
 字符串通配符模式默认相对于包目录解析。使用对象形式并设置 `base: "workspace"` 可将解析基准设为工作区根目录。
 :::
 
-### `output`
+### `cache.output`
 
 - **类型:** `Array<string | { auto: boolean } | { pattern: string, base: "workspace" | "package" }>`
 - **默认值:** 自动写入跟踪
@@ -299,7 +327,9 @@ Vite Task 会自动归档成功任务运行生成的文件，并在缓存命中�
 tasks: {
   build: {
     command: 'node build.mjs',
-    output: ['dist/**', '!dist/cache/**'],
+    cache: {
+      output: ['dist/**', '!dist/cache/**'],
+    },
   },
 }
 ```
@@ -312,7 +342,9 @@ tasks: {
 tasks: {
   typecheck: {
     command: 'tsc --build',
-    output: [{ auto: true }, '!*.tsbuildinfo'],
+    cache: {
+      output: [{ auto: true }, '!*.tsbuildinfo'],
+    },
   },
 }
 ```
@@ -323,10 +355,12 @@ tasks: {
 tasks: {
   build: {
     command: 'node build.mjs',
-    output: [
-      'dist/**',
-      { pattern: 'shared-artifacts/**', base: 'workspace' },
-    ],
+    cache: {
+      output: [
+        'dist/**',
+        { pattern: 'shared-artifacts/**', base: 'workspace' },
+      ],
+    },
   },
 }
 ```
@@ -337,7 +371,9 @@ tasks: {
 tasks: {
   report: {
     command: 'node scripts/report.mjs',
-    output: [],
+    cache: {
+      output: [],
+    },
   },
 }
 ```

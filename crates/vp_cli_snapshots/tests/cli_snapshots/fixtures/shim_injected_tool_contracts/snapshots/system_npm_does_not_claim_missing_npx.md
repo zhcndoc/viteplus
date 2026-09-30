@@ -18,7 +18,7 @@
 ## `vp env off node`
 
 
-## `PATH=${VP_HOME}/bin${PATH_SEPARATOR}${workspace}/system-npm${PATH_SEPARATOR}/usr/bin${PATH_SEPARATOR}/bin vp install`
+## `PATH=${VP_HOME}/bin${PATH_SEPARATOR}${workspace}/system-npm${PATH_SEPARATOR}/usr/bin${PATH_SEPARATOR}/bin${PATH_SEPARATOR}${VP_HOME}/fallback-bin vp install`
 
 缺失的系统别名会正常解析，而不是进入注入工具直通模式
 

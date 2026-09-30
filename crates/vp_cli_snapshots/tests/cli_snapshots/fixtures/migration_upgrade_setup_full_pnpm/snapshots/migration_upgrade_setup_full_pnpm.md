@@ -53,7 +53,7 @@ VITE+ - Web 的统一工具链
 完整设置过程会将 .nvmrc 迁移为 .node-version
 
 ```
-20.19.0
+24.11.0
 ```
 
 ## `vpt stat-file .nvmrc --assert-not file`

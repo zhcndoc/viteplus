@@ -1,186 +1,186 @@
-# RFC：独立的 Windows `.exe` 安装程序
+# RFC: Standalone Windows `.exe` Installer
 
-## 状态
+## Status
 
-已实现。
+Implemented
 
-## 概要
+## Summary
 
-新增一个独立的 `vp-setup.exe` Windows 安装器二进制，通过 GitHub Releases 分发，它会在不需要 PowerShell 的情况下安装 vp CLI。该方案补充了现有的基于脚本的安装器 `irm https://vite.plus/ps1 | iex`。实现方式参考 `rustup-init.exe`。
+Add a standalone `vp-setup.exe` Windows installer binary, distributed via GitHub Releases, that installs the vp CLI without requiring PowerShell. This complements the existing `irm https://vite.plus/ps1 | iex` script-based installer. Modeled after `rustup-init.exe`.
 
-## 动机
+## Motivation
 
-### 问题
+### The Problem
 
-当前的 Windows 安装需要运行一个 PowerShell 命令：
+The current Windows installation requires running a PowerShell command:
 
 ```powershell
 irm https://vite.plus/ps1 | iex
 ```
 
-这带来了多种摩擦点：
+This has several friction points:
 
-1. **执行策略障碍**：许多企业/机构的 Windows 机器会限制 PowerShell 脚本执行（需要 `Set-ExecutionPolicy` 的更改）。
-2. **不支持 cmd.exe**：在 `cmd.exe` 或 Git Bash 中的用户无法在不先打开 PowerShell 的情况下使用 `irm | iex` 这种用法。
-3. **无法双击安装**：用户在遵循文档时，不能直接下载并运行安装器。
-4. **CI 的摩擦**：在 Windows 上使用 `shell: cmd` 或 `shell: bash` 的 GitHub Actions 需要变通方式来调用 PowerShell。
-5. **PowerShell 版本碎片化**：PowerShell 5.1（内置）和 PowerShell 7+（pwsh）存在细微差异，脚本必须处理这些差异。
+1. **Execution policy barriers**: Many corporate/enterprise Windows machines restrict PowerShell script execution (`Set-ExecutionPolicy` changes required).
+2. **No cmd.exe support**: Users in `cmd.exe` or Git Bash cannot use the `irm | iex` idiom without first opening PowerShell.
+3. **No double-click install**: Users following documentation cannot simply download-and-run an installer.
+4. **CI friction**: GitHub Actions using `shell: cmd` or `shell: bash` on Windows need workarounds to invoke PowerShell.
+5. **PowerShell version fragmentation**: PowerShell 5.1 (built-in) and PowerShell 7+ (pwsh) have subtle differences that the script must handle.
 
-### rustup 参考
+### rustup Reference
 
-rustup 提供 `rustup-init.exe` —— 一个单独的控制台二进制，用户可以从任意 shell 下载并运行，或通过双击运行。关键特性：
+rustup provides `rustup-init.exe` — a single console binary that users download and run from any shell or by double-clicking. Key characteristics:
 
-- 仅控制台（无 GUI），带编号菜单的交互式提示
-- 通过 `-y` 标志在 CI 中实现静默模式
-- 单一二进制既是安装器又是主要工具（通过 `argv[0]` 检测行为）
-- 通过注册表修改 Windows 用户 PATH
-- 在“添加/删除程序”中注册
-- 针对从下载文件夹执行的 DLL 安全缓解措施。
+- Console-only (no GUI), interactive prompts with numbered menu
+- Silent mode via `-y` flag for CI
+- Single binary that is both installer and main tool (detects behavior from `argv[0]`)
+- Modifies Windows User PATH via registry
+- Registers in Add/Remove Programs
+- DLL security mitigations for download-folder execution
 
-## 目标
+## Goals
 
-1. 提供一个单独的 `.exe`，可在任意 Windows shell 中或双击安装
-2. 支持 CI 环境下的静默/无人值守安装
-3. 复用来自 `vp upgrade` 命令的现有安装逻辑
-4. 保持安装器二进制较小（目标：3-5 MB）
-5. 实现与 `install.ps1` 完全相同的安装结果。
+1. Provide a single `.exe` that installs vp from any Windows shell or double-click
+2. Support silent/unattended installation for CI environments
+3. Reuse existing installation logic from the `vp upgrade` command
+4. Keep the installer binary small (target: 3-5 MB)
+5. Replicate the exact same installation result as `install.ps1`
 
-## 非目标
+## Non-Goals
 
-1. GUI 安装器（MSI、NSIS、Inno Setup）——仅控制台，类似 rustup
-2. 跨平台安装器二进制（Linux/macOS 已有良好的 `install.sh` 支持）
-3. winget/chocolatey/scoop 的提交（未来工作）
-4. 代码签名（GA 需要，但不在本 RFC 范围内）。
+1. GUI installer (MSI, NSIS, Inno Setup) — console-only like rustup
+2. Cross-platform installer binary (Linux/macOS are well-served by `install.sh`)
+3. winget/chocolatey/scoop package submission (future work)
+4. Code signing (required for GA, but out of scope for this RFC)
 
-## 架构决策：单一二进制 vs. 单独的 Crate
+## Architecture Decision: Single Binary vs. Separate Crate
 
-### 选项 A：单一二进制（rustup 模式）
+### Option A: Single Binary (rustup model)
 
-rustup 使用一个二进制解决一切——`rustup-init.exe` 会将自身复制到 `~/.cargo/bin/rustup.exe`，并根据 `argv[0]` 改变行为。之所以可行，是因为 rustup 是工具链管理器。
+rustup uses one binary for everything — `rustup-init.exe` copies itself to `~/.cargo/bin/rustup.exe` and changes behavior based on `argv[0]`. This works because rustup IS the toolchain manager.
 
-**不适用于 vp**，原因是：
+**Not suitable for vp** because:
 
-- `vp.exe` 从 npm registry 以平台特定软件包的形式下载
-- 安装器无法将自身复制为 `vp.exe` —— 它们本质上是不同的二进制文件
-- `vp.exe` 链接了 `vp_js_runtime`、`vt_workspace`、`oxc_resolver`（约 15-20 MB）——安装器完全不需要这些
+- `vp.exe` is downloaded from the npm registry as a platform-specific package
+- The installer cannot copy itself as `vp.exe` — they are fundamentally different binaries
+- `vp.exe` links `vp_js_runtime`, `vt_workspace`, `oxc_resolver` (~15-20 MB) — the installer needs none of these
 
-### 选项 B：带共享库的独立 crate（推荐）
+### Option B: Separate Crate with Shared Library (recommended)
 
-创建两个新的 crate：
-
-```
-crates/vp_setup/     — 共享安装逻辑（库）
-crates/vp_installer/      — 独立的安装器二进制文件
-```
-
-`vp_setup` 提取当前位于 `vp_global_cli/src/commands/upgrade/` 中的可复用安装逻辑。`vp upgrade` 和 `vp-setup.exe` 都调用 `vp_setup`。
-
-**收益：**
-
-- 安装器二进制保持小（3-5 MB）
-- `vp upgrade` 与 `vp-setup.exe` 共享完全一致的安装逻辑——避免偏移
-- 清晰的关注点分离。
-
-## 代码共享：`vp_setup` 库
-
-### 提取内容
-
-| `upgrade/` 中的原始位置 | 提取至 `vp_setup::` | 用途                                                                                                                              |
-| ----------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `platform.rs`           | `platform`          | 操作系统/架构检测                                                                                                                |
-| `registry.rs`           | `registry`          | npm 注册表查询                                                                                                                   |
-| `integrity.rs`          | `integrity`         | SHA-512 校验                                                                                                                     |
-| `install.rs`（所有函数） | `install`           | Tarball 提取、package.json 生成、.npmrc 覆盖、依赖安装、符号链接/联接点替换、版本清理、回滚支持 |
-
-### `vp_global_cli` 中保留的内容
-
-- `vp upgrade` 的 CLI 参数解析
-- 版本对比（当前 vs 可用）
-- 回滚逻辑
-- 特定于 upgrade 体验的输出格式化
-
-### `vp_installer` 中新增的内容
-
-- 交互式安装提示（编号菜单）
-- 通过注册表修改 Windows 用户 PATH
-- Node.js 版本管理器设置提示
-- Shell 环境文件创建
-- 现有安装检测
-- DLL 安全缓解措施（用于下载文件夹执行）
-
-### 依赖图
+Create two new crates:
 
 ```
-vp_installer (二进制文件，约 3-5 MB)
-  ├── vp_setup (共享安装逻辑)
-  ├── vp_pm_cli (HTTP 客户端)
-  ├── vp_shared (主目录解析)
-  ├── vt_path (类型化路径包装器)
-  ├── clap (CLI 解析)
-  ├── tokio (异步运行时)
-  ├── indicatif (进度条)
-  └── owo-colors (终端颜色)
-
-vp_global_cli (现有)
-  ├── vp_setup (替代内联升级代码)
-  └── ... (所有现有依赖)
+crates/vp_setup/     — shared installation logic (library)
+crates/vp_installer/      — standalone installer binary
 ```
 
-## 用户体验
+`vp_setup` extracts the reusable installation logic currently in `vp_global_cli/src/commands/upgrade/`. Both `vp upgrade` and `vp-setup.exe` call into `vp_setup`.
 
-### 交互模式（默认）
+**Benefits:**
 
-未带标志运行（双击或直接运行 `vp-setup.exe`）：
+- Installer binary stays small (3-5 MB)
+- `vp upgrade` and `vp-setup.exe` share identical installation logic — no drift
+- Clear separation of concerns
+
+## Code Sharing: The `vp_setup` Library
+
+### What Gets Extracted
+
+| Original location in `upgrade/` | Extracted to `vp_setup::` | Purpose                                                                                                                              |
+| ------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `platform.rs`                   | `platform`                | OS/arch detection                                                                                                                    |
+| `registry.rs`                   | `registry`                | npm registry queries                                                                                                                 |
+| `integrity.rs`                  | `integrity`               | SHA-512 verification                                                                                                                 |
+| `install.rs` (all functions)    | `install`                 | Tarball extraction, package.json generation, .npmrc overrides, dep install, symlink/junction swap, version cleanup, rollback support |
+
+### What Stays in `vp_global_cli`
+
+- CLI argument parsing for `vp upgrade`
+- Version comparison (current vs available)
+- Rollback logic
+- Output formatting specific to upgrade UX
+
+### What's New in `vp_installer`
+
+- Interactive installation prompts (numbered menu)
+- Windows User PATH modification via registry
+- Node.js version manager setup prompt
+- Shell env file creation
+- Existing installation detection
+- DLL security mitigations (for download-folder execution)
+
+### Dependency Graph
 
 ```
-欢迎使用 Vite+ 安装器！
+vp_installer (binary, ~3-5 MB)
+  ├── vp_setup (shared installation logic)
+  ├── vp_pm_cli (HTTP client)
+  ├── vp_shared (home dir resolution)
+  ├── vt_path (typed path wrappers)
+  ├── clap (CLI parsing)
+  ├── tokio (async runtime)
+  ├── indicatif (progress bars)
+  └── console (terminal colors)
 
-这将安装 vp CLI 和 monorepo 任务运行器。
+vp_global_cli (existing)
+  ├── vp_setup (replaces inline upgrade code)
+  └── ... (all existing deps)
+```
 
-    安装目录：C:\Users\alice\.vite-plus
-    PATH 修改：C:\Users\alice\.vite-plus\bin → 用户 PATH
-    版本：           最新
-    Node.js 管理器：   已启用
+## User Experience
 
-  1) 继续安装（默认）
-  2) 自定义安装
-  3) 取消
+### Interactive Mode (default)
+
+When run without flags (double-click or plain `vp-setup.exe`):
+
+```
+Welcome to Vite+ Installer!
+
+This will install the vp CLI and monorepo task runner.
+
+    Install directory: C:\Users\alice\.vite-plus
+    PATH modification: C:\Users\alice\.vite-plus\bin → User PATH
+    Version:           latest
+    Node.js manager:   enabled
+
+  1) Proceed with installation (default)
+  2) Customize installation
+  3) Cancel
 
   >
 ```
 
-Node.js 管理器的值会在展示菜单前通过自动检测预先计算（参见 [Node.js 管理器自动检测](#nodejs-manager-auto-detection)）。用户可以在进入执行安装前的自定义子菜单中覆盖它。
+The Node.js manager value is pre-computed via auto-detection before the menu is shown (see [Node.js Manager Auto-Detection](#nodejs-manager-auto-detection)). The user can override it in the customize submenu before proceeding.
 
-自定义子菜单：
+Customization submenu:
 
 ```
-  自定义安装：
+  Customize installation:
 
-    1) 版本：         [latest]
-    2) npm 注册表：    [(default)]
-    3) Node.js 管理器： [enabled]
-    4) 修改 PATH：     [yes]
+    1) Version:         [latest]
+    2) npm registry:    [(default)]
+    3) Node.js manager: [enabled]
+    4) Modify PATH:     [yes]
 
-  输入选项编号以更改，或按 Enter 返回：
+  Enter option number to change, or press Enter to go back:
   >
 ```
 
-### 静默模式（CI）
+### Silent Mode (CI)
 
-安装器会自动检测 CI 环境（`CI=true`），并跳过交互式提示，因此在 CI 中不需要使用 `-y`：
+The installer auto-detects CI environments (`CI=true`) and skips interactive prompts, so `-y` is not required in CI:
 
 ```bash
-# CI 环境会自动变为非交互
+# CI environments are automatically non-interactive
 vp-setup.exe
 
-# 显式静默模式（CI 之外）
+# Explicit silent mode (outside CI)
 vp-setup.exe -y
 
-# 自定义
+# Customize
 vp-setup.exe --version 0.3.0 --no-node-manager --registry https://registry.npmmirror.com
 ```
 
-### CLI 标志
+### CLI Flags
 
 | Flag                | Description                   | Default                      |
 | ------------------- | ----------------------------- | ---------------------------- |
@@ -192,9 +192,9 @@ vp-setup.exe --version 0.3.0 --no-node-manager --registry https://registry.npmmi
 | `--no-node-manager` | Skip Node.js manager setup    | auto-detect                  |
 | `--no-modify-path`  | Don't modify User PATH        | modify                       |
 
-### 环境变量（与 `install.ps1` 兼容）
+### Environment Variables (compatible with `install.ps1`)
 
-| 变量                      | 映射到              |
+| Variable                  | Maps to             |
 | ------------------------- | ------------------- |
 | `VP_VERSION`              | `--version`         |
 | `VP_HOME`                 | single-root layout  |
@@ -204,7 +204,7 @@ vp-setup.exe --version 0.3.0 --no-node-manager --registry https://registry.npmmi
 | `NPM_CONFIG_REGISTRY`     | `--registry`        |
 | `VP_NODE_MANAGER=yes\|no` | `--no-node-manager` |
 
-CLI 标志的优先级高于环境变量。
+CLI flags take precedence over environment variables.
 
 `vp-setup.exe` requires an absolute `VP_HOME`. If callers set one split root,
 they must set all three `VP_*_DIR` variables. Each variable must contain an
@@ -219,81 +219,81 @@ platform payload or creates an installation root.
 
 ## Installation Flow
 
-安装器通过 `vp_setup` 使用 Rust 实现，复现与 `install.ps1` 相同的结果。
+The installer replicates the same result as `install.ps1`, implemented in Rust via `vp_setup`.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      解析                                   │
+│                      RESOLVE                                │
 │                                                             │
-│  ┌─ 检测平台 ────────────── win32-x64-msvc                  │
-│  │                          win32-arm64-msvc                │
+│  ┌─ detect platform ──────── win32-x64-msvc                 │
+│  │                           win32-arm64-msvc                │
 │  │                                                          │
 │  ├─ check existing ──────── read <DATA>\current              │
 │  │                                                          │
-│  └─ 解析版本 ────────────── resolve_version_string()        │
-│                             1 次 HTTP 调用：“latest” → “0.3.0”│
-│                             版本相同？→ 跳转至               │
-│                             配置（修复路径）                 │
+│  └─ resolve version ──────── resolve_version_string()        │
+│                              1 HTTP call: "latest" → "0.3.0" │
+│                              same version? → skip to         │
+│                              CONFIGURE (repair path)         │
 └─────────────────────────────────────────────────────────────┘
                               │
-                   （仅当版本不同）
+                   (only if version differs)
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      下载并验证                             │
+│                      DOWNLOAD & VERIFY                      │
 │                                                             │
-│  ┌─ 解析平台包 ──────────── resolve_platform_package()       │
-│  │                          第 2 次 HTTP 调用：tarball URL + SRI│
+│  ┌─ resolve platform pkg ── resolve_platform_package()       │
+│  │                          2nd HTTP call: tarball URL + SRI │
 │  │                                                          │
-│  ├─ 下载 tarball ────────── 从注册表获取 tarball URL          │
-│  │                          indicatif 进度旋转指示器         │
+│  ├─ download tarball ─────── GET tarball URL from registry   │
+│  │                           progress spinner via indicatif  │
 │  │                                                          │
-│  └─ 验证完整性 ──────────── SHA-512 SRI 哈希比较             │
+│  └─ verify integrity ─────── SHA-512 SRI hash comparison     │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      安装                                   │
+│                      INSTALL                                │
 │                                                             │
 │  ┌─ extract binary ──────── <DATA>\{version}\bin\            │
 │  │                          vp.exe + vp-shim.exe             │
 │  │                                                          │
-│  ├─ 生成 package.json ───── 带有 vite-plus 依赖的包装器       │
-│  │                          固定 pnpm@10.33.0                │
+│  ├─ generate package.json ─ wrapper with vite-plus dep       │
+│  │                          pins pnpm@10.33.0                │
 │  │                                                          │
-│  ├─ 写入 .npmrc ─────────── minimum-release-age=0            │
+│  ├─ write .npmrc ────────── minimum-release-age=0            │
 │  │                                                          │
-│  └─ 安装依赖 ────────────── 启动：vp install --silent         │
-│                             安装 vite-plus + 传递依赖         │
+│  └─ install deps ────────── spawn: vp install --silent       │
+│                              installs vite-plus + transitive │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     激活                 ◄── 无返回点        │
-│                                               返回           │
-│  ┌─ 保存之前的版本 ──────── .previous-version（回滚）         │
-│  │                          （仅当升级已有安装）              │
+│                     ACTIVATE              ◄── point of no    │
+│                                               return         │
+│  ┌─ save previous version ── .previous-version (rollback)    │
+│  │                          (only if upgrading existing)     │
 │  │                                                          │
-│  ├─ 切换当前版本 ────────── mklink /J current → {version}    │
-│  │                          （Windows 上的 junction，         │
-│  │                           Unix 上的原子 symlink）         │
+│  ├─ swap current ────────── mklink /J current → {version}    │
+│  │                          (junction on Windows,            │
+│  │                           atomic symlink on Unix)         │
 │  │                                                          │
-│  └─ 清理旧版本 ──────────── 按创建时间保留最近 3 个版本       │
-│                             保护新版本 + 之前的版本           │
+│  └─ cleanup old versions ── keep last 3 by creation time     │
+│                              protects new + previous version │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│       配置              （尽力执行，总是运行，              │
-│                          即使同版本也用于修复）              │
+│       CONFIGURE         (best-effort, always runs,           │
+│                          even for same-version repair)        │
 │                                                             │
 │  ┌─ create bin shims ────── copy vp-shim.exe → <BIN>\vp.exe │
 │  │                          (rename-to-.old if running)      │
 │  │                                                          │
-│  ├─ Node.js 管理器 ─────── 如果已启用（预先计算）：           │
-│  │                            启动：vp env setup --refresh   │
-│  │                          如果已禁用：                     │
-│  │                            启动：vp env setup --env-only  │
+│  ├─ Node.js manager ────── if enabled (pre-computed):        │
+│  │                            spawn: vp env setup --refresh  │
+│  │                          if disabled:                     │
+│  │                            spawn: vp env setup --env-only │
 │  │                                                          │
 │  └─ modify User PATH ────── if --no-modify-path not set:     │
 │                              HKCU\Environment\Path           │
@@ -302,82 +302,82 @@ platform payload or creates an installation root.
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
-                        ✔ 打印成功
+                        ✔ Print success
 ```
 
-每个阶段都对应于 `vp_setup` 库函数，这些函数与 `vp upgrade` 共享：
+Each phase maps to `vp_setup` library functions shared with `vp upgrade`:
 
-| 阶段             | 关键函数                                   | Crate          |
+| Phase             | Key function                               | Crate          |
 | ----------------- | ------------------------------------------ | -------------- |
-| 解析             | `platform::detect_platform_suffix()`       | `vp_setup`     |
-| 解析             | `install::read_current_version()`          | `vp_setup`     |
-| 解析             | `registry::resolve_version_string()`       | `vp_setup`     |
-| 下载并验证       | `registry::resolve_platform_package()`     | `vp_setup`     |
-| 下载并验证       | `HttpClient::get_bytes()`                  | `vp_pm_cli`    |
-| 下载并验证       | `integrity::verify_integrity()`            | `vp_setup`     |
-| 安装             | `install::extract_platform_package()`      | `vp_setup`     |
-| 安装             | `install::generate_wrapper_package_json()` | `vp_setup`     |
-| 安装             | `install::write_release_age_overrides()`   | `vp_setup`     |
-| 安装             | `install::install_production_deps()`       | `vp_setup`     |
-| 激活             | `install::save_previous_version()`         | `vp_setup`     |
-| 激活             | `install::swap_current_link()`             | `vp_setup`     |
-| 激活             | `install::cleanup_old_versions()`          | `vp_setup`     |
-| 配置             | `install::refresh_shims()`                 | `vp_setup`     |
-| 配置             | `windows_path::add_to_user_path()`         | `vp_installer` |
+| Resolve           | `platform::detect_platform_suffix()`       | `vp_setup`     |
+| Resolve           | `install::read_current_version()`          | `vp_setup`     |
+| Resolve           | `registry::resolve_version_string()`       | `vp_setup`     |
+| Download & Verify | `registry::resolve_platform_package()`     | `vp_setup`     |
+| Download & Verify | `HttpClient::get_bytes()`                  | `vp_pm_cli`    |
+| Download & Verify | `integrity::verify_integrity()`            | `vp_setup`     |
+| Install           | `install::extract_platform_package()`      | `vp_setup`     |
+| Install           | `install::generate_wrapper_package_json()` | `vp_setup`     |
+| Install           | `install::write_release_age_overrides()`   | `vp_setup`     |
+| Install           | `install::install_production_deps()`       | `vp_setup`     |
+| Activate          | `install::save_previous_version()`         | `vp_setup`     |
+| Activate          | `install::swap_current_link()`             | `vp_setup`     |
+| Activate          | `install::cleanup_old_versions()`          | `vp_setup`     |
+| Configure         | `install::refresh_shims()`                 | `vp_setup`     |
+| Configure         | `windows_path::add_to_user_path()`         | `vp_installer` |
 
-**同版本修复**：当解析出的版本与已安装版本匹配时，下载并验证、安装、激活阶段会被完全跳过（节省 1 次 HTTP 请求以及所有 I/O）。配置阶段会始终运行，用于修复 shim、环境文件以及在需要时修复 PATH。
+**Same-version repair**: When the resolved version matches the installed version, the DOWNLOAD/INSTALL/ACTIVATE phases are skipped entirely (saving 1 HTTP request + all I/O). The CONFIGURE phase always runs to repair shims, env files, and PATH if needed.
 
-**失败恢复**：在 **激活** 阶段之前，失败会清理版本目录，并保持现有安装不受影响。在 **激活** 之后，所有配置步骤都是尽力而为——失败会记录警告，但不会导致退出码为 1。重新运行安装器会始终重试配置。
+**Failure recovery**: Before the **Activate** phase, failures clean up the version directory and leave the existing installation untouched. After **Activate**, all CONFIGURE steps are best-effort — failures log a warning but do not cause exit code 1. Rerunning the installer always retries CONFIGURE.
 
 On Windows, activation checks the `current` entry without following its target.
 The installer removes a dangling junction before it creates the new junction.
 
 ## Node.js Manager Auto-Detection
 
-Node.js 管理器的决策（`enabled`/`disabled`）会在展示交互式菜单之前预先计算完成，因此用户看到的是已解析的值，并可通过“自定义（customize）”子菜单进行覆盖。在安装阶段不会出现任何提示。
+The Node.js manager decision (`enabled`/`disabled`) is pre-computed before the interactive menu is shown, so the user sees the resolved value and can override it via the customize submenu. No prompts occur during the installation phase.
 
-自动检测逻辑与 `install.ps1`/`install.sh` 一致：
+The auto-detection logic matches `install.ps1`/`install.sh`:
 
-| 优先级 | 条件                                    | 结果     |
-| ------ | --------------------------------------- | -------- |
-| 1      | `--no-node-manager` CLI 标志            | disabled |
-| 2      | `VP_NODE_MANAGER=yes`                   | enabled  |
-| 3      | `VP_NODE_MANAGER=no`                    | disabled |
-| 4      | `bin/node.exe` shim 已存在              | enabled  |
-| 5      | CI / Codespaces / DevContainer / DevPod | enabled  |
-| 6      | 未找到系统 `node`                       | enabled  |
-| 7      | 系统 `node` 存在，交互模式              | enabled  |
-| 8      | 系统 `node` 存在，静默模式（`-y`）      | disabled |
+| Priority | Condition                                 | Result   |
+| -------- | ----------------------------------------- | -------- |
+| 1        | `--no-node-manager` CLI flag              | disabled |
+| 2        | `VP_NODE_MANAGER=yes`                     | enabled  |
+| 3        | `VP_NODE_MANAGER=no`                      | disabled |
+| 4        | `bin/node.exe` shim already exists        | enabled  |
+| 5        | CI / Codespaces / DevContainer / DevPod   | enabled  |
+| 6        | No system `node` found                    | enabled  |
+| 7        | System `node` present, interactive mode   | enabled  |
+| 8        | System `node` present, silent mode (`-y`) | disabled |
 
-在交互模式下（规则 7），默认值与 `install.ps1` 的 Y/n 提示一致：按下 Enter 会启用它。用户可以在安装开始前，于“自定义（customize）”菜单中将其禁用。在静默模式下（规则 8），除非明确请求，否则不会创建 shim，从而避免在不知不觉中接管现有的 Node 工具链。
+In interactive mode (rules 7), the default matches `install.ps1`'s Y/n prompt where pressing Enter enables it. The user can disable it in the customize menu before installation begins. In silent mode (rule 8), shims are not created unless explicitly requested, avoiding silently taking over an existing Node toolchain.
 
-## Windows 专项细节
+## Windows-Specific Details
 
-### 通过注册表修改 PATH
+### PATH Modification via Registry
 
-与 rustup 和 `install.ps1` 相同的方法，使用 `winreg` crate 进行注册表访问：
+Same approach as rustup and `install.ps1`, using the `winreg` crate for registry access:
 
 ```rust
 let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 let env = hkcu.open_subkey_with_flags("Environment", KEY_READ | KEY_WRITE)?;
 let current: String = env.get_value("Path").unwrap_or_default();
-// ... 检查是否已存在（不区分大小写，处理尾随反斜杠）
-// ... 预置 bin_dir，写回为 REG_EXPAND_SZ
-// ... 通过 SendMessageTimeoutW 广播 WM_SETTINGCHANGE（原始 FFI，单次调用）
+// ... check if already present (case-insensitive, handles trailing backslash)
+// ... prepend bin_dir, write back as REG_EXPAND_SZ
+// ... broadcast WM_SETTINGCHANGE via SendMessageTimeoutW (raw FFI, single call)
 ```
 
-完整实现请参阅 `crates/vp_installer/src/windows_path.rs`。
+See `crates/vp_installer/src/windows_path.rs` for the full implementation.
 
-### DLL 安全性（用于下载文件夹执行）
+### DLL Security (for download-folder execution)
 
-遵循 rustup 的做法——当 `.exe` 被下载到 `Downloads/` 并双击运行时，可能会加载同一文件夹中的恶意 DLL。两种缓解措施，均使用原始 FFI（不使用 `windows-sys` crate）：
+Following rustup's approach — when the `.exe` is downloaded to `Downloads/` and double-clicked, malicious DLLs in the same folder could be loaded. Two mitigations, both using raw FFI (no `windows-sys` crate):
 
 ```rust
-// build.rs — 链接时：在加载时限制 DLL 搜索
+// build.rs — linker-time: restrict DLL search at load time
 #[cfg(windows)]
 println!("cargo:rustc-link-arg=/DEPENDENTLOADFLAG:0x800");
 
-// main.rs — 运行时：通过 Win32 API 限制 DLL 搜索
+// main.rs — runtime: restrict DLL search via Win32 API
 #[cfg(windows)]
 fn init_dll_security() {
     unsafe extern "system" {
@@ -388,9 +388,9 @@ fn init_dll_security() {
 }
 ```
 
-### 控制台分配
+### Console Allocation
 
-该二进制使用控制台子系统（这是 Windows 上 Rust 二进制的默认行为）。当双击运行时，Windows 会自动分配一个控制台窗口。不需要特殊处理。
+The binary uses the console subsystem (default for Rust binaries on Windows). When double-clicked, Windows allocates a console window automatically. No special handling needed.
 
 The installer applies colors only when the output stream supports them. If the
 `NO_COLOR` variable is present, stdout and stderr contain no ANSI escape
@@ -398,19 +398,19 @@ sequences. This rule also applies when callers redirect output to files.
 
 ### Existing Installation Handling
 
-| 场景                             | 行为                                                    |
-| -------------------------------- | ------------------------------------------------------- |
-| 没有现有安装                     | 全新安装                                                |
-| 安装相同版本                     | 跳过下载，重新执行 CONFIGURE 阶段（修复 shim/PATH/env） |
-| 安装不同版本                     | 升级到目标版本                                          |
-| 损坏/部分安装（断开的 junction） | 重新创建目录结构                                        |
-| 在 bin/ 中运行 `vp.exe`          | 重命名为 `.old`，复制新文件（与 trampoline 模式相同）   |
+| Scenario                                  | Behavior                                                     |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| No existing install                       | Fresh install                                                |
+| Same version installed                    | Skip download, rerun CONFIGURE phase (repair shims/PATH/env) |
+| Different version installed               | Upgrade to target version                                    |
+| Corrupt/partial install (broken junction) | Recreate directory structure                                 |
+| Running `vp.exe` in bin/                  | Rename to `.old`, copy new (same as trampoline pattern)      |
 
-## 添加/移除程序注册
+## Add/Remove Programs Registration
 
-**阶段 1：跳过。** `vp implode` 已经处理完整的卸载。
+**Phase 1: Skip.** `vp implode` already handles full uninstallation.
 
-**阶段 2：注册。** 写入 `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\VitePlus`：
+**Phase 2: Register.** Write to `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\VitePlus`:
 
 ```
 DisplayName     = "Vite+"
@@ -420,30 +420,30 @@ Publisher       = "VoidZero"
 InstallLocation = "C:\Users\alice\.vite-plus"
 ```
 
-## 分发
+## Distribution
 
-### 阶段 1：GitHub 发布版本
+### Phase 1: GitHub Releases
 
-将安装器二进制文件挂载到每个 GitHub 发布版本：
+Attach installer binaries to each GitHub Release:
 
 - `vp-setup-x86_64-pc-windows-msvc.exe`
 - `vp-setup-aarch64-pc-windows-msvc.exe`
 
-发布流程已经会创建 GitHub 发布版本。为初始化二进制文件添加构建和上传步骤。
+The release workflow already creates GitHub Releases. Add build + upload steps for the init binary.
 
-### 阶段 2：直接下载 URL（已完成）
+### Phase 2: Direct Download URL (done)
 
-`https://viteplus.dev/vp-setup` 通过 `netlify.toml` 中的 Netlify 重定向（302）跳转到 `https://setup.viteplus.dev`。安装文档链接到面向用户的 `viteplus.dev` URL。
+`https://viteplus.dev/vp-setup` redirects (302) to `https://setup.viteplus.dev` via Netlify redirect in `netlify.toml`. Installation docs link to the user-facing `viteplus.dev` URL.
 
-### 阶段 3：包管理器
+### Phase 3: Package Managers
 
-提交到 winget、chocolatey、scoop。每个包管理器都有各自的清单格式和审核流程。
+Submit to winget, chocolatey, scoop. Each has its own manifest format and review process.
 
-## CI/构建变更
+## CI/Build Changes
 
-### 发布流程新增
+### Release Workflow Additions
 
-在 `build-upstream/action.yml` 中，与 CLI 一起构建并缓存安装器二进制：
+In `build-upstream/action.yml`, the installer binary is built and cached alongside the CLI:
 
 ```yaml
 - name: Build installer binary (Windows only)
@@ -451,7 +451,7 @@ InstallLocation = "C:\Users\alice\.vite-plus"
   run: cargo build --release --target ${{ inputs.target }} -p vp_installer
 ```
 
-在 `release.yml` 中，按目标上传安装器制品，将其按目标三元组重命名，并附加到 GitHub Release：
+In `release.yml`, installer artifacts are uploaded per-target, renamed with the target triple, and attached to the GitHub Release:
 
 ```yaml
 - name: Upload installer binary artifact (Windows only)
@@ -462,9 +462,9 @@ InstallLocation = "C:\Users\alice\.vite-plus"
     path: ./target/${{ matrix.settings.target }}/release/vp-setup.exe
 ```
 
-### 测试流程
+### Test Workflow
 
-`test-standalone-install.yml` 包含一个 `test-vp-setup-exe` 任务：从源代码构建安装器，通过 pwsh 安装，并在全部三个 shell（pwsh、cmd、bash）中验证：
+`test-standalone-install.yml` includes a `test-vp-setup-exe` job that builds the installer from source, installs via pwsh, and verifies from all three shells (pwsh, cmd, bash):
 
 ```yaml
 test-vp-setup-exe:
@@ -481,7 +481,7 @@ test-vp-setup-exe:
       shell: pwsh
       run: ./target/release/vp-setup.exe --version $VP_SETUP_TEST_VERSION --registry $VP_SETUP_TEST_REGISTRY
     - name: Verify installation (pwsh/cmd/bash)
-      # 从单次安装后在三个 shell 中进行验证
+      # verifies from all three shells after a single install
 ```
 
 The workflow path filter includes these files:
@@ -500,105 +500,107 @@ For the successful test, the job installs a local
 junction. It also sets `NO_COLOR` and checks the redirected output for ANSI
 escape sequences.
 
-## 代码签名
+## Code Signing
 
-Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文件发出警告。这是“下载并运行安装器”的重大 UX 问题。
+Windows Defender SmartScreen flags unsigned executables downloaded from the internet. This is a significant UX problem for a download-and-run installer.
 
-**建议**：在 GA 发布之前获取 EV（Extended Validation，扩展验证）代码签名证书。EV 证书会立即移除 SmartScreen 警告（不需要建立信誉期）。
+**Recommendation**: Obtain an EV (Extended Validation) code signing certificate before GA release. EV certificates immediately remove SmartScreen warnings (no reputation building period needed).
 
-这是一个组织层面的决策（成本：约 $300-500/年），不在实现范围之内，但对用户体验至关重要。
+This is an organizational decision (cost: ~$300-500/year) and out of scope for the implementation, but critical for user experience.
 
-## 二进制大小预算
+## Binary Size Budget
 
-目标：3-5 MB（发布版，去符号，LTO）。
+Target: 3-5 MB (release, stripped, LTO).
 
-关键依赖及其大致贡献：
+Key dependencies and their approximate contribution:
 
-| 依赖项                            | 用途             | 大小影响   |
-| --------------------------------- | ---------------- | ---------- |
-| `reqwest` + `native-tls-vendored` | HTTP + TLS       | ~1.5 MB    |
-| `flate2` + `tar`                  | tar 包解压       | ~200 KB    |
-| `clap`                            | 命令行解析       | ~300 KB    |
-| `tokio`（最小功能集）             | 异步运行时       | ~400 KB    |
-| `indicatif`                       | 进度条           | ~100 KB    |
-| `sha2`                            | 完整性校验       | ~50 KB     |
-| `serde_json`                      | 注册表 JSON 解析 | ~200 KB    |
-| `winreg` + `windows-sys`          | Windows 注册表   | ~50-100 KB |
-| Rust 标准库 + 额外开销            |                  | ~500 KB    |
+| Dependency                        | Purpose                | Size impact |
+| --------------------------------- | ---------------------- | ----------- |
+| `reqwest` + `native-tls-vendored` | HTTP + TLS             | ~1.5 MB     |
+| `flate2` + `tar`                  | Tarball extraction     | ~200 KB     |
+| `clap`                            | CLI parsing            | ~300 KB     |
+| `tokio` (minimal features)        | Async runtime          | ~400 KB     |
+| `indicatif`                       | Progress bars          | ~100 KB     |
+| `sha2`                            | Integrity verification | ~50 KB      |
+| `serde_json`                      | Registry JSON parsing  | ~200 KB     |
+| `winreg` + `windows-sys`          | Windows registry       | ~50-100 KB  |
+| Rust std + overhead               |                        | ~500 KB     |
 
-在软件包配置覆盖中使用 `opt-level = "z"`（针对体积优化），与 trampoline 的做法一致。
+Use `opt-level = "z"` (optimize for size) in package profile override, matching the trampoline approach.
 
-## 已考虑的替代方案
+## Alternatives Considered
 
-### 1. MSI/NSIS/Inno Setup 安装器（拒绝）
+### 1. MSI/NSIS/Inno Setup Installer (Rejected)
 
-传统的 Windows 安装器提供 GUI、添加/移除程序和开始菜单集成。但：
+Traditional Windows installers provide GUI, Add/Remove Programs, and Start Menu integration. However:
 
-- 构建时依赖外部工具（WiX、NSIS）
-- 对开发者 CLI 工具来说不需要 GUI
-- MSI 的作者编写要求很复杂
-- rustup 选择了仅控制台，并且对开发者受众效果很好
+- Adds build-time dependency on external tooling (WiX, NSIS)
+- GUI is unnecessary for a developer CLI tool
+- MSI has complex authoring requirements
+- rustup chose console-only and it works well for the developer audience
 
-### 2. 用 Init 模式扩展 `vp.exe`（拒绝）
+### 2. Extend `vp.exe` with Init Mode (Rejected)
 
-类似 rustup，让 `vp.exe` 检测当以 `vp-setup.exe` 方式调用时切换到安装器模式。
+Like rustup, make `vp.exe` detect when called as `vp-setup.exe` and switch to installer mode.
 
-- 会将安装器膨胀到 ~15-20 MB（包含 vp 的所有依赖）
-- `vp.exe` 是从安装器下载来的——循环依赖
-- 安装负载（vp.exe）与安装器本质上不同
+- Would bloat the installer to ~15-20 MB (all of vp's dependencies)
+- vp.exe is downloaded FROM the installer — circular dependency
+- The installation payload (vp.exe) and the installer are fundamentally different
 
-### 3. 在 .exe 中静态链接 PowerShell（拒绝）
+### 3. Static-linked PowerShell in .exe (Rejected)
 
-把 PowerShell 脚本嵌入到自解压 exe 中。脆弱，且仍需要 PowerShell 运行时。
+Embed the PowerShell script in a self-extracting exe. Fragile, still requires PowerShell runtime.
 
-### 4. PATH 用 `winreg` Crate vs 原始 FFI（决策：`winreg`）
+### 4. Use `winreg` Crate vs Raw FFI for PATH (Decision: `winreg`)
 
-- `winreg` crate：更高层级的安全 API，经 LTO 后约 50-100 KB，代码量显著更少（约 80 行，而不是 ~225 行）
-- 原始 Win32 FFI：零依赖，但包含 225 行不安全代码，需要手动进行 UTF-16 编码和注册表操作编排
-- PowerShell 子进程：已在 `install.ps1` 中验证可行，但会增加进程启动开销并引入 PowerShell 依赖
-- 决策：使用 `winreg` 访问注册表——零依赖模式适用于 `vp_trampoline`（作为 shim 被复制 5-10 次），但不适用于单个可下载的安装器，后者更看重可读性。`WM_SETTINGCHANGE` 广播仍使用一次原始 FFI 调用，因为 `winreg` 没有对其进行封装。
+- `winreg` crate: Higher-level safe API, ~50-100 KB after LTO, significantly less code (~80 lines vs ~225 lines)
+- Raw Win32 FFI: Zero dependencies but 225 lines of unsafe code with manual UTF-16 encoding and registry choreography
+- PowerShell subprocess: Proven in `install.ps1` but adds process spawn overhead and PowerShell dependency
+- Decision: Use `winreg` for registry access — the zero-dependency pattern makes sense for `vp_trampoline` (copied 5-10 times as shims) but not for a single downloadable installer where readability matters more. `WM_SETTINGCHANGE` broadcast still uses a single raw FFI call since `winreg` doesn't wrap it.
 
-## 实现阶段
+## Implementation Phases
 
-### 阶段 1：提取 `vp_setup` 库（已完成）
+### Phase 1: Extract `vp_setup` Library (done)
 
-- 创建包含 `platform`、`registry`、`integrity`、`install` 模块的 `crates/vp_setup/`
-- 将 `vp_global_cli/src/commands/upgrade/` 中的共享代码移至 `vp_setup`
-- 更新 `vp_global_cli` 以从 `vp_setup` 导入
-- 所有 353 个现有测试均通过
+- Created `crates/vp_setup/` with `platform`, `registry`, `integrity`, `install` modules
+- Moved shared code from `vp_global_cli/src/commands/upgrade/` into `vp_setup`
+- Updated `vp_global_cli` to import from `vp_setup`
+- All 353 existing tests pass
 
-### 阶段 2：创建 `vp_installer` 二进制程序（已完成）
+### Phase 2: Create `vp_installer` Binary (done)
 
-- 创建包含 `[[bin]] name = "vp-setup"` 的 `crates/vp_installer/`
-- 使用环境变量合并功能实现 CLI 参数解析（clap）
-- 实现调用 `vp_setup` 的安装流程，并支持同版本修复路径
-- 使用 `winreg` crate 实现 Windows PATH 修改
-- 实现带有自定义子菜单的交互式提示
-- 实现 Node.js 管理器自动检测（预先计算，不在安装过程中途提示）
-- 实现下载进度旋转指示器
-- 添加 DLL 安全缓解措施（`build.rs` 链接器标志 + 运行时 `SetDefaultDllDirectories`）
-- 激活后的步骤尽力执行（出错时不会导致失败）
+- Created `crates/vp_installer/` with `[[bin]] name = "vp-setup"`
+- Implemented CLI argument parsing (clap) with env var merging
+- Implemented installation flow calling `vp_setup` with same-version repair path
+- Implemented Windows PATH modification via `winreg` crate
+- Implemented interactive prompts with customization submenu
+- Implemented Node.js manager auto-detection (pre-computed, no mid-install prompts)
+- Implemented progress spinner for downloads
+- Added DLL security mitigations (build.rs linker flag + runtime `SetDefaultDllDirectories`)
+- Post-activation steps are best-effort (non-fatal on error)
 
-### 阶段 3：CI 集成（已完成）
+### Phase 3: CI Integration (done)
 
-- 在 `build-upstream/action.yml` 中添加安装器二进制程序构建（仅限 Windows targets）
-- 在 `release.yml` 中添加制品上传与 GitHub Release 附件
-- 在 `test-standalone-install.yml` 中添加 `test-vp-setup-exe` 任务（cmd、pwsh、bash）
-- 在 release 正文中更新 `vp-setup.exe` 下载提及
+- Added installer binary build to `build-upstream/action.yml` (Windows targets only)
+- Added artifact upload and GitHub Release attachment in `release.yml`
+- Added `test-vp-setup-exe` job to `test-standalone-install.yml` (cmd, pwsh, bash)
+- Updated release body with `vp-setup.exe` download mention
 
-### 阶段 4：文档与分发（已完成）
+### Phase 4: Documentation & Distribution (done)
 
-- 更新网站上的安装文档（`docs/guide/index.md`）
-- 通过 Netlify（`netlify.toml`）添加 `viteplus.dev/vp-setup.exe` 重定向
-- winget、chocolatey、scoop 的提交推迟到未来工作。
+- Updated installation docs on website (`docs/guide/index.md`)
+- Added `viteplus.dev/vp-setup.exe` redirect via Netlify (`netlify.toml`)
+- winget, chocolatey, scoop submission deferred to future work
 
-## 代码签名
+## Testing Strategy
 
-Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文件发出警告。这是“下载并运行安装器”的重大 UX 问题。
+### Unit Tests
 
-**建议**：在 GA 发布之前获取 EV（Extended Validation，扩展验证）代码签名证书。EV 证书会立即移除 SmartScreen 警告（不需要建立信誉期）。
+- Platform detection (mock different architectures)
+- PATH modification logic (registry read/write)
+- Version comparison and existing install detection
 
-这是一个组织层面的决策（成本：约 $300-500/年），不在实现范围之内，但对用户体验至关重要。
+### Integration Tests (CI)
 
 - Fresh install from cmd.exe, PowerShell, Git Bash
 - Silent mode (`-y`) installation
@@ -611,122 +613,23 @@ Windows Defender SmartScreen 会对从互联网下载但未签名的可执行文
 - Verify `vp --version` works after install
 - Verify PATH is modified correctly
 
-目标：3-5 MB（发布版，去符号，LTO）。
+### Manual Tests
 
-关键依赖及其大致贡献：
+- Double-click from Downloads folder
+- SmartScreen behavior (signed vs unsigned)
+- Windows Defender scan behavior
+- ARM64 Windows (if available)
 
-| 依赖项                            | 用途             | 大小影响   |
-| --------------------------------- | ---------------- | ---------- |
-| `reqwest` + `native-tls-vendored` | HTTP + TLS       | ~1.5 MB    |
-| `flate2` + `tar`                  | Tar 包解压       | ~200 KB    |
-| `clap`                            | CLI 解析         | ~300 KB    |
-| `tokio` (minimal features)        | 异步运行时       | ~400 KB    |
-| `indicatif`                       | 进度条           | ~100 KB    |
-| `sha2`                            | 完整性校验       | ~50 KB     |
-| `serde_json`                      | 注册表 JSON 解析 | ~200 KB    |
-| `winreg` + `windows-sys`          | Windows 注册表   | ~50-100 KB |
-| Rust std + 额外开销               |                  | ~500 KB    |
+## Decisions
 
-在包配置文件覆盖项中使用 `opt-level = "z"`（针对体积优化），与 trampoline 的做法一致。
+- **Binary name**: `vp-setup.exe`
+- **Uninstall**: Rely on `vp implode` — no `--uninstall` flag in the installer
+- **Minimum Windows version**: Windows 10 version 1809 (October 2018 Update) or later, same as [Rust's `x86_64-pc-windows-msvc` target requirement](https://doc.rust-lang.org/rustc/platform-support.html)
 
-## 已考虑的替代方案
+## References
 
-### 1. MSI/NSIS/Inno Setup 安装器（拒绝）
-
-传统的 Windows 安装器提供 GUI、添加/移除程序和开始菜单集成。但：
-
-- 构建时依赖外部工具（WiX、NSIS）
-- 对开发者 CLI 工具来说不需要 GUI
-- MSI 的作者编写要求很复杂
-- rustup 选择了仅控制台，并且对开发者受众效果很好
-
-### 2. 用 Init 模式扩展 `vp.exe`（拒绝）
-
-类似 rustup，让 `vp.exe` 检测当以 `vp-setup.exe` 方式调用时切换到安装器模式。
-
-- 会将安装器膨胀到 ~15-20 MB（包含 vp 的所有依赖）
-- `vp.exe` 是从安装器下载来的——循环依赖
-- 安装负载（vp.exe）与安装器本质上不同
-
-### 3. 在 .exe 中静态链接 PowerShell（拒绝）
-
-把 PowerShell 脚本嵌入到自解压 exe 中。脆弱，且仍需要 PowerShell 运行时。
-
-### 4. PATH 用 `winreg` Crate vs 原始 FFI（决策：`winreg`）
-
-- `winreg` crate：更高级的安全 API，经过 LTO 后约 ~50-100 KB，并且代码量显著更少（约 80 行 vs ~225 行）
-- 原始 Win32 FFI：无依赖，但需要 225 行不安全代码，并手动处理 UTF-16 编码与注册表编排
-- PowerShell 子进程：在 `install.ps1` 中已验证可行，但会增加进程生成开销并依赖 PowerShell
-- 决策：用于注册表访问时使用 `winreg`——零依赖模式适合 `vite_trampoline`（作为 shim 复制 5-10 次），但不适合单个可下载安装器：可读性更重要。`WM_SETTINGCHANGE` 广播仍然使用一次原始 FFI 调用，因为 `winreg` 不会封装它。
-
-## 实现阶段
-
-### 阶段 1：提取 `vite_setup` 库（已完成）
-
-- 创建 `crates/vite_setup/`，包含 `platform`、`registry`、`integrity`、`install` 模块
-- 将 `vite_global_cli/src/commands/upgrade/` 中的共享代码迁移到 `vite_setup`
-- 更新 `vite_global_cli` 以从 `vite_setup` 导入
-- 所有 353 个现有测试均通过
-
-### 阶段 2：创建 `vite_installer` 二进制（已完成）
-
-- 创建 `crates/vite_installer/`，并设置 `[[bin]] name = "vp-setup"`
-- 使用 clap 实现 CLI 参数解析（并支持环境变量合并）
-- 实现安装流程：调用 `vite_setup`，并在同版本情况下走相同的修复路径
-- 使用 `winreg` crate 实现 Windows PATH 修改
-- 使用带自定义子菜单的交互式提示
-- 实现 Node.js 管理器自动检测（预计算，无安装中途提示）
-- 为下载添加进度旋转指示器
-- 添加 DLL 安全性缓解措施（build.rs 链接标志 + 运行时 `SetDefaultDllDirectories`）
-- 激活后的步骤采用尽力而为（出错不致命）
-
-### 阶段 3：CI 集成（已完成）
-
-- 在 `build-upstream/action.yml` 中添加安装器二进制构建（仅 Windows targets）
-- 在 `release.yml` 中添加制品上传与 GitHub Release 附件
-- 在 `test-standalone-install.yml` 中添加 `test-vp-setup-exe` 任务（cmd、pwsh、bash）
-- 在 release 正文中更新了 `vp-setup.exe` 下载提及
-
-### 阶段 4：文档与分发（已完成）
-
-- 更新网站上的安装文档（`docs/guide/index.md`）
-- 通过 Netlify（`netlify.toml`）添加 `viteplus.dev/vp-setup.exe` 重定向
-- winget、chocolatey、scoop 的提交推迟到未来工作。
-
-## 测试策略
-
-### 单元测试
-
-- 平台检测（模拟不同架构）
-- PATH 修改逻辑（注册表读取/写入）
-- 版本比较与现有安装检测
-
-### 集成测试（CI）
-
-- 从 `cmd.exe`、PowerShell、Git Bash 进行全新安装
-- 静默模式（`-y`）安装
-- 自定义注册表、自定义安装目录
-- 对现有安装进行升级
-- 确认安装后 `vp --version` 可正常工作
-- 确认 PATH 被正确修改
-
-### 手动测试
-
-- 从下载文件夹双击运行
-- SmartScreen 行为（已签名 vs 未签名）
-- Windows Defender 扫描行为
-- ARM64 Windows（如有可用）。
-
-## 决策
-
-- **二进制名称**：`vp-setup.exe`
-- **卸载**：依赖 `vp implode` — 安装器中不提供 `--uninstall` 标志
-- **最低 Windows 版本**：Windows 10 版本 1809（2018 年 10 月更新）或更高版本，和 [Rust 的 `x86_64-pc-windows-msvc` 目标要求](https://doc.rust-lang.org/rustc/platform-support.html) 一致。
-
-## 参考资料
-
-- [rustup-init.exe 源码](https://github.com/rust-lang/rustup/blob/master/src/bin/rustup-init.rs) — 单二进制安装器模型
-- [rustup self_update.rs](https://github.com/rust-lang/rustup/blob/master/src/cli/self_update.rs) — 安装流程
-- [rustup windows.rs](https://github.com/rust-lang/rustup/blob/master/src/cli/self_update/windows.rs) — Windows PATH/注册表处理
-- [RFC: Windows Trampoline](./trampoline-exe-for-shims.md) — 现有的 Windows .exe shim 方案
-- [RFC: Self-Update Command](./upgrade-command.md) — 现有的升级逻辑以便复用
+- [rustup-init.exe source](https://github.com/rust-lang/rustup/blob/master/src/bin/rustup-init.rs) — single-binary installer model
+- [rustup self_update.rs](https://github.com/rust-lang/rustup/blob/master/src/cli/self_update.rs) — installation flow
+- [rustup windows.rs](https://github.com/rust-lang/rustup/blob/master/src/cli/self_update/windows.rs) — Windows PATH/registry handling
+- [RFC: Windows Trampoline](./trampoline-exe-for-shims.md) — existing Windows .exe shim approach
+- [RFC: Self-Update Command](./upgrade-command.md) — existing upgrade logic to share

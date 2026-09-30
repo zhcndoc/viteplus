@@ -2,28 +2,28 @@
 
 ## `vp dedupe --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp dedupe [选项] [-- <PASS_THROUGH_ARGS>...]
+Usage: vp dedupe [OPTIONS] [-- <PASS_THROUGH_ARGS>...]
 
-去重依赖
+Deduplicate dependencies
 
-参数：
-  [PASS_THROUGH_ARGS]...  传递给包管理器的其他参数
+Arguments:
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --check     检查去重是否会产生更改
-  -h, --help  打印帮助信息
+Options:
+  --check     Check if deduplication would make changes
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp dedupe`
 
-应该对依赖进行去重
+should dedupe dependencies
 
 ```
 Already up to date
@@ -59,7 +59,7 @@ devDependencies:
 
 ## `vp dedupe --check`
 
-应检查去重操作是否会产生更改
+should check if deduplication would make changes
 
 ```
 ```
@@ -85,7 +85,7 @@ devDependencies:
 
 ## `vp dedupe -- --loglevel=warn`
 
-支持传递参数
+support pass through arguments
 
 ```
 ```
@@ -111,7 +111,7 @@ devDependencies:
 
 ## `vpt json-edit package.json dependencies {}`
 
-应检查失败，因为没有依赖项
+should check fails because no dependencies
 
 
 ## `vpt print-file package.json`
@@ -133,7 +133,7 @@ devDependencies:
 
 ## `vp dedupe --check`
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 [ERR_PNPM_DEDUPE_CHECK_ISSUES] Dedupe --check found changes to the lockfile
@@ -150,14 +150,14 @@ Run pnpm dedupe to apply the changes above.
 
 ## `vp dedupe`
 
-dedupe 是否应该通过移除依赖项来修复更改
+should dedupe fix the change by removing the dependencies
 
 ```
-软件包：-1
+Packages: -1
 -
 
-依赖项：
-- testnpm2 1.0.1
+dependencies:
+- testnpm2
 ```
 
 ## `vpt print-file package.json`

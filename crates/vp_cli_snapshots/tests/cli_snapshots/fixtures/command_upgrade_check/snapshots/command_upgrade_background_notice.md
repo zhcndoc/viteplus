@@ -17,6 +17,25 @@
 
 机器可读输出不会消耗待处理的通知。
 
+## `vpt write-file package.json '{"name":"silent-add","private":true,"packageManager":"npm@11.13.0"}'`
+
+
+## `vpt mkdir dep`
+
+
+## `vpt write-file dep/package.json '{"name":"silent-add-dep","version":"1.0.0"}'`
+
+
+## `vp add ./dep --silent --save-catalog --lockfile-only`
+
+Silent add suppresses compatibility diagnostics and leaves the cached update notice pending.
+
+```
+```
+
+## `vpt stat-file package-lock.json --assert file`
+
+
 ## `vp env off`
 
 下一个交互式命令会显示缓存的更新通知。

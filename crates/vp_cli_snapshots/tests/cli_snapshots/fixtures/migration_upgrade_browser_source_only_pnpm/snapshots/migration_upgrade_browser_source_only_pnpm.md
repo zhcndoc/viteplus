@@ -1,5 +1,10 @@
 # 迁移升级：仅适用于浏览器源码的 pnpm
 
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
+
 ## `vp migrate --no-interactive`
 
 应恢复仅源代码浏览器提供程序
@@ -24,7 +29,6 @@ VITE+ - 面向 Web 的统一工具链
 {
   "name": "migration-upgrade-browser-source-only-pnpm",
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "*",

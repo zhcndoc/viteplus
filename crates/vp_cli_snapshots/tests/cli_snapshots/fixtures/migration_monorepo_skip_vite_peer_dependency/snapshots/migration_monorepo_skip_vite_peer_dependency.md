@@ -1,5 +1,10 @@
 # 迁移 monorepo 跳过 Vite 对等依赖
 
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
+
 ## `vp migrate --no-interactive`
 
 迁移应保留工作区包中的 Vite 对等依赖契约
@@ -48,7 +53,6 @@ export default defineConfig({
 {
   "name": "migration-monorepo-skip-vite-peer-dependency",
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

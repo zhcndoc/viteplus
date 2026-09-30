@@ -1,28 +1,28 @@
 # check_backpressure_nonblocking_stdout
 
-当大型诊断重放遇到非阻塞且存在回压的管道时，vp check 会暴露 stdout EAGAIN 故障（#2165）。
+vp check exposes the stdout EAGAIN failure when a large diagnostic replay meets a non-blocking, backpressured pipe (#2165).
 
 ## `vpt backpressure-run --digest 6,8 -- vp check`
 
 ```
---- 标准输出 ---
-标准输出：1282 行
-[1m[94m通过：[39m[0m 3 个文件的格式均正确 [2m（<duration>，<n> 个线程）[0m
-! eslint(no-unused-vars)：变量 'unused000' 已声明但从未使用。未使用的变量应以 '_' 开头。
+--- stdout ---
+stdout: 1282 lines
+pass: All 3 files are correctly formatted (<duration>, <n> threads)
+! eslint(no-unused-vars): Variable 'unused000' is declared but never used. Unused variables should start with a '_'.
    ,-[src/index.js:2:9]
  1 | export function emitDiagnostics() {
  2 |   const unused000 = 0;
    :         ^^^^|^^^^
-... 已省略 1268 行 ...
+... 1268 lines elided ...
  129 |   const unused127 = 127;
      :         ^^^^|^^^^
-     :             `-- 'unused127' 在此处声明
+     :             `-- 'unused127' is declared here
  130 | }
      `----
-  帮助：考虑移除此声明。
+  help: Consider removing this declaration.
 
-在 2 个文件中发现 0 个错误和 128 个警告（<duration>，<n> 个线程）
---- 标准错误 ---
-标准错误：1 行
-[1m[33m警告：[39m[0m 发现 lint 警告
+Found 0 errors and 128 warnings in 2 files (<duration>, <n> threads)
+--- stderr ---
+stderr: 1 lines
+warn: Lint warnings found
 ```

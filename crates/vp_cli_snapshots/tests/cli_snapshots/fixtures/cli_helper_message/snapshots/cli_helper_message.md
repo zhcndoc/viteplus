@@ -1,551 +1,561 @@
-# 命令行帮助信息。
+# cli_helper_message
 
 ## `vp -h`
 
-显示帮助信息
+show help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp [COMMAND]
+Usage: vp [COMMAND]
 
-启动：
-  create      从模板创建新项目
-  migrate     将现有项目迁移到 Vite+
-  config      配置钩子和 agent 集成
-  hooks       管理 Git 钩子调度器
-  staged      对暂存文件运行代码检查器
-  install, i   安装所有依赖项，或在提供软件包名称时添加软件包
-  env         管理 Node.js 和软件包管理器环境
+Start:
+  create      Create a new project from a template
+  migrate     Migrate an existing project to Vite+
+  config      Configure hooks and agent integration
+  hooks       Manage the Git hook dispatcher
+  staged      Run linters on staged files
+  install, i  Install all dependencies, or add packages if package names are provided
+  env         Manage Node.js and package managers
 
-开发：
-  dev          运行开发服务器
-  check        运行格式化、代码检查和类型检查
-  lint         检查代码
-  fmt, format  格式化代码
-  test         运行测试
+Develop:
+  dev          Run the development server
+  check        Run format, lint, and type checks
+  lint         Lint code
+  fmt, format  Format code
+  test         Run tests
 
-执行：
-  run    运行任务（也可作为独立的 `vpr` 使用）
-  exec   执行本地 node_modules/.bin 中的命令
-  node   运行 Node.js 脚本（`env exec node` 的简写）
-  dlx    执行软件包二进制文件，而无需将其安装为依赖
-  cache  管理任务缓存
+Execute:
+  run    Run tasks (also available as standalone `vpr`)
+  exec   Execute a command from local node_modules/.bin
+  node   Run a Node.js script (shorthand for `env exec node`)
+  dlx    Execute a package binary without installing it as a dependency
+  cache  Manage the task cache
 
-构建：
-  build    构建生产版本
-  pack     构建库
-  preview  预览生产构建
+Build:
+  build    Build for production
+  pack     Build library
+  preview  Preview production build
 
-管理依赖：
-  add                        将软件包添加到依赖项
-  remove, rm, un, uninstall  从依赖项中移除软件包
-  update, up                 将软件包更新到最新版本
-  dedupe                     通过移除较旧版本来去重依赖
-  outdated                   检查过时的软件包
-  list, ls                   列出已安装的软件包
-  why, explain               显示安装软件包的原因
-  info, view, show           从注册表查看软件包信息
-  link, ln                   链接软件包以进行本地开发
-  unlink                     取消链接软件包
-  rebuild                    重新构建原生模块
-  pm                         将命令转发给软件包管理器
+Manage Dependencies:
+  add                        Add packages to dependencies
+  remove, rm, un, uninstall  Remove packages from dependencies
+  update, up                 Update packages to their latest versions
+  dedupe                     Deduplicate dependencies by removing older versions
+  outdated                   Check for outdated packages
+  list, ls                   List installed packages
+  why, explain               Show why a package is installed
+  info, view, show           View package information from the registry
+  link, ln                   Link packages for local development
+  unlink                     Unlink packages
+  rebuild                    Rebuild native modules
+  pm                         Forward a command to the package manager
 
-维护：
-  toolchain  显示活动的 Vite+ 工具、版本及其关系
-  upgrade    将 vp 自身更新到最新版本
-  implode    移除 vp 及所有相关数据
+Maintain:
+  toolchain  Show active Vite+ tools, versions, and relationships
+  upgrade    Update vp itself to the latest version
+  implode    Remove vp and all related data
 
-文档：https://viteplus.dev/guide/
+Documentation: https://viteplus.dev/guide/
 
-选项：
-  -V, --version  显示版本
-  -C <DIR>       在 <DIR> 中运行，就像 vp 是从该目录而非当前工作目录启动一样
-  -h, --help     显示帮助信息
+Options:
+  -V, --version  Print version
+  -C <DIR>       Run as if vp was started in <DIR> instead of the current working directory
+  -h, --help     Print help
 ```
 
 ## `vp -V`
 
-显示版本
+show version
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-vp <版本>
+vp <version>
 
-本地 vite-plus：
-  vite-plus  <版本>
+Local vite-plus:
+  vite-plus  <version>
 
-工具：
-  vite             <版本>
-  rolldown         <版本>
-  vitest           <版本>
-  oxfmt            <版本>
-  oxlint           <版本>
-  oxlint-tsgolint  <版本>
-  tsdown           <版本>
+Tools:
+  vite             <version>
+  rolldown         <version>
+  vitest           <version>
+  oxfmt            <version>
+  oxlint           <version>
+  oxlint-tsgolint  <version>
+  tsdown           <version>
 
-环境：
-  包管理器         未找到
-  Node.js          <版本>
+Environment:
+  Package manager  Not found
+  Node.js          <version>
 ```
 
 ## `vp install -h`
 
-显示安装帮助信息
+show install help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp install [选项] [软件包]... [-- <传递参数>...]
+Usage: vp install [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-安装所有依赖项；如果提供了软件包名称，则添加这些软件包
+Install all dependencies, or add packages if package names are provided
 
-参数：
-  [PACKAGES]...           要添加的软件包（如果提供，则行为类似于 `vp add`）
-  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Packages to add (if provided, acts as `vp add`)
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -P, --prod                   不安装 devDependencies
-  -D, --dev                    仅安装 devDependencies（install）/ 保存到 devDependencies（add）
-  --no-optional                不安装 optionalDependencies
-  --frozen-lockfile            如果锁文件需要更新则失败（CI 模式）
-  --no-frozen-lockfile         允许更新锁文件（与 --frozen-lockfile 相反）
-  --lockfile-only              仅更新锁文件，不执行安装
-  --prefer-offline             可用时使用缓存的软件包
-  --offline                    仅使用缓存中已有的软件包
-  -f, --force                  强制重新安装所有依赖项
-  --ignore-scripts             不运行生命周期脚本
-  --no-lockfile                不读取或生成锁文件
-  --fix-lockfile               修复损坏的锁文件条目（仅 pnpm 和 yarn@2+）
-  --shamefully-hoist           创建扁平的 `node_modules`（仅 pnpm）
-  --resolution-only            重新运行解析以分析对等依赖（仅 pnpm）
-  --silent                     抑制输出（静默模式）
-  --filter <PATTERN>           筛选 monorepo 中的软件包（可多次使用）
-  -w, --workspace-root         仅在工作区根目录安装
-  -E, --save-exact             保存精确版本（仅在添加软件包时）
-  --save-peer                  保存到 peerDependencies（仅在添加软件包时）
-  -O, --save-optional          保存到 optionalDependencies（仅在添加软件包时）
-  --save-catalog               将新依赖项保存到默认目录（仅在添加软件包时）
-  -g, --global                 全局安装（需要提供软件包名称）
-  --node <NODE>                用于全局安装的 Node.js 版本（仅与 -g 一起使用）
-  --concurrency <CONCURRENCY>  要并行运行的全局软件包安装数量（仅与 -g 一起使用）
-  -h, --help                   显示帮助
+Options:
+  -P, --prod                   Do not install devDependencies
+  -D, --dev                    Only install devDependencies (install) / Save to devDependencies (add)
+  --no-optional                Do not install optionalDependencies
+  --frozen-lockfile            Fail if lockfile needs to be updated (CI mode)
+  --no-frozen-lockfile         Allow lockfile updates (opposite of --frozen-lockfile)
+  --lockfile-only              Only update lockfile, don't install
+  --prefer-offline             Use cached packages when available
+  --offline                    Only use packages already in cache
+  -f, --force                  Force reinstall all dependencies
+  --ignore-scripts             Do not run lifecycle scripts
+  --no-lockfile                Don't read or generate lockfile
+  --fix-lockfile               Fix broken lockfile entries (pnpm and yarn@2+ only)
+  --shamefully-hoist           Create flat `node_modules` (pnpm only)
+  --resolution-only            Re-run resolution for peer dependency analysis (pnpm only)
+  --silent                     Suppress output (silent mode)
+  --filter <PATTERN>           Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root         Install in workspace root only
+  -E, --save-exact             Save exact version (only when adding packages)
+  --save-peer                  Save to peerDependencies (only when adding packages)
+  -O, --save-optional          Save to optionalDependencies (only when adding packages)
+  --save-catalog               Save the new dependency to the default catalog (only when adding packages)
+  -g, --global                 Install globally (requires package names)
+  --node <NODE>                Node.js version to use for global installation (only with -g)
+  --concurrency <CONCURRENCY>  Number of global package installs to run in parallel (only with -g)
+  -h, --help                   Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp add -h`
 
-显示添加帮助信息
+show add help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp add [选项] <软件包>... [-- <透传参数>...]
+Usage: vp add [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-将软件包添加到依赖项
+Add packages to dependencies
 
-参数：
-  <PACKAGES>...           要添加的软件包
-  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Packages to add
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -P, --save-prod                     保存到 `dependencies`（默认）
-  -D, --save-dev                      保存到 `devDependencies`
-  --save-peer                         保存到 `peerDependencies` 和 `devDependencies`
-  -O, --save-optional                 保存到 `optionalDependencies`
-  -E, --save-exact                    保存精确版本，而不是 semver 范围
-  --save-catalog-name <CATALOG_NAME>  将新依赖项保存到指定的目录名称
-  --save-catalog                      将新依赖项保存到默认目录
-  --allow-build <NAMES>               允许运行 postinstall 的软件包名称列表
-  --ignore-scripts                    不运行生命周期脚本
-  --filter <PATTERN>                  筛选 monorepo 中的软件包（可多次使用）
-  -w, --workspace-root                添加到工作区根目录
-  --workspace                         仅在工作区中存在软件包时添加（pnpm 特有）
-  -g, --global                        全局安装
-  --node <NODE>                       用于全局安装的 Node.js 版本（仅与 -g 一起使用）
-  --concurrency <CONCURRENCY>         要并行运行的全局软件包安装数量（仅与 -g 一起使用）
-  -h, --help                          打印帮助
+Options:
+  -P, --save-prod                     Save to `dependencies` (default)
+  -D, --save-dev                      Save to `devDependencies`
+  --save-peer                         Save to `peerDependencies` and `devDependencies`
+  -O, --save-optional                 Save to `optionalDependencies`
+  -E, --save-exact                    Save exact version rather than semver range
+  --save-catalog-name <CATALOG_NAME>  Save the new dependency to the specified catalog name
+  --save-catalog                      Save the new dependency to the default catalog
+  --allow-build <NAMES>               A list of package names allowed to run postinstall
+  --ignore-scripts                    Do not run lifecycle scripts
+  --no-optional                       Do not install optionalDependencies
+  --frozen-lockfile                   Fail if lockfile needs to be updated
+  --no-frozen-lockfile                Allow lockfile updates
+  --lockfile-only                     Only update lockfile, don't install
+  --prefer-offline                    Use cached packages when available
+  --offline                           Only use packages already in cache
+  -f, --force                         Force reinstall all dependencies
+  --no-lockfile                       Don't read or generate lockfile
+  --shamefully-hoist                  Create flat node_modules (pnpm only)
+  --silent                            Suppress Vite+ output and enable native silent mode where supported
+  --filter <PATTERN>                  Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root                Add to workspace root
+  --workspace                         Only add if package exists in workspace (pnpm-specific)
+  -g, --global                        Install globally
+  --node <NODE>                       Node.js version to use for global installation (only with -g)
+  --concurrency <CONCURRENCY>         Number of global package installs to run in parallel (only with -g)
+  -h, --help                          Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp remove -h`
 
-显示 remove 帮助信息
+show remove help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp remove [选项] <软件包>... [-- <透传参数>...]
+Usage: vp remove [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-从依赖项中移除软件包
+Remove packages from dependencies
 
-参数：
-  <软件包>...             要移除的软件包
-  [透传参数]...           要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Packages to remove
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -D, --save-dev        仅从 `devDependencies` 中移除（仅限 pnpm）
-  -O, --save-optional   仅从 `optionalDependencies` 中移除（仅限 pnpm）
-  -P, --save-prod       仅从 `dependencies` 中移除（仅限 pnpm）
-  --filter <模式>       筛选 monorepo 中的软件包（可多次使用）
-  -w, --workspace-root  从工作区根目录中移除
-  -r, --recursive       从所有工作区软件包中递归移除
-  -g, --global          移除全局软件包
-  --dry-run             预览将要移除的内容，但不实际移除（仅与 -g 一起使用）
-  -h, --help            打印帮助信息
+Options:
+  -D, --save-dev        Only remove from `devDependencies` (pnpm-specific)
+  -O, --save-optional   Only remove from `optionalDependencies` (pnpm-specific)
+  -P, --save-prod       Only remove from `dependencies` (pnpm-specific)
+  --filter <PATTERN>    Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root  Remove from workspace root
+  -r, --recursive       Remove recursively from all workspace packages
+  -g, --global          Remove global packages
+  --dry-run             Preview what would be removed without actually removing (only with -g)
+  -h, --help            Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp update -h`
 
-显示更新帮助信息
+show update help message
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp update [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
+Usage: vp update [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-将软件包更新到最新版本
+Update packages to their latest versions
 
-参数：
-  [PACKAGES]...           要更新的软件包（可选——省略时更新全部软件包）
-  [PASS_THROUGH_ARGS]...  传递给软件包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Packages to update (optional - updates all if omitted)
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -L, --latest                 更新到最新版本（忽略 semver 范围）
-  -g, --global                 更新全局软件包
-  --concurrency <CONCURRENCY>  并行执行的全局软件包更新数量（仅与 -g 一起使用）
-  --reinstall-node-mismatch    重新安装使用不同 Node.js 版本安装的最新全局软件包
-  --ignore-node-mismatch       跳过使用不同 Node.js 版本安装的最新全局软件包
-  -r, --recursive              在所有工作区软件包中递归更新
-  --filter <PATTERN>           筛选 monorepo 中的软件包（可多次使用）
-  -w, --workspace-root         包含工作区根目录
-  -D, --dev                    仅更新 devDependencies
-  -P, --prod                   仅更新 dependencies（生产依赖）
-  -i, --interactive            交互模式
-  --no-optional                不更新 optionalDependencies
-  --no-save                    仅更新锁文件，不修改 package.json
-  --workspace                  仅在工作区中存在软件包时更新（pnpm 特有）
-  -h, --help                   打印帮助信息
+Options:
+  -L, --latest                 Update to latest version (ignore semver range)
+  -g, --global                 Update global packages
+  --concurrency <CONCURRENCY>  Number of global package updates to run in parallel (only with -g)
+  --reinstall-node-mismatch    Reinstall up-to-date global packages installed with a different Node.js version
+  --ignore-node-mismatch       Skip up-to-date global packages installed with a different Node.js version
+  -r, --recursive              Update recursively in all workspace packages
+  --filter <PATTERN>           Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root         Include workspace root
+  -D, --dev                    Update only devDependencies
+  -P, --prod                   Update only dependencies (production)
+  -i, --interactive            Interactive mode
+  --no-optional                Don't update optionalDependencies
+  --no-save                    Update lockfile only, don't modify package.json
+  --workspace                  Only update if package exists in workspace (pnpm-specific)
+  -h, --help                   Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp link -h`
 
-显示链接帮助信息
+show link help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp link [PACKAGE|DIR] [ARGS]...
+Usage: vp link [PACKAGE|DIR] [ARGS]...
 
-链接用于本地开发的软件包
+Link packages for local development
 
-参数：
-  [PACKAGE|DIR]  要链接的软件包名称或目录
-  [ARGS]...      要传递给包管理器的参数
+Arguments:
+  [PACKAGE|DIR]  Package name or directory to link
+  [ARGS]...      Arguments to pass to package manager
 
-选项：
-  -h, --help  打印帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp unlink -h`
 
-显示解除链接帮助信息
+show unlink help message
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp unlink [选项] [软件包|目录] [参数]...
+Usage: vp unlink [OPTIONS] [PACKAGE|DIR] [ARGS]...
 
-解除软件包链接
+Unlink packages
 
-参数：
-  [软件包|目录]  要解除链接的软件包名称
-  [参数]...      要传递给软件包管理器的参数
+Arguments:
+  [PACKAGE|DIR]  Package name to unlink
+  [ARGS]...      Arguments to pass to package manager
 
-选项：
-  -r, --recursive  在每个工作区软件包中解除链接
-  -h, --help       显示帮助
+Options:
+  -r, --recursive  Unlink in every workspace package
+  -h, --help       Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp dedupe -h`
 
-显示 dedupe 帮助信息
+show dedupe help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp dedupe [选项] [-- <PASS_THROUGH_ARGS>...]
+Usage: vp dedupe [OPTIONS] [-- <PASS_THROUGH_ARGS>...]
 
-去重依赖项
+Deduplicate dependencies
 
-参数：
-  [PASS_THROUGH_ARGS]...  要传递给包管理器的其他参数
+Arguments:
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --check     检查去重是否会产生更改
-  -h, --help  打印帮助信息
+Options:
+  --check     Check if deduplication would make changes
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp outdated -h`
 
-显示过时依赖帮助信息
+show outdated help message
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp outdated [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
+Usage: vp outdated [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-检查过时的软件包
+Check for outdated packages
 
-参数：
-  [PACKAGES]...           要检查的软件包名称
-  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Package name(s) to check
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --long                       显示扩展信息
-  --format <FORMAT>            输出格式：table（默认）、list 或 json
-  -r, --recursive              递归检查所有工作区
-  --filter <PATTERN>           筛选 monorepo 中的软件包
-  -w, --workspace-root         包含工作区根目录
-  -P, --prod                   仅检查生产依赖和可选依赖
-  -D, --dev                    仅检查开发依赖
-  --no-optional                排除可选依赖
-  --compatible                 仅显示兼容版本
-  --sort-by <FIELD>            按字段对结果排序
-  -g, --global                 检查全局安装的软件包
-  --concurrency <CONCURRENCY>  并行执行的全局软件包检查数量（仅与 -g 一起使用）
-  -h, --help                   显示帮助信息
+Options:
+  --long                       Show extended information
+  --format <FORMAT>            Output format: table (default), list, or json
+  -r, --recursive              Check recursively across all workspaces
+  --filter <PATTERN>           Filter packages in monorepo
+  -w, --workspace-root         Include workspace root
+  -P, --prod                   Only production and optional dependencies
+  -D, --dev                    Only dev dependencies
+  --no-optional                Exclude optional dependencies
+  --compatible                 Only show compatible versions
+  --sort-by <FIELD>            Sort results by field
+  -g, --global                 Check globally installed packages
+  --concurrency <CONCURRENCY>  Number of global package checks to run in parallel (only with -g)
+  -h, --help                   Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp why -h`
 
-显示 why 的帮助信息
+show why help message
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp why [选项] <软件包>... [-- <透传参数>...]
+Usage: vp why [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-显示安装某个软件包的原因
+Show why a package is installed
 
-参数：
-  <软件包>...             要检查的软件包
-  [透传参数]...            要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Package(s) to check
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --json                   以 JSON 格式输出
-  --long                   显示扩展信息
-  --parseable              显示可解析的输出
-  -r, --recursive          递归检查所有工作区
-  --filter <模式>          筛选 monorepo 中的软件包
-  -w, --workspace-root     在工作区根目录中检查
-  -P, --prod               仅检查生产依赖
-  -D, --dev                仅检查开发依赖
-  --depth <深度>           限制树的深度
-  --no-optional            排除可选依赖
-  --exclude-peers          排除对等依赖
-  --find-by <查找器名称>   使用 .pnpmfile.cjs 中定义的查找器函数
-  -h, --help               显示帮助
+Options:
+  --json                   Output in JSON format
+  --long                   Show extended information
+  --parseable              Show parseable output
+  -r, --recursive          Check recursively across all workspaces
+  --filter <PATTERN>       Filter packages in monorepo
+  -w, --workspace-root     Check in workspace root
+  -P, --prod               Only production dependencies
+  -D, --dev                Only dev dependencies
+  --depth <DEPTH>          Limit tree depth
+  --no-optional            Exclude optional dependencies
+  --exclude-peers          Exclude peer dependencies
+  --find-by <FINDER_NAME>  Use a finder function defined in .pnpmfile.cjs
+  -h, --help               Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp info -h`
 
-显示信息帮助消息
+show info help message
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp info [选项] <软件包> [字段] [-- <透传参数>...]
+Usage: vp info [OPTIONS] <PACKAGE> [FIELD] [-- <PASS_THROUGH_ARGS>...]
 
-查看注册表中的软件包信息
+View package information from the registry
 
-参数：
-  <软件包>                带可选版本的软件包名称
-  [字段]                  要查看的特定字段
-  [透传参数]...           要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGE>               Package name with optional version
+  [FIELD]                 Specific field to view
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --json      以 JSON 格式输出
-  -h, --help  打印帮助信息
+Options:
+  --json      Output in JSON format
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp pm -h`
 
-显示 pm 帮助信息
+show pm help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm <COMMAND>
+Usage: vp pm <COMMAND>
 
-转发命令到包管理器
+Forward a command to the package manager
 
-命令：
-  ci                为 CI 环境干净安装依赖
-  approve-builds    批准运行依赖项生命周期脚本（install/postinstall）
-  prune             移除不必要的软件包
-  patch             准备用于本地修补的软件包
-  patch-commit      提交已准备好的软件包补丁
-  pack              创建软件包的 tarball
-  list              列出已安装的软件包 [别名：ls]
-  view, info, show  从注册表查看软件包信息
-  version           转发原生软件包版本命令
-  publish           将软件包发布到注册表
-  stage             暂存软件包以供发布（npm 暂存发布工作流）
-  owner             管理软件包所有者 [别名：author]
-  cache             管理软件包缓存
-  config            管理软件包管理器配置 [别名：c]
-  login             登录注册表 [别名：adduser]
-  logout            从注册表退出登录
-  whoami            显示当前登录用户
-  token             管理身份验证令牌
-  audit             执行安全审计
-  dist-tag          管理分发标签
-  deprecate         弃用软件包版本
-  search            在注册表中搜索软件包
-  rebuild           重建原生模块 [别名：rb]
-  fund              显示已安装软件包的赞助信息
-  ping              Ping 注册表
+Commands:
+  ci                Clean install dependencies for CI environments
+  approve-builds    Approve dependency lifecycle scripts (install/postinstall) to run
+  prune             Remove unnecessary packages
+  patch             Prepare a package for local patching
+  patch-commit      Commit a prepared package patch
+  pack              Create a tarball of the package
+  list              List installed packages [alias: ls]
+  view, info, show  View package information from the registry
+  version           Forward the native package version command
+  publish           Publish package to registry
+  stage             Stage a package for publishing (npm staged publishing workflow)
+  owner             Manage package owners [alias: author]
+  cache             Manage package cache
+  config            Manage package manager configuration [alias: c]
+  login             Log in to a registry [alias: adduser]
+  logout            Log out from a registry
+  whoami            Show the current logged-in user
+  token             Manage authentication tokens
+  audit             Run a security audit
+  dist-tag          Manage distribution tags
+  deprecate         Deprecate a package version
+  search            Search for packages in the registry
+  rebuild           Rebuild native modules [alias: rb]
+  fund              Show funding information for installed packages
+  ping              Ping the registry
 
-选项：
-  -h, --help  打印帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp pm ci -h`
 
-显示 pm ci 帮助信息
+show pm ci help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm ci [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm ci [-- <PASS_THROUGH_ARGS>...]
 
-为 CI 环境干净地安装依赖
+Clean install dependencies for CI environments
 
-参数：
-  [PASS_THROUGH_ARGS]...  传递给包管理器的其他参数
+Arguments:
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -h, --help  打印帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp env`
 
-显示 env 帮助信息
+show env help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp env [COMMAND]
+Usage: vp env [COMMAND]
 
-管理 Node.js 和软件包管理器环境
+Manage Node.js and package-manager environments
 
-设置：
-  setup  在 VP_HOME/bin 中创建或更新 shim
-  on     为选定的环境范围启用托管模式
-  off    为选定的环境范围启用系统优先模式
-  print  打印已解析环境的 PATH 设置
+Setup:
+  setup  Create or update shims in VP_HOME/bin
+  on     Enable managed mode for selected environment scopes
+  off    Enable system-first mode for selected environment scopes
+  print  Print PATH setup for the resolved environment
 
-管理：
-  default         设置或显示全局环境默认值
-  pin             在项目中固定 Node.js 和软件包管理器版本
-  unpin           移除项目环境固定版本（`pin --unpin` 的别名）
-  use             为此 shell 会话激活环境
-  install, i      安装已解析或明确指定的环境
-  uninstall, uni  卸载明确指定的组件版本
-  clean           移除未使用的运行时和软件包管理器
-  exec, run       在已解析或明确指定的环境中执行命令
+Manage:
+  default         Set or show global environment defaults
+  pin             Pin Node.js and package-manager versions in the project
+  unpin           Remove project environment pins (alias for `pin --unpin`)
+  use             Activate an environment for this shell session
+  install, i      Install a resolved or explicit environment
+  uninstall, uni  Uninstall explicit component versions
+  clean           Remove unused runtimes and package managers
+  exec, run       Execute a command in a resolved or explicit environment
 
-检查：
-  current                 显示当前环境信息
-  doctor                  运行诊断并显示环境状态
-  which                   显示将要执行的工具路径
-  list, ls                列出本地已安装的环境组件
-  list-remote, ls-remote  列出组件注册表中的可用版本
+Inspect:
+  current                 Show current environment information
+  doctor                  Run diagnostics and show environment status
+  which                   Show path to the tool that would be executed
+  list, ls                List locally installed environment components
+  list-remote, ls-remote  List available versions from component registries
 
-示例：
-  设置：
-    vp env setup                  # 创建 Node.js 和软件包管理器 shim
-    vp env on                     # 管理 Node.js 和软件包管理器
-    vp env off pm                 # 仅优先使用系统软件包管理器
-    vp env off pnpm               # 仅优先使用系统 pnpm
-    vp env print                  # 打印两个组件的 PATH 设置
+Examples:
+  Setup:
+    vp env setup                  # Create Node.js and package-manager shims
+    vp env on                     # Manage Node.js and package managers
+    vp env off pm                 # Prefer system package managers only
+    vp env off pnpm               # Prefer system pnpm only
+    vp env print                  # Print PATH setup for both components
 
-  管理：
-    vp env default 22.19.0        # 设置 Node.js 默认版本
-    vp env default pnpm@12        # 设置 pnpm 默认版本
-    vp env pin 22.19.0            # 为此项目固定 Node.js 版本
-    vp env use 22.19.0            # 在此 shell 中使用 Node.js
-    vp env clean                  # 清理所有未使用的托管版本
+  Manage:
+    vp env default 22.19.0        # Set the Node.js default
+    vp env default pnpm@12        # Set pnpm's default version
+    vp env pin 22.19.0            # Pin Node.js for this project
+    vp env use 22.19.0            # Use Node.js in this shell
+    vp env clean                  # Clean all unused managed versions
 
-  检查：
-    vp env current                # 显示当前已解析的环境
-    vp env current --json         # 用于自动化的 JSON 输出
-    vp env doctor                 # 检查环境配置
-    vp env which node             # 显示将使用的 node 二进制文件
-    vp env list node              # 仅列出 Node.js 安装
-    vp env list-remote --lts      # 仅列出 Node.js LTS 版本
+  Inspect:
+    vp env current                # Show current resolved environment
+    vp env current --json         # JSON output for automation
+    vp env doctor                 # Check environment configuration
+    vp env which node             # Show which node binary will be used
+    vp env list node              # List only Node.js installations
+    vp env list-remote --lts      # List only Node.js LTS versions
 
-  执行：
-    vp env exec --node lts node -v               # 覆盖 Node.js
-    vp env exec --package-manager pnpm@12 pnpm i # 覆盖软件包管理器
-    vp env exec node -v                          # 解析两个组件
+  Execute:
+    vp env exec --node lts node -v               # Override Node.js
+    vp env exec --package-manager pnpm@12 pnpm i # Override the package manager
+    vp env exec node -v                          # Resolve both components
 
-相关命令：
-  vp install -g <package>       # 全局安装包
-  vp uninstall -g <package>     # 全局卸载包
-  vp update -g [package]        # 更新全局包
-  vp outdated -g [package]      # 列出过时的包
-  vp list -g [package]          # 列出全局包
+Related Commands:
+  vp install -g <package>       # Install a package globally
+  vp uninstall -g <package>     # Uninstall a package globally
+  vp update -g [package]        # Update global packages
+  vp outdated -g [package]      # List outdated packages
+  vp list -g [package]          # List global packages
 
-文档：https://viteplus.dev/guide/env
+Documentation: https://viteplus.dev/guide/env
 ```
 
 ## `vp upgrade -h`
 
-显示升级帮助信息
+show upgrade help message
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp upgrade [选项] [版本]
+Usage: vp upgrade [OPTIONS] [VERSION]
 
-将 vp 自身更新到最新版本
+Update vp itself to the latest version
 
-参数：
-  [VERSION]  目标版本（例如："0.2.0"）。默认为最新版本
+Arguments:
+  [VERSION]  Target version (e.g., "0.2.0"). Defaults to latest
 
-选项：
-  --tag <TAG>            要安装的 npm dist-tag（默认为："latest"，也可以是 "alpha"）[默认：latest]
-  --check                检查更新但不安装
-  --rollback             恢复到之前激活的版本
-  --force                即使已经是目标版本也强制重新安装
-  --silent               不显示输出
-  --registry <REGISTRY>  自定义 npm registry URL
-  -h, --help             显示帮助信息
+Options:
+  --tag <TAG>            npm dist-tag to install (default: "latest", also: "alpha") [default: latest]
+  --check                Check for updates without installing
+  --rollback             Revert to the previously active version
+  --force                Force reinstall even if already on the target version
+  --silent               Suppress output
+  --registry <REGISTRY>  Custom npm registry URL
+  -h, --help             Print help
 
-文档：https://viteplus.dev/guide/upgrade
+Documentation: https://viteplus.dev/guide/upgrade
 ```

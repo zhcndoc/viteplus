@@ -63,18 +63,18 @@ pnpm config set --global runtimeOnFail ignore
 2. `VP_PACKAGE_MANAGER`
 3. 顶层 `packageManager`
 4. `devEngines.packageManager`
-5. 锁文件或管理器专属配置
+5. 锁文件或包管理器专属配置
 6. 指定包管理器的全局默认版本
-7. 指定 shim 的最新版本
+7. 对应 shim 的最新版本（`npm` 使用 Node.js 捆绑的版本）
 
 `VP_PACKAGE_MANAGER` 为 `vp install` 等命令选择管理器和版本。直接调用的包管理器 shim 会忽略此变量，并使用独立的版本覆盖：
 
-| 变量              | Shim              |
-| ----------------- | ----------------- |
-| `VP_NPM_VERSION`  | `npm`、`npx`      |
-| `VP_PNPM_VERSION` | `pnpm`、`pnpx`    |
-| `VP_YARN_VERSION` | `yarn`、`yarnpkg` |
-| `VP_BUN_VERSION`  | `bun`、`bunx`     |
+| 变量              | Shim                        |
+| ----------------- | --------------------------- |
+| `VP_NPM_VERSION`  | `npm`、`npx`                |
+| `VP_PNPM_VERSION` | `pnpm`、`pnpx`、`pn`、`pnx` |
+| `VP_YARN_VERSION` | `yarn`、`yarnpkg`           |
+| `VP_BUN_VERSION`  | `bun`、`bunx`               |
 
 这些变量接受版本或范围，例如 `10.18.0`、`10` 或 `latest`，并覆盖对应 shim 的项目版本和默认版本。它们不会改变 `vp install` 所选择的管理器或版本。
 
@@ -89,11 +89,13 @@ VP_PNPM_VERSION=10.20.0 pnpm --version
 
 这些覆盖在托管模式下生效。包管理器也可以在 Vite+ 启动它之后自行执行版本切换；例如，pnpm 的 `managePackageManagerVersions` 设置可能会切换回 `package.json` 中的版本。
 
-项目选择仅适用于对应的 shim。例如，pnpm 控制 `pnpm` 和 `pnpx`；调用 `npm` 仍会独立解析 npm。如果没有匹配的项目选择，指定的 shim 会使用其配置的默认版本；如果没有配置，则使用最新版本且不会提示。直接调用的 npm shim 会保留其 Node.js 内置的回退版本，而显式使用 `vp env ... npm` 系列范围时，则使用独立 npm 的最新版本。
+项目选择仅适用于对应的 shim。例如，pnpm 控制 `pnpm`、`pnpx`、`pn` 和 `pnx`；调用 `npm` 仍会独立解析 npm。如果没有匹配的项目选择，指定的 shim 会使用其配置的默认版本；如果未配置，则使用最新版本且不会提示。`npm` shim 会回退到 Node.js 捆绑的 npm。当没有项目版本或全局默认版本时，`vp env use npm` 会为当前 shell 选择最新的独立 npm 版本。
 
 ::: details 最新版本缓存
 当指定的 shim 回退到最新版本时，解析出的版本会缓存一小时。当无法连接注册表时，过期的缓存仍可用。
 :::
+
+`pn` 与 `pnpm` 使用相同的托管二进制文件，`pnx` 与 `pnpx` 使用相同的托管二进制文件（`pnpm dlx`）。这些别名也适用于 v11 之前的托管 pnpm 版本。
 
 ## 环境模式
 
@@ -120,17 +122,20 @@ vp env on bun
 vp env off
 ```
 
-这会将两个组件切换为系统优先模式。Vite+ 会优先使用系统工具，并回退到托管安装。混合配置可以组合使用：系统包管理器启动器会接收由 Node.js 模式选择的 Node.js。
+这会将两个组件切换为系统优先模式。Vite+ 会优先使用系统工具，并在必要时回退到托管安装。混合配置可以组合使用：通过 PATH 查找 Node.js 的包管理器启动器会使用 Node.js 模式所选的运行时。
 
-使用 `pm` 会为当前支持的所有包管理器记录选定的模式，并替换它们各自的选择。未指定范围的 `on` 或 `off` 会执行相同操作，同时也会更改 Node.js。尚未记录模式的系列会保持未决定状态，直到首次使用其 shim，或通过 `on` / `off` 命令进行配置。
+使用 `pm` 会为当前支持的所有包管理器记录所选模式，并替换它们各自的选择。不带范围的 `on` 或 `off` 也会执行相同操作，同时更改 Node.js。
 
 ## 命令
 
 ### 设置
 
-- `vp env setup` 在解析后的 bin 目录中创建或更新 `node`、`npm`、`npx`、`pnpm`、`pnpx`、`yarn`、`yarnpkg`、`bun`、`bunx`、`vpx` 和 `vpr` shim。它会在配置目录中写入 shell 设置脚本
-- `vp env on` / `vp env off` 更改两种模式；追加 `node`、`pm`、`npm`、`pnpm`、`yarn` 或 `bun` 可缩小更改范围
-- `vp env print` 打印两个组件的 PATH 设置；追加选择器可只打印一个组件的设置
+- `vp env setup` 会在解析后的 bin 目录中创建或更新工具 shim，并写入 shell 设置脚本。
+- `vp env setup --refresh` 会根据已保存的偏好重新创建 Vite+ shim 并生成 shell 设置脚本。
+- `vp env on` / `vp env off` 可在 Vite+ 托管模式与系统优先模式之间切换；追加 `node`、`pm`、`npm`、`pnpm`、`yarn` 或 `bun` 可缩小更改范围。
+- `vp env print` 会打印两个组件的 PATH 设置；追加选择器可只打印一个组件的设置。
+
+升级会自动刷新设置。之后请打开新的终端，或重新加载 shell 设置脚本。
 
 PowerShell 需要在 `vp env use` 之前，在当前 shell 中 dot-source 生成的设置脚本，才能只影响该 shell 会话：
 

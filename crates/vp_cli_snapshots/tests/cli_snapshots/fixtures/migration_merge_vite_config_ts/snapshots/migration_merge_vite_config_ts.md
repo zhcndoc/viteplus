@@ -1,21 +1,27 @@
-# 迁移_合并_vite_配置_ts
+# migration_merge_vite_config_ts
 
 ## `vp migrate --no-interactive`
 
-迁移应合并 vite.config.ts，并移除 oxlintrc 和 oxfmtrc
+migration should merge vite.config.ts and remove oxlintrc and oxfmtrc
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 迁移到 Vite+ <version>
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 4 项配置更新，已重写 1 个文件中的导入
-• 内联 Vite 插件已使用 lazyPlugins 包装，以支持 check/lint/fmt
+• 4 config updates applied, 1 file had imports rewritten
+• Inline Vite plugins wrapped with lazyPlugins for check/lint/fmt
+! Warnings:
+  - Vitest v5: 1 review item
+
+vite.config.ts
+  38:10 REVIEW [global-api-ownership] Resolve test.dir before migrating global APIs. The test discovery directory is not statically known.
+    Docs: https://viteplus.dev/guide/vitest-v5#resolve-migration-findings
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查 vite.config.ts
+check vite.config.ts
 
 ```
 import { join } from 'node:path';
@@ -53,8 +59,20 @@ export default defineConfig({
   },
   plugins: lazyPlugins(() => [react()]),
   test: {
+    // Vitest v4 compatibility: preserve mock call history.
+    // Remove after tests no longer rely on calls from setup or earlier tests.
+    // https://viteplus.dev/guide/vitest-v5#remove-unneeded-compatibility-settings
+    // https://vitest.dev/guide/migration/#clearmocks-is-enabled-by-default
+    clearMocks: false,
     dir: join(import.meta.dirname, 'test'),
     browser: {
+      locators: {
+        // Vitest v4 compatibility: keep partial, case-insensitive locator matching.
+        // Remove after updating locators for full, case-sensitive matches.
+        // https://viteplus.dev/guide/vitest-v5#remove-unneeded-compatibility-settings
+        // https://vitest.dev/guide/migration/#locators-are-strict-by-default
+        exact: false
+      },
       enabled: true,
       provider: playwright(),
       headless: true,
@@ -67,7 +85,7 @@ export default defineConfig({
 
 ## `vpt stat-file .oxlintrc.json --assert-not file`
 
-检查 .oxlintrc.json 是否已删除
+check .oxlintrc.json is removed
 
 ```
 .oxlintrc.json: missing
@@ -75,7 +93,7 @@ export default defineConfig({
 
 ## `vpt stat-file .oxfmtrc.json --assert-not file`
 
-检查 .oxfmtrc.json 是否已被删除
+check .oxfmtrc.json is removed
 
 ```
 .oxfmtrc.json: missing
@@ -83,7 +101,7 @@ export default defineConfig({
 
 ## `vpt print-file package.json`
 
-检查 package.json
+check package.json
 
 ```
 {
@@ -124,7 +142,7 @@ export default defineConfig({
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

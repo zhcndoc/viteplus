@@ -1,8 +1,8 @@
-# 使用工作区移除 yarn4 的命令
+# command_remove_yarn4_with_workspace
 
 ## `vp add testnpm2 -D`
 
-安装并忽略输出
+install and ignore output
 
 
 ## `vp add testnpm2 -D --filter=* --filter=@vite-plus-test/utils`
@@ -16,7 +16,7 @@
 
 ## `vpt print-file package.json packages/app/package.json packages/admin/package.json packages/utils/package.json`
 
-准备软件包
+prepare packages
 
 ```
 {
@@ -75,9 +75,95 @@
 }
 ```
 
+## `vp remove testnpm2 -r --workspace-root --filter=app --filter=@vite-plus-test/utils`
+
+recursive remove affects only app and utils
+
+```
+warn: yarn does not support --workspace-root.
+[app]: Process started
+[app]: ➤ YN0000: · Yarn <version>
+[app]: ➤ YN0000: ┌ Resolution step
+[app]: ➤ YN0000: └ Completed
+[app]: ➤ YN0000: ┌ Fetch step
+[app]: ➤ YN0000: └ Completed
+[app]: ➤ YN0000: ┌ Link step
+[app]: ➤ YN0000: └ Completed
+[app]: ➤ YN0000: · Done in <duration>
+[app]: Process exited (exit code 0), completed in <duration>
+
+[@vite-plus-test/utils]: Process started
+[@vite-plus-test/utils]: ➤ YN0000: · Yarn <version>
+[@vite-plus-test/utils]: ➤ YN0000: ┌ Resolution step
+[@vite-plus-test/utils]: ➤ YN0000: └ Completed
+[@vite-plus-test/utils]: ➤ YN0000: ┌ Fetch step
+[@vite-plus-test/utils]: ➤ YN0000: └ Completed
+[@vite-plus-test/utils]: ➤ YN0000: ┌ Link step
+[@vite-plus-test/utils]: ➤ YN0000: └ Completed
+[@vite-plus-test/utils]: ➤ YN0000: · Done in <duration>
+[@vite-plus-test/utils]: Process exited (exit code 0), completed in <duration>
+
+Done in <duration>
+```
+
+## `vpt print-file package.json packages/app/package.json packages/admin/package.json packages/utils/package.json`
+
+root and admin keep testnpm2
+
+```
+{
+  "name": "command-remove-yarn4-with-workspace",
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "yarn@4.10.3",
+  "devDependencies": {
+    "testnpm2": "^1.0.1"
+  },
+  "dependencies": {
+    "test-vite-plus-install": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "test-vite-plus-package-optional": "^1.0.0"
+  }
+}
+{
+  "name": "app",
+  "dependencies": {
+    "test-vite-plus-install": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "test-vite-plus-package-optional": "^1.0.0"
+  }
+}
+{
+  "name": "admin",
+  "devDependencies": {
+    "testnpm2": "^1.0.1"
+  },
+  "dependencies": {
+    "test-vite-plus-install": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "test-vite-plus-package-optional": "^1.0.0"
+  }
+}
+{
+  "name": "@vite-plus-test/utils",
+  "version": "1.0.0",
+  "dependencies": {
+    "test-vite-plus-install": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "test-vite-plus-package-optional": "^1.0.0"
+  }
+}
+```
+
 ## `vp remove testnpm2 -r`
 
-应从所有工作区和根目录中移除软件包
+should remove package from all workspaces and root
 
 ```
 ➤ YN0000: · Yarn <version>
@@ -88,7 +174,7 @@
 ➤ YN0000: └ Completed
 ➤ YN0000: ┌ Link step
 ➤ YN0000: └ Completed
-➤ YN0000: · Done in <duration> <duration>
+➤ YN0000: · Done in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/admin/package.json packages/utils/package.json`
@@ -140,7 +226,7 @@
 
 ## `vp remove -O test-vite-plus-package-optional -r`
 
-应从所有工作区中移除可选依赖包
+should remove optional package from all workspaces
 
 ```
 ➤ YN0000: · Yarn <version>
@@ -151,7 +237,7 @@
 ➤ YN0000: └ Completed
 ➤ YN0000: ┌ Link step
 ➤ YN0000: └ Completed
-➤ YN0000: · Done in <duration> <duration>
+➤ YN0000: · Done in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/admin/package.json packages/utils/package.json`
@@ -189,9 +275,9 @@
 }
 ```
 
-## `vp remove test-vite-plus-install --filter=app`
+## `vp remove test-vite-plus-install -r --filter=app`
 
-应通过 filter=app 移除软件包
+recursive remove affects only app
 
 ```
 [app]: Process started
@@ -202,10 +288,10 @@
 [app]: ➤ YN0000: └ Completed
 [app]: ➤ YN0000: ┌ Link step
 [app]: ➤ YN0000: └ Completed
-[app]: ➤ YN0000: · Done in <duration> <duration>
-[app]: Process exited (exit code 0), completed in <duration> <duration>
+[app]: ➤ YN0000: · Done in <duration>
+[app]: Process exited (exit code 0), completed in <duration>
 
-Done in <duration> <duration>
+Done in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/admin/package.json packages/utils/package.json`
@@ -242,7 +328,7 @@ Done in <duration> <duration>
 
 ## `vp add test-vite-plus-install --filter=app`
 
-应通过 filter=* 移除软件包
+should remove package by filter=*
 
 ```
 [app]: Process started
@@ -253,10 +339,10 @@ Done in <duration> <duration>
 [app]: ➤ YN0000: └ Completed
 [app]: ➤ YN0000: ┌ Link step
 [app]: ➤ YN0000: └ Completed
-[app]: ➤ YN0000: · Done in <duration> <duration>
-[app]: Process exited (exit code 0), completed in <duration> <duration>
+[app]: ➤ YN0000: · Done in <duration>
+[app]: Process exited (exit code 0), completed in <duration>
 
-Done in <duration> <duration>
+Done in <duration>
 ```
 
 ## `vp remove test-vite-plus-install --filter=*`
@@ -270,8 +356,8 @@ Done in <duration> <duration>
 [command-remove-yarn4-with-workspace]: ➤ YN0000: └ Completed
 [command-remove-yarn4-with-workspace]: ➤ YN0000: ┌ Link step
 [command-remove-yarn4-with-workspace]: ➤ YN0000: └ Completed
-[command-remove-yarn4-with-workspace]: ➤ YN0000: · Done in <duration> <duration>
-[command-remove-yarn4-with-workspace]: Process exited (exit code 0), completed in <duration> <duration>
+[command-remove-yarn4-with-workspace]: ➤ YN0000: · Done in <duration>
+[command-remove-yarn4-with-workspace]: Process exited (exit code 0), completed in <duration>
 
 [admin]: Process started
 [admin]: ➤ YN0000: · Yarn <version>
@@ -281,8 +367,8 @@ Done in <duration> <duration>
 [admin]: ➤ YN0000: └ Completed
 [admin]: ➤ YN0000: ┌ Link step
 [admin]: ➤ YN0000: └ Completed
-[admin]: ➤ YN0000: · Done in <duration> <duration>
-[admin]: Process exited (exit code 0), completed in <duration> <duration>
+[admin]: ➤ YN0000: · Done in <duration>
+[admin]: Process exited (exit code 0), completed in <duration>
 
 [app]: Process started
 [app]: ➤ YN0000: · Yarn <version>
@@ -292,10 +378,10 @@ Done in <duration> <duration>
 [app]: ➤ YN0000: └ Completed
 [app]: ➤ YN0000: ┌ Link step
 [app]: ➤ YN0000: └ Completed
-[app]: ➤ YN0000: · Done in <duration> <duration>
-[app]: Process exited (exit code 0), completed in <duration> <duration>
+[app]: ➤ YN0000: · Done in <duration>
+[app]: Process exited (exit code 0), completed in <duration>
 
-Done in <duration> <duration>
+Done in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/admin/package.json packages/utils/package.json`

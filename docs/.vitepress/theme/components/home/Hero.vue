@@ -7,6 +7,7 @@
     >
       <div class="flex flex-col justify-start items-center gap-4">
         <img src="/icon.svg" alt="Vite+ 标志" class="w-9" />
+        <p class="text-sm font-mono text-[var(--color-brand)]">Vite+ 1.0 已发布</p>
         <h1 class="text-center text-primary text-balance shine-text">
           <span class="inline-block">Web 的统一</span>
           <span class="inline-block">工具链</span>
@@ -21,12 +22,12 @@
           开始使用
         </a>
         <a
-          href="https://voidzero.dev/posts/announcing-vite-plus-beta"
+          href="https://voidzero.dev/posts/announcing-vite-plus-1-0"
           target="_blank"
           rel="noopener noreferrer"
           class="button"
         >
-          阅读公告
+          阅读 Vite+ 1.0 公告
         </a>
         <CopyPrompt />
       </div>

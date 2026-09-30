@@ -21,10 +21,19 @@
 --no-concurrent 运行 staged 任务且不会停滞
 
 ```
-✔ Backed up original state in git stash (<hash>)
-✔ Running tasks for staged files...
-✔ Applying modifications from tasks...
-✔ Cleaning up temporary files...
+⋯ Backing up original state…
+✔ Done backing up original state (<hash>)!
+⋯ Running tasks for staged files…
+    *.txt — 1 file
+      ⋯ vpt print linted
+
+✔ vpt print linted
+
+✔ Done running tasks for staged files!
+⋯ Staging changes from tasks…
+✔ Done staging changes from tasks!
+⋯ Cleaning up temporary files…
+✔ Done cleaning up temporary files!
 
 → vpt print linted:
 linted <workspace>/a.txt

@@ -7,13 +7,15 @@ import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-i
 import llmstxt from 'vitepress-plugin-llms';
 import { withMermaid } from 'vitepress-plugin-mermaid';
 
+import { resolveDocsSiteOrigin } from './site-origin.ts';
+
 // Non-production deploys (the main preview, PR staging) serve their own
 // copies of the install scripts and llms dumps, so the https://vite.plus
 // installer shortcuts and absolute site URLs must point at the deploy's
 // origin instead of production. The deploy workflows set DOCS_SITE_ORIGIN via
 // the deploy-docs composite action; markdown content is rewritten through
 // markdown-it below, and Vue components read the __DOCS_*__ define constants.
-const siteOrigin = process.env.DOCS_SITE_ORIGIN;
+const siteOrigin = resolveDocsSiteOrigin();
 const docsOrigin = siteOrigin || 'https://viteplus.dev';
 const installShUrl = siteOrigin ? `${siteOrigin}/install.sh` : 'https://vite.plus';
 const installPs1Url = siteOrigin ? `${siteOrigin}/install.ps1` : 'https://vite.plus/ps1';
@@ -44,7 +46,10 @@ const guideSidebar = [
       {
         text: '迁移到 Vite+',
         link: '/guide/migrate',
-        items: [{ text: '迁移规则', link: '/guide/migrate-rules' }],
+        items: [
+          { text: '迁移规则', link: '/guide/migrate-rules' },
+          { text: '升级至 Vitest 5', link: '/guide/vitest-v5' },
+        ],
       },
       { text: '更新 Vite+', link: '/guide/upgrade-project' },
       { text: '包管理', link: '/guide/install' },
@@ -183,8 +188,8 @@ export default extendConfig(
               { text: 'GitHub', link: 'https://github.com/voidzero-dev/vite-plus' },
               { text: '版本发布', link: 'https://github.com/voidzero-dev/vite-plus/releases' },
               {
-                text: '公告',
-                link: 'https://voidzero.dev/posts/announcing-vite-plus-beta',
+                text: 'Vite+ 1.0 公告',
+                link: 'https://voidzero.dev/posts/announcing-vite-plus-1-0',
               },
               {
                 text: '贡献指南',

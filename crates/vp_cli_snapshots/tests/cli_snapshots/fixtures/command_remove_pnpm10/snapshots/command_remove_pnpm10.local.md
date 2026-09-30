@@ -1,35 +1,35 @@
-# 命令_remove_pnpm10
+# command_remove_pnpm10
 
 ## `vp remove --help`
 
-应显示帮助信息
+should show help
 
 ```
-从依赖项中移除软件包
+Remove packages from dependencies
 
-用法：vp remove [选项] <软件包>... [-- <透传参数>...]
+Usage: vp remove [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-参数：
-  <软件包>...            要移除的软件包
-  [透传参数]...           要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Packages to remove
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -D, --save-dev          仅从 `devDependencies` 中移除（pnpm 特有）
-  -O, --save-optional     仅从 `optionalDependencies` 中移除（pnpm 特有）
-  -P, --save-prod         仅从 `dependencies` 中移除（pnpm 特有）
-      --filter <模式>     筛选 monorepo 中的软件包（可多次使用）
-  -w, --workspace-root    从工作区根目录中移除
-  -r, --recursive         从所有工作区软件包中递归移除
-  -g, --global            移除全局软件包
-      --dry-run           预览将要移除的内容，但不实际移除（仅与 -g 一起使用）
-  -h, --help              显示帮助信息
+Options:
+  -D, --save-dev          Only remove from `devDependencies` (pnpm-specific)
+  -O, --save-optional     Only remove from `optionalDependencies` (pnpm-specific)
+  -P, --save-prod         Only remove from `dependencies` (pnpm-specific)
+      --filter <PATTERN>  Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root    Remove from workspace root
+  -r, --recursive         Remove recursively from all workspace packages
+  -g, --global            Remove global packages
+      --dry-run           Preview what would be removed without actually removing (only with -g)
+  -h, --help              Print help
 ```
 
 ## `vp remove`
 
-由于未指定任何软件包，应报错
+should error because no packages specified
 
-**退出代码：** 2
+**Exit code:** 2
 
 ```
 error: the following required arguments were not provided:
@@ -42,19 +42,19 @@ For more information, try '--help'.
 
 ## `vp remove testnpm2 -D`
 
-从开发依赖中移除不存在的软件包时应报错
+should error when remove not exists package from dev dependencies
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
  ERR_PNPM_CANNOT_REMOVE_MISSING_DEPS  Cannot remove 'testnpm2': project has no 'devDependencies'
 ```
 
-*（跳过 1 个步骤到下一行边界：步骤失败）*
+*(skipped 1 step(s) to the next line boundary: step failed)*
 
 ## `vp add testnpm2`
 
-应将软件包添加到依赖项中
+should add packages to dependencies
 
 ```
 
@@ -81,7 +81,7 @@ Done in <duration> using pnpm <version>
 optionalDependencies:
  test-vite-plus-package-optional 1.0.0
 
-完成于 <duration>，使用 pnpm <version>
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json`
@@ -105,19 +105,19 @@ optionalDependencies:
 
 ## `vp remove testnpm2 test-vite-plus-install`
 
-应从依赖项中移除软件包
+should remove packages from dependencies
 
 ```
-软件包：-2
+Packages: -2
 --
 
-依赖项：
-- testnpm2 1.0.1
+dependencies:
+- testnpm2
 
-开发依赖项：
-- test-vite-plus-install 1.0.0
+devDependencies:
+- test-vite-plus-install
 
-完成于 <duration>，使用 pnpm <version>
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json`
@@ -135,7 +135,7 @@ optionalDependencies:
 
 ## `vp remove -O test-vite-plus-package-optional -- --loglevel=warn`
 
-支持从可选依赖中移除软件包，并传递参数
+support remove package from optional dependencies and pass through arguments
 
 ```
 ```
@@ -152,24 +152,24 @@ optionalDependencies:
 
 ## `vp remove -g --dry-run testnpm2`
 
-支持使用 dry-run 删除全局包
+support remove global package with dry-run
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-错误：全局包操作（`-g`/`--global`）仅受全局安装的 `vp` CLI 支持。请参阅 https://viteplus.dev/guide/ 进行安装，然后通过全局 `vp` 二进制文件运行相同的命令。
+error: Global package operations (`-g`/`--global`) are only supported by the globally-installed `vp` CLI. See https://viteplus.dev/guide/ to install it, then run the same command via the global `vp` binary.
 ```
 
-*（跳过 1 个步骤到下一个行边界：步骤失败）*
+*(skipped 1 step(s) to the next line boundary: step failed)*
 
 ## `vp rm --stream foo`
 
-当不支持某个选项时，应提示如何使用透传参数
+should show tips to use pass through arguments when options are not supported
 
-**退出代码：** 2
+**Exit code:** 2
 
 ```
-错误：意外的参数 '--stream'
+error: Unexpected argument '--stream'
 
-使用 `-- --stream` 将该参数作为值传递
+Use `-- --stream` to pass the argument as a value
 ```

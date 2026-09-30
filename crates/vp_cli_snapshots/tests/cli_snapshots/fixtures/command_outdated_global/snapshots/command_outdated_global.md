@@ -1,13 +1,13 @@
-# 全局命令已过时
+# command_outdated_global
 
 ## `vp install -g testnpm2@1.0.0`
 
-应准备一个固定版本的全局包
+should prepare a version-pinned global package
 
 
 ## `vp outdated definitely-not-installed-vite-plus-snap-pkg -g --format json`
 
-应支持为空的全局 JSON 输出
+should support empty global json output
 
 ```
 {}
@@ -15,9 +15,9 @@
 
 ## `vp outdated testnpm2 -g --format json`
 
-应报告一个没有可更新 wanted 版本的固定版本包
+should report a pinned package without a wanted update
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 {
@@ -33,9 +33,9 @@
 
 ## `vp outdated testnpm2 -g --format list`
 
-应在列表格式中将更新的最新版本作为提示显示
+should render the newer latest as a hint in list format
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 testnpm2 (global)
@@ -44,7 +44,7 @@ testnpm2 (global)
 
 ## `vp update -g`
 
-不应将固定版本的软件包更新到最新版本
+should not move a pinned package to latest
 
 ```
 All global packages are up to date.
@@ -52,28 +52,28 @@ All global packages are up to date.
 
 ## `vpt json-edit $VP_HOME/packages/testnpm2.json versionSpec no-such-tag`
 
-当记录的版本规格不再能解析时，应发出警告并跳过
+should warn and skip when the recorded version spec no longer resolves
 
 
 ## `vp update -g`
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 All global packages are up to date.
-[1m[33mwarn:[39m[0m npm view failed for testnpm2@no-such-tag: npm error code E404; skipping
+warn: npm view failed for testnpm2@no-such-tag: npm error code E404; skipping
 ```
 
 ## `vpt json-edit $VP_HOME/packages/testnpm2.json versionSpec null`
 
-一旦清除已记录的版本规格，应再次遵循最新版本
+should follow latest again once the recorded version spec is cleared
 
 
 ## `vp outdated testnpm2 -g --format json`
 
-应支持全局 JSON 输出
+should support global json output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 {
@@ -89,9 +89,9 @@ All global packages are up to date.
 
 ## `vp outdated testnpm2 -g --format list --concurrency 5`
 
-应支持全局列表输出
+should support global list output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 testnpm2 (global)
@@ -100,21 +100,21 @@ testnpm2 (global)
 
 ## `vpt json-edit $VP_HOME/packages/testnpm2.json versionSpec 1.0.0`
 
-应使用 `--latest` 覆盖已记录的版本规格
+should override a recorded version spec with --latest
 
 
 ## `vp update -g --latest`
 
 ```
-[1m[94minfo:[39m[0m 正在使用 Node.js <version> 更新 1 个全局软件包
-[32m✓[39m 已将 [1mtestnpm2[0m 更新至 [1m1.0.1[0m
+info: Updating 1 global package with Node.js <version>
+✓ Updated testnpm2 to 1.0.1
 ```
 
 ## `vpt grep-file $VP_HOME/packages/testnpm2.json versionSpec`
 
-在执行 --latest 后应清除记录的版本规范（grep-file 显示缺失）
+should clear the recorded version spec after --latest (grep-file prints missing)
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 <home>/.vite-plus/packages/testnpm2.json: missing "versionSpec"
@@ -123,20 +123,20 @@ pattern not found
 
 ## `vpt json-edit $VP_HOME/packages/testnpm2.json versionSpec 1.0.1`
 
-即使不重新安装，也应使用 --latest 清除已记录的版本规范
+should clear a recorded version spec with --latest even without a reinstall
 
 
 ## `vp update -g --latest`
 
 ```
-所有全局软件包均已是最新版本。
+All global packages are up to date.
 ```
 
 ## `vpt grep-file $VP_HOME/packages/testnpm2.json versionSpec`
 
-应该已从最新的软件包中移除固定版本（grep-file 显示缺失）
+should have removed the pin from the up-to-date package (grep-file prints missing)
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 <home>/.vite-plus/packages/testnpm2.json: missing "versionSpec"
@@ -145,13 +145,13 @@ pattern not found
 
 ## `vpt json-edit $VP_HOME/packages/testnpm2.json versionSpec 1.0.0`
 
-应在不重新安装的情况下持久化明确的规格切换
+should persist an explicit spec switch without a reinstall
 
 
 ## `vp update -g testnpm2@1.0.1`
 
 ```
-所有全局软件包均已是最新版本。
+All global packages are up to date.
 ```
 
 ## `vpt grep-file $VP_HOME/packages/testnpm2.json 'versionSpec": "1.0.1'`
@@ -162,13 +162,13 @@ pattern not found
 
 ## `vp update -g testnpm2@no-such-tag`
 
-不应持久化无法解析的显式规范
+should not persist an explicit spec that fails to resolve
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 All global packages are up to date.
-[1m[33mwarn:[39m[0m npm view failed for testnpm2@no-such-tag: npm error code E404; skipping
+warn: npm view failed for testnpm2@no-such-tag: npm error code E404; skipping
 ```
 
 ## `vpt grep-file $VP_HOME/packages/testnpm2.json 'versionSpec": "1.0.1'`

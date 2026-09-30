@@ -3,7 +3,7 @@
 当 Vite+ 的行为不符合预期时，请使用本页面。
 
 ::: info
-Vite+ 处于 beta 阶段：稳定，但尚未完整。我们正在通往 1.0 的路上添加功能，并优先考虑社区反馈，所以如果某些内容没有按预期工作，请[联系我们](#asking-for-help)。
+Vite+ 1.0 已发布。我们会持续改进，并欢迎社区反馈。如果有任何内容未按预期工作，请[联系我们](#asking-for-help)。
 :::
 
 ## 支持的工具版本
@@ -26,13 +26,13 @@ Vite+ 期望使用现代的上游工具版本。
 
 ## 嵌套 lint 或格式配置未生效
 
-Vite+ 目前不支持嵌套 lint 或格式配置。从工作区根目录运行 `vp lint`、`vp fmt` 或 `vp check` 时，不要依赖子目录中的配置，也不要依赖软件包级 `vite.config.ts` 文件中的 `lint` 和 `fmt` 块来覆盖根设置。
+运行 `vp lint`、`vp fmt` 或 `vp check` 时，子目录中的配置不会覆盖单个文件的设置。`vp lint` 和 `vp fmt` 会从工作目录开始让 Oxlint 和 Oxfmt 查找配置，因此从包目录运行时，包配置中的 `lint` 或 `fmt` 块会生效；但我们不建议这样做。如果存在工作区根目录的 `lint` 和 `fmt` 块，`vp check` 会选用它们。使用 `vp lint` 或 `vp fmt` 时，可通过 `-c <path>` 或 `--config <path>` 显式选择其他配置。
 
 将 lint 和格式设置保存在根目录的 `vite.config.ts` 中。使用 [`lint.overrides`](/guide/monorepo#root-config-with-overrides) 和 [`fmt.overrides`](/guide/monorepo#format-overrides) 为特定文件或软件包设置专属配置。你还可以将[配置对象导入](/guide/monorepo#composing-configuration-files)根配置，以便将设置保存在单独的文件中。
 
-对于 IDE 集成，我们提供了 `disableNestedConfig` 和 `fmt.disableNestedConfig` 配置，用于禁用嵌套 lint 和格式配置，并使编辑器行为与根 Vite+ 配置保持一致。有关编辑器的设置说明，请参阅 [IDE 集成](/guide/ide-integration)。
+对于 IDE 集成，`disableNestedConfig` 和 `fmt.disableNestedConfig` 可禁用针对单个文件的嵌套 lint 和格式配置。有关编辑器设置说明，请参阅 [IDE 集成](/guide/ide-integration)。
 
-我们目前暂缓支持嵌套配置。我们正在考虑的一些因素包括：隐式配置发现会如何影响 lint 和格式化的可预测性，AI 代理需要哪些上下文才能理解适用的设置，以及查找和加载多个配置可能带来的性能成本。与此同时，我们也认识到，将特定于软件包的上下文保留在代码附近可能会带来好处。到目前为止我们听到的用例，还不足以让我们决定采用这些语义。暂缓支持为日后添加该功能留下了空间，我们也希望了解你的项目为什么需要嵌套配置，尤其是在根级覆盖无法满足需求的情况下。
+目前我们暂不将嵌套配置应用于单个文件。我们正在考虑的因素包括：隐式配置发现如何影响 lint 和格式化的可预测性、AI 代理需要哪些上下文才能理解适用的设置，以及查找和加载多个配置可能带来的性能成本。同时，我们也认识到，将包特定的上下文保留在代码附近可能有好处。到目前为止，我们听到的用例还不足以让我们确定采用这些语义。暂缓支持为日后添加该功能留出了空间；我们也希望了解你的项目为何需要嵌套配置，尤其是在根级覆盖无法满足需求时。
 
 你需要嵌套配置吗？[在 GitHub 上分享你的用例和意见](https://github.com/voidzero-dev/vite-plus/discussions/2669)，包括你的项目结构、想要使用嵌套配置的原因，以及根级覆盖是否能满足你的需求。
 

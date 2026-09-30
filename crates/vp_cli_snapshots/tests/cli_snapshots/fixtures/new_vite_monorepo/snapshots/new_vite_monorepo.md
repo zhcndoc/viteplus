@@ -36,7 +36,6 @@ vite.config.ts
     "prepare": "vp config"
   },
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {
@@ -242,7 +241,6 @@ website
     "@types/node": "^26.1.1",
     "bumpp": "^11.1.0",
     "typescript": "^7.0.2",
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   }
 }
@@ -415,7 +413,6 @@ vite.config.ts
     "prepare": "vp config"
   },
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

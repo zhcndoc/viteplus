@@ -189,7 +189,7 @@ devDependencies：已跳过
 -
 
 optionalDependencies:
-- testnpm2 1.0.0
+- testnpm2
  testnpm2 1.0.1
 
 Done in <duration> using pnpm <version>

@@ -9,7 +9,7 @@
 use std::process::ExitStatus;
 
 use chrono::Local;
-use owo_colors::OwoColorize;
+use console::style;
 use vp_pm_cli::{
     PackageManagerType, package_manager_bin_path, package_manager_install_dir,
     resolve_package_manager_version,
@@ -42,7 +42,7 @@ pub async fn execute(cwd: AbsolutePathBuf, tool: &str) -> Result<ExitStatus, Err
     if mode == ShimMode::SystemFirst
         && let Some(path) = shim::dispatch::find_system_tool(tool)
     {
-        println!("{}", path.as_path().display());
+        vp_shared::output::print_stdout_line(format_args!("{}", path.as_path().display()));
         return Ok(ExitStatus::default());
     }
     if let Some(status) = execute_package_manager_tool(&cwd, tool).await? {
@@ -60,7 +60,7 @@ pub async fn execute(cwd: AbsolutePathBuf, tool: &str) -> Result<ExitStatus, Err
     }
 
     // Unknown tool
-    output::error(&format!("tool '{}' not found", tool.bold()));
+    output::error(&format!("tool '{}' not found", style(tool).for_stderr().bold()));
     eprintln!("Not a core tool (node, npm, npx) or installed global package.");
     eprintln!("Run 'vp list -g' to see installed packages.");
     Ok(exit_status(1))
@@ -75,7 +75,7 @@ async fn execute_bin_config_binary(
             if let Some(metadata) = PackageMetadata::load(&bin_config.package).await? {
                 return execute_package_binary(tool, &metadata).await;
             }
-            output::error(&format!("binary '{}' not found", tool.bold()));
+            output::error(&format!("binary '{}' not found", style(tool).for_stderr().bold()));
             eprintln!("Package {} may need to be reinstalled.", bin_config.package);
             eprintln!("Run 'vp install -g {}' to reinstall.", bin_config.package);
             Ok(exit_status(1))
@@ -88,21 +88,29 @@ async fn execute_npm_link_binary(tool: &str, bin_config: &BinConfig) -> Result<E
     let binary_path = match locate_npm_link_binary(tool).await {
         Ok(path) if tokio::fs::try_exists(&path).await.unwrap_or(false) => path,
         _ => {
-            output::error(&format!("binary '{}' not found", tool.bold()));
+            output::error(&format!("binary '{}' not found", style(tool).for_stderr().bold()));
             eprintln!("Package {} may need to be reinstalled.", bin_config.package);
             eprintln!("Run 'npm install -g {}' to recreate the link.", bin_config.package);
             return Ok(exit_status(1));
         }
     };
 
-    println!("{}", binary_path.as_path().display());
-    println!(
+    vp_shared::output::print_stdout_line(format_args!("{}", binary_path.as_path().display()));
+    vp_shared::output::print_stdout_line(format_args!(
         "  {:<LABEL_WIDTH$}  {}",
-        "Package:".dimmed(),
-        bin_config.package.as_str().bright_blue()
-    );
-    println!("  {:<LABEL_WIDTH$}  {}", "Source:".dimmed(), "npm".dimmed());
-    println!("  {:<LABEL_WIDTH$}  {}", "Node:".dimmed(), bin_config.node_version.bright_green());
+        style("Package:").dim(),
+        style(&bin_config.package.as_str()).blue().bright()
+    ));
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Source:").dim(),
+        style("npm").dim()
+    ));
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Node:").dim(),
+        style(&bin_config.node_version).green().bright()
+    ));
 
     Ok(ExitStatus::default())
 }
@@ -174,19 +182,23 @@ async fn execute_package_manager_tool(
     let tool_path = package_manager_bin_path(&install_dir, bin_name);
 
     if !tokio::fs::try_exists(&tool_path).await.unwrap_or(false) {
-        output::error(&format!("{} not found", tool.bold()));
+        output::error(&format!("{} not found", style(tool).for_stderr().bold()));
         eprintln!("{expected_type} {version} is not installed.");
         eprintln!("Run 'vp install' inside the project to download it.");
         return Ok(Some(exit_status(1)));
     }
 
-    println!("{}", tool_path.as_path().display());
-    println!(
+    vp_shared::output::print_stdout_line(format_args!("{}", tool_path.as_path().display()));
+    vp_shared::output::print_stdout_line(format_args!(
         "  {:<LABEL_WIDTH$}  {}",
-        "Package:".dimmed(),
-        format!("{expected_type}@{version}").bright_blue()
-    );
-    println!("  {:<LABEL_WIDTH$}  {}", "Source:".dimmed(), source.dimmed());
+        style("Package:").dim(),
+        style(format!("{expected_type}@{version}")).blue().bright()
+    ));
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Source:").dim(),
+        style(&source).dim()
+    ));
 
     Ok(Some(ExitStatus::default()))
 }
@@ -197,7 +209,7 @@ async fn execute_core_tool(cwd: AbsolutePathBuf, tool: &str) -> Result<ExitStatu
         && super::config::load_config().await?.node_shim_mode == ShimMode::SystemFirst
         && let Some(path) = shim::dispatch::find_system_tool(tool)
     {
-        println!("{}", path.as_path().display());
+        vp_shared::output::print_stdout_line(format_args!("{}", path.as_path().display()));
         return Ok(ExitStatus::default());
     }
 
@@ -224,19 +236,27 @@ async fn execute_core_tool(cwd: AbsolutePathBuf, tool: &str) -> Result<ExitStatu
 
     // Check if the tool exists
     if !tokio::fs::try_exists(&tool_path).await.unwrap_or(false) {
-        output::error(&format!("{} not found", tool.bold()));
+        output::error(&format!("{} not found", style(tool).for_stderr().bold()));
         eprintln!("Node.js {} is not installed.", resolution.version);
         eprintln!("Run 'vp env install {}' to install it.", resolution.version);
         return Ok(exit_status(1));
     }
 
     // Print binary path (first line, uncolored, pipe-friendly)
-    println!("{}", tool_path.as_path().display());
+    vp_shared::output::print_stdout_line(format_args!("{}", tool_path.as_path().display()));
 
     // Print metadata
     let source_display = format_source(&resolution.source, resolution.source_path.as_deref());
-    println!("  {:<LABEL_WIDTH$}  {}", "Version:".dimmed(), resolution.version.bright_green());
-    println!("  {:<LABEL_WIDTH$}  {}", "Source:".dimmed(), source_display.dimmed());
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Version:").dim(),
+        style(&resolution.version).green().bright()
+    ));
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Source:").dim(),
+        style(&source_display).dim()
+    ));
 
     Ok(ExitStatus::default())
 }
@@ -266,7 +286,7 @@ async fn execute_package_binary(
 
     // Check if binary exists
     if !tokio::fs::try_exists(&binary_path).await.unwrap_or(false) {
-        output::error(&format!("binary '{}' not found", tool.bold()));
+        output::error(&format!("binary '{}' not found", style(tool).for_stderr().bold()));
         eprintln!("Package {} may need to be reinstalled.", metadata.name);
         eprintln!("Run 'vp install -g {}' to reinstall.", metadata.name);
         return Ok(exit_status(1));
@@ -277,17 +297,29 @@ async fn execute_package_binary(
     let installed_str = installed_local.format("%Y-%m-%d").to_string();
 
     // Print binary path (first line, uncolored, pipe-friendly)
-    println!("{}", binary_path.as_path().display());
+    vp_shared::output::print_stdout_line(format_args!("{}", binary_path.as_path().display()));
 
     // Print metadata
-    println!(
+    vp_shared::output::print_stdout_line(format_args!(
         "  {:<LABEL_WIDTH$}  {}",
-        "Package:".dimmed(),
-        format!("{}@{}", metadata.name, metadata.version).bright_blue()
-    );
-    println!("  {:<LABEL_WIDTH$}  {}", "Binaries:".dimmed(), metadata.bins.join(", "));
-    println!("  {:<LABEL_WIDTH$}  {}", "Node:".dimmed(), metadata.platform.node.bright_green());
-    println!("  {:<LABEL_WIDTH$}  {}", "Installed:".dimmed(), installed_str.dimmed());
+        style("Package:").dim(),
+        style(format!("{}@{}", metadata.name, metadata.version)).blue().bright()
+    ));
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Binaries:").dim(),
+        metadata.bins.join(", ")
+    ));
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Node:").dim(),
+        style(&metadata.platform.node).green().bright()
+    ));
+    vp_shared::output::print_stdout_line(format_args!(
+        "  {:<LABEL_WIDTH$}  {}",
+        style("Installed:").dim(),
+        style(&installed_str).dim()
+    ));
 
     Ok(ExitStatus::default())
 }

@@ -9,16 +9,7 @@
 ## `vpt chmod +x external/vp`
 
 
-## `vpt write-file home/bin/node old-node-shim`
-
-
-## `vpt write-file home/bin/npm old-npm-shim`
-
-
-## `vpt write-file home/bin/pnpm old-pnpm-shim`
-
-
-## `vpt write-file home/bin/pnpx old-pnpx-shim`
+## `node seed-owned-shims.cjs`
 
 
 ## `vpt write-file user-bin/node user-node-shim`
@@ -29,19 +20,19 @@
 
 ## `VP_HOME=${workspace}/home VP_VERSION=mixed-shims VP_NODE_MANAGER=no VP_PM_MANAGER=no VP_PNPM_MANAGER=yes PATH=${workspace}/user-bin${PATH_SEPARATOR}${PATH} ./external/vp`
 
-安装会刷新每个 Vite+ shim，而不考虑管理偏好，同时不会影响 PATH 中其他位置的用户工具
+Installation places owned shims according to each management preference, leaving user tools elsewhere on PATH untouched
 
 
-## `vpt stat-file home/bin/node --assert symlink`
-
-```
-home/bin/node: symlink
-```
-
-## `vpt stat-file home/bin/npm --assert symlink`
+## `vpt stat-file home/fallback-bin/node --assert symlink`
 
 ```
-home/bin/npm: symlink
+home/fallback-bin/node: symlink
+```
+
+## `vpt stat-file home/fallback-bin/npm --assert symlink`
+
+```
+home/fallback-bin/npm: symlink
 ```
 
 ## `vpt stat-file home/bin/pnpm --assert symlink`

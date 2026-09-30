@@ -1,28 +1,28 @@
-# 为什么使用 Yarn 4
+# command_why_yarn4
 
 ## `vp install -- --mode=update-lockfile`
 
-应先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-➤ YN0000: · Yarn <版本>
-➤ YN0000: ┌ 解析步骤
-➤ YN0085: │ + test-vite-plus-package-optional@npm:1.0.0、test-vite-plus-package@npm:1.0.0、testnpm2@npm:1.0.1
-➤ YN0000: └ 已完成
-➤ YN0000: ┌ 获取步骤
-➤ YN0013: │ 已向项目添加 3 个软件包（+ <大小> KiB）。
-➤ YN0000: └ 已完成
-➤ YN0000: ┌ 链接步骤
-➤ YN0073: │ 因 mode=update-lockfile 而跳过
-➤ YN0000: └ 已完成
-➤ YN0000: · 已完成，但有警告，用时 <时长> <时长>
+➤ YN0000: · Yarn <version>
+➤ YN0000: ┌ Resolution step
+➤ YN0085: │ + test-vite-plus-package-optional@npm:1.0.0, test-vite-plus-package@npm:1.0.0, testnpm2@npm:1.0.1
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Fetch step
+➤ YN0013: │ 3 packages were added to the project (+ <size> KiB).
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Link step
+➤ YN0073: │ Skipped due to mode=update-lockfile
+➤ YN0000: └ Completed
+➤ YN0000: · Done with warnings in <duration>
 ```
 
 ## `vp why testnpm2`
 
-应显示软件包为何被安装
+should show why package is installed
 
 ```
 └─ command-why-yarn4@workspace:.
@@ -31,7 +31,7 @@ VITE+ - Web 的统一工具链
 
 ## `vp explain testnpm2`
 
-应与 explain 别名一起正常工作
+should work with explain alias
 
 ```
 └─ command-why-yarn4@workspace:.
@@ -40,7 +40,7 @@ VITE+ - Web 的统一工具链
 
 ## `vp why test-vite-plus-package`
 
-应显示为何安装了开发依赖包
+should show why dev package is installed
 
 ```
 └─ command-why-yarn4@workspace:.
@@ -49,7 +49,7 @@ VITE+ - Web 的统一工具链
 
 ## `vp why testnpm2 -r`
 
-应支持 yarn@2+ 中的递归查询
+should support recursive in yarn@2+
 
 ```
 └─ command-why-yarn4@workspace:.
@@ -58,17 +58,17 @@ VITE+ - Web 的统一工具链
 
 ## `vp why testnpm2 test-vite-plus-package`
 
-应警告存在多个包，并使用第一个包
+should warn about multiple packages and use first
 
 ```
-警告：yarn 一次只支持检查一个包，正在使用第一个包
+warn: yarn only supports checking one package at a time, using first package
 └─ command-why-yarn4@workspace:.
    └─ testnpm2@npm:1.0.1 (via npm:1.0.1)
 ```
 
 ## `vp why testnpm2 --json`
 
-应警告 `--json` 不受 yarn 支持
+should warn that --json not supported by yarn
 
 ```
 warn: yarn does not support --json.
@@ -78,7 +78,7 @@ warn: yarn does not support --json.
 
 ## `vp why testnpm2 --long`
 
-应警告 yarn 不支持 --long
+should warn that --long not supported by yarn
 
 ```
 warn: yarn does not support --long.
@@ -88,9 +88,9 @@ warn: yarn does not support --long.
 
 ## `vp why testnpm2 --parseable`
 
-应警告 `--parseable` 不受 yarn 支持
+should warn that --parseable not supported by yarn
 
-```text
+```
 warn: yarn does not support --parseable.
 └─ command-why-yarn4@workspace:.
    └─ testnpm2@npm:1.0.1 (via npm:1.0.1)
@@ -98,7 +98,7 @@ warn: yarn does not support --parseable.
 
 ## `vp why testnpm2 -P`
 
-应警告 `--prod` 不受 yarn 支持
+should warn that --prod not supported by yarn
 
 ```
 warn: yarn does not support --prod.
@@ -108,7 +108,7 @@ warn: yarn does not support --prod.
 
 ## `vp why testnpm2 --find-by customFinder`
 
-应警告 `--find-by` 不受 yarn 支持
+should warn that --find-by not supported by yarn
 
 ```
 warn: yarn does not support --find-by.
@@ -118,7 +118,7 @@ warn: yarn does not support --find-by.
 
 ## `vp why testnpm2 --exclude-peers`
 
-应通过移除 `--peers` 标志来排除对等依赖
+should exclude peers by removing --peers flag
 
 ```
 └─ command-why-yarn4@workspace:.

@@ -23,7 +23,6 @@ VITE+ - The Unified Toolchain for the Web
 {
   "name": "migration-upgrade-browser-peer-only-pnpm",
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "playwright": "*",

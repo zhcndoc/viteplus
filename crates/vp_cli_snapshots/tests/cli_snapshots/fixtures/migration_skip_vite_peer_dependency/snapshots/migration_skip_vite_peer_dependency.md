@@ -1,5 +1,10 @@
 # 迁移_跳过_Vite_对等依赖
 
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
+
 ## `vp migrate --no-interactive`
 
 迁移应保留 Vite 的同级依赖契约

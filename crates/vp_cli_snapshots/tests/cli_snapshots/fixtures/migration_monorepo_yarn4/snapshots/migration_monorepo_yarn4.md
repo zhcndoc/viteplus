@@ -1,5 +1,10 @@
 # 迁移单仓库 Yarn 4
 
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
+
 ## `vp migrate --no-interactive`
 
 迁移应合并 vite.config.ts 并移除 oxlintrc
@@ -47,6 +52,13 @@ export default defineConfig({
         "specifier": "vite-plus/oxlint-plugin"
       }
     ]
+  },
+  test: {
+    // Vitest v4 compatibility: preserve mock call history.
+    // Remove after tests no longer rely on calls from setup or earlier tests.
+    // https://viteplus.dev/guide/vitest-v5#remove-unneeded-compatibility-settings
+    // https://vitest.dev/guide/migration/#clearmocks-is-enabled-by-default
+    clearMocks: false
   },
   plugins: lazyPlugins(() => [react()]),
 });

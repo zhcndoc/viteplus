@@ -1,5 +1,10 @@
 # 迁移_monorepo_根目录_vitest_相邻
 
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
+
 ## `vp migrate --no-interactive`
 
 根目录中存在与 Vitest 相邻的依赖，但没有直接依赖 Vitest，仍会添加一个固定版本的直接 Vitest 依赖
@@ -24,7 +29,6 @@ VITE+ - Web 的统一工具链
     "prepare": "vp config"
   },
   "devDependencies": {
-    "vite": "catalog:",
     "vitest-browser-svelte": "^2.1.0",
     "vite-plus": "catalog:",
     "vitest": "catalog:"

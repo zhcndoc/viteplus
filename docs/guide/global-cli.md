@@ -1,3 +1,49 @@
+<script setup lang="ts">
+import { getScrollOffset } from 'vitepress';
+import { nextTick, onMounted, onUnmounted } from 'vue';
+
+function openTarget() {
+  let target: HTMLElement | null;
+  try {
+    target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  } catch {
+    return;
+  }
+  if (!target?.closest('details')) return;
+
+  for (let details = target.closest('details'); details; details = details.parentElement?.closest('details') ?? null) {
+    details.open = true;
+  }
+
+  // VitePress cannot measure a heading inside closed details. Correct the scroll after revealing it.
+  requestAnimationFrame(() => {
+    if (!target.isConnected) return;
+    const top = window.scrollY + target.getBoundingClientRect().top - getScrollOffset()
+      + Number.parseInt(window.getComputedStyle(target).paddingTop, 10);
+    window.scrollTo(0, top);
+  });
+}
+
+function onAnchorClick(event: MouseEvent) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+  const link = event.target instanceof Element ? event.target.closest('a') : null;
+  // Clicking the current hash again does not emit hashchange.
+  if (link?.href === location.href) openTarget();
+}
+
+onMounted(async () => {
+  window.addEventListener('hashchange', openTarget);
+  document.addEventListener('click', onAnchorClick);
+  await nextTick();
+  openTarget();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('hashchange', openTarget);
+  document.removeEventListener('click', onAnchorClick);
+});
+</script>
+
 # Global CLI
 
 Global CLI 是一个独立的 `vp` 二进制文件，用于机器级运行时和软件包管理。它包含 Vite+ 工具链，不要求预先安装 Node.js，也无需将 `vite-plus` 添加到项目中即可使用。
@@ -265,6 +311,20 @@ Vite+ 会在 shim 分派和 shell 集成期间设置其他 `VP_*` 变量（递�
 
 Vite+ 还遵循以下标准环境变量：
 
+#### Nushell and XDG directories
+
+If you customize `XDG_DATA_HOME` or `XDG_CONFIG_HOME`, set them **before starting Nushell**, through your terminal application, operating system, or parent shell. This is a [Nushell startup requirement](https://www.nushell.sh/book/configuration.html#changing-default-directories); setting them only in `config.nu` or `env.nu` does not configure the running session's startup directories.
+
+Assignments in those files still affect child processes. The Vite+ installer starts a child Nushell to locate its vendor autoload directory, so it can write `vite-plus.nu` to a directory that normal new sessions do not read. Installation can succeed while `vp` remains unavailable in those sessions.
+
+If this happens, open your Nushell configuration with `config nu` and add a `source` line pointing to the installed Vite+ `env.nu` file. For a default fresh macOS or Linux installation without a custom `XDG_CONFIG_HOME`, use:
+
+```nu
+source ~/.config/vite-plus/env.nu
+```
+
+For a custom `XDG_CONFIG_HOME`, use the absolute path to `<XDG_CONFIG_HOME>/vite-plus/env.nu` as resolved during installation. For an installation under `VP_HOME` or an existing `~/.vite-plus` installation, use `<VP_HOME>/env.nu` or `~/.vite-plus/env.nu` instead. Replace placeholders with actual paths and quote paths containing spaces. Open a new Nushell session and run `vp help` to verify the configuration.
+
 #### `CI`
 
 - **用途**：表示正在 CI 环境中运行
@@ -289,6 +349,24 @@ Vite+ 还遵循以下标准环境变量：
 例如，`VP_VERSION=1.0.0 vp-setup.exe --version 2.0.0` 会安装 2.0.0 版本。
 
 :::
+
+### Homebrew
+
+对于 Homebrew 安装，首次运行 `vp` 命令时会设置 shell、shim 和环境管理偏好。它会复用 Homebrew 的二进制文件和捆绑的 JavaScript。设置完成状态保存在用户目录中，不需要写入 Homebrew 前缀。
+
+只要已安装的二进制文件没有变化，后续命令就会复用该设置。当 Homebrew 替换版本时，生成的 shim 会跟随 Homebrew 对外提供的 `vp` 入口。替换期间，设置会保留已保存的管理偏好。
+
+若要在首次运行时优先使用现有的 Node.js 和包管理器，请使用：
+
+```bash
+VP_NODE_MANAGER=no VP_PM_MANAGER=no vp help
+```
+
+设置完成后，使用 `vp env off` 更改此偏好。缺少运行时或项目依赖时，相关命令仍可下载它们。
+
+使用 Homebrew [升级](/guide/upgrade#homebrew)或[移除](/guide/implode#homebrew)其管理的软件包。
+
+`vp env doctor` 会识别 Homebrew 安装及其二进制文件路径，并分别检查 `vp` 命令和 `PATH` 中的用户 shim 目录。如果只有 shim 目录缺失，请按照其 shell 设置说明启用 shim。
 
 ## 不使用本地软件包
 

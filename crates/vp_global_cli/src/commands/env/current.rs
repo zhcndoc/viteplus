@@ -47,11 +47,15 @@ struct PackageManagerInfo {
 }
 
 fn print_rows(title: &str, rows: &[(String, String)]) {
-    println!("{}", help::render_heading(title));
+    vp_shared::output::print_stdout_line(format_args!("{}", help::render_heading(title)));
     let label_width = rows.iter().map(|(label, _)| label.chars().count()).max().unwrap_or(0);
     for (label, value) in rows {
         let padding = " ".repeat(label_width.saturating_sub(label.chars().count()));
-        println!("  {}{}  {value}", help::accent(label), padding);
+        vp_shared::output::print_stdout_line(format_args!(
+            "  {}{}  {value}",
+            help::accent(label),
+            padding
+        ));
     }
 }
 
@@ -108,7 +112,10 @@ pub async fn execute(
     };
 
     if json {
-        println!("{}", serde_json::to_string_pretty(&CurrentEnvInfo { node, package_manager })?);
+        vp_shared::output::print_stdout_line(format_args!(
+            "{}",
+            serde_json::to_string_pretty(&CurrentEnvInfo { node, package_manager })?
+        ));
         return Ok(ExitStatus::default());
     }
 
@@ -126,7 +133,7 @@ pub async fn execute(
     }
     if let Some(package_manager) = package_manager {
         if scope.includes_node() {
-            println!();
+            vp_shared::output::print_stdout_line(format_args!(""));
         }
         let mut rows = vec![
             ("Name".into(), package_manager.name),
@@ -189,7 +196,7 @@ async fn resolve_package_manager_info(
         {
             let selected = if scope.package_manager().is_some() {
                 // Project provenance is optional when the executable comes from PATH.
-                vp_pm_cli::resolve_environment_package_manager_spec(cwd, None, None)
+                vp_pm_cli::resolve_environment_package_manager_spec(cwd, None)
                     .ok()
                     .flatten()
                     .filter(|resolution| resolution.package_manager_type == selected_type)
@@ -215,13 +222,67 @@ async fn resolve_package_manager_info(
     }
 
     let resolution = match scope.package_manager() {
+        Some(vp_pm_cli::PackageManagerType::Npm) => {
+            package_manager::resolve_shim_for(cwd, vp_pm_cli::PackageManagerType::Npm).await?
+        }
         Some(package_manager) => {
             Some(package_manager::resolve_current_or_fallback_for(cwd, package_manager).await?)
         }
         None => package_manager::resolve_current_for(cwd, None).await?,
     };
     let Some(resolution) = resolution else {
-        return Ok(None);
+        // A detected npm project without a version pin runs Node's bundled npm.
+        let bin_dir = if config.node_shim_mode == ShimMode::SystemFirst
+            && let Some(node_path) = crate::shim::dispatch::find_system_tool("node")
+        {
+            let node_path = crate::shim::dispatch::resolve_external_node_executable(node_path)
+                .map_err(|error| Error::Other(error.into()))?;
+            node_path
+                .parent()
+                .ok_or_else(|| Error::Other("Node has no bin directory".into()))?
+                .to_absolute_path_buf()
+        } else {
+            // Inspect the selected runtime without installing it just to report its state.
+            let resolution = resolve_version(cwd).await?;
+            let home = vp_shared::EnvConfig::get()
+                .dirs
+                .data
+                .join("js_runtime")
+                .join("node")
+                .join(&resolution.version);
+            if cfg!(windows) { home } else { home.join("bin") }
+        };
+        let bin_paths = selected_type
+            .bin_names()
+            .iter()
+            .map(|name| {
+                let path = bin_dir.join(name);
+                let path = if cfg!(windows) { path.with_extension("cmd") } else { path };
+                ((*name).to_string(), path.as_path().display().to_string())
+            })
+            .collect();
+        let manifest = bin_dir.join(if cfg!(windows) {
+            "node_modules/npm/package.json"
+        } else {
+            "../lib/node_modules/npm/package.json"
+        });
+        let version = tokio::fs::read_to_string(&manifest)
+            .await
+            .ok()
+            .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok())
+            .and_then(|manifest| manifest["version"].as_str().map(str::to_string));
+        return Ok(Some(PackageManagerInfo {
+            name: selected_type.to_string(),
+            version: version.clone().unwrap_or_else(|| "unknown".into()),
+            source: "Node.js bundled npm".into(),
+            source_path: None,
+            project_root: selected
+                .and_then(|resolution| resolution.project_root)
+                .map(|path| path.as_path().display().to_string()),
+            installed: version.is_some(),
+            bin_paths,
+            mode,
+        }));
     };
     let package_manager_type = resolution.package_manager_type;
     let version = resolution.version.to_string();

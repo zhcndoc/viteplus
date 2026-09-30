@@ -8,6 +8,15 @@ Yarn Classic 会回退到安装操作，因为安装过程已经会对依赖进�
 warn: Yarn Classic dedupes during install, falling back to yarn install
 ```
 
+## `vp dedupe --check -- --silent`
+
+warns about unsupported --check and still falls back to install
+
+```
+warn: yarn <2 does not support --check.
+warn: Yarn Classic dedupes during install, falling back to yarn install
+```
+
 ## `vpt print-file package.json`
 
 验证 Yarn Classic 已完成

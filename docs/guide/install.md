@@ -39,7 +39,7 @@ Vite+ 按照以下顺序检测包管理器：
 
 Vite+ 当前会下载所声明的包管理器（即 `onFail: "download"` 的行为）；其他 `onFail` 值虽被接受，但尚未做区分处理。
 
-显式的 `packageManager` 字段（或 `devEngines.packageManager` 声明）也会影响匹配的包管理器 shim。如果项目包含 `packageManager: "npm@10.9.4"`，`npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名对也遵循相同方式：`pnpm`/`pnpx`、`yarn`/`yarnpkg` 以及 `bun`/`bunx`。不匹配的工具不会被转换；在 `pnpm` 项目中使用 `npm` 仍然会解析为 npm。
+显式的 `packageManager` 字段（或 `devEngines.packageManager` 声明）也会影响匹配的包管理器 shim。如果项目包含 `packageManager: "npm@10.9.4"`，`npm` 和 `npx` 会使用 npm 10.9.4。其他生成的别名也遵循相同方式：`pnpm`/`pnpx`/`pn`/`pnx`、`yarn`/`yarnpkg` 以及 `bun`/`bunx`。不匹配的工具不会被改写；在 `pnpm` 项目中调用 `npm` 仍会解析为 npm。
 
 ## 用法
 

@@ -1,29 +1,30 @@
-# 不支持迁移_vitest3
+# migration_not_supported_vitest3
 
 ## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"3.2.4"}'`
 
-将已安装的 vitest 设为存根，以便 migrate 离线读取不受支持的版本
+stub the installed vitest so migrate reads the unsupported version offline
 
 
 ## `vp migrate --no-interactive`
 
-迁移应该失败，因为不支持当前的 vitest 版本
+migration should fail because vitest version is not supported
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✘ package.json 中的 vitest@3.2.4 不受自动迁移支持
+Vitest v5: 1 review item (1 block dependency updates)
 
-请先将 vitest 升级到 >=4.0.0 版本
-
-Vite+ 目前还无法自动迁移此项目。
+package.json
+  1:1 BLOCK [source-version] Upgrade the original project to Vitest 4 before running this migration.
+    Docs: https://viteplus.dev/guide/vitest-v5#before-you-migrate
+Resolve the blocking Vitest v5 findings, then re-run `vp migrate`. No project files were changed.
 ```
 
 ## `vpt print-file package.json`
 
-检查 package.json 是否已更新
+check package.json is not updated
 
 ```
 {

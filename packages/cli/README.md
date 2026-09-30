@@ -73,7 +73,9 @@ export default defineConfig({
     tasks: {
       'generate:icons': {
         command: 'node scripts/generate-icons.js',
-        env: ['ICON_THEME'],
+        cache: {
+          env: ['ICON_THEME'],
+        },
       },
     },
   },
@@ -201,7 +203,7 @@ Add package-manager overrides so that other packages use the Vite+ versions. Ali
 ```json
 "overrides": {
   "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "4.1.11"
+  "vitest": "5.0.1"
 }
 ```
 
@@ -210,7 +212,7 @@ If you are using `pnpm`, add this to your `pnpm-workspace.yaml`:
 ```yaml
 overrides:
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: 4.1.11
+  vitest: 5.0.1
 ```
 
 Or, if you are using Yarn:
@@ -218,7 +220,7 @@ Or, if you are using Yarn:
 ```json
 "resolutions": {
   "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "4.1.11"
+  "vitest": "5.0.1"
 }
 ```
 

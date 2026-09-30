@@ -20,7 +20,7 @@ VITE+ - Web 的统一工具链
 检查 .node-version 是否由 volta.node 创建
 
 ```
-20.19.0
+24.11.0
 ```
 
 ## `vpt print-file package.json`
@@ -35,7 +35,7 @@ package.json 中保留了 volta 字段（未移除）
     "vite-plus": "catalog:"
   },
   "volta": {
-    "node": "20.19.0",
+    "node": "24.11.0",
     "npm": "10.2.5"
   },
   "devEngines": {

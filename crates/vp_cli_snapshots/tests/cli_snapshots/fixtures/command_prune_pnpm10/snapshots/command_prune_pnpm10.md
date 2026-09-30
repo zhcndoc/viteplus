@@ -1,8 +1,8 @@
-# 命令 prune_pnpm10
+# command_prune_pnpm10
 
 ## `vp install`
 
-应先安装软件包
+should install packages first
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -21,29 +21,29 @@ Done in <duration> using pnpm <version>
 
 ## `vp pm prune --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm prune [选项] [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm prune [OPTIONS] [-- <PASS_THROUGH_ARGS>...]
 
-移除不必要的软件包
+Remove unnecessary packages
 
-参数：
-  [PASS_THROUGH_ARGS]...  其他参数
+Arguments:
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  --prod         移除 devDependencies
-  --no-optional  移除可选依赖
-  -h, --help     打印帮助信息
+Options:
+  --prod         Remove devDependencies
+  --no-optional  Remove optional dependencies
+  -h, --help     Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/install
 ```
 
 ## `vp pm prune`
 
-应清理多余的依赖项
+should prune extraneous dependencies
 
 ```
 Lockfile is up to date, resolution step is skipped
@@ -71,7 +71,7 @@ Already up to date
 
 ## `vp pm prune --prod`
 
-应该清理开发依赖
+should prune dev dependencies
 
 ```
 Lockfile is up to date, resolution step is skipped
@@ -79,7 +79,7 @@ Packages: -1
 -
 
 devDependencies:
-- test-vite-plus-package 1.0.0
+- test-vite-plus-package
 ```
 
 ## `vpt print-file package.json`
@@ -103,7 +103,7 @@ devDependencies:
 
 ## `vp pm prune --no-optional`
 
-应清理可选依赖
+should prune optional dependencies
 
 ```
 Lockfile is up to date, resolution step is skipped
@@ -111,7 +111,7 @@ Packages: -1
 -
 
 optionalDependencies:
-- test-vite-plus-package-optional 1.0.0
+- test-vite-plus-package-optional
 
 devDependencies:
  test-vite-plus-package 1.0.0
@@ -138,17 +138,17 @@ devDependencies:
 
 ## `vp pm prune --prod --no-optional`
 
-应同时清理开发依赖和可选依赖
+should prune both dev and optional dependencies
 
 ```
-锁定文件已是最新，已跳过解析步骤
-软件包：-1
+Lockfile is up to date, resolution step is skipped
+Packages: -1
 -
 
-可选依赖：已跳过
+optionalDependencies: skipped
 
-开发依赖：
-- test-vite-plus-package 1.0.0
+devDependencies:
+- test-vite-plus-package
 ```
 
 ## `vpt print-file package.json`
@@ -172,8 +172,9 @@ devDependencies:
 
 ## `vp pm prune -- --loglevel=warn`
 
-应支持透传参数
+should support pass through arguments
 
+```
 ```
 
 ## `vpt print-file package.json`

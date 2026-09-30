@@ -20,7 +20,11 @@ vp lint --type-aware
 
 直接在根目录的 `vite.config.ts` 中的 `lint` 块内配置 lint，这样所有配置都可以集中在一个位置。我们不建议在 Vite+ 中使用 `oxlint.config.ts` 或 `.oxlintrc.json`。
 
-Vite+ 目前不支持嵌套的 lint 配置。现在，请在根目录的 `vite.config.ts` 中使用 [`lint.overrides`](/guide/monorepo#root-config-with-overrides) 来配置针对文件或包的规则。长期行为仍在讨论中；请[分享你的用例和预期](/guide/troubleshooting#nested-lint-or-format-config-is-not-applied)，帮助我们完善相关方案。
+`vp lint` 会从工作目录查找配置，因此从包目录运行时，如果包配置中没有自己的 `lint` 块，就会使用根配置。相对文件参数的含义保持不变。请使用 [`lint.overrides`](/guide/monorepo#root-config-with-overrides) 设置特定文件或包的规则，不要在包配置中添加 `lint` 块。
+
+如果工作区根目录存在 `lint` 块，`vp check` 会使用该配置，即使命令是在包目录中运行。包配置不能替换 `vp check` 的这些 lint 设置。
+
+显式使用 `vp lint -c <path>` 或 `vp lint --config <path>` 可选择其他配置。否则，Oxlint 会查找最近的、包含 `lint` 块的 `vite.config.*` 文件。支持的扩展名包括 `.js`、`.mjs`、`.ts`、`.cjs`、`.mts` 和 `.cts`。嵌套配置不会覆盖单个文件的设置。
 
 对于上游规则集、选项和兼容性详情，请参阅 [Oxlint 文档](https://oxc.rs/docs/guide/usage/linter.html)。
 

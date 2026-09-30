@@ -1,23 +1,23 @@
-# 迁移_升级_版本_表_pnpm
+# migration_upgrade_version_table_pnpm
 
 ## `vpt write-file node_modules/vite/package.json '{"name":"@voidzero-dev/vite-plus-core","version":"0.1.21","bundledVersions":{"vite":"8.0.0"}}'`
 
-为已安装的 vite-plus-core 别名创建存根，以便读取上游 Vite 的原始版本
+stub the installed vite-plus-core alias so the raw upstream vite version is read
 
 
 ## `vp migrate --no-interactive`
 
-现有 Vite+ 升级会显示工具链版本变更表，其中包含原始的 vite 行
+existing-Vite+ upgrade shows the toolchain version-change table with the raw vite row
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
+• Dependencies:
     vite-plus            0.1.21 → <version>
     vite                 8.0.0  → <version>
-    vitest               3.2.4  → <version>
-    @vitest/coverage-v8  3.2.4  → <version>
-• 已配置包管理器设置
+    vitest               4.1.8  → <version>
+    @vitest/coverage-v8  4.1.8  → <version>
+• Package manager settings configured
 ```

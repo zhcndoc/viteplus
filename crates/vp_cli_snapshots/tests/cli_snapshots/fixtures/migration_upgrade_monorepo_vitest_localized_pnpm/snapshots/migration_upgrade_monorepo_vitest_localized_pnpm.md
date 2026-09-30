@@ -24,7 +24,6 @@ VITE+ - 面向 Web 的统一工具链
   "name": "migration-upgrade-monorepo-vitest-localized-pnpm",
   "private": true,
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {
@@ -46,7 +45,6 @@ VITE+ - 面向 Web 的统一工具链
   "name": "app",
   "devDependencies": {
     "@vitest/ui": "catalog:",
-    "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
   }

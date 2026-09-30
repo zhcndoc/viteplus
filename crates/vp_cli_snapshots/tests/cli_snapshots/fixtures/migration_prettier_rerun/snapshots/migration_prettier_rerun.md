@@ -28,7 +28,6 @@ VITE+ - The Unified Toolchain for the Web
   },
   "devDependencies": {
     "prettier": "^3.0.0",
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

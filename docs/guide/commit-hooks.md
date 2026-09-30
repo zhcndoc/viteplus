@@ -80,7 +80,14 @@ vp config --no-agent
 
 ### `vp staged`
 
-`vp staged` 使用 `vite.config.ts` 中的 `staged` 配置运行暂存文件检查。要在每次提交前运行它，请将其添加到项目自有的 pre-commit 钩子中：
+`vp staged` 使用 `vite.config.ts` 中的 `staged` 配置运行暂存文件检查。它捆绑了 `lint-staged` 17，并要求满足以下条件：
+
+- Node.js `22.x` 系列的 `22.22.1` 或更高版本，或 `24.11.0` 或更高版本
+- Git `2.32.0` 或更高版本
+
+暂存检查不再支持 Node.js `20.x`。在 pre-commit 钩子中运行 `vp staged` 时也必须满足这些要求。使用此命令前，请升级项目的 Node.js 运行时，以及开发者机器和 CI runner 上的 Git。上游变更详情请参阅 [lint-staged 17 发行说明](https://github.com/lint-staged/lint-staged/releases/tag/v17.0.0)。
+
+要在每次提交前运行它，请将其添加到项目自有的 pre-commit 钩子中：
 
 ```bash
 vp staged

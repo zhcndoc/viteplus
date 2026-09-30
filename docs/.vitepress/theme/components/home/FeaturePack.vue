@@ -58,30 +58,27 @@ import rolldownIcon from "@assets/icons/rolldown-light.svg";
           <div class="text-white">$ vp pack</div>
           <div class="h-4" />
           <div class="text-grey">
-            CLI 构建入口：
+            ℹ 入口：
             <span class="terminal-blue">src/index.ts</span>
           </div>
           <div class="text-grey">
-            CLI 使用配置：
-            <span class="text-white">tsdown.config.ts</span>
+            ℹ tsconfig：
+            <span class="text-white">tsconfig.json</span>
           </div>
-          <div class="text-grey">
-            CLI tsdown <span class="text-white">0.14.1</span> 由 Rolldown 驱动
-          </div>
+          <div class="text-grey">ℹ 开始构建</div>
           <div class="h-4" />
           <div class="text-grey">
-            ESM <span class="text-white">dist/index.js</span>
+            ℹ <span class="text-white">dist/index.mjs</span>
             <span class="inline-block w-2" aria-hidden="true"></span>
             <span class="terminal-blue">4.8 kB</span>
           </div>
           <div class="text-grey">
-            DTS <span class="text-white">dist/index.d.ts</span>
+            ℹ <span class="text-white">dist/index.d.mts</span>
             <span class="inline-block w-2" aria-hidden="true"></span>
             <span class="terminal-blue">1.2 kB</span>
           </div>
           <div class="text-grey">
-            <span class="text-zest">✓</span> 打包完成，用时
-            <span class="text-white">128ms</span>
+            <span class="text-zest">✔</span> 构建完成，用时 <span class="text-white">128ms</span>
           </div>
         </div>
       </div>

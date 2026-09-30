@@ -1,5 +1,10 @@
 # 迁移_vitest_对等依赖
 
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
+
 ## `vp migrate --no-interactive`
 
 存在 vitest-browser-svelte 时，应将 vitest 添加到 devDeps

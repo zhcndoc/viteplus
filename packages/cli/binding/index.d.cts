@@ -7,6 +7,14 @@ type VoidNullable<T = void> = T | null | undefined | void;
 export type BindingStringOrRegex = string | RegExp;
 export type BindingResult<T> = { errors: BindingError[]; isBindingErrors: boolean } | T;
 
+/**
+ * Which binding artifact the generated loader actually loaded: `'native'` for
+ * a native addon, otherwise the `platformArchABI` of the WASI flavor. Every
+ * flavor napi-rs can build is listed, because `NAPI_RS_NATIVE_LIBRARY_PATH`
+ * can point the loader at a WASI artifact this package does not build itself.
+ */
+export declare const __napiBindingTarget: 'native' | 'wasm32-wasi' | 'wasm32-wasip1';
+
 export interface CodegenOptions {
   /**
    * Remove whitespace.
@@ -14,6 +22,24 @@ export interface CodegenOptions {
    * @default true
    */
   removeWhitespace?: boolean;
+  /**
+   * Escape non-ASCII characters in string literals, untagged template literals, regular
+   * expression literals and identifier names.
+   *
+   * Uses `\uXXXX` for characters up to U+FFFF and `\u{...}` for higher code points.
+   * Regular expressions use escaped UTF-16 surrogate pairs for higher code points instead;
+   * escaping changes the observable `RegExp.prototype.source` value.
+   *
+   * Code point escapes (`\u{...}`) require ES2015 or later; this option does not provide
+   * ES5-compatible output.
+   *
+   * Non-ASCII characters are left unescaped in tagged template quasis (whose raw text is
+   * observable), JSX names and text, JSX attribute strings, hashbangs and preserved comments.
+   * JavaScript expressions inside tagged templates and JSX are escaped normally.
+   *
+   * @default false
+   */
+  asciiOnly?: boolean;
   /**
    * How to handle legal comments (comments containing `@license`, `@preserve`, or starting with `//!`/`/*!`).
    *
@@ -1686,8 +1712,9 @@ export declare class BindingDevEngine {
    */
   registerClient(clientId: string): Promise<void>;
   /**
-   * Delivery notification from the serving middleware: the response for
-   * `filename` completed, so record its modules as shipped to that client.
+   * Delivery notification for the payload `filename`: the client reported that it
+   * ran the payload, so record its modules as shipped to that client. See
+   * `DevEngine::notify_payload_delivered`.
    */
   notifyPayloadDelivered(filename: string): Promise<void>;
   removeClient(clientId: string): Promise<void>;
@@ -2026,6 +2053,13 @@ export declare class TsconfigCache {
   size(): number;
 }
 
+/**
+ * Panics on purpose. CI calls this to check that a published binding can produce a
+ * symbolicated backtrace from its separately published debug info.
+ * See `scripts/misc/verify-debuginfo.mjs` and internal-docs/panic-symbolication/implementation.md
+ */
+export declare function __internalForcePanic(): void;
+
 export interface AliasItem {
   find: string;
   replacements: Array<string | undefined | null>;
@@ -2104,6 +2138,7 @@ export interface BindingChecksOptions {
   unresolvedEntry?: boolean;
   unresolvedImport?: boolean;
   filenameConflict?: boolean;
+  moduleLevelDirective?: boolean;
   commonJsVariableInEsm?: boolean;
   importIsUndefined?: boolean;
   emptyImportMeta?: boolean;
@@ -2112,6 +2147,8 @@ export interface BindingChecksOptions {
   configurationFieldConflict?: boolean;
   preferBuiltinFeature?: boolean;
   couldNotCleanDirectory?: boolean;
+  bundlerTimings?: boolean;
+  /** Deprecated alias for `bundlerTimings`. Rolldown uses `bundlerTimings` if both options have values. */
   pluginTimings?: boolean;
   duplicateShebang?: boolean;
   unsupportedTsconfigOption?: boolean;
@@ -2795,9 +2832,13 @@ export interface BindingOutputOptions {
     | boolean
     | string
     | RegExp
-    | ((source: string, sourcemapPath: string) => boolean);
+    | ((sources: Array<string>, sourcemapPath: string) => Uint8Array);
   sourcemapDebugIds?: boolean;
-  sourcemapPathTransform?: (source: string, sourcemapPath: string) => string;
+  /**
+   * Batched like `sourcemapIgnoreList` above. One call rewrites every source of a sourcemap,
+   * and the returned array matches the source array by index.
+   */
+  sourcemapPathTransform?: (sources: Array<string>, sourcemapPath: string) => Array<string>;
   sourcemapExcludeSources?: boolean;
   strict?: boolean | 'auto';
   minify?: boolean | 'dce-only' | MinifyOptions;
@@ -3443,6 +3484,9 @@ export interface ViteImportGlobMeta {
   isSubImportsPattern?: boolean;
 }
 
+/** Parse source and resolve lexical bindings for the TypeScript migration rules. */
+export declare function analyzeMigrationSource(filename: string, source: string): string;
+
 /** Error from batch import rewriting */
 export interface BatchRewriteError {
   /** The file path that had an error */
@@ -3546,6 +3590,9 @@ export interface DetectWorkspaceResult {
   root?: string;
 }
 
+/** Build documentation links with the same compiled origin as the native CLI. */
+export declare function documentationUrl(path: string): string;
+
 /**
  * Download a package manager
  *
@@ -3622,6 +3669,9 @@ export interface HooksArgs {
   command: 'enable' | 'disable' | 'status';
   hooksDir?: string;
 }
+
+/** Check inherited `.gitignore` rules without requiring the directory to exist. */
+export declare function isDirectoryGitignored(root: string, directory: string): boolean;
 
 /** Execution context after command dispatch selects the working directory. */
 export interface JsCommandContext {
@@ -3720,6 +3770,12 @@ export interface MigrateArgs {
   full?: boolean;
 }
 
+/**
+ * Move `env`, `untrackedEnv`, `input`, and `output` from the top level of
+ * each static `run.tasks` entry into its `cache` object.
+ */
+export declare function migrateTaskCacheConfig(viteConfigPath: string): TaskCacheConfigResult;
+
 export declare function parseConfigArgs(argv: Array<string>): ParseConfigArgsOutcome;
 
 export type ParseConfigArgsOutcome =
@@ -3764,6 +3820,12 @@ export interface PathAccess {
   /** Whether the path was read as a directory */
   readDir: boolean;
 }
+
+/** Remove a top-level key from a recognized Vite config object. */
+export declare function removeConfigKey(
+  viteConfigPath: string,
+  configKey: string,
+): MergeJsonConfigResult;
 
 /**
  * Rewrite ESLint scripts: rename `eslint` → `vp lint` and strip ESLint-only flags.
@@ -3956,6 +4018,16 @@ export interface StagedArgs {
   revert?: boolean;
   stash?: boolean;
   verbose?: boolean;
+}
+
+/** Result of moving task cache settings under `cache` */
+export interface TaskCacheConfigResult {
+  /** The updated vite config content */
+  content: string;
+  /** Whether any changes were made */
+  updated: boolean;
+  /** Tasks that set cache settings outside `cache` but could not be updated */
+  manualTasks: Array<string>;
 }
 
 /**

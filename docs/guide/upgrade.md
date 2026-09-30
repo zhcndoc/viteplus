@@ -32,6 +32,8 @@ vp toolchain --global
 
 ## 全局 `vp`
 
+Update the global CLI with:
+
 ```bash
 vp upgrade                        # 升级到最新版本
 vp upgrade --check                # 检查更新但不安装
@@ -76,6 +78,18 @@ vp upgrade --rollback
 ```
 
 每次升级后，较旧的版本会自动清理。当前使用的版本和上一个版本始终会被保留，因此回滚目标不会被删除。
+
+### Homebrew
+
+Homebrew 管理其安装的二进制文件和 JavaScript 软件包。使用以下命令更新：
+
+```bash
+brew upgrade vite-plus
+```
+
+`vp upgrade` 会检测 Homebrew 安装并引导你使用此命令，不会下载或安装其他版本。`--force`、指定版本和 `--rollback` 也遵循此规则。请使用 Homebrew 管理这些安装。
+
+`vp upgrade --check` 会引导你运行 `brew outdated vite-plus`。Homebrew 安装会禁用自动 npm 更新检查和通知。
 
 ## 预览构建
 

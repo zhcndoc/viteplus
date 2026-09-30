@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "@oxlint/plugins": "1.79.0",
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "packageManager": "pnpm@11.24.0"

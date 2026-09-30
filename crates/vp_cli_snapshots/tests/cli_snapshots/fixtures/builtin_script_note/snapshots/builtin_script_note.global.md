@@ -1,10 +1,10 @@
-# 内置脚本注释。
+# builtin_script_note
 
 ## `vp dev --port 12312312312`
 
-`vp dev` 指向 `dev` 脚本（无效端口会立即退出服务器）
+`vp dev` points at the `dev` script (invalid port exits the server immediately)
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -16,7 +16,7 @@ Error: No available ports found between 12312312312 and 65535
 
 ## `vp build`
 
-`vp build` 指向与抑制用例相同的构建脚本
+`vp build` points at the same build script used by the suppression cases
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -32,107 +32,107 @@ dist/assets/index-<hash>.js  <size> kB │ gzip: <size> kB
 
 ## `vp lint src/`
 
-每个可能被误认为脚本的内置命令都会显示相同的提示
+every built-in that can be mistaken for a script gets the same note
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-提示：您正在将 `vp lint` 作为 Vite+ 内置命令运行。如果您想运行 lint npm 脚本，请改用 `vpr lint`。
-发现 0 个警告和 0 个错误。
-在 <duration> 内完成：1 个文件，使用 <n> 条规则和 <n> 个线程。
+note: You are running `vp lint` as a Vite+ built-in command. If you meant to run the lint npm script, use `vpr lint` instead.
+Found 0 warnings and 0 errors.
+Finished in <duration> on 1 file with <n> rules using <n> threads.
 ```
 
 ## `cd src && vp lint .`
 
-提示：从子目录执行时会到达包含它的包，与 `vpr` 的行为一致。
+note reaches the enclosing package from a subdirectory, like `vpr` does
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-提示：你正在将 `vp lint` 作为 Vite+ 内置命令运行。如果你想运行 lint npm 脚本，请改用 `vpr lint`。
-发现 0 个警告和 0 个错误。
-在 <duration> 内完成了对 1 个文件的检查，使用了 <n> 条规则和 <n> 个线程。
+note: You are running `vp lint` as a Vite+ built-in command. If you meant to run the lint npm script, use `vpr lint` instead.
+Found 0 warnings and 0 errors.
+Finished in <duration> on 1 file with <n> rules using <n> threads.
 ```
 
 ## `vp format src/`
 
-`format` 别名会按输入内容到达本地 CLI，因此其自身的脚本会收到以下提示：
+the `format` alias reaches the local CLI as typed, so its own script gets the note
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-提示：您正在将 `vp format` 作为 Vite+ 内置命令运行。如果您想运行 format npm 脚本，请改用 `vpr format`。
-已在 <duration> 内使用 <n> 个线程处理了 1 个文件。
+note: You are running `vp format` as a Vite+ built-in command. If you meant to run the format npm script, use `vpr format` instead.
+Finished in <duration> on 1 files using <n> threads.
 ```
 
 ## `vp fmt src/`
 
-注意：这里仅有 `format` 脚本，而这并不是运行此命令时使用的名称
+no note: only `format` is a script here, and that is not the name this ran under
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-使用 <n> 个线程处理 1 个文件，于 <duration> 内完成。
+Finished in <duration> on 1 files using <n> threads.
 ```
 
 ## `vp help dev`
 
-本地路径检查原始的 `help` 拼写；全局 CLI 在委托给本地命令之前渲染帮助信息
+the local path checks the original `help` spelling; the global CLI renders help before local delegation
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp dev [ROOT] [OPTIONS]
+Usage: vp dev [ROOT] [OPTIONS]
 
-运行开发服务器。
-选项会转发给 Vite。
+Run the development server.
+Options are forwarded to Vite.
 
-参数：
-  [ROOT]  项目根目录（默认：当前目录）
+Arguments:
+  [ROOT]  Project root directory (default: current directory)
 
-选项：
-  --host [host]           [string] 指定主机名
-  --port <port>           [number] 指定端口
-  --open [path]           [boolean | string] 启动时打开浏览器
-  --cors                  [boolean] 启用 CORS
-  --strictPort            [boolean] 如果指定的端口已被占用则退出
-  --force                 [boolean] 强制优化器忽略缓存并重新打包
-  --experimentalBundle    [boolean] 使用实验性的完整打包模式（此功能高度实验性）
-  --base <path>           [string] 公共基础路径（默认：/）
+Options:
+  --host [host]           [string] specify hostname
+  --port <port>           [number] specify port
+  --open [path]           [boolean | string] open browser on startup
+  --cors                  [boolean] enable CORS
+  --strictPort            [boolean] exit if specified port is already in use
+  --force                 [boolean] force the optimizer to ignore the cache and re-bundle
+  --experimentalBundle    [boolean] use experimental full bundle mode (this is highly experimental)
+  --base <path>           [string] public base path (default: /)
   -l, --logLevel <level>  [string] info | warn | error | silent
-  --clearScreen           [boolean] 允许/禁用日志记录时清屏
-  -d, --debug [feat]      [string | boolean] 显示调试日志
-  -f, --filter <filter>   [string] 筛选调试日志
-  -m, --mode <mode>       [string] 设置环境模式
-  -h, --help              显示此消息
+  --clearScreen           [boolean] allow/disable clear screen when logging
+  -d, --debug [feat]      [string | boolean] show debug logs
+  -f, --filter <filter>   [string] filter debug logs
+  -m, --mode <mode>       [string] set env mode
+  -h, --help              Display this message
 
-示例：
+Examples:
   vp dev
   vp dev --open
   vp dev --host localhost --port 5173
 
-文档：https://viteplus.dev/guide/dev
+Documentation: https://viteplus.dev/guide/dev
 ```
 
 ## `vp preview --port 12312312312`
 
-注意：此项目没有 `preview` 脚本
+no note: this project has no `preview` script
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-启动预览服务器时出错：
-错误：在 12312312312 和 65535 之间没有可用端口
+error when starting preview server:
+Error: No available ports found between 12312312312 and 65535
 ```
 
 ## `vp lint src/`
 
-该提示仍会输出到管道输出中，例如被 AI 代理捕获的命令；它会发送到 stderr，因此解析后的 stdout 保持不变
+the note still reaches piped output, such as an AI agent capturing the command; it goes to stderr, so parsed stdout stays intact
 
 ```
-发现 0 个警告和 0 个错误。
-已在 <duration> 内完成对 1 个文件的检查，使用了 <n> 条规则和 <n> 个线程。
-[1m[2m提示：[0m[0m 你正在将 [94m`vp lint`[39m 作为 Vite+ 内置命令运行。如果你是想运行 lint npm 脚本，请改用 [94m`vpr lint`[39m。
+Found 0 warnings and 0 errors.
+Finished in <duration> on 1 file with <n> rules using <n> threads.
+note: You are running `vp lint` as a Vite+ built-in command. If you meant to run the lint npm script, use `vpr lint` instead.
 ```

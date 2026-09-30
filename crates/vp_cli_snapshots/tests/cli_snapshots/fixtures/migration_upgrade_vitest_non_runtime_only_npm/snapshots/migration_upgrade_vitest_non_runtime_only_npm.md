@@ -2,24 +2,23 @@
 
 ## `vp migrate --no-interactive`
 
-非运行时的 @vitest 软件包不得固定 vitest 版本
+non-runtime @vitest packages must not keep a vitest pin
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  npm <version>
-• 依赖项：
-    vite-plus          最新 → <version>
-    vite                      → <version>
-    @vitest/utils      4.1.8  → <version>
-    @vitest/ws-client  4.1.8  → <version>
-• 已配置软件包管理器设置
+• Dependencies:
+    vite-plus      latest → <version>
+    vite                  → <version>
+    @vitest/utils  4.1.8  → <version>
+• Package manager settings configured
 ```
 
 ## `vpt print-file package.json`
 
-内部软件包版本对齐，eslint 插件保持独立，移除 vitest
+internal packages align, eslint plugin stays independent, vitest is removed
 
 ```
 {
@@ -27,7 +26,7 @@ VITE+ - Web 的统一工具链
   "devDependencies": {
     "@vitest/eslint-plugin": "^1.6.0",
     "@vitest/utils": "<version>",
-    "@vitest/ws-client": "<version>",
+    "@vitest/ws-client": "^4.1.8",
     "vite-plus": "<version>"
   },
   "overrides": {

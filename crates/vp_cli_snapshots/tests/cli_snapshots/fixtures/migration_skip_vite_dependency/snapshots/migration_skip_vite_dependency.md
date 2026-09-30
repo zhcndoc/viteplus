@@ -1,5 +1,10 @@
 # 迁移_跳过_Vite_依赖
 
+## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
+
+record the original runner version without adding a direct dependency
+
+
 ## `vp migrate --no-interactive`
 
 当 vite 位于依赖项中时，迁移应跳过重写 vite 导入

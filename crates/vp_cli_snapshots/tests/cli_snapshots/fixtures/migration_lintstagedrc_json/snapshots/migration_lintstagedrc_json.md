@@ -80,7 +80,6 @@ VITE+ - Web 的统一工具链
 {
   "name": "migration-lintstagedrc",
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

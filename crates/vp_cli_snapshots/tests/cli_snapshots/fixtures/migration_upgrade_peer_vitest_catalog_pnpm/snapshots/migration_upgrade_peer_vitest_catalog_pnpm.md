@@ -23,7 +23,6 @@ peer 使用其解析后的公开范围，而不会直接获得 Vitest
 {
   "name": "migration-upgrade-peer-vitest-catalog-pnpm",
   "devDependencies": {
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {

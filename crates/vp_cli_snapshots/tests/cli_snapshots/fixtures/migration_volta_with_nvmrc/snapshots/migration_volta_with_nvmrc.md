@@ -1,31 +1,31 @@
-# 使用 nvmrc 迁移 Volta
+# migration_volta_with_nvmrc
 
 ## `vp migrate --no-interactive`
 
-`.nvmrc` 应优先于 `volta.node`
+.nvmrc should take priority over volta.node
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 迁移至 Vite+ <version>
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• Node 版本管理器文件已迁移至 .node-version
-→ 手动后续操作：
-  - 从 package.json 中移除 "volta" 字段
+• 2 config updates applied
+• Node version manager file migrated to .node-version
+→ Manual follow-up:
+  - Remove the "volta" field from package.json
 ```
 
 ## `vpt print-file .node-version`
 
-检查 .node-version 来自 .nvmrc（v20.19.0），而不是 volta.node（18.0.0）
+check .node-version comes from .nvmrc (v24.11.0), not volta.node (18.0.0)
 
 ```
-20.19.0
+24.11.0
 ```
 
 ## `vpt stat-file .nvmrc --assert-not file`
 
-检查 .nvmrc 是否已删除
+check .nvmrc is removed
 
 ```
 .nvmrc: missing
@@ -33,7 +33,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file package.json`
 
-volta 字段必须保持不变
+volta field must remain intact
 
 ```
 {

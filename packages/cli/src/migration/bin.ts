@@ -38,6 +38,8 @@ import { checkRolldownCompatibility } from './compat/runner.ts';
 import { canFormatWithOxfmt, collectChangedFormatPaths, formatMigratedProject } from './format.ts';
 import {
   addFrameworkShim,
+  applyVitestV5Migration,
+  applyVitestV5NodeMigration,
   checkVitestVersion,
   checkViteVersion,
   collectToolchainVersionChanges,
@@ -52,6 +54,8 @@ import {
   detectYarnPnpMode,
   ensureVitePlusBootstrap,
   finalizeCoreMigrationForExistingVitePlus,
+  finishVitestV5Migration,
+  formatVitestV5Findings,
   hasFrameworkShim,
   detectLegacyGitHooksMigrationCandidate,
   injectLintTypeCheckDefaults,
@@ -66,10 +70,14 @@ import {
   configureYarnNodeModulesMode,
   rewriteMonorepo,
   rewriteStandaloneProject,
+  planVitestV5Migration,
+  refreshVitestV5Migration,
   shouldSkipStagedMigrationForHooks,
   warnPackageLevelPrettier,
+  vitestV5NeedsMigration,
   type Framework,
   type NodeVersionManagerDetection,
+  type VitestV5MigrationPlan,
 } from './migrator.ts';
 import { prepareNpmViteAliasReinstall } from './npm-reinstall.ts';
 import type { MigrationOptions } from './options.ts';
@@ -526,7 +534,8 @@ function showMigrationSummary(options: {
     report.inlinedLintStagedConfigCount +
     report.removedConfigCount +
     report.tsdownImportCount +
-    report.wrappedPluginConfigCount;
+    report.wrappedPluginConfigCount +
+    report.migratedTaskCacheConfigCount;
 
   log(
     `${styleText('magenta', '◇')} ${updatedExistingVitePlus ? 'Updated' : 'Migrated'} ${accent(projectLabel)} to Vite+ ${VITE_PLUS_VERSION}`,
@@ -606,6 +615,9 @@ function showMigrationSummary(options: {
     log(
       `${styleText('gray', '•')} Inline Vite plugins wrapped with lazyPlugins for check/lint/fmt`,
     );
+  }
+  if (report.migratedTaskCacheConfigCount > 0) {
+    log(`${styleText('gray', '•')} Task cache settings moved under \`cache\``);
   }
   if (report.gitHooksConfigured) {
     log(`${styleText('gray', '•')} Git hooks configured`);
@@ -687,10 +699,33 @@ async function downloadSupportedPackageManager(options: {
   return downloadResult;
 }
 
+function completeVitestV5Migration(plan: VitestV5MigrationPlan, report: MigrationReport) {
+  const findings = finishVitestV5Migration(plan);
+  report.warnings = report.warnings.filter((warning) => !warning.startsWith('Vitest v5:'));
+  const summary = formatVitestV5Findings({ rootDir: plan.rootDir, findings });
+  if (summary) {
+    addMigrationWarning(report, summary);
+  }
+}
+
+function applyRefreshedVitestV5Migration(plan: VitestV5MigrationPlan): VitestV5MigrationPlan {
+  const refreshed = refreshVitestV5Migration(plan);
+  if (refreshed.findings.some((finding) => finding.severity === 'block')) {
+    prompts.log.warn(formatVitestV5Findings(refreshed));
+    cancelAndExit(
+      'Resolve the blocking Vitest v5 findings, then re-run `vp migrate`. Earlier setup steps may have changed project files; Vitest v5 edits were not applied.',
+      1,
+    );
+  }
+  applyVitestV5Migration(refreshed);
+  return refreshed;
+}
+
 async function executeMigrationPlan(
   workspaceInfoOptional: WorkspaceInfoOptional,
   plan: MigrationPlan,
   interactive: boolean,
+  vitestV5Plan: VitestV5MigrationPlan,
   preExistingChangedPaths?: ReadonlySet<string>,
 ): Promise<{
   installDurationMs: number;
@@ -725,6 +760,9 @@ async function executeMigrationPlan(
     }
   };
 
+  // Runtime pins must be usable before package-manager or tool migration commands.
+  applyVitestV5NodeMigration(vitestV5Plan);
+
   // 1. Download package manager + version validation
   const downloadResult = await downloadSupportedPackageManager({
     rootDir: workspaceInfoOptional.rootDir,
@@ -751,7 +789,11 @@ async function executeMigrationPlan(
   // 3. Migrate node version manager file → .node-version (independent of vite version)
   if (plan.migrateNodeVersionFile && plan.nodeVersionDetection) {
     updateMigrationProgress('Migrating node version file');
-    migrateNodeVersionManagerFile(workspaceInfo.rootDir, plan.nodeVersionDetection, report);
+    // The compatibility pass may have upgraded the selected Volta pin.
+    const detection = detectNodeVersionManagerFile(workspaceInfo.rootDir);
+    if (detection) {
+      migrateNodeVersionManagerFile(workspaceInfo.rootDir, detection, report);
+    }
   }
 
   updateMigrationProgress('Updating setup-vp workflows');
@@ -833,6 +875,10 @@ async function executeMigrationPlan(
     }
   }
 
+  // Earlier setup and tool migrations can abort or change the preflight inputs.
+  // Only now apply Vitest compatibility edits, using the original runner version.
+  vitestV5Plan = applyRefreshedVitestV5Migration(vitestV5Plan);
+
   // Preserve lint-staged whenever hook setup is disabled/unsafe or existing
   // project-owned hooks remain authoritative.
   const skipStagedMigration = shouldSkipStagedMigrationForHooks(
@@ -855,6 +901,9 @@ async function executeMigrationPlan(
       report,
     );
   }
+
+  clearMigrationProgress();
+  completeVitestV5Migration(vitestV5Plan, report);
 
   // 8. Install git hooks
   if (plan.shouldSetupHooks) {
@@ -978,6 +1027,15 @@ async function main() {
   const initialChangedPaths = await collectChangedFormatPaths(workspaceInfoOptional.rootDir);
   const preExistingChangedPaths = initialChangedPaths ? new Set(initialChangedPaths) : undefined;
   const resolvedPackageManager = workspaceInfoOptional.packageManager ?? 'unknown';
+  let vitestV5Plan = planVitestV5Migration(workspaceInfoOptional);
+  const vitestV5Preflight = formatVitestV5Findings(vitestV5Plan);
+  if (vitestV5Plan.findings.some((finding) => finding.severity === 'block')) {
+    prompts.log.warn(vitestV5Preflight);
+    cancelAndExit(
+      'Resolve the blocking Vitest v5 findings, then re-run `vp migrate`. No project files were changed.',
+      1,
+    );
+  }
 
   // Early return if already using Vite+ (only finalization/setup migrations may be needed)
   // In force-override mode (file: tgz overrides), skip this check and run full migration
@@ -995,11 +1053,15 @@ async function main() {
       workspaceInfoOptional.packageManagerVersion,
       options.interactive,
     );
-    let didMigrate = false;
+    let didMigrate = vitestV5NeedsMigration(vitestV5Plan);
+    const nodeUpgrades = applyVitestV5NodeMigration(vitestV5Plan);
     let installDurationMs = 0;
     let finalInstallOk = true;
     let canFormatMigratedProject = !process.env.VP_SKIP_INSTALL;
     const report = createMigrationReport();
+    // Report reviews at the end with updated locations. Keep them out of the
+    // report until then so review-only items do not force an up-to-date project
+    // through dependency reconciliation on every run.
     const migrationProgress = options.interactive
       ? prompts.spinner({ indicator: 'timer' })
       : undefined;
@@ -1112,10 +1174,12 @@ async function main() {
       pendingCoreMigration,
     );
     if (
+      coreMigrationResult.dependencies ||
       coreMigrationResult.scripts ||
       coreMigrationResult.tsconfigTypes ||
       coreMigrationResult.imports ||
-      coreMigrationResult.tsdownConfig
+      coreMigrationResult.tsdownConfig ||
+      coreMigrationResult.taskCacheConfig
     ) {
       didMigrate = true;
     }
@@ -1149,11 +1213,20 @@ async function main() {
         ? hasExistingVitePlusMigrationCandidates(workspaceInfoOptional, options)
         : hasExplicitExistingVitePlusSetupRequest(options))
     ) {
+      if (vitestV5Preflight) {
+        prompts.log.warn(vitestV5Preflight);
+      }
+      for (const warning of coreMigrationResult.taskCacheWarnings) {
+        prompts.log.warn(warning);
+      }
       if (skippedSetupCandidates) {
         log(FULL_MIGRATION_HINT);
       }
       prompts.outro(`This project is already using Vite+! ${accent('Happy coding!')}`);
       return;
+    }
+    for (const warning of coreMigrationResult.taskCacheWarnings) {
+      addMigrationWarning(report, warning);
     }
 
     const setupOptions = getExistingVitePlusSetupOptions(options, fullSetup);
@@ -1172,7 +1245,8 @@ async function main() {
         )
       : undefined;
 
-    let needsInstall = false;
+    // Runtime metadata can participate in the package manager's lockfile.
+    let needsInstall = coreMigrationResult.dependencies || nodeUpgrades > 0;
     if (vitePlusBootstrapPending) {
       const downloadResult = await ensureExistingPackageManager();
       if (downloadResult && packageManager) {
@@ -1349,6 +1423,14 @@ async function main() {
       didMigrate = true;
     }
 
+    // As in the full migration, defer Vitest writes until tool migration gates pass.
+    vitestV5Plan = applyRefreshedVitestV5Migration(vitestV5Plan);
+    // A versioned dependency migration can be needed even when the generic
+    // Vite+ bootstrap is already satisfied (for example a v4 community provider).
+    needsInstall ||= vitestV5Plan.changes.some(({ file }) =>
+      ['package.json', 'pnpm-workspace.yaml', '.yarnrc.yml'].includes(path.basename(file)),
+    );
+
     // Merge configs and reinstall once if any tool or bootstrap migration happened
     if (eslintMigrated || prettierMigrated || tsupMigrated) {
       updateMigrationProgress('Rewriting configs');
@@ -1389,6 +1471,8 @@ async function main() {
     }
 
     if (needsInstall) {
+      clearMigrationProgress();
+      completeVitestV5Migration(vitestV5Plan, report);
       const resolved = await ensureExistingPackageManager();
       updateMigrationProgress('Installing dependencies');
       const resolvedVersion = resolved?.version ?? packageManagerVersion;
@@ -1462,6 +1546,10 @@ async function main() {
     }
 
     // Check for Rolldown-incompatible config patterns (root + workspace packages)
+    if (!needsInstall) {
+      clearMigrationProgress();
+      completeVitestV5Migration(vitestV5Plan, report);
+    }
     await checkWorkspaceRolldownCompatibility(
       workspaceInfoOptional,
       report,
@@ -1522,6 +1610,7 @@ async function main() {
     workspaceInfoOptional,
     plan,
     options.interactive,
+    vitestV5Plan,
     preExistingChangedPaths,
   );
   showMigrationSummary({

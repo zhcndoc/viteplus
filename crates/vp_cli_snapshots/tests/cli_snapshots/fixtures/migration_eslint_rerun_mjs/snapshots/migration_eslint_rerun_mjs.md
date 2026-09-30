@@ -28,7 +28,6 @@ VITE+ - Web 的统一工具链
   },
   "devDependencies": {
     "eslint": "^9.0.0",
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

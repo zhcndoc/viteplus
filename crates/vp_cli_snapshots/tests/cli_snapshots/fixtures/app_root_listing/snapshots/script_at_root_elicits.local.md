@@ -9,7 +9,7 @@
 ```
 $ vp build ⊘ cache disabled
 
-[1m[31merror:[39m[0m `vp build` at the workspace root needs a target package.
+error: `vp build` at the workspace root needs a target package.
 
   Packages in this workspace:
     admin             apps/admin

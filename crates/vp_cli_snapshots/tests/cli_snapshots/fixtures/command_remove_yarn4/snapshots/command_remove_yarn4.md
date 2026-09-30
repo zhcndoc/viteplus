@@ -2,9 +2,9 @@
 
 ## `vp remove testnpm2 -D`
 
-删除不存在的软件包时应报错
+should error when remove not exists package
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Usage Error: Pattern testnpm2 doesn't match any packages referenced by this workspace
@@ -12,38 +12,38 @@ Usage Error: Pattern testnpm2 doesn't match any packages referenced by this work
 $ yarn remove [-A,--all] [--mode #0] ...
 ```
 
-*（跳过 1 个步骤到下一个行边界：步骤失败）*
+*(skipped 1 step(s) to the next line boundary: step failed)*
 
 ## `vp add testnpm2`
 
-应将软件包添加到依赖项中
+should add packages to dependencies
 
 ```
 ➤ YN0000: · Yarn <version>
-➤ YN0000: ┌ 解析步骤
+➤ YN0000: ┌ Resolution step
 ➤ YN0085: │ + testnpm2@npm:1.0.1
-➤ YN0000: └ 已完成
-➤ YN0000: ┌ 获取步骤
-➤ YN0013: │ 已向项目添加一个软件包（+ <size> KiB）。
-➤ YN0000: └ 已完成
-➤ YN0000: ┌ 链接步骤
-➤ YN0000: └ 已完成
-➤ YN0000: · 用时 <duration> <duration>
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Fetch step
+➤ YN0013: │ A package was added to the project (+ <size> KiB).
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Link step
+➤ YN0000: └ Completed
+➤ YN0000: · Done in <duration>
 ```
 
 ## `vp add -D test-vite-plus-install`
 
 ```
 ➤ YN0000: · Yarn <version>
-➤ YN0000: ┌ 解析步骤
+➤ YN0000: ┌ Resolution step
 ➤ YN0085: │ + test-vite-plus-install@npm:1.0.0
-➤ YN0000: └ 已完成
-➤ YN0000: ┌ 获取步骤
-➤ YN0013: │ 已向项目添加一个包（+ <size> KiB）。
-➤ YN0000: └ 已完成
-➤ YN0000: ┌ 链接步骤
-➤ YN0000: └ 已完成
-➤ YN0000: · 在 <duration> <duration> 内完成
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Fetch step
+➤ YN0013: │ A package was added to the project (+ <size> KiB).
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Link step
+➤ YN0000: └ Completed
+➤ YN0000: · Done in <duration>
 ```
 
 ## `vp add -O test-vite-plus-package-optional`
@@ -58,7 +58,7 @@ $ yarn remove [-A,--all] [--mode #0] ...
 ➤ YN0000: └ Completed
 ➤ YN0000: ┌ Link step
 ➤ YN0000: └ Completed
-➤ YN0000: · Done in <duration> <duration>
+➤ YN0000: · Done in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -82,7 +82,7 @@ $ yarn remove [-A,--all] [--mode #0] ...
 
 ## `vp remove testnpm2 test-vite-plus-install`
 
-应从依赖项中移除软件包
+should remove packages from dependencies
 
 ```
 ➤ YN0000: · Yarn <version>
@@ -93,7 +93,7 @@ $ yarn remove [-A,--all] [--mode #0] ...
 ➤ YN0000: └ Completed
 ➤ YN0000: ┌ Link step
 ➤ YN0000: └ Completed
-➤ YN0000: · Done in <duration> <duration>
+➤ YN0000: · Done in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -111,7 +111,7 @@ $ yarn remove [-A,--all] [--mode #0] ...
 
 ## `vp remove -D test-vite-plus-package-optional`
 
-支持忽略 -O 标志并从可选依赖中移除软件包
+support ignore -O flag and remove package from optional dependencies
 
 ```
 ➤ YN0000: · Yarn <version>
@@ -122,7 +122,7 @@ $ yarn remove [-A,--all] [--mode #0] ...
 ➤ YN0000: └ Completed
 ➤ YN0000: ┌ Link step
 ➤ YN0000: └ Completed
-➤ YN0000: · Done in <duration> <duration>
+➤ YN0000: · Done in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -137,12 +137,12 @@ $ yarn remove [-A,--all] [--mode #0] ...
 
 ## `vp remove -g --dry-run testnpm2`
 
-支持以 dry-run 模式移除全局软件包
+support remove global package with dry-run
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-卸载 testnpm2 失败：未安装软件包 testnpm2
+Failed to uninstall testnpm2: Package testnpm2 is not installed
 ```
 
-*（跳过 1 个步骤到下一个行边界：步骤失败）*
+*(skipped 1 step(s) to the next line boundary: step failed)*

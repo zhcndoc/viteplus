@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, process::ExitStatus};
 
-use owo_colors::OwoColorize;
+use console::style;
 use serde::Serialize;
 use vp_pm_cli::{PackageManagerType, package_manager_bin_path, package_manager_install_dir};
 use vt_path::AbsolutePathBuf;
@@ -54,6 +54,12 @@ pub async fn execute(
     };
     let current_pm = if scope.includes_package_managers() {
         match scope.package_manager() {
+            Some(PackageManagerType::Npm) => {
+                package_manager::resolve_shim_for(&cwd, PackageManagerType::Npm)
+                    .await
+                    .ok()
+                    .flatten()
+            }
             Some(package_manager) => {
                 package_manager::resolve_current_or_fallback_for(&cwd, package_manager).await.ok()
             }
@@ -112,10 +118,10 @@ pub async fn execute(
     };
 
     if json {
-        println!(
+        vp_shared::output::print_stdout_line(format_args!(
             "{}",
             serde_json::to_string_pretty(&InstalledEnvironmentJson { node, package_managers })?
-        );
+        ));
         return Ok(ExitStatus::default());
     }
 
@@ -126,7 +132,7 @@ pub async fn execute(
         for kind in package_manager::selected(scope) {
             let name = kind.to_string();
             if scope.includes_node() || kind != PackageManagerType::Npm {
-                println!();
+                vp_shared::output::print_stdout_line(format_args!(""));
             }
             print_section(
                 package_manager::title(kind),
@@ -158,9 +164,9 @@ pub(super) fn list_complete_package_manager_versions(
 }
 
 fn print_section(title: &str, versions: &[InstalledVersionJson], node: bool) {
-    println!("{title}");
+    vp_shared::output::print_stdout_line(format_args!("{title}"));
     if versions.is_empty() {
-        println!("  No versions installed.");
+        vp_shared::output::print_stdout_line(format_args!("  No versions installed."));
         return;
     }
     let colorize = use_color();
@@ -175,20 +181,23 @@ fn print_section(title: &str, versions: &[InstalledVersionJson], node: bool) {
         let suffix = if markers.is_empty() {
             String::new()
         } else if colorize {
-            format!(" {}", markers.join(" ").dimmed())
+            format!(" {}", style(&markers.join(" ")).dim())
         } else {
             format!(" {}", markers.join(" "))
         };
         let display = if node { format!("v{}", version.version) } else { version.version.clone() };
         let line = format!("* {display}");
         if version.current && colorize {
-            println!("  {}{suffix}", line.bright_blue());
+            vp_shared::output::print_stdout_line(format_args!(
+                "  {}{suffix}",
+                style(&line).blue().bright()
+            ));
         } else {
-            println!("  {line}{suffix}");
+            vp_shared::output::print_stdout_line(format_args!("  {line}{suffix}"));
         }
     }
 }
 
 pub(super) fn use_color() -> bool {
-    vp_shared::is_stdout_terminal() && std::env::var_os("NO_COLOR").is_none()
+    console::colors_enabled()
 }

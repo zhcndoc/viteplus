@@ -1,31 +1,31 @@
-# 迁移_保留_策略节点下方内容
+# migration_preserve_below_policy_node_pins
 
 ## `vp migrate --no-interactive`
 
-现有的 Vite+ 项目：低于支持范围的 Node 版本将被保留，不会升级（原生绑定支持 Node >=20）
+upgrade the incompatible runtime pin without changing the public engine contract
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
+• Dependencies:
     vite-plus  0.1.21 → <version>
     vite              → <version>
-• 已配置包管理器设置
+• Package manager settings configured
 ```
 
 ## `vpt print-file .node-version`
 
-保持为 24.3.0
+upgraded from 24.3.0 to 24.11.0
 
 ```
-24.3.0
+24.11.0
 ```
 
 ## `vpt print-file package.json`
 
-engines.node 保持为 24.x，devEngines.runtime node 保持为 ^24（已保留，未提升）
+engines.node stays 24.x and devEngines.runtime node stays ^24 (preserved, not raised)
 
 ```
 {
@@ -55,7 +55,7 @@ engines.node 保持为 24.x，devEngines.runtime node 保持为 ^24（已保留�
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-vite-stack catalog 已更新为迁移目标
+catalog is migrated
 
 ```
 packages:
@@ -72,4 +72,14 @@ peerDependencyRules:
     - vite
   allowedVersions:
     vite: '*'
+```
+
+## `vp migrate --no-interactive`
+
+rerun preserves the upgraded runtime and public engine contract
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+This project is already using Vite+! Happy coding!
 ```

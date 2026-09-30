@@ -1,7 +1,7 @@
 //! Enable system-first mode command.
 //!
 //! Handles `vp env off` to set shim mode to "system_first" -
-//! shims prefer system Node.js, fallback to managed if not found.
+//! Tool shims move to the fallback directory so PATH prefers system tools.
 
 use std::process::ExitStatus;
 
@@ -24,6 +24,7 @@ pub async fn execute(scope: Option<String>) -> Result<ExitStatus, Error> {
             ShimMode::SystemFirst,
         );
     }
+    super::setup::refresh_shims(&std::env::current_exe()?, &config, false, false).await?;
     save_config(&config).await?;
 
     let component = match scope {
@@ -32,13 +33,16 @@ pub async fn execute(scope: Option<String>) -> Result<ExitStatus, Error> {
         EnvScope::PackageManagers => "Package-manager management".into(),
         EnvScope::PackageManager(package_manager) => format!("{package_manager} management"),
     };
-    println!("\u{2713} {component} set to system-first.");
-    println!();
-    println!(
+    vp_shared::output::print_stdout_line(format_args!("\u{2713} {component} set to system-first."));
+    vp_shared::output::print_stdout_line(format_args!(""));
+    vp_shared::output::print_stdout_line(format_args!(
         "Selected commands and shims will now prefer system tools, falling back to managed tools."
-    );
-    println!();
-    println!("Run {} to always use Vite+ managed tools.", help::accent_command("vp env on"));
+    ));
+    vp_shared::output::print_stdout_line(format_args!(""));
+    vp_shared::output::print_stdout_line(format_args!(
+        "Run {} to always use Vite+ managed tools.",
+        help::accent_command("vp env on")
+    ));
 
     Ok(ExitStatus::default())
 }

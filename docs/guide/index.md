@@ -8,7 +8,7 @@ Vite+ 还提供了一个[全局 `vp` CLI](/guide/global-cli)，用于管理 Node
 
 如果你已经有一个 Vite 项目，请运行 [`vp migrate`](/guide/migrate) 将其迁移到 Vite+，或者将我们的[迁移提示](/guide/migrate#migration-prompt)提供给你的 coding agent。
 
-正在使用 AI 助手进行开发？查看并复制现成的设置提示：
+正在使用 AI 助手开发？查看并复制用于创建新项目、迁移现有项目或升级 Vite+ 的提示：
 
 <CopyPrompt />
 
@@ -35,6 +35,8 @@ irm https://vite.plus/ps1 | iex
 :::
 
 安装脚本和 `vp-setup.exe` 会读取诸如 `VP_VERSION` 和 `VP_HOME` 等[环境变量](/guide/global-cli#installation-variables)。
+
+如果你使用带有自定义 XDG 目录的 Nushell，请在安装前阅读 [Nushell 启动要求](/guide/global-cli#nushell-and-xdg-directories)。
 
 安装完成后，打开一个新的 shell 并运行：
 
