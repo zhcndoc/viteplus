@@ -56,12 +56,12 @@ export default defineConfig({
 vp run build
 vp run build # 应打印 "cache hit"
 vp run lint
-vp run lint # 应打印 "cache hit"
+vp run lint  # should print "cache hit"
 ```
 
 ## 2. 安装后恢复缓存
 
-在 `vp install` 之后恢复 `node_modules/.vite/task-cache`，因为安装包可能会重新创建或修改 `node_modules`。
+在 `setup-vp` 步骤之后恢复 `node_modules/.vite/task-cache`，因为安装包可能会重新创建或修改 `node_modules`。
 
 将下面的 `<setup-vp-version>` 设置为 [`setup-vp` 发布页面](https://github.com/voidzero-dev/setup-vp/releases)中的确切版本。你也可以使用提交 SHA。
 
@@ -89,9 +89,7 @@ jobs:
           node-version: '24'
           cache: true
 
-      - run: vp install
-
-      - name: 恢复 Vite Task 缓存
+      - name: Restore Vite Task cache
         id: vite-task-cache
         uses: actions/cache/restore@v6
         with:

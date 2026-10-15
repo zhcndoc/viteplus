@@ -1,44 +1,44 @@
-# 为什么选择 Bun
+# command_why_bun
 
 ## `vp why --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp why [选项] <软件包>... [-- <透传参数>...]
+Usage: vp why [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-显示安装某个软件包的原因
+Show why a package is installed
 
-参数：
-  <软件包>...             要检查的软件包
-  [透传参数]...            要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Package(s) to check
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --json                   以 JSON 格式输出
-  --long                   显示扩展信息
-  --parseable              显示可解析的输出
-  -r, --recursive          跨所有工作区递归检查
-  --filter <模式>          筛选 monorepo 中的软件包
-  -w, --workspace-root     在工作区根目录中检查
-  -P, --prod               仅检查生产依赖
-  -D, --dev                仅检查开发依赖
-  --depth <深度>           限制依赖树深度
-  --no-optional            排除可选依赖
-  --exclude-peers          排除对等依赖
-  --find-by <查找器名称>   使用 .pnpmfile.cjs 中定义的查找器函数
-  -h, --help               显示帮助
+Options:
+  --json                   Output in JSON format
+  --long                   Show extended information
+  --parseable              Show parseable output
+  -r, --recursive          Check recursively across all workspaces
+  --filter <PATTERN>       Filter packages in monorepo
+  -w, --workspace-root     Check in workspace root
+  -P, --prod               Only production dependencies
+  -D, --dev                Only dev dependencies
+  --depth <DEPTH>          Limit tree depth
+  --no-optional            Exclude optional dependencies
+  --exclude-peers          Exclude peer dependencies
+  --find-by <FINDER_NAME>  Use a finder function defined in .pnpmfile.cjs
+  -h, --help               Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp install`
 
-应先安装软件包
+should install packages first
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 bun install <version> (<hash>)
 
@@ -46,12 +46,12 @@ bun install <version> (<hash>)
  test-vite-plus-package-optional@1.0.0
  testnpm2@1.0.1
 
-已安装 3 个软件包 [<duration>]
+3 packages installed [<duration>]
 ```
 
 ## `vp why testnpm2`
 
-应显示软件包为何被安装
+should show why package is installed
 
 ```
 testnpm2@1.0.1

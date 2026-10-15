@@ -2,15 +2,15 @@
 
 ## `vp install -- --silent`
 
-应先安装软件包
+should install packages first
 
 ```
 VITE+ - The Unified Toolchain for the Web
 ```
 
-## `vp pm audit`
+## `vp pm audit --production`
 
-应审计依赖项
+should audit production dependencies
 
 ```
 bun audit <version> (<hash>)
@@ -20,7 +20,7 @@ No vulnerabilities found (checked 1 package) [<duration>]
 
 ## `vp pm audit --fix`
 
-bun 1.4 运行 bun audit fix
+bun 1.4 runs bun audit fix
 
 ```
 bun audit fix <version> (<hash>)

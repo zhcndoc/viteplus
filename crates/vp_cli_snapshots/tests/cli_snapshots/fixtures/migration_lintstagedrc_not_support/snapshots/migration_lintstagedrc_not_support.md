@@ -1,24 +1,24 @@
-# 迁移不支持 lintstagedrc。
+# migration_lintstagedrc_not_support
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-迁移应在检查 lint-staged 配置格式之前保留 Husky
+migration should preserve Husky before inspecting lint-staged config formats
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。请在启用 Vite+ 钩子之前手动迁移 Husky。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file .lintstagedrc`
 
-检查 .lintstagedrc 是否已更新
+check .lintstagedrc is not updated
 
 ```
 '*.js':
@@ -28,7 +28,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file .lintstagedrc.yaml`
 
-检查 .lintstagedrc.yaml 是否已更新
+check .lintstagedrc.yaml is not updated
 
 ```
 '*.js':
@@ -38,7 +38,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file lint-staged.config.mjs`
 
-检查 lint-staged.config.mjs 是否已更新
+check lint-staged.config.mjs is not updated
 
 ```
 export default {
@@ -48,7 +48,7 @@ export default {
 
 ## `vpt print-file package.json`
 
-检查 Husky prepare 和依赖项是否得以保留
+check Husky prepare and dependencies are preserved
 
 ```
 {
@@ -60,20 +60,13 @@ export default {
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

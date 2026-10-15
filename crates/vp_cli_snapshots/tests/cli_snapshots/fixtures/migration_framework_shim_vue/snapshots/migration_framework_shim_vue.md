@@ -1,25 +1,24 @@
-# Vue 迁移框架适配层
+# migration_framework_shim_vue
 
 ## `vp migrate --no-interactive --no-hooks`
 
-检测到 Vue 依赖时，迁移应添加 Vue 类型垫片
+migration should add Vue shim when vue dependency is detected
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-正在格式化代码...
-
-代码已格式化
-◇ 已将 . 迁移至 Vite+ <version>
+● Formatting code...
+● Code formatted
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-✓ 已在 <duration> 内安装依赖
-• 已应用 1 项配置更新
-• 已为框架组件文件添加 TypeScript 类型垫片
+✓ Dependencies installed in <duration>
+• 1 config update applied
+• TypeScript shim added for framework component files
 ```
 
 ## `vpt print-file src/env.d.ts`
 
-检查 Vue shim 是否已写入
+check Vue shim was written
 
 ```
 declare module "*.vue" {

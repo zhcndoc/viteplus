@@ -2,42 +2,41 @@
 
 ## `vp install`
 
-应该先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 yarn install <version>
-警告 package.json：未设置许可证字段
-信息 未找到锁文件。
-警告 command-list-yarn1@1.0.0：未设置许可证字段
-[1/4] 正在解析软件包...
-[2/4] 正在获取软件包...
-[3/4] 正在链接依赖...
-[4/4] 正在构建全新软件包...
+warning package.json: No license field
+info No lockfile found.
+warning command-list-yarn1@1.0.0: No license field
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+[4/4] Building fresh packages...
 
-成功保存锁文件。
+success Saved lockfile.
 
-耗时 <duration>。
+Done in <duration>.
 ```
 
-## `vp pm list`
+## `NODE_ENV=production vp pm list`
 
-应列出已安装的软件包
+production environment excludes installed dev dependencies
 
 ```
 yarn list <version>
-警告 package.json：没有 license 字段
-警告 command-list-yarn1@1.0.0：没有 license 字段
-├─ test-vite-plus-package@1.0.0
+warning package.json: No license field
+warning command-list-yarn1@1.0.0: No license field
 └─ testnpm2@1.0.1
 
-已在 <duration> 内完成。
+Done in <duration>.
 ```
 
 ## `vp pm list testnpm2`
 
-应列出指定的软件包
+should list specific package
 
 ```
 yarn list <version>
@@ -51,7 +50,7 @@ Done in <duration>.
 
 ## `vp pm list --depth 0`
 
-应列出具有深度限制的软件包
+should list packages with depth limit
 
 ```
 yarn list <version>
@@ -65,7 +64,7 @@ Done in <duration>.
 
 ## `vp pm list --json`
 
-应以 JSON 格式列出软件包
+should list packages in JSON format
 
 ```
 {"type":"warning","data":"package.json: No license field"}
@@ -79,115 +78,22 @@ Done in <duration>.
 
 ## `vp pm list --prod`
 
-应显示警告，说明 yarn@1 不支持 --prod
+should list production dependencies using yarn --production
 
 ```
-warn: yarn does not support --prod.
-yarn list <version>
-警告 package.json：未设置许可证字段
-警告 command-list-yarn1@1.0.0：未设置许可证字段
-├─ test-vite-plus-package@1.0.0
-└─ testnpm2@1.0.1
-
-已完成，用时 <duration>。
-```
-
-## `vp pm list --dev`
-
-应显示警告，说明 yarn@1 不支持 --dev
-
-```
-警告：yarn 不支持 --dev。
-yarn list <version>
-警告 package.json：没有许可证字段
-警告 command-list-yarn1@1.0.0：没有许可证字段
-├─ test-vite-plus-package@1.0.0
-└─ testnpm2@1.0.1
-
-已完成，耗时 <duration>。
-```
-
-## `vp pm list --no-optional`
-
-应显示警告，说明 yarn@1 不支持 --no-optional
-
-```
-warn: yarn does not support --no-optional.
-yarn list <version>
-警告 package.json：没有许可证字段
-警告 command-list-yarn1@1.0.0：没有许可证字段
-├─ test-vite-plus-package@1.0.0
-└─ testnpm2@1.0.1
-
-在 <duration> 内完成。
-```
-
-## `vp pm list --exclude-peers`
-
-应显示警告，说明 yarn@1 不支持 --exclude-peers
-
-```
-warn: yarn does not support --exclude-peers.
-yarn list <version>
-警告 package.json：没有许可证字段
-警告 command-list-yarn1@1.0.0：没有许可证字段
-├─ test-vite-plus-package@1.0.0
-└─ testnpm2@1.0.1
-
-已完成，用时 <duration>。
-```
-
-## `vp pm list --only-projects`
-
-应显示警告，说明 yarn@1 不支持 --only-projects
-
-```
-warn: yarn does not support --only-projects.
 yarn list <version>
 warning package.json: No license field
 warning command-list-yarn1@1.0.0: No license field
-├─ test-vite-plus-package@1.0.0
 └─ testnpm2@1.0.1
 
-在 <时长> 内完成。
+Done in <duration>.
 ```
 
-## `vp pm list --find-by customFinder`
+## `NODE_ENV=production vp pm list --dev`
 
-应显示警告，说明 yarn@1 不支持 --find-by
-
-```
-警告：yarn 不支持 --find-by。
-yarn list <version>
-警告 package.json：未设置许可证字段
-警告 command-list-yarn1@1.0.0：未设置许可证字段
-├─ test-vite-plus-package@1.0.0
-└─ testnpm2@1.0.1
-
-在 <duration> 内完成。
-```
-
-## `vp pm list --recursive`
-
-应显示警告，说明 yarn@1 不支持 --recursive
+include installed dev dependencies using yarn --production=false
 
 ```
-warn: yarn does not support --recursive.
-yarn list <version>
-警告 package.json：无许可证字段
-警告 command-list-yarn1@1.0.0：无许可证字段
-├─ test-vite-plus-package@1.0.0
-└─ testnpm2@1.0.1
-
-耗时 <duration>。
-```
-
-## `vp pm list --filter app`
-
-应显示警告，说明 yarn@1 不支持 --filter
-
-```
-warn: yarn does not support --filter.
 yarn list <version>
 warning package.json: No license field
 warning command-list-yarn1@1.0.0: No license field
@@ -197,9 +103,69 @@ warning command-list-yarn1@1.0.0: No license field
 Done in <duration>.
 ```
 
+## `vp pm list --no-optional`
+
+should reject --no-optional because yarn@1 does not support it
+
+**Exit code:** 1
+
+```
+yarn does not support --no-optional.
+```
+
+## `vp pm list --exclude-peers`
+
+should reject --exclude-peers because yarn@1 does not support it
+
+**Exit code:** 1
+
+```
+yarn does not support --exclude-peers.
+```
+
+## `vp pm list --only-projects`
+
+should reject --only-projects because yarn@1 does not support it
+
+**Exit code:** 1
+
+```
+yarn does not support --only-projects.
+```
+
+## `vp pm list --find-by customFinder`
+
+should reject --find-by because yarn@1 does not support it
+
+**Exit code:** 1
+
+```
+yarn does not support --find-by.
+```
+
+## `vp pm list --recursive`
+
+should reject --recursive because yarn@1 does not support it
+
+**Exit code:** 1
+
+```
+yarn does not support --recursive.
+```
+
+## `vp pm list --filter app`
+
+should reject --filter because yarn@1 does not support it
+
+**Exit code:** 1
+
+```
+yarn does not support --filter.
+```
+
 ## `vp pm list -- --loglevel=warn`
 
-应支持透传参数
+should support pass through arguments
 
 ```
 yarn list <version>

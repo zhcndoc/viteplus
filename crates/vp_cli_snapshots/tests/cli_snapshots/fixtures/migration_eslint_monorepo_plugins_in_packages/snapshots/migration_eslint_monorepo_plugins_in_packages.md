@@ -1,24 +1,23 @@
-# 将 ESLint monorepo 插件迁移到 packages 中
+# migration_eslint_monorepo_plugins_in_packages
 
 ## `vp migrate --no-interactive`
 
-工作区软件包将与根目录一样进行相同的激进清理（依赖项、配置、lint-staged）
+workspace packages get the SAME aggressive cleanup as the root (deps, configs, lint-staged)
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✔ 已在 vite.config.ts 中创建 vite.config.ts
-
-✔ 已将 .oxlintrc.json 合并到 vite.config.ts
-◇ 已将 . 迁移到 Vite+ <version>
+◆ ✔ Created vite.config.ts in vite.config.ts
+◆ ✔ Merged .oxlintrc.json into vite.config.ts
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 3 项配置更新
-• 已将 ESLint 规则迁移到 Oxlint
+• 3 config updates applied
+• ESLint rules migrated to Oxlint
 ```
 
 ## `vpt print-file package.json`
 
-根目录：已移除 eslint + eslint-config-airbnb
+root: eslint + eslint-config-airbnb removed
 
 ```
 {
@@ -37,7 +36,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file packages/app/package.json`
 
-工作区：已移除 eslint、eslint-plugin-vue、@typescript-eslint/parser；保留 @typescript-eslint/utils（可复用的 AST 库）
+workspace: eslint, eslint-plugin-vue, @typescript-eslint/parser removed; @typescript-eslint/utils preserved (reusable AST lib)
 
 ```
 {
@@ -56,7 +55,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file packages/lint-config/package.json`
 
-工作区：已移除所有 eslint-plugin-*；已清理 peerDeps.eslint（为空时删除该字段）
+workspace: all eslint-plugin-* removed; peerDeps.eslint scrubbed (field deleted when empty)
 
 ```
 {
@@ -69,7 +68,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt stat-file packages/app/eslint.config.mjs --assert-not file`
 
-工作区 eslint 配置已删除
+workspace eslint config is deleted
 
 ```
 packages/app/eslint.config.mjs: missing
@@ -77,7 +76,7 @@ packages/app/eslint.config.mjs: missing
 
 ## `vpt print-file packages/app/.lintstagedrc.json`
 
-工作区 lint-staged 已重写（eslint --fix → vp lint --fix）
+workspace lint-staged rewritten (eslint --fix → vp lint --fix)
 
 ```
 {

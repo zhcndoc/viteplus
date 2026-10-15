@@ -74,6 +74,8 @@ vp config --no-agent
 
 当你希望 `vp config` 保持 Git 钩子分发器不变时，使用 `--no-hooks`。当你希望跳过对现有代码代理指令文件的更新时，使用 `--no-agent`。如果你希望 `vp config` 跳过这两个设置步骤，可以同时传递这两个标志。在执行 `vp hooks disable` 后，`vp config` 会跳过重新安装分发器，并引导你使用 `vp hooks enable`，而不是再次提示。
 
+如果 `core.hooksPath` 指向其他钩子目录，`vp config` 会跳过调度器安装，以保留现有设置。运行 `vp hooks status` 检查当前配置。
+
 你还可以设置 `VP_GIT_HOOKS=0`，以禁止从 `prepare` 或 `postinstall` 等生命周期脚本中安装钩子。
 
 项目自有的钩子脚本（例如 `.vite-hooks/pre-commit`）应提交到仓库中。`.vite-hooks/_` 下生成的分发器和 shim 会被忽略，并由 `vp config` 或 `vp hooks enable` 重新创建。这两个命令都不会创建或修改项目钩子脚本或暂存文件配置。
@@ -108,7 +110,7 @@ import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   staged: {
-    '*.{js,ts,tsx,vue,svelte}': 'vp check --fix',
+    '*': 'vp check --fix',
   },
 });
 ```

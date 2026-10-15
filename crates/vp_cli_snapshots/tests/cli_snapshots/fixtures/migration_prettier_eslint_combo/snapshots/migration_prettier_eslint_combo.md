@@ -1,23 +1,23 @@
-# 迁移_prettier_eslint_combo
+# migration_prettier_eslint_combo
 
 ## `vp migrate --no-interactive`
 
-迁移应检测 ESLint 和 Prettier，并自动执行迁移
+migration should detect both eslint and prettier and auto-migrate
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-检测到 Prettier 配置。正在自动迁移到 Oxfmt...
-◇ 已将 . 迁移到 Vite+ <版本>
-• Node <版本>  pnpm <版本>
-• 已应用 4 项配置更新
-• 已将 ESLint 规则迁移到 Oxlint
-• 已将 Prettier 迁移到 Oxfmt
+● Prettier configuration detected. Auto-migrating to Oxfmt...
+◇ Migrated . to Vite+ <version>
+• Node <version>  pnpm <version>
+• 4 config updates applied
+• ESLint rules migrated to Oxlint
+• Prettier migrated to Oxfmt
 ```
 
 ## `vpt print-file package.json`
 
-检查 eslint 和 prettier 是否已移除，脚本是否已重写
+check eslint and prettier removed, scripts rewritten
 
 ```
 {
@@ -33,20 +33,13 @@ VITE+ - 面向 Web 的统一工具链
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -63,7 +56,7 @@ peerDependencyRules:
 
 ## `vpt stat-file eslint.config.mjs --assert-not file`
 
-检查 eslint 配置是否已移除
+check eslint config is removed
 
 ```
 eslint.config.mjs: missing
@@ -71,15 +64,15 @@ eslint.config.mjs: missing
 
 ## `vpt stat-file .prettierrc.json --assert-not file`
 
-检查 prettier 配置是否已移除
+check prettier config is removed
 
 ```
-.prettierrc.json：缺失
+.prettierrc.json: missing
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查 oxlint 和 oxfmt 配置是否已合并到 vite.config.ts
+check oxlint and oxfmt config merged into vite.config.ts
 
 ```
 import { defineConfig } from "vite-plus";

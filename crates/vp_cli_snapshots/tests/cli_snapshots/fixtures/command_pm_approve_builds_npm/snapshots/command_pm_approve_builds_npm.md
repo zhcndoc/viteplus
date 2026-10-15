@@ -2,42 +2,44 @@
 
 ## `vp pm approve-builds --help`
 
-应显示帮助信息
+should show help
 
 ```
-批准依赖项生命周期脚本（install/postinstall）运行
+Approve dependency lifecycle scripts (install/postinstall) to run
 
-用法：vp pm approve-builds [选项] [软件包]... [-- <传递参数>...]
+Usage: vp pm approve-builds [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-参数：
-  [软件包]...             要批准的软件包。前缀加上 `!` 表示拒绝（pnpm >= 11.0.0，npm >= 11.16.0）。省略则启动交互模式（pnpm），或列出待处理的软件包（npm >= 11.16.0）
-  [传递参数]...           要传递给包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Packages to approve. Prefix with `!` to deny (pnpm >= 11.0.0, npm >= 11.16.0). Omit to launch interactive mode (pnpm) or list pending packages (npm >= 11.16.0)
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-      --all               批准当前所有待审批的软件包（pnpm >= 10.32.0，npm >= 11.16.0）。不能与位置参数同时使用
-  -h, --help              显示帮助信息
+Options:
+      --all   Approve every package currently pending approval (pnpm >= 10.32.0, npm >= 11.16.0). Mutually exclusive with positional packages
+  -h, --help  Print help
 ```
 
 ## `vp pm approve-builds`
 
-警告并以 0 退出（在 npm 中为空操作）
+warn and exit 0 (no-op on npm)
 
 ```
-警告：npm 默认运行生命周期脚本。升级到 npm >= 11.16.0 以使用 `npm approve-scripts`/`deny-scripts`，或在 .npmrc 中设置 `ignore-scripts=true`，并使用 `vp pm rebuild <package>` 重新构建已批准的软件包。
+warn: npm runs lifecycle scripts by default. Upgrade to npm >= 11.16.0 for `npm approve-scripts`/`deny-scripts`, or set `ignore-scripts=true` in .npmrc and rebuild approved packages with `vp pm rebuild <package>`.
 ```
 
 ## `vp pm approve-builds esbuild`
 
-警告并以 0 退出（在 npm 中为空操作）
+warn and exit 0 (no-op on npm)
 
 ```
-警告：npm 默认运行生命周期脚本。升级到 npm >= 11.16.0 以使用 `npm approve-scripts`/`deny-scripts`，或在 .npmrc 中设置 `ignore-scripts=true`，并使用 `vp pm rebuild <package>` 重新构建已批准的软件包。
+warn: npm runs lifecycle scripts by default. Upgrade to npm >= 11.16.0 for `npm approve-scripts`/`deny-scripts`, or set `ignore-scripts=true` in .npmrc and rebuild approved packages with `vp pm rebuild <package>`.
 ```
 
 ## `vp pm approve-builds --all`
 
-警告并以 0 退出（在 npm 上不执行任何操作）
+reject the unsupported named option instead of succeeding through a Noop
+
+**Exit code:** 1
 
 ```
-警告：npm 默认运行生命周期脚本。请升级到 npm >= 11.16.0 以使用 `npm approve-scripts`/`deny-scripts`，或在 .npmrc 中设置 `ignore-scripts=true`，然后使用 `vp pm rebuild <package>` 重新构建已批准的软件包。
+npm < 11.16.0 does not support --all.
 ```

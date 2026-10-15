@@ -2,42 +2,42 @@
 
 ## `vp pm config --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm config <COMMAND>
+Usage: vp pm config <COMMAND>
 
-管理包管理器配置
+Manage package manager configuration
 
-命令：
-  list    列出所有配置
-  get     获取配置值
-  set     设置配置值
-  delete  删除配置键
+Commands:
+  list    List all configuration
+  get     Get configuration value
+  set     Set configuration value
+  delete  Delete configuration key
 
-选项：
-  -h, --help  打印帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm config list --location project`
 
-应列出所有项目配置
+should list all project configuration
 
 
 ## `vp pm config set vitePlusPmConfigTestKey test-value --location project`
 
-应在项目范围内设置配置值
+should set config value in project scope
 
 ```
 ```
 
 ## `vp pm config get vitePlusPmConfigTestKey --location project`
 
-应从项目作用域获取配置值
+should get config value from project scope
 
 ```
 test-value
@@ -45,7 +45,7 @@ test-value
 
 ## `vp pm config delete vitePlusPmConfigTestKey --location project`
 
-应从项目作用域删除配置键
+should delete config key from project scope
 
 ```
 ```

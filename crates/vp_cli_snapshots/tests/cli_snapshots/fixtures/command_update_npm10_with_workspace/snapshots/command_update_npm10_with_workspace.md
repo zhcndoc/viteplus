@@ -1,12 +1,12 @@
-# 使用工作区更新 npm10 的命令
+# command_update_npm10_with_workspace
 
 ## `vp update testnpm2 -w -- --no-audit`
 
-应在工作区根目录更新
+should update in workspace root
 
 ```
 
-已在 <duration> 内添加 5 个软件包
+added 5 packages in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -25,14 +25,13 @@
 }
 ```
 
-## `vp update testnpm2 --latest --filter app -- --no-audit`
+## `vp update testnpm2 --filter app -- --no-audit`
 
-应在指定包中更新
+should update in specific package
 
 ```
-警告：npm 不支持 --latest。
 
-已是最新版本，用时 <时长>
+up to date in <duration>
 ```
 
 ## `vpt print-file packages/app/package.json`
@@ -52,7 +51,7 @@
 
 ## `vp up -D --filter app -- --no-audit`
 
-应更新 app 中的开发依赖
+include dev dependencies using npm's native behavior in the selected workspace
 
 ```
 npm warn workspaces app in filter set, but no workspace folder present
@@ -77,7 +76,7 @@ up to date in <duration>
 
 ## `vp update --filter * -- --no-audit`
 
-应更新所有包
+should update in all packages
 
 ```
 npm warn workspaces app in filter set, but no workspace folder present
@@ -110,13 +109,13 @@ up to date in <duration>
 
 ## `vp update -r --no-save -- --no-audit`
 
-应递归更新但不保存
+should update recursively without saving
 
 ```
-npm 警告：过滤器集合中包含工作区 app，但不存在工作区文件夹
-npm 警告：过滤器集合中包含工作区 @vite-plus-test/utils，但不存在工作区文件夹
+npm warn workspaces app in filter set, but no workspace folder present
+npm warn workspaces @vite-plus-test/utils in filter set, but no workspace folder present
 
-已是最新版本，用时 <duration>
+up to date in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json`
@@ -147,11 +146,12 @@ npm 警告：过滤器集合中包含工作区 @vite-plus-test/utils，但不存
 
 ## `vp update --workspace --filter app @vite-plus-test/utils -- --no-audit`
 
-应更新工作区依赖
+reject pnpm-specific workspace dependency selection
+
+**Exit code:** 1
 
 ```
-
-在 <duration> 内已是最新
+npm does not support --workspace.
 ```
 
 ## `vpt print-file packages/app/package.json`

@@ -1,21 +1,21 @@
-# 将 monorepo 迁移至 husky v8 并保留 lint-staged
+# migration_monorepo_husky_v8_preserves_lint_staged
 
 ## `vp migrate --no-interactive`
 
-应警告 Husky v8，并保留所有 lint-staged 配置
+should warn about husky v8, preserve all lint-staged config
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 已检测到 Husky — 保持其钩子、配置和依赖不变。请先手动迁移 Husky，然后再启用 Vite+ 钩子。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-根目录的 lint-staged 配置仍应位于 package.json 中
+root lint-staged config should still be in package.json
 
 ```
 {
@@ -38,7 +38,7 @@ VITE+ - Web 统一工具链
 
 ## `vpt print-file packages/app/package.json`
 
-app 的 lint-staged 配置仍应位于 package.json 中
+app lint-staged config should still be in package.json
 
 ```
 {

@@ -235,12 +235,16 @@ tasks: {
 
 如果某个变量的值会改变任务结果，就不要把它放入 `untrackedEnv`。如果某个缓存报告工具已通过[自动跟踪](/guide/automatic-data-tracking#cooperative-tracking)覆盖了该变量，请不要将其放入 `env` 和 `untrackedEnv` 中。
 
-Vite Task 会向所有任务传递一组常见环境变量：
+Vite Task 会为系统变量和常见工具包含默认的不跟踪模式。示例包括：
 
-- **系统:** `HOME`, `USER`, `PATH`, `SHELL`, `LANG`, `TZ`
-- **Node.js:** `NODE_OPTIONS`, `COREPACK_HOME`, `PNPM_HOME`
-- **CI/CD：** `CI`、`VERCEL_*`、`NEXT_*`、`GITHUB_*`、`RUNNER_*`、`ACTIONS_ID_TOKEN_REQUEST_URL`、`ACTIONS_ID_TOKEN_REQUEST_TOKEN`
-- **终端：** 除非将颜色变量（`FORCE_COLOR`、`NO_COLOR`、`COLORTERM`、`TERM`、`TERM_PROGRAM`）列在 `env` 下（其值会被纳入指纹，更改后会使缓存失效）或 `untrackedEnv` 下（传递但不进行指纹识别），否则这些变量不会传递给任务。如果这两个列表中都没有 `FORCE_COLOR`，子进程会获得 `FORCE_COLOR=1`，以便缓存日志保持彩色。当终端无法渲染颜色时，显示时会移除颜色。
+- **系统：** `HOME`、`USER`、`PATH`、`SHELL`、`LANG`、`TZ`、`TMP`、`TEMP`
+- **Node.js 和包管理器：** `NODE_OPTIONS`、`NPM_CONFIG_STORE_DIR`、`PNPM_HOME`
+- **CI：** `CI`、`VERCEL_*`、`NEXT_*`、`GITHUB_*`、`RUNNER_*`、`ACTIONS_ID_TOKEN_REQUEST_URL`
+- **Windows：** `APPDATA`、`LOCALAPPDATA`、`SYSTEMROOT`、`USERPROFILE`
+- **开发工具：** `VSCODE_*`、`JB_IDE_*`、`DOCKER_*`、`BUILDKIT_*`、`COMPOSE_*`、`PLAYWRIGHT_*`
+- **令牌：** `*_TOKEN`，包括 `ACTIONS_ID_TOKEN_REQUEST_TOKEN`
+
+`FORCE_COLOR`、`NO_COLOR`、`COLORTERM`、`TERM` 和 `TERM_PROGRAM` 等颜色变量需要在 `env` 或 `untrackedEnv` 中显式声明。如果未列出 `FORCE_COLOR`，Vite Task 会设置 `FORCE_COLOR=1`，以便缓存日志保持彩色。当终端无法渲染颜色时，显示时会移除颜色。
 
 ### `cache.input`
 

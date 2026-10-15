@@ -11,8 +11,8 @@ use std::{io::Write, process::ExitStatus};
 
 use vp_js_runtime::{NodeProvider, VersionSource, resolve_node_version};
 use vp_pm_cli::{
-    PackageManagerType, download_package_manager, resolve_package_manager_from_package_json,
-    resolve_package_manager_version,
+    PackageManagerType, download_package_manager_for_cwd,
+    resolve_package_manager_from_package_json, resolve_package_manager_version_for_cwd,
 };
 use vp_shared::output;
 use vt_path::AbsolutePathBuf;
@@ -565,10 +565,10 @@ async fn check_dev_engines_sync(
         return Ok(());
     };
     // An invalid declared range is reported by `vp env doctor`, not here
-    let Ok(range) = node_semver::Range::parse(&declared) else {
+    let Ok(range) = js_semver::Range::parse(&declared) else {
         return Ok(());
     };
-    let Ok(version) = node_semver::Version::parse(resolved_version) else {
+    let Ok(version) = js_semver::Version::parse(resolved_version) else {
         return Ok(());
     };
     if range.satisfies(&version) {
@@ -845,7 +845,7 @@ async fn pin_package_manager(
     if matches!(target, Some(PinTarget::NodeVersion | PinTarget::Nvmrc)) {
         return Err(Error::Other("Node.js file targets cannot pin a package manager".into()));
     }
-    let resolved = resolve_package_manager_version(package_manager, version).await?;
+    let resolved = resolve_package_manager_version_for_cwd(cwd, package_manager, version).await?;
     package_manager::warn_if_target_differs(cwd, package_manager).await;
     let package_json_path = cwd.join(PACKAGE_JSON_FILE);
     let content = tokio::fs::read_to_string(&package_json_path).await?;
@@ -912,7 +912,9 @@ async fn pin_package_manager(
     }
     if no_install {
         output::note("Package manager will be downloaded on first use.");
-    } else if let Err(error) = download_package_manager(package_manager, &resolved, hash).await {
+    } else if let Err(error) =
+        download_package_manager_for_cwd(cwd, package_manager, &resolved, hash).await
+    {
         output::warn(&format!("Failed to download {package_manager} {resolved}: {error}"));
     }
     Ok(ExitStatus::default())

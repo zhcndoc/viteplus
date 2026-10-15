@@ -8,10 +8,10 @@ Vite+ 1.0 已发布。我们会持续改进，并欢迎社区反馈。如果有�
 
 ## 支持的工具版本
 
-Vite+ 期望使用现代的上游工具版本。
+自动迁移对现有 Vite 和 Vitest 依赖项要求以下最低版本：
 
-- Vite 8 或更高版本
-- Vitest 4.1 或更高版本
+- Vite 7 或更高版本
+- Vitest 4 或更高版本
 
 如果你正在迁移一个现有项目，并且它仍然依赖旧版本的 Vite 或 Vitest，请先升级这些依赖，然后再采用 Vite+。
 
@@ -22,7 +22,7 @@ Vite+ 期望使用现代的上游工具版本。
 - 确认 `vite.config.ts` 中已启用 `lint.options.typeAware` 和 `lint.options.typeCheck`
 - 检查你的 `tsconfig.json` 是否仍在使用 `compilerOptions.baseUrl`
 
-由 `tsgolint` 驱动的 Oxlint 类型检查器路径不支持 `baseUrl`。`vp migrate` 和 `vp lint --init` 会尝试在启用类型感知 lint 之前运行 `vp dlx @andrewbranch/ts5to6 --fixBaseUrl .` 修复。如果该修复失败或被拒绝，Vite+ 会跳过 `typeAware` 和 `typeCheck`。
+由 `tsgolint` 驱动的 Oxlint 类型检查器路径不支持 `baseUrl`。`vp migrate` 和 `vp lint --init` 会尝试在启用类型感知 lint 之前运行 `vp dlx @andrewbranch/ts5to6 --fixBaseUrl <tsconfig path>` 修复。如果该修复失败或被拒绝，Vite+ 会跳过 `typeAware` 和 `typeCheck`。
 
 ## 嵌套 lint 或格式配置未生效
 
@@ -30,7 +30,7 @@ Vite+ 期望使用现代的上游工具版本。
 
 将 lint 和格式设置保存在根目录的 `vite.config.ts` 中。使用 [`lint.overrides`](/guide/monorepo#root-config-with-overrides) 和 [`fmt.overrides`](/guide/monorepo#format-overrides) 为特定文件或软件包设置专属配置。你还可以将[配置对象导入](/guide/monorepo#composing-configuration-files)根配置，以便将设置保存在单独的文件中。
 
-对于 IDE 集成，`disableNestedConfig` 和 `fmt.disableNestedConfig` 可禁用针对单个文件的嵌套 lint 和格式配置。有关编辑器设置说明，请参阅 [IDE 集成](/guide/ide-integration)。
+将编辑器的 lint 和格式化配置为使用工作区根目录的 `vite.config.ts`。有关特定编辑器的设置说明，请参阅 [IDE 集成](/guide/ide-integration)。
 
 目前我们暂不将嵌套配置应用于单个文件。我们正在考虑的因素包括：隐式配置发现如何影响 lint 和格式化的可预测性、AI 代理需要哪些上下文才能理解适用的设置，以及查找和加载多个配置可能带来的性能成本。同时，我们也认识到，将包特定的上下文保留在代码附近可能有好处。到目前为止，我们听到的用例还不足以让我们确定采用这些语义。暂缓支持为日后添加该功能留出了空间；我们也希望了解你的项目为何需要嵌套配置，尤其是在根级覆盖无法满足需求时。
 
@@ -93,8 +93,8 @@ export default defineConfig({
 使用 `lazyPlugins` 可在 vite-plus 仅为读取元数据而加载你的配置时跳过插件工厂（`lint`、`fmt`、`check`、`staged`、`pack`、`create`、`run`/`cache` 任务查找，以及编辑器工具）。当 Vite 真正运行时，插件仍会加载：`dev`、`build`、`test`、`preview`，以及你的脚本所启动的任何构建（例如 `vp run` 任务、`vp exec`）：
 
 ```ts [vite.config.ts]
-import { defineConfig, lazyPlugins } from 'vite-plus';
 import myPlugin from 'vite-plugin-foo';
+import { defineConfig, lazyPlugins } from 'vite-plus';
 
 export default defineConfig({
   plugins: lazyPlugins(() => [myPlugin()]),
@@ -113,6 +113,8 @@ export default defineConfig({
   }),
 });
 ```
+
+请在回调函数内部直接导入插件软件包。对本地模块使用动态 `import()`（例如 `await import('./vite.plugins.ts')`）并不能避免开销：Vite 会在加载配置前先打包配置，并跟踪对本地文件的动态导入，因此即使回调从未运行，该模块及其导入的软件包仍会在每条命令中被处理。
 
 ## 寻求帮助
 

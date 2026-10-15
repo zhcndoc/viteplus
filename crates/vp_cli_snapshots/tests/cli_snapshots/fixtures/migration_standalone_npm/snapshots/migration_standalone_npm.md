@@ -1,24 +1,23 @@
-# 独立 npm 迁移
+# migration_standalone_npm
 
 ## `vp migrate --no-interactive --no-hooks`
 
-迁移应适用于 npm，添加 overrides，并更新锁文件
+migration should work with npm, add overrides, and update lockfile
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-正在格式化代码...
-
-代码格式化完成
-◇ 已将 . 迁移到 Vite+ <version>
+● Formatting code...
+● Code formatted
+◇ Migrated . to Vite+ <version>
 • Node <version>  npm <version>
-✓ 已在 <duration> 内安装依赖
-• 已应用 1 项配置更新
+✓ Dependencies installed in <duration>
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-检查 package.json 是否包含 overrides 字段（而不是 pnpm.overrides）
+check package.json has overrides field (not pnpm.overrides)
 
 ```
 {
@@ -36,7 +35,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt grep-file package-lock.json @voidzero-dev/vite-plus-core`
 
-锁文件已更新，并添加了 vite 覆盖（别名为 @voidzero-dev/vite-plus-core）
+lockfile updated with the vite override (aliased to @voidzero-dev/vite-plus-core)
 
 ```
 package-lock.json: found "@voidzero-dev/vite-plus-core"

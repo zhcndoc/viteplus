@@ -5,7 +5,7 @@
 
 ## `vpt print-file home/env`
 
-POSIX 包装器和 zsh vpr 补全会在 env use/run 前保留全局 -C
+POSIX wrapper and zsh vpr completion keep global -C before env use/run
 
 ```
 #!/bin/sh
@@ -13,18 +13,52 @@ POSIX 包装器和 zsh vpr 补全会在 env use/run 前保留全局 -C
 export VP_HOME="<workspace>/home"
 __vp_bin="<workspace>/home/bin"
 __vp_fallback="<workspace>/home/fallback-bin"
-for __vp_dir in "$__vp_bin" "$__vp_fallback"; do
-    while case ":${PATH}:" in *":${__vp_dir}:"*) true ;; *) false ;; esac; do
-        __vp_tmp=":${PATH}:"
-        __vp_before="${__vp_tmp%%":${__vp_dir}:"*}"
-        __vp_before="${__vp_before#:}"
-        __vp_after="${__vp_tmp#*":${__vp_dir}:"}"
-        __vp_after="${__vp_after%:}"
-        PATH="${__vp_before}${__vp_before:+${__vp_after:+:}}${__vp_after}"
+# Split PATH on ':' once; repeated `${PATH#*pattern}` stripping is super-linear on long PATHs.
+# A function scopes zsh's option changes; other shells restore noglob and IFS explicitly.
+__vp_dedupe_path() {
+    __vp_ifs_set=${IFS+1}
+    __vp_ifs=${IFS-}
+    IFS=:
+    __vp_glob=
+    if [ -n "${ZSH_VERSION-}" ]; then
+        setopt localoptions shwordsplit noglob
+    else
+        case $- in *f*) ;; *) set -f; __vp_glob=1 ;; esac
+    fi
+    __vp_new=
+    # A non-empty sentinel last field keeps trailing empty entries consistent across shells.
+    __vp_path="${PATH}:."
+    for __vp_dir in $__vp_path; do
+        case "$__vp_dir" in
+            "$__vp_bin"|"$__vp_fallback") ;;
+            *) __vp_new="${__vp_new}:${__vp_dir}" ;;
+        esac
     done
-done
+    if [ -n "$__vp_ifs_set" ]; then IFS=$__vp_ifs; else unset IFS; fi
+    [ -z "$__vp_glob" ] || set +f
+    __vp_new="${__vp_new%:*}"
+    PATH="${__vp_new#:}"
+}
+# Assigning a read-only IFS aborts dash and zsh, so probe it in a subshell first and fall back
+# to stripping each copy with parameter expansion, which leaves IFS and shell options alone.
+if (IFS=:) 2>/dev/null; then
+    __vp_dedupe_path
+else
+    for __vp_dir in "$__vp_bin" "$__vp_fallback"; do
+        while case ":${PATH}:" in *":${__vp_dir}:"*) true ;; *) false ;; esac; do
+            __vp_tmp=":${PATH}:"
+            __vp_before="${__vp_tmp%%":${__vp_dir}:"*}"
+            __vp_before="${__vp_before#:}"
+            __vp_after="${__vp_tmp#*":${__vp_dir}:"}"
+            __vp_after="${__vp_after%:}"
+            PATH="${__vp_before}${__vp_before:+${__vp_after:+:}}${__vp_after}"
+        done
+    done
+fi
+unset -f __vp_dedupe_path
 export PATH="${__vp_bin}${PATH:+:${PATH}}:${__vp_fallback}"
-unset __vp_bin __vp_fallback __vp_dir __vp_tmp __vp_before __vp_after
+unset __vp_bin __vp_fallback __vp_dir __vp_path __vp_new __vp_ifs __vp_ifs_set __vp_glob \
+    __vp_tmp __vp_before __vp_after
 hash -r 2>/dev/null || true
 
 # Shell function wrapper: intercepts `vp env use` to eval its stdout,
@@ -99,7 +133,7 @@ fi
 
 ## `vpt print-file home/env.fish`
 
-fish 包装器和 vpr 补全会在 env use/run 前保留全局 -C
+fish wrapper and vpr completion keep global -C before env use/run
 
 ```
 # Vite+ environment setup (https://viteplus.dev)
@@ -168,7 +202,7 @@ complete -c vpr --keep-order --exclusive --arguments "(__vpr_complete)"
 
 ## `vpt print-file home/env.nu`
 
-Nushell 包装器和 vpr 补全会在 env use/run 前保留全局 -C
+Nushell wrapper and vpr completion keep global -C before env use/run
 
 ```
 # Vite+ environment setup (https://viteplus.dev)
@@ -249,7 +283,7 @@ export extern "vpr" [...args: string@"nu-complete vpr"]
 
 ## `vpt print-file home/env.ps1`
 
-PowerShell 包装器和 vpr 补全会在 env use/run 前保留全局 -C
+PowerShell activation aliases the wrapper and keeps global -C in vpr completion
 
 ```
 # Vite+ environment setup (https://viteplus.dev)
@@ -262,48 +296,9 @@ $env:PATH = @(
     $__vp_fallback
 ) -join [IO.Path]::PathSeparator
 
-# Shell function wrapper: intercepts `vp env use` to eval its stdout,
-# which sets/unsets VP_NODE_VERSION in the current shell session.
-function vp {
-    $__vp_command_index = 0
-    if ($args.Count -ge 1) {
-        if ($args[0] -eq "-C") {
-            $__vp_command_index = 2
-        } elseif ("$($args[0])" -like "-C?*") {
-            $__vp_command_index = 1
-        }
-    }
-    if ($args.Count -ge ($__vp_command_index + 2) -and $args[$__vp_command_index] -eq "env" -and $args[$__vp_command_index + 1] -eq "use") {
-        if ($args -contains "-h" -or $args -contains "--help") {
-            & (Join-Path $__vp_bin "vp") @args; return
-        }
-        $previousEvalEnable = $env:VP_ENV_USE_EVAL_ENABLE
-        $previousShell = $env:VP_SHELL
-        $previousErrorActionPreference = $ErrorActionPreference
-        try {
-            $env:VP_ENV_USE_EVAL_ENABLE = "1"
-            $env:VP_SHELL = "pwsh"
-            # Windows PowerShell 5.1 treats native stderr as an error when redirected.
-            $ErrorActionPreference = "Continue"
-            $output = & (Join-Path $__vp_bin "vp") @args 2>&1 | ForEach-Object {
-                if ($_ -is [System.Management.Automation.ErrorRecord]) {
-                    Write-Host $_.Exception.Message
-                } else {
-                    $_
-                }
-            }
-        } finally {
-            $ErrorActionPreference = $previousErrorActionPreference
-            $env:VP_ENV_USE_EVAL_ENABLE = $previousEvalEnable
-            $env:VP_SHELL = $previousShell
-        }
-        if ($LASTEXITCODE -eq 0 -and $output) {
-            Invoke-Expression ($output -join "`n")
-        }
-    } else {
-        & (Join-Path $__vp_bin "vp") @args
-    }
-}
+# A script can propagate native failure through both $? and $LASTEXITCODE.
+# A plain function returns $? = $true even when its native command fails.
+Set-Alias vp (Join-Path $PSScriptRoot "vp.ps1")
 
 # Dynamic shell completion for PowerShell
 $env:VP_COMPLETE = "powershell"
@@ -338,4 +333,55 @@ $__vpr_comp = {
     }
 }
 Register-ArgumentCompleter -Native -CommandName vpr -ScriptBlock $__vpr_comp
+```
+
+## `vpt print-file home/vp.ps1`
+
+PowerShell wrapper keeps global -C before env use and propagates the native exit code
+
+```
+# Vite+ PowerShell wrapper (https://viteplus.dev)
+$__vp_bin = '<workspace>/home/bin'
+$__vp_command_index = 0
+if ($args.Count -ge 1) {
+    if ($args[0] -eq "-C") {
+        $__vp_command_index = 2
+    } elseif ("$($args[0])" -like "-C?*") {
+        $__vp_command_index = 1
+    }
+}
+# Intercept `vp env use` to set/unset VP_NODE_VERSION in the current session.
+if ($args.Count -ge ($__vp_command_index + 2) -and $args[$__vp_command_index] -eq "env" -and $args[$__vp_command_index + 1] -eq "use") {
+    if ($args -contains "-h" -or $args -contains "--help") {
+        & (Join-Path $__vp_bin "vp") @args
+        exit $LASTEXITCODE
+    }
+    $previousEvalEnable = $env:VP_ENV_USE_EVAL_ENABLE
+    $previousShell = $env:VP_SHELL
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $env:VP_ENV_USE_EVAL_ENABLE = "1"
+        $env:VP_SHELL = "pwsh"
+        # Windows PowerShell 5.1 treats native stderr as an error when redirected.
+        $ErrorActionPreference = "Continue"
+        $output = & (Join-Path $__vp_bin "vp") @args 2>&1 | ForEach-Object {
+            if ($_ -is [System.Management.Automation.ErrorRecord]) {
+                Write-Host $_.Exception.Message
+            } else {
+                $_
+            }
+        }
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+        $env:VP_ENV_USE_EVAL_ENABLE = $previousEvalEnable
+        $env:VP_SHELL = $previousShell
+    }
+    if ($LASTEXITCODE -eq 0 -and $output) {
+        Invoke-Expression ($output -join "`n")
+    }
+} else {
+    & (Join-Path $__vp_bin "vp") @args
+}
+# Exits only this script, preserving the caller's session and native exit code.
+exit $LASTEXITCODE
 ```

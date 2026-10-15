@@ -1,4 +1,4 @@
-# 迁移_已使用_Vite Plus_并配置_Husky_hooksPath
+# migration_already_vite_plus_with_husky_hookspath
 
 ## `git init`
 
@@ -8,23 +8,23 @@
 
 ## `vp migrate --no-interactive`
 
-版本更新会将旧版 husky 钩子延迟到 `--full`
+a version-update defers legacy husky hooks to --full
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
-    vite-plus  最新 → <version>
+• Dependencies:
+    vite-plus  latest → <version>
     vite              → <version>
-• 已配置包管理器设置
-• 已跳过编辑器、钩子和 lint 设置。运行 `vp migrate --full` 以应用这些设置。
+• Package manager settings configured
+• Skipped editor, hooks, and lint setup. Run `vp migrate --full` to apply them.
 ```
 
 ## `git config --local core.hooksPath`
 
-仍然是 Husky 的 .husky/_（未被覆盖）
+still husky's .husky/_ (not overridden)
 
 ```
 .husky/_
@@ -32,18 +32,19 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp migrate --hooks --no-interactive`
 
---hooks 仍会保留检测到的 Husky 设置
+--hooks still preserves a detected Husky setup
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 将保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请先手动迁移 Husky。
-此项目已经在使用 Vite+！祝编码愉快！
+▲ No package manager is declared in package.json; using pnpm for this migration without adding a pin. Run `vp env pin` to declare it explicitly.
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+This project is already using Vite+! Happy coding!
 ```
 
 ## `vpt print-file package.json`
 
-Husky 和 lint-staged 元数据应予以保留
+Husky and lint-staged metadata should remain
 
 ```
 {
@@ -59,20 +60,13 @@ Husky 和 lint-staged 元数据应予以保留
   },
   "lint-staged": {
     "*": "vp check --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file .husky/pre-commit`
 
-Husky 钩子应保持不变
+the Husky hook should remain unchanged
 
 ```
 npx lint-staged
@@ -80,7 +74,7 @@ npx lint-staged
 
 ## `git config --local core.hooksPath`
 
-Husky 的 hooksPath 应保持为
+Husky's hooksPath should remain
 
 ```
 .husky/_

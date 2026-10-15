@@ -1,4 +1,4 @@
-# 迁移_monorepo_根目录_vitest_相邻
+# migration_monorepo_root_vitest_adjacent
 
 ## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
 
@@ -7,19 +7,20 @@ record the original runner version without adding a direct dependency
 
 ## `vp migrate --no-interactive`
 
-根目录中存在与 Vitest 相邻的依赖，但没有直接依赖 Vitest，仍会添加一个固定版本的直接 Vitest 依赖
+root with a vitest-adjacent dep but no direct vitest still gets a direct vitest pin
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 迁移到 Vite+ <version>
+▲ No package manager is declared in package.json; using pnpm for this migration without adding a pin. Run `vp env pin` to declare it explicitly.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
+• 2 config updates applied
 ```
 
 ## `vpt print-file package.json`
 
-即使 vite-plus 被优先注入，vitest 仍固定在根目录
+vitest pinned at the root even though vite-plus is injected first
 
 ```
 {
@@ -32,13 +33,6 @@ VITE+ - Web 的统一工具链
     "vitest-browser-svelte": "^2.1.0",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```

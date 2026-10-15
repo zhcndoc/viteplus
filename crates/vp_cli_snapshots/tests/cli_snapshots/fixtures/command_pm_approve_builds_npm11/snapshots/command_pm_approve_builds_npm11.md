@@ -2,39 +2,39 @@
 
 ## `vp pm approve-builds --help`
 
-应显示包含 pnpm/npm deny + --all 注意事项的帮助信息
+should show help with pnpm/npm deny + --all caveats
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm approve-builds [选项] [软件包]... [-- <传递参数>...]
+Usage: vp pm approve-builds [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-批准依赖项生命周期脚本（install/postinstall）运行
+Approve dependency lifecycle scripts (install/postinstall) to run
 
-参数：
-  [软件包]...            要批准的软件包。使用 `!` 前缀表示拒绝（pnpm >= 11.0.0，npm >= 11.16.0）。省略则启动交互模式（pnpm），或列出待处理的软件包（npm >= 11.16.0）
-  [传递参数]...          要传递给包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Packages to approve. Prefix with `!` to deny (pnpm >= 11.0.0, npm >= 11.16.0). Omit to launch interactive mode (pnpm) or list pending packages (npm >= 11.16.0)
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --all                  批准当前所有待批准的软件包（pnpm >= 10.32.0，npm >= 11.16.0）。不能与位置参数同时使用
-  -h, --help             显示帮助信息
+Options:
+  --all       Approve every package currently pending approval (pnpm >= 10.32.0, npm >= 11.16.0). Mutually exclusive with positional packages
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm approve-builds`
 
-无参数 -> npm approve-scripts --allow-scripts-pending（列出待处理项）
+no args -> npm approve-scripts --allow-scripts-pending (lists pending)
 
 ```
-没有包含未经审核安装脚本的软件包。
+No packages with unreviewed install scripts.
 ```
 
 ## `vp pm approve-builds esbuild`
 
--> npm approve-scripts esbuild（提示说明）
+-> npm approve-scripts esbuild (advisory note)
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. npm 12 enforces the policy.
@@ -45,9 +45,9 @@ npm error A complete log of this run can be found in: <home>/.npm/_logs/<timesta
 
 ## `vp pm approve-builds !core-js`
 
-仅拒绝 -> npm 拒绝 core-js 的脚本（提示说明）
+deny-only -> npm deny-scripts core-js (advisory note)
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. npm 12 enforces the policy.
@@ -58,27 +58,27 @@ npm error A complete log of this run can be found in: <home>/.npm/_logs/<timesta
 
 ## `vp pm approve-builds esbuild !core-js`
 
-混合批准+拒绝 -> 已拒绝，退出码非零
+mixed approve+deny -> rejected, exit non-zero
 
-**退出码：** 1
+**Exit code:** 1
 
 ```
-npm 将批准和拒绝分开管理。请将它们作为两次调用执行，例如先运行 `vp pm approve-builds <approve-pkg>...`，然后运行 `vp pm approve-builds !<deny-pkg>...`。
+npm manages approvals and denials separately. Run them as two invocations, e.g. `vp pm approve-builds <approve-pkg>...` then `vp pm approve-builds !<deny-pkg>...`.
 ```
 
 ## `vp pm approve-builds -- esbuild`
 
-在待处理路径中通过 `--` 传入位置参数 -> 被拒绝，退出码非零
+positional via -- on the pending path -> rejected, exit non-zero
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-请将包名称作为位置参数传入（`vp pm approve-builds <pkg>...`），不要放在 `--` 之后。
+Pass package names as positionals (`vp pm approve-builds <pkg>...`), not after `--`.
 ```
 
 ## `vp pm approve-builds --all`
 
--> npm approve-scripts --all（建议说明）
+-> npm approve-scripts --all (advisory note)
 
 ```
 note: npm's allowScripts policy is advisory in npm 11.x: install scripts still run; npm only warns about unreviewed packages at install time. npm 12 enforces the policy.

@@ -1,6 +1,6 @@
 # IDE 集成
 
-Vite+ 通过编辑器特定设置支持 VS Code 和 Zed，`vp create` 和 `vp migrate` 可以自动将这些设置写入你的项目。
+Vite+ 通过编辑器特定设置支持 VS Code、Zed 和 JetBrains IDE，`vp create` 和 `vp migrate` 可以自动将这些设置写入你的项目。
 
 ## VS Code
 
@@ -145,13 +145,15 @@ Vite+ 通过编辑器特定设置支持 VS Code 和 Zed，`vp create` 和 `vp mi
         "javascript.nodejs.core.library.configured.version": "24.18.0", // 替换为你选择的 Node.js 版本
         "javascript.nodejs.core.library.typings.version": "24.13.3", // 替换为与你的运行时对应的 @types/node 版本（如果不需要，也可以省略）
         "javascript.preferred.runtime.type.id": "node",
-        "nodejs_interpreter_path": "$USER_HOME$/.vite-plus/bin/node",
-        "nodejs_package_manager_path": "pnpm" // 替换为你选择的包管理器
+        "nodejs_interpreter_path": "$USER_HOME$/.local/share/vite-plus/bin/node",
+        "nodejs_package_manager_path": "pnpm" // Replace with your package manager of choice
       }
     }]]>
   </component>
 </project>
 ```
+
+此路径假设使用默认 XDG 目录的新 Unix 安装。在 Windows 上，请使用 `%LOCALAPPDATA%\vite-plus\bin\node.exe`。运行 `vp env current node` 检查解析后的 Node.js 版本和二进制文件路径。如果使用自定义 `VP_HOME` 或 XDG 目录，或者使用较旧的 Vite+ 安装，请将 `nodejs_interpreter_path` 更新为 Node.js shim 的路径。
 
 ```xml [.idea/OxfmtSettings.xml]
 <?xml version="1.0" encoding="UTF-8"?>

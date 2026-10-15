@@ -2,20 +2,19 @@
 
 ## `vp create @your-org:with-build-dep --no-interactive --approve-builds --directory approved-app`
 
-模板自带 Prettier，因此 create 会在主安装之前先安装并迁移；受限构建（core-js）仍然必须被提示并批准
+template ships Prettier, so create installs+migrates before the main install; the gated build (core-js) must still be surfaced and approved
 
 ```
-
-检测到工作区包中存在 Prettier，但未找到根配置。包级 Prettier 必须手动迁移。
-◇ 已生成 approved-app
+▲ Prettier detected in workspace packages but no root config found. Package-level Prettier must be migrated manually.
+◇ Scaffolded approved-app
 • Node <version>  pnpm <version>
-✓ 依赖已安装，耗时 <duration>
-→ 下一步：cd approved-app && vp run
+✓ Dependencies installed in <duration>
+→ Next: cd approved-app && vp run
 ```
 
 ## `vpt print-file approved-app/pnpm-workspace.yaml`
 
-尽管迁移预安装存在，仍在 allowBuilds 下记录了批准
+approval recorded under allowBuilds despite the migration pre-install
 
 ```
 allowBuilds:
@@ -34,29 +33,25 @@ peerDependencyRules:
 
 ## `vp create @your-org:with-build-dep --no-interactive --directory default-app`
 
-默认运行会展示带有指导信息的受限构建，但保持未批准状态
+default run surfaces the gated build with guidance, leaving it unapproved
 
 ```
-
-在工作区包中检测到 Prettier，但未找到根配置。包级 Prettier 必须手动迁移。
-
-未运行以下依赖的构建脚本：core-js。
-
-这些依赖在构建完成前可能无法正常工作。在项目中运行 vp pm approve-builds 以批准它们，或者使用 --approve-builds 重新创建。
-
-◇ 已搭建 default-app
+▲ Prettier detected in workspace packages but no root config found. Package-level Prettier must be migrated manually.
+▲ Build scripts were not run for: core-js.
+● These dependencies may not work until built. Run vp pm approve-builds in the project to approve them, or re-create with --approve-builds.
+◇ Scaffolded default-app
 • Node <version>  pnpm <version>
-✓ 依赖已安装，用时 <duration>
-→ 下一步：cd default-app && vp run
+✓ Dependencies installed in <duration>
+→ Next: cd default-app && vp run
 ```
 
 ## `vpt print-file default-app/pnpm-workspace.yaml`
 
-没有 allowBuilds，因此未运行构建
+no allowBuilds, the build was not run
 
 ```
 allowBuilds:
-  core-js: 将此设置为 true 或 false
+  core-js: set this to true or false
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>
@@ -71,7 +66,7 @@ peerDependencyRules:
 
 ## `cd default-app && vp pm approve-builds core-js`
 
-该指南中的 `vp pm approve-builds` 命令用于批准受限构建
+the guidance's `vp pm approve-builds` command approves the gated build
 
 ```
 node_modules/.pnpm/core-js@3.39.0/node_modules/core-js: Running postinstall script, done in <duration>
@@ -79,7 +74,7 @@ node_modules/.pnpm/core-js@3.39.0/node_modules/core-js: Running postinstall scri
 
 ## `vpt print-file default-app/pnpm-workspace.yaml`
 
-core-js 现在已被允许加入 allowBuilds
+core-js is now allowed under allowBuilds
 
 ```
 allowBuilds:

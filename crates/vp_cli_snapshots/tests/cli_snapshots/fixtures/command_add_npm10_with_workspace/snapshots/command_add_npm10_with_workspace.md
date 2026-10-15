@@ -1,12 +1,12 @@
-# 使用工作区添加 npm10 的命令
+# command_add_npm10_with_workspace
 
 ## `vp add testnpm2 -D -w -- --no-audit`
 
-应将软件包添加到工作区根目录
+should add package to workspace root
 
 ```
 
-在 <duration> 内添加了 3 个软件包
+added 3 packages in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -35,12 +35,12 @@
 
 ## `vp add @vite-plus-test/utils --workspace -- --no-audit`
 
-应将 @vite-plus-test/utils 添加到工作区根目录
+reject unsupported --workspace without adding packages to the root
+
+**Exit code:** 1
 
 ```
-警告：npm 不支持 --workspace。
-
-在 <duration> 内已是最新
+npm does not support --workspace.
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -55,9 +55,6 @@
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0"
   }
 }
 {
@@ -72,7 +69,7 @@
 
 ## `vp add testnpm2 test-vite-plus-install@1.0.0 --filter app -- --no-audit`
 
-应将软件包添加到 packages/app
+should add packages to packages/app
 
 ```
 
@@ -91,9 +88,6 @@ added 1 package in <duration>
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0"
   }
 }
 {
@@ -112,12 +106,12 @@ added 1 package in <duration>
 
 ## `vp add @vite-plus-test/utils --workspace --filter app -- --no-audit`
 
-应将 @vite-plus-test/utils 添加到 packages/app
+reject unsupported --workspace without adding packages to app
+
+**Exit code:** 1
 
 ```
-警告：npm 不支持 --workspace。
-
-在 <duration> 内已是最新
+npm does not support --workspace.
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -132,15 +126,11 @@ added 1 package in <duration>
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0"
   }
 }
 {
   "name": "app",
   "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0",
     "test-vite-plus-install": "^1.0.0",
     "testnpm2": "^1.0.1"
   }
@@ -154,11 +144,11 @@ added 1 package in <duration>
 
 ## `vp add testnpm2 test-vite-plus-install@1.0.0 --filter * -- --no-audit`
 
-应将 testnpm2 test-vite-plus-install 添加到除工作区根目录外的所有包中
+should add testnpm2 test-vite-plus-install to all packages except workspace root
 
 ```
 
-在 <duration> 内已是最新
+up to date in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -173,15 +163,11 @@ added 1 package in <duration>
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0"
   }
 }
 {
   "name": "app",
   "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0",
     "test-vite-plus-install": "^1.0.0",
     "testnpm2": "^1.0.1"
   }
@@ -199,11 +185,11 @@ added 1 package in <duration>
 
 ## `vp add -E testnpm2 test-vite-plus-install@1.0.0 --filter * --workspace-root -- --no-audit`
 
-应将 testnpm2 test-vite-plus-install 添加到所有软件包，包括工作区根目录
+should add testnpm2 test-vite-plus-install to all packages include workspace root
 
 ```
 
-在 <duration> 内已是最新状态
+up to date in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -220,14 +206,12 @@ added 1 package in <duration>
     "testnpm2": "1.0.1"
   },
   "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0",
     "test-vite-plus-install": "1.0.0"
   }
 }
 {
   "name": "app",
   "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0",
     "test-vite-plus-install": "1.0.0",
     "testnpm2": "1.0.1"
   }
@@ -245,12 +229,12 @@ added 1 package in <duration>
 
 ## `vp install test-vite-plus-package@1.0.0 --filter * --workspace-root -- --no-audit`
 
-应为 add 命令安装软件包别名
+should install packages alias for add command
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-已添加 1 个软件包，耗时 <duration>
+added 1 package in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -267,7 +251,6 @@ VITE+ - Web 的统一工具链
     "testnpm2": "1.0.1"
   },
   "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0",
     "test-vite-plus-install": "1.0.0",
     "test-vite-plus-package": "^1.0.0"
   }
@@ -275,7 +258,6 @@ VITE+ - Web 的统一工具链
 {
   "name": "app",
   "dependencies": {
-    "@vite-plus-test/utils": "^1.0.0",
     "test-vite-plus-install": "1.0.0",
     "test-vite-plus-package": "^1.0.0",
     "testnpm2": "1.0.1"

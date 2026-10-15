@@ -1,13 +1,12 @@
-# 创建 next_command 应用程序
+# create_next_command_application
 
 ## `vp create vite:application --no-interactive`
 
-验证下一个命令是否建议使用 vp run
+verify next command suggests vp run
 
 ```
-
-使用默认包名：vite-plus-application
-◇ 已使用 Vite application 搭建 vite-plus-application
+● Using default package name: vite-plus-application
+◇ Scaffolded vite-plus-application with Vite application
 • Node <version>  pnpm <version>
-→ 下一步：cd vite-plus-application && vp run
+→ Next: cd vite-plus-application && vp run
 ```

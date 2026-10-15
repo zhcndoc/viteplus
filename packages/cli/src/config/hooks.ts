@@ -74,15 +74,6 @@ d=${rootExpr}
 __vp_shell=/bin/sh
 [ -x "$__vp_shell" ] || __vp_shell=$(command -v sh)
 
-if [ -n "\${VP_HOME-}" ]; then
-  __vp_bin="$VP_HOME/bin"
-elif [ -n "\${HOME-}" ]; then
-  __vp_bin="$HOME/.vite-plus/bin"
-else
-  __vp_bin=""
-fi
-[ -n "$__vp_bin" ] && [ -d "$__vp_bin" ] && export PATH="$PATH:$__vp_bin"
-
 export PATH="$d/node_modules/.bin:$PATH"
 "$__vp_shell" -e "$s" "$@"
 c=$?
@@ -218,7 +209,22 @@ function gitConfigGet(key: string, options?: { local?: boolean; bool?: boolean }
   return result.stdout?.toString().trim() || null;
 }
 
+// Every git config write takes `config.lock`, which linked worktrees share.
+// Concurrent `vp config` runs fail on that lock, so skip writes that change nothing.
+function gitConfigLocalHas(key: string, value: string): boolean {
+  const result = spawnSync('git', ['config', '--local', '--get-all', key]);
+  return result.status === 0 && result.stdout?.toString() === `${value}\n`;
+}
+
+function gitConfigLocalMissing(key: string): boolean {
+  // status 1 = key not found
+  return spawnSync('git', ['config', '--local', '--get-all', key]).status === 1;
+}
+
 function gitConfigSet(key: string, value: string): { ok: boolean; error?: string } {
+  if (gitConfigLocalHas(key, value)) {
+    return { ok: true };
+  }
   const result = spawnSync('git', ['config', '--local', key, value]);
   if (result.status == null) {
     return { ok: false, error: 'git command not found' };
@@ -233,6 +239,9 @@ function gitConfigSet(key: string, value: string): { ok: boolean; error?: string
 }
 
 function gitConfigUnset(key: string): { ok: boolean; error?: string } {
+  if (gitConfigLocalMissing(key)) {
+    return { ok: true };
+  }
   const result = spawnSync('git', ['config', '--local', '--unset-all', key]);
   if (result.status == null) {
     return { ok: false, error: 'git command not found' };
@@ -563,12 +572,14 @@ export function install(dir?: string, options: InstallOptions = {}): InstallResu
     writeFileSync(internal(hook), `#!/usr/bin/env sh\n. "$(dirname "$0")/h"`, { mode: 0o755 });
     chmodSync(internal(hook), 0o755);
   }
-  const { status, stderr } = spawnSync('git', ['config', 'core.hooksPath', location.target]);
-  if (status == null) {
-    return { message: 'git command not found', isError: true };
-  }
-  if (status) {
-    return { message: '' + stderr, isError: true };
+  if (!gitConfigLocalHas('core.hooksPath', location.target)) {
+    const { status, stderr } = spawnSync('git', ['config', 'core.hooksPath', location.target]);
+    if (status == null) {
+      return { message: 'git command not found', isError: true };
+    }
+    if (status) {
+      return { message: '' + stderr, isError: true };
+    }
   }
 
   // Persist enabled state + directory for later enable/disable/status.

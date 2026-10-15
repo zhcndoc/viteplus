@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { getScrollOffset } from 'vitepress';
 import { nextTick, onMounted, onUnmounted } from 'vue';
 
 function openTarget() {
@@ -18,9 +17,7 @@ function openTarget() {
   // VitePress cannot measure a heading inside closed details. Correct the scroll after revealing it.
   requestAnimationFrame(() => {
     if (!target.isConnected) return;
-    const top = window.scrollY + target.getBoundingClientRect().top - getScrollOffset()
-      + Number.parseInt(window.getComputedStyle(target).paddingTop, 10);
-    window.scrollTo(0, top);
+    target.scrollIntoView({ block: 'start' });
   });
 }
 
@@ -111,7 +108,7 @@ Vite+ 安装器（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已安
 #### `VP_HOME`
 
 - **用途**：单根目录布局的可选固定路径。将其设置为绝对路径。之后，Vite+ 会将 bin、data、cache、config 和 state 放在该目录下。已安装的 CLI 也会读取相同的变量。参见[环境](/guide/env)。
-- **默认值**：未设置。Vite+ 会在 Unix 上复用 `~/.vite-plus` 中的现有安装，或在 Windows 上复用 `%USERPROFILE%\.vite-plus` 中的现有安装。该目录必须包含一个 `current` 链接。否则，全新安装会使用拆分的平台布局。在 Unix 上，它使用 `~/.local/share/vite-plus` 及其由 Vite+ 所有的 `bin` 子目录。在 Windows 上，它使用 `%LOCALAPPDATA%\vite-plus\data` 和 `%LOCALAPPDATA%\vite-plus\bin`。
+- **默认值**：未设置。Vite+ 会在 Unix 上复用 `~/.vite-plus` 中的现有安装，或在 Windows 上复用 `%USERPROFILE%\.vite-plus` 中的现有安装。该目录必须包含一个 `current` 链接。否则，全新安装会使用下方所示的拆分平台布局。
 - **示例**：
 
   ```bash
@@ -123,6 +120,20 @@ Vite+ 安装器（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已安
   # PowerShell
   $env:VP_HOME = "D:\vite-plus"; irm https://vite.plus/ps1 | iex
   ```
+
+全新拆分目录布局的安装使用以下默认值：
+
+| 目录      | macOS 和 Linux             | Windows                          |
+| --------- | -------------------------- | -------------------------------- |
+| 数据      | `~/.local/share/vite-plus` | `%LOCALAPPDATA%\vite-plus\data`  |
+| 二进制文件 | `<DATA>/bin`               | `%LOCALAPPDATA%\vite-plus\bin`   |
+| 缓存      | `~/.cache/vite-plus`       | `%LOCALAPPDATA%\vite-plus\cache` |
+| 配置      | `~/.config/vite-plus`      | `%APPDATA%\vite-plus`            |
+| 状态      | `~/.local/state/vite-plus` | `%LOCALAPPDATA%\vite-plus\state` |
+
+在 macOS 和 Linux 上，绝对路径的 `XDG_DATA_HOME`、`XDG_CACHE_HOME`、`XDG_CONFIG_HOME` 和 `XDG_STATE_HOME` 值会覆盖对应的基础目录。二进制文件目录跟随数据目录。
+
+低优先级的托管 shim 位于 `<DATA>/fallback-bin`，其中 `<DATA>` 是解析后的数据目录。
 
 #### `VP_BIN_DIR` / `VP_DATA_DIR` / `VP_CACHE_DIR`
 
@@ -143,6 +154,13 @@ Vite+ 安装器（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已安
 - **用途**：自定义 npm registry URL
 - **默认值**：`https://registry.npmjs.org`
 - **CLI 等效选项**：`--registry`
+- **托管的软件包管理器**：当 Vite+ 下载固定版本的 npm、pnpm、Yarn 或 Bun 时，也会读取工作区根目录和用户的 `.npmrc`。软件包作用域 registry，以及 registry 作用域的 `_authToken`、`_auth` 或 `username`/`_password` 凭据都会生效。请将密钥保存在环境变量中，并在 `.npmrc` 中引用它们，例如：
+
+  ```ini
+  registry=https://npm.corp.example/repository/npm/
+  //npm.corp.example/repository/npm/:_authToken=${NPM_TOKEN}
+  ```
+
 - **示例**：
   ```bash
   curl -fsSL https://vite.plus | NPM_CONFIG_REGISTRY=https://registry.npmmirror.com bash
@@ -189,7 +207,7 @@ Vite+ 安装器（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已安
 
 #### 开发变量
 
-开发 Vite+ 本身时使用 `VP_LOCAL_TGZ` 和 `VP_LOCAL_BINARY`。`VP_LOCAL_TGZ` 指定本地 `vite-plus.tgz` 文件。`VP_LOCAL_BINARY` 指定本地 `vp` 二进制文件。安装器会使用这些文件进行本地构建。它们使用 `VP_DUMP_DIRS=1` 从所选二进制文件获取布局模式和全部五个 `EnvConfig` 类别根目录。它们不会解析目录变量。安装器会设置 `VP_INSTALL_STOP`；不要手动设置该变量。
+开发 Vite+ 本身时使用 `VP_LOCAL_TGZ` 和 `VP_LOCAL_BINARY`。`VP_LOCAL_TGZ` 指定本地 `vite-plus.tgz` 文件。`VP_LOCAL_BINARY` 指定本地 `vp` 二进制文件。安装器会使用这些文件进行本地构建。
 
 ### 运行时变量
 
@@ -251,10 +269,11 @@ Vite+ 安装器（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已安
 #### `VP_BYPASS`
 
 - **用途**：绕过 Vite+ shim 并使用系统工具
-- **值**：要绕过的目录列表，格式与 `PATH` 相同
-- **默认值**：无
+- **值**：设置此变量（包括将其设置为空字符串）会启用绕过模式。其值是一个类似 `PATH` 的附加目录列表，用于从搜索中排除这些目录。Vite+ bin 目录和 Vite+ shim 会自动跳过
+- **默认值**：未设置
 - **示例**：
   ```bash
+  # Find a system Node.js on PATH, excluding /usr/local/bin.
   VP_BYPASS=/usr/local/bin node -v
   ```
 
@@ -289,7 +308,6 @@ Vite+ 会在 shim 分派和 shell 集成期间设置其他 `VP_*` 变量（递�
 #### `VP_LOG`
 
 - **用途**：`tracing_subscriber` 的日志过滤字符串
-- **安装器行为**：当 `CI=true` 时，`install.sh` 会隐藏 shell 文件错误。设置 `VP_LOG=trace` 可显示这些错误。
 - **默认值**：无
 - **示例**：
   ```bash
@@ -381,6 +399,10 @@ vp dlx create-vite   # 下载并运行软件包二进制文件
 
 运行现有的 `package.json` 脚本不需要本地 `vite-plus` 依赖。当你希望将前端工具链版本记录在项目的清单和锁文件中时，再添加[项目本地 CLI](/guide/local-cli)。
 
+## 从其他目录运行命令
+
+使用 `vp -C <dir> <command>` 从其他工作目录运行任意 `vp` 命令。有关示例和详细信息，请参阅[使用 `-C` 指定软件包](/guide/monorepo#targeting-a-package-with-c)。
+
 ## 同时使用两个 CLI
 
 Global CLI 和项目本地的 `vite-plus` 软件包可以协同工作。你继续使用同一个 `vp` 命令，同时每个项目都可以选择自己的工具链版本。
@@ -403,7 +425,7 @@ Global CLI 和项目本地的 `vite-plus` 软件包可以协同工作。你继�
 ## 后续步骤
 
 - [环境](/guide/env)介绍 Node.js 和软件包管理器的选择、固定、shim 以及托管安装。
-- [软件包管理](/guide/install)介绍 pnpm、npm、Yarn 和 Bun 工作流。
+- [软件包管理](/guide/package-management)介绍 pnpm、npm、Yarn 和 Bun 工作流。
 - [运行](/guide/run)介绍软件包脚本和已缓存的工作区任务。
 - [升级 Vite+](/guide/upgrade)解释 Global CLI 的升级方式。有关项目本地升级，请参阅[更新 Vite+](/guide/upgrade-project)。
 - [移除 Vite+](/guide/implode)会移除全局二进制文件及其托管数据。

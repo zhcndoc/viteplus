@@ -1,24 +1,23 @@
-# 迁移_standalone_pnpm
+# migration_standalone_pnpm
 
 ## `vp migrate --no-interactive --no-hooks`
 
-迁移应支持 pnpm，将 overrides 和 peerDependencyRules 写入 pnpm-workspace.yaml
+migration should work with pnpm, write overrides and peerDependencyRules to pnpm-workspace.yaml
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-正在格式化代码...
-
-代码格式化完成
-◇ 已将 . 迁移到 Vite+ <version>
+● Formatting code...
+● Code formatted
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-✓ 已安装依赖，耗时 <duration>
-• 已应用 1 项配置更新
+✓ Dependencies installed in <duration>
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-检查 package.json 中没有 pnpm 部分
+check package.json has no pnpm section
 
 ```
 {
@@ -33,7 +32,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides、peerDependencyRules 和 catalog
+check pnpm-workspace.yaml has overrides, peerDependencyRules, and catalog
 
 ```
 catalog:

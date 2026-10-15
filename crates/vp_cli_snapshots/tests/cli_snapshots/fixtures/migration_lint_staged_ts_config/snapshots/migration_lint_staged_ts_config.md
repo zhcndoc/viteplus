@@ -1,24 +1,24 @@
-# 迁移_lint_staged_ts_配置
+# migration_lint_staged_ts_config
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-迁移应在检查 lint-staged 配置格式之前保留 Husky
+migration should preserve Husky before inspecting lint-staged config format
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-检查 Husky prepare 和依赖项是否得到保留
+check Husky prepare and dependencies are preserved
 
 ```
 {
@@ -32,20 +32,13 @@ VITE+ - 面向 Web 的统一工具链
     "lint-staged": "^16.2.6",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -62,7 +55,7 @@ peerDependencyRules:
 
 ## `vpt print-file lint-staged.config.ts`
 
-检查 TS 配置未被修改
+check TS config is not modified
 
 ```
 export default {

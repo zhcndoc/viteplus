@@ -82,12 +82,12 @@ apk add libstdc++
 安装全局 CLI 后，创建项目、安装依赖并使用默认命令：
 
 ```bash
-vp create # 创建一个新项目
-vp install # 安装依赖项
-vp dev # 启动开发服务器
-vp check # 格式化、代码检查、类型检查
-vp test # 运行 JavaScript 测试
-vp build # 构建生产版本
+vp create  # Create a new project
+vp install # Install dependencies
+vp dev     # Start the dev server
+vp check   # Format, lint, type-check
+vp test    # Run JavaScript tests
+vp build   # Build for production
 ```
 
 你也可以单独运行 `vp`，打开交互式命令行。在仅使用本地 CLI 的设置中，通过包管理器运行相同的命令，例如 `pnpm exec vp check`。
@@ -100,9 +100,9 @@ Vite+ 覆盖了完整的前端开发周期，从启动项目，到开发、检�
 
 - [`vp create`](/guide/create) 创建新的应用、包和 monorepo。
 - [`vp migrate`](/guide/migrate) 将现有项目迁移到 Vite+。
-- [`vp install`](/guide/install) 使用正确的包管理器安装依赖。
-- [`vp add`](/guide/install)、[`vp remove`](/guide/install)、[`vp update`](/guide/install)、[`vp dedupe`](/guide/install)、[`vp outdated`](/guide/install)、[`vp list`](/guide/install)、[`vp why`](/guide/install) 和 [`vp info`](/guide/install) 覆盖其余的包管理工作流。
-- [`vp link`](/guide/install)、[`vp unlink`](/guide/install)、[`vp rebuild`](/guide/install) 和 [`vp pm <command>`](/guide/install) 提供更底层的包管理器操作。
+- [`vp install`](/guide/package-management) 使用正确的包管理器安装依赖。
+- [`vp add`](/guide/package-management)、[`vp remove`](/guide/package-management)、[`vp update`](/guide/package-management)、[`vp dedupe`](/guide/package-management)、[`vp outdated`](/guide/package-management)、[`vp list`](/guide/package-management)、[`vp why`](/guide/package-management) 和 [`vp info`](/guide/package-management) 覆盖其余的包管理工作流。
+- [`vp link`](/guide/package-management)、[`vp unlink`](/guide/package-management)、[`vp rebuild`](/guide/package-management) 和 [`vp pm <command>`](/guide/package-management) 提供更底层的包管理器操作。
 
 ### 项目工具链
 

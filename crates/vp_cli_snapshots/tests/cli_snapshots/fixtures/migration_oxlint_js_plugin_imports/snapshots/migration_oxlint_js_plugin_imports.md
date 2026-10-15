@@ -26,13 +26,6 @@ oxlint 和 @oxlint/plugins 都已从 devDependencies 中移除，且没有任何
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```

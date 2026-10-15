@@ -2,54 +2,55 @@
 
 ## `vp rebuild --help`
 
-应显示带有 [PACKAGES]... 位置参数的帮助信息
+should show help with [PACKAGES]... positional
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm rebuild [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm rebuild [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-重新构建原生模块
+Rebuild native modules
 
-参数：
-  [PACKAGES]...           要重新构建的软件包（省略时重新构建全部软件包）
-  [PASS_THROUGH_ARGS]...  其他参数
+Arguments:
+  [PACKAGES]...           Packages to rebuild (rebuilds all if omitted)
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  -h, --help  显示帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp install`
 
-设置 node_modules
+set up node_modules
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-依赖项：
- testnpm2 1.0.0（可用 1.0.1）
+dependencies:
+ testnpm2 1.0.0 (1.0.1 is available)
 
-已完成，用时 <duration>，使用 pnpm <version>
+Done in <duration> using pnpm <version>
 ```
 
 ## `vp rebuild`
 
-直接 rebuild，不带参数
+bare rebuild, no args
 
 ```
 ```
 
 ## `vp rebuild testnpm2`
 
-应接受位置参数包名
+should accept positional package name
 
+```
 ```
 
 ## `vp rebuild testnpm2 -- --recursive`
 
-包名 + 透传参数
+package name + pass-through args
 
 ```
 ```

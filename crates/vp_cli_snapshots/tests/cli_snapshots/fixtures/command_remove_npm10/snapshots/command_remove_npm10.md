@@ -1,12 +1,12 @@
-# 移除 npm10 的命令
+# command_remove_npm10
 
 ## `vp remove testnpm2 -D -- --no-audit`
 
-删除不存在的软件包时应通过
+delegate removal of an absent package to npm
 
 ```
 
-在 <duration> 内已是最新
+up to date in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -21,7 +21,7 @@
 
 ## `vp add testnpm2 -- --no-audit`
 
-应将软件包添加到依赖项中
+should add packages to dependencies
 
 ```
 
@@ -32,7 +32,7 @@ added 1 package in <duration>
 
 ```
 
-已添加 1 个包，用时 <duration>
+added 1 package in <duration>
 ```
 
 ## `vp add -O test-vite-plus-package-optional -- --no-audit`
@@ -63,11 +63,11 @@ added 1 package in <duration>
 
 ## `vp remove testnpm2 test-vite-plus-install -- --no-audit`
 
-应从依赖项中移除软件包
+should remove packages from dependencies
 
 ```
 
-已移除 2 个软件包，耗时 <duration>
+removed 2 packages in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -85,7 +85,7 @@ added 1 package in <duration>
 
 ## `vp remove -D test-vite-plus-package-optional -- --loglevel=warn --no-audit`
 
-支持忽略 `-O` 标志，并从可选依赖中移除软件包
+npm removes the optional dependency even with --save-dev
 
 ```
 
@@ -104,12 +104,12 @@ removed 1 package in <duration>
 
 ## `vp remove -g --dry-run testnpm2`
 
-支持在试运行模式下删除全局软件包
+support remove global package with dry-run
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Failed to uninstall testnpm2: Package testnpm2 is not installed
 ```
 
-*（跳过了 1 个步骤到下一个行边界：步骤失败）*
+*(skipped 1 step(s) to the next line boundary: step failed)*

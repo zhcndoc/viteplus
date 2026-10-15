@@ -34,13 +34,6 @@ prepare 脚本、lint-staged 配置、check-staged 脚本和依赖项都应予�
   },
   "lint-staged": {
     "*.ts": "eslint --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```

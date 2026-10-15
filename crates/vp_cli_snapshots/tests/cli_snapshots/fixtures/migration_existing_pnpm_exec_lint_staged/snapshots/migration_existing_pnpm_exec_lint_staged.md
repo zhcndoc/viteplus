@@ -1,24 +1,24 @@
-# 迁移现有的 pnpm exec lint-staged
+# migration_existing_pnpm_exec_lint_staged
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-迁移应保留现有的 Husky 配置
+migration should preserve the existing Husky setup
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。请先手动迁移 Husky，然后再启用 Vite+ 钩子。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-检查 Husky prepare、依赖项和 lint-staged 配置是否得到保留
+check Husky prepare, dependencies, and lint-staged config are preserved
 
 ```
 {
@@ -34,20 +34,13 @@ VITE+ - Web 的统一工具链
   },
   "lint-staged": {
     "*.js": "oxlint --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -64,7 +57,7 @@ peerDependencyRules:
 
 ## `vpt print-file vite.config.ts`
 
-检查暂存的配置是否尚未迁移，同时 Husky 正在管理该钩子
+check staged config is not migrated while Husky owns the hook
 
 ```
 import { defineConfig } from 'vite-plus';
@@ -77,7 +70,7 @@ export default defineConfig({
 
 ## `vpt print-file .husky/pre-commit`
 
-检查 pnpm exec Husky 钩子是否未发生更改
+check the pnpm exec Husky hook is unchanged
 
 ```
 pnpm exec lint-staged --concurrent false

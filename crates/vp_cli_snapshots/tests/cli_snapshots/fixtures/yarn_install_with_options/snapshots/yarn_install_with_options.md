@@ -1,60 +1,60 @@
-# 使用选项安装 yarn
+# yarn_install_with_options
 
 ## `vp install --help`
 
-打印帮助信息
+print help message
 
 ```
-安装所有依赖项；如果提供了包名称，则添加这些包
+Install all dependencies, or add packages if package names are provided
 
-用法：vp install [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
+Usage: vp install [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-参数：
-  [PACKAGES]...           要添加的包（如果提供，则行为类似于 `vp add`）
-  [PASS_THROUGH_ARGS]...  要传递给包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Packages to add (if provided, acts as `vp add`)
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  -P, --prod                       不安装 devDependencies
-  -D, --dev                        仅安装 devDependencies（install）/ 保存到 devDependencies（add）
-      --no-optional                不安装 optionalDependencies
-      --frozen-lockfile            如果锁文件需要更新则失败（CI 模式）
-      --no-frozen-lockfile         允许更新锁文件（与 --frozen-lockfile 相反）
-      --lockfile-only              仅更新锁文件，不安装
-      --prefer-offline             可用时使用缓存中的包
-      --offline                    仅使用缓存中已有的包
-  -f, --force                      强制重新安装所有依赖项
-      --ignore-scripts             不运行生命周期脚本
-      --no-lockfile                不读取或生成锁文件
-      --fix-lockfile               修复损坏的锁文件条目（仅适用于 pnpm 和 yarn@2+）
-      --shamefully-hoist           创建扁平的 `node_modules`（仅适用于 pnpm）
-      --resolution-only            重新运行解析以分析对等依赖（仅适用于 pnpm）
-      --silent                     抑制输出（静默模式）
-      --filter <PATTERN>           过滤 monorepo 中的包（可多次使用）
-  -w, --workspace-root             仅在工作区根目录中安装
-  -E, --save-exact                 保存精确版本（仅在添加包时）
-      --save-peer                  保存到 peerDependencies（仅在添加包时）
-  -O, --save-optional              保存到 optionalDependencies（仅在添加包时）
-      --save-catalog               将新依赖项保存到默认目录（仅在添加包时）
-  -g, --global                     全局安装（需要提供包名称）
-      --node <NODE>                用于全局安装的 Node.js 版本（仅与 -g 一起使用）
-      --concurrency <CONCURRENCY>  要并行运行的全局包安装数量（仅与 -g 一起使用）
-  -h, --help                       打印帮助信息
+Options:
+  -P, --prod                       Do not install devDependencies
+  -D, --dev                        Install devDependencies (install) / Save to devDependencies (add)
+      --no-optional                Do not install optionalDependencies
+      --frozen-lockfile            Fail if lockfile needs to be updated (CI mode)
+      --no-frozen-lockfile         Allow lockfile updates (opposite of --frozen-lockfile)
+      --lockfile-only              Only update lockfile, don't install
+      --prefer-offline             Use cached packages when available
+      --offline                    Only use packages already in cache
+  -f, --force                      Force reinstall all dependencies
+      --ignore-scripts             Do not run lifecycle scripts
+      --no-lockfile                Don't read or generate lockfile
+      --fix-lockfile               Fix broken lockfile entries (pnpm and yarn@2+ only)
+      --shamefully-hoist           Create flat `node_modules` (pnpm only)
+      --resolution-only            Re-run resolution for peer dependency analysis (pnpm only)
+      --silent                     Suppress output (silent mode)
+      --filter <PATTERN>           Filter packages in monorepo (can be used multiple times)
+  -w, --workspace-root             Install in workspace root only
+  -E, --save-exact                 Save exact version (only when adding packages)
+      --save-peer                  Save to peerDependencies (only when adding packages)
+  -O, --save-optional              Save to optionalDependencies (only when adding packages)
+      --save-catalog               Save the new dependency to the default catalog (only when adding packages)
+  -g, --global                     Install globally (requires package names)
+      --node <NODE>                Node.js version to use for global installation (only with -g)
+      --concurrency <CONCURRENCY>  Number of global package installs to run in parallel (only with -g)
+  -h, --help                       Print help
 ```
 
 ## `vp run install`
 
 ```
-$ vp install --prod ⊘ 缓存已禁用
+$ vp install --prod ⊘ cache disabled
 yarn install <version>
-信息 未找到锁定文件。
-[1/4] 正在解析软件包...
-[2/4] 正在获取软件包...
-[3/4] 正在链接依赖项...
-[4/4] 正在构建新软件包...
+info No lockfile found.
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+[4/4] Building fresh packages...
 
-成功保存锁定文件。
+success Saved lockfile.
 
-耗时 <duration>。
+Done in <duration>.
 ```
 
 ## `vpt list-dir node_modules`
@@ -65,7 +65,7 @@ tslib
 
 ## `vp run install`
 
-再次安装命中缓存
+install again hit cache
 
 ```
 $ vp install --prod ⊘ cache disabled

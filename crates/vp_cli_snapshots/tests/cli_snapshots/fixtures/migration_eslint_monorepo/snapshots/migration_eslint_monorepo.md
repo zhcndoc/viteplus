@@ -1,24 +1,23 @@
-# 迁移 ESLint Monorepo
+# migration_eslint_monorepo
 
 ## `vp migrate --no-interactive`
 
-迁移应检测 monorepo 中的 eslint，并迁移所有包
+migration should detect eslint in monorepo and migrate all packages
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✔ 已在 vite.config.ts 中创建 vite.config.ts
-
-✔ 已将 .oxlintrc.json 合并到 vite.config.ts
-◇ 已将 . 迁移到 Vite+ <version>
+◆ ✔ Created vite.config.ts in vite.config.ts
+◆ ✔ Merged .oxlintrc.json into vite.config.ts
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已将 ESLint 规则迁移到 Oxlint
+• 2 config updates applied
+• ESLint rules migrated to Oxlint
 ```
 
 ## `vpt print-file package.json`
 
-检查根目录 eslint 已移除且脚本已重写
+check root eslint removed and scripts rewritten
 
 ```
 {
@@ -39,7 +38,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file packages/app/package.json`
 
-检查 app 的 eslint 已移除，脚本已重写
+check app eslint removed and scripts rewritten
 
 ```
 {
@@ -59,7 +58,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file packages/utils/package.json`
 
-检查 utils 的 eslint 是否已移除，以及 scripts 是否已重写
+check utils eslint removed and scripts rewritten
 
 ```
 {
@@ -72,7 +71,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt stat-file eslint.config.mjs --assert-not file`
 
-检查根目录 eslint 配置已被移除
+check root eslint config is removed
 
 ```
 eslint.config.mjs: missing

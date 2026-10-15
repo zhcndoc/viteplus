@@ -2,18 +2,18 @@
 
 ## `vp add --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp add [选项] <软件包>... [-- <透传参数>...]
+Usage: vp add [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-将软件包添加到依赖项
+Add packages to dependencies
 
-参数：
-  <PACKAGES>...           要添加的软件包
-  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Packages to add
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
 Options:
   -P, --save-prod                     Save to `dependencies` (default)
@@ -26,7 +26,7 @@ Options:
   --allow-build <NAMES>               A list of package names allowed to run postinstall
   --ignore-scripts                    Do not run lifecycle scripts
   --no-optional                       Do not install optionalDependencies
-  --frozen-lockfile                   Fail if lockfile needs to be updated
+  --frozen-lockfile                   Don't update lockfile
   --no-frozen-lockfile                Allow lockfile updates
   --lockfile-only                     Only update lockfile, don't install
   --prefer-offline                    Use cached packages when available
@@ -43,16 +43,16 @@ Options:
   --concurrency <CONCURRENCY>         Number of global package installs to run in parallel (only with -g)
   -h, --help                          Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp add testnpm2 -D -- --no-audit`
 
-应将软件包添加为开发依赖
+should add package as dev dependencies
 
 ```
 
-已添加 1 个软件包，用时 <duration>
+added 1 package in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -70,12 +70,12 @@ Options:
 
 ## `vp add testnpm2 test-vite-plus-install --allow-build=test-vite-plus-install -- --no-audit`
 
-应将软件包添加到依赖项中
+reject unsupported --allow-build without adding packages
+
+**Exit code:** 1
 
 ```
-警告：npm 不支持 --allow-build。
-
-已添加 1 个软件包，用时 <duration>
+npm does not support --allow-build.
 ```
 
 ## `vpt print-file package.json`
@@ -87,21 +87,18 @@ Options:
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "test-vite-plus-install": "^1.0.0"
   }
 }
 ```
 
 ## `vp install test-vite-plus-package@1.0.0 --save-peer -- --no-audit`
 
-应为 add 安装包别名
+should install package alias for add
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-在 <duration> 内添加了 1 个包
+added 1 package in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -113,9 +110,6 @@ VITE+ - 面向 Web 的统一工具链
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "test-vite-plus-install": "^1.0.0"
   },
   "peerDependencies": {
     "test-vite-plus-package": "^1.0.0"
@@ -125,11 +119,11 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp add test-vite-plus-package-optional -O -- --no-audit`
 
-应将软件包添加为可选依赖
+should add package as optional dependencies
 
 ```
 
-在 <duration> 内添加了 1 个软件包
+added 1 package in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -141,9 +135,6 @@ VITE+ - 面向 Web 的统一工具链
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "test-vite-plus-install": "^1.0.0"
   },
   "peerDependencies": {
     "test-vite-plus-package": "^1.0.0"
@@ -156,7 +147,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp add test-vite-plus-package-optional -- --loglevel=warn --no-audit`
 
-支持透传参数
+support pass through arguments
 
 ```
 
@@ -172,9 +163,6 @@ up to date in <duration>
   "packageManager": "npm@10.9.4",
   "devDependencies": {
     "testnpm2": "^1.0.1"
-  },
-  "dependencies": {
-    "test-vite-plus-install": "^1.0.0"
   },
   "peerDependencies": {
     "test-vite-plus-package": "^1.0.0"

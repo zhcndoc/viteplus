@@ -4,7 +4,7 @@
 
 用一个新的快照测试方案替换当前的 snap-test 运行器：该方案将每个测试用例都运行在一个真实的伪终端（PTY）中，并由 vt100 屏幕模拟器提供支持。测试用例可以脚本化完整的交互会话：它们发送按键（方向键、回车、Ctrl-C、自由文本），并基于 CLI 发出的渲染里程碑进行同步，因此提示符、选择器、加载动画和监视模式都变成了可直接测试的一等对象。快照是 Markdown 文件，内容为渲染后的终端屏幕，并使用真实的通过/失败语义进行比较（通过 `UPDATE_SNAPSHOTS=1` 接受变更），而不是当前那种重新生成后再检查 git diff 的模式。
 
-该运行器复用了 vite-task 仓库中已经存在的 PTY/终端模拟/里程碑/快照相关 crate（`pty_terminal`、`pty_terminal_test`、`pty_terminal_test_client`、`snapshot_test`），而 vite-plus 也已经将它们作为其他 crate 的 git 依赖在使用。现有的两个目录树（`snap-tests/` 和 `snap-tests-global/`）将合并为一个统一的 fixture 目录树，其中每个用例都会声明它是在全局 Rust `vp` 二进制下运行，还是在本地 JS CLI 下运行（或两者都运行）。
+该运行器复用了 vite-task 仓库中已经存在的 PTY/终端模拟/里程碑/快照相关 crate（`vt_pty_terminal`、`vt_pty_terminal_test`、`vt_pty_terminal_test_client`、`vt_snapshot_test`），而 vite-plus 也已经将它们作为其他 crate 的 git 依赖在使用。现有的两个目录树（`snap-tests/` 和 `snap-tests-global/`）将合并为一个统一的 fixture 目录树，其中每个用例都会声明它是在全局 Rust `vp` 二进制下运行，还是在本地 JS CLI 下运行（或两者都运行）。
 
 这是一项彻底切换：新的格式与旧的 `steps.json`/`snap.txt` 格式不兼容，也不会尝试兼容。一个迁移工具可以在一次命令中把旧的用例目录转换为新的 fixture；当整个测试集完成迁移后，旧运行器就会被删除。
 
@@ -40,12 +40,12 @@
 
 vite-task 仓库已经实现了与此设计完全相同的可用方案，如今被大约 190 个快照文件使用，包括交互式选择器导航和 ctrl-c 取消等场景。其组成如下：
 
-| Crate                      | 角色                                                                                                                                                                                                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pty_terminal`             | 在 PTY 中生成子进程（`portable-pty`），通过 `vt100` 模拟器传递输出，响应光标位置查询，并处理终端大小调整和 ctrl-c。封装了平台相关的变通方案：Windows 上使用 ConPTY、用于规避 musl PTY 崩溃的全局锁，以及用于避免 EIO 截断的 macOS 从属文件描述符生命周期处理。 |
-| `pty_terminal_test`        | `TestTerminal` 包装器以及 `Reader::expect_milestone(name)`：阻塞等待子进程发出指定名称的里程碑，然后返回渲染后的屏幕。                                                                                                                                   |
-| `pty_terminal_test_client` | 子进程侧辅助工具，通过窗口标题更新将里程碑编码为（`OSC 2 ; pty-terminal-test:<32-hex-id>:<base64url(name)>`，每次发出时使用一个新的 id），这些信息能够在 Unix PTY 和 Windows ConPTY 中存活，并与其标记的输出按顺序到达。                          |
-| `snapshot_test`            | 极简快照存储：通过 `UPDATE_SNAPSHOTS=1` 进行比较或更新，发生不匹配时写入 `<name>.new`，并将统一差异作为失败消息返回。                                                                                                                               |
+| Crate                         | 角色                                                                                                                                                                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vt_pty_terminal`             | 在 PTY 中生成子进程（`portable-pty`），通过 `vt100` 模拟器传递输出，响应光标位置查询，并处理终端大小调整和 ctrl-c。封装了平台相关的变通方案：Windows 上使用 ConPTY、用于规避 musl PTY 崩溃的全局锁，以及用于避免 EIO 截断的 macOS 从属文件描述符生命周期处理。 |
+| `vt_pty_terminal_test`        | `TestTerminal` 包装器以及 `Reader::expect_milestone(name)`：阻塞等待子进程发出指定名称的里程碑，然后返回渲染后的屏幕。                                                                                                                                            |
+| `vt_pty_terminal_test_client` | 子进程侧辅助工具，通过窗口标题更新将里程碑编码为（`OSC 2 ; vt-pty-terminal-test:<32-hex-id>:<base64url(name)>`，每次发出时使用一个新的 id），这些信息能够在 Unix PTY 和 Windows ConPTY 中存活，并与其标记的输出按顺序到达。 |
+| `vt_snapshot_test`            | 极简快照存储：通过 `UPDATE_SNAPSHOTS=1` 进行比较或更新，发生不匹配时写入 `<name>.new`，并将统一差异作为失败消息返回。                                                                                                                                          |
 
 在此基础上，`vt_bin/tests/e2e_snapshots` 实现了一个 `libtest-mimic` 自定义测试目标：fixture 在 `snapshots.toml` 中声明用例，步骤采用 argv 数组（不使用 shell），交互式步骤包含有序的 `interactions` 列表，并且每个用例都会生成一个 Markdown 快照，其中包含命令行、交互日志，以及在每个里程碑和退出时捕获的带围栏终端截图。
 
@@ -71,10 +71,10 @@ vite-plus 已经通过 git 依赖 vite-task 的 crate（`fspy`、`vt_glob`、`vt
 新布局（名称仍可继续讨论）：
 
 ```
-crates/vp_cli_snapshots/          # 仅用于开发的 crate，绝不会发布或打包
-├── Cargo.toml                      # publish = false；dev-deps：libtest-mimic、
-│                                   #   pty_terminal_test、snapshot_test
-├── src/bin/vpt.rs                  # 测试工具多功能程序（独立的 bin 目标）
+crates/vp_cli_snapshots/          # dev-only crate, never published or packaged
+├── Cargo.toml                      # publish = false; dev-deps: libtest-mimic,
+│                                   #   vt_pty_terminal_test, vt_snapshot_test
+├── src/bin/vpt.rs                  # test utility multitool (own bin target)
 └── tests/cli_snapshots/
     ├── main.rs                     # libtest-mimic 运行器（harness = false）
     ├── redact.rs                   # 输出规范化
@@ -229,21 +229,21 @@ steps = [
 
 ## 执行模型
 
-- **PTY 和屏幕。** 每一步都会在一个新的 PTY 中启动，使用 500x500 的网格（足够大，不会因换行和滚动扭曲输出；超过 500 行的输出是否捕获回滚内容仍是一个未决问题）。输出会持续流入 vt100 模拟器；屏幕内容始终从模拟器读取，而不是直接从原始字节读取。普通捕获会去除所有样式；`formatted-snapshot = true` 会保留 SGR 颜色代码（以转义后的 `\x1b[31m` 文本形式呈现），用于断言颜色行为的场景，并继承自 `pty_terminal` 的 ConPTY 一致性修复（去除裸 SGR-reset）。  
-- **环境。** 子进程环境会被清空并重建：固定基线（`VP_CLI_TEST=1`、`VP_EMIT_MILESTONES=1`、`TERM=xterm-256color`、git 身份、临时 `VP_HOME`、临时 `NPM_CONFIG_PREFIX`、受控的 `HOME`），一小组平台允许列表（Windows 需要 `SYSTEMROOT`、`APPDATA` 等），然后是用例级 `env`/`unset-env`，最后是步骤级 `envs`。今天那种约 40 条模式的透传允许列表及其泄漏风险将不复存在。基线中明确不包含：`CI=true` 和 `NO_COLOR`（PTY 让真实的交互行为成为默认，网格渲染也使颜色剥离变得不必要）。  
-- **超时。** 每一步默认 50 秒（`local-registry` 用例为 120 秒），可按步骤覆盖。超时时会杀死子进程，将退出状态记录为 `timeout`，并跳过剩余步骤。不会遗留进程。  
-- **退出码。** 非零时会记录在快照中。失败时，执行会跳过该步骤“行”的其余部分（直到并包括下一个 `continue-on-failure = true` 步骤之前的所有内容），并在其后恢复；如果前方没有边界，则按 shell 风格直接停止整个用例。迁移器会精确复现旧语义：`&&` 链中的成员保持默认的停止行为，每个旧命令行的最后一步都会携带边界标记，因此链中间失败会跳过该行，而下一行仍会运行；后续步骤也不会为同一行中已损坏的前置设置生成输出背书。  
+- **PTY 和屏幕。** 每一步都会在一个新的 PTY 中启动，使用 500x500 的网格（足够大，不会因换行和滚动扭曲输出；超过 500 行的输出是否捕获回滚内容仍是一个未决问题）。输出会持续流入 vt100 模拟器；屏幕内容始终从模拟器读取，而不是直接从原始字节读取。普通捕获会去除所有样式；`formatted-snapshot = true` 会保留 SGR 颜色代码（以转义后的 `\x1b[31m` 文本形式呈现），用于断言颜色行为的场景，并继承自 `vt_pty_terminal` 的 ConPTY 一致性修复（去除裸 SGR-reset）。
+- **环境。** 子进程环境会被清空并重建：固定基线（`VP_CLI_TEST=1`、`VP_EMIT_MILESTONES=1`、`TERM=xterm-256color`、git 身份、临时 `VP_HOME`、临时 `NPM_CONFIG_PREFIX`、受控的 `HOME`），一小组平台允许列表（Windows 需要 `SYSTEMROOT`、`APPDATA` 等），然后是用例级 `env`/`unset-env`，最后是步骤级 `envs`。今天那种约 40 条模式的透传允许列表及其泄漏风险将不复存在。基线中明确不包含：`CI=true` 和 `NO_COLOR`（PTY 让真实的交互行为成为默认，网格渲染也使颜色剥离变得不必要）。
+- **超时。** 每一步默认 50 秒（`local-registry` 用例为 120 秒），可按步骤覆盖。超时时会杀死子进程，将退出状态记录为 `timeout`，并跳过剩余步骤。不会遗留进程。
+- **退出码。** 非零时会记录在快照中。失败时，执行会跳过该步骤“行”的其余部分（直到并包括下一个 `continue-on-failure = true` 步骤之前的所有内容），并在其后恢复；如果前方没有边界，则按 shell 风格直接停止整个用例。迁移器会精确复现旧语义：`&&` 链中的成员保持默认的停止行为，每个旧命令行的最后一步都会携带边界标记，因此链中间失败会跳过该行，而下一行仍会运行；后续步骤也不会为同一行中已损坏的前置设置生成输出背书。
 - **并发。** `libtest-mimic` 会并行运行测试。vite-task 在 Linux 上串行执行，是因为并行 PTY 测试中 ctrl-c 信号路由存在不稳定性；在这么大的语料规模下，我们应当把这种串行化限定到对信号敏感的用例（一个 `serial-signals` 标记或一个专用分片），而不是整个测试套件。这个问题需要在实现过程中通过测量来决定。
 
 ## 里程碑协议和 CLI 仪器化
 
-里程碑是 CLI 在确定性的渲染点写入其输出流中的不可见标记。其编码采用 vite-task 协议：更新窗口标题（`OSC 2 ; pty-terminal-test:<32-hex-id>:<base64url(name)>`），每次发出时使用一个全新的随机 id，因此重复的名称仍可作为不同的标题变更被观察到。它可在 Unix PTY 和 Windows ConPTY 中传递，与其标记的输出按顺序到达，并且在真实终端的屏幕内容中不会渲染出任何内容。
+里程碑是 CLI 在确定性的渲染点写入其输出流中的不可见标记。其编码采用 vite-task 协议：更新窗口标题（`OSC 2 ; vt-pty-terminal-test:<32-hex-id>:<base64url(name)>`），每次发出时使用一个全新的随机 id，因此重复的名称仍可作为不同的标题变更被观察到。它可在 Unix PTY 和 Windows ConPTY 中传递，与其标记的输出按顺序到达，并且在真实终端的屏幕内容中不会渲染出任何内容。
 
 只有在 `VP_EMIT_MILESTONES=1` 时才会发出该标记，而只有 runner 会设置这个变量。vp 是一个广泛分发的 CLI，其输出会被管道传递到日志和其他工具中，因此像 vite-task 那样无条件发出并不适合这里。
 
 仪器化点：
 
-- **Rust 提示**（`crates/vp_global_cli`、`crates/vp_shared`）：通过 `pty_terminal_test_client` 发出（一个新的 git 依赖项，来源与现有的 vite-task crates 相同）。计划中的交互式包选择器基于 `vt_select` 构建，其 `after_render(RenderState)` 钩子正是为此设计的；选择器每次渲染都会发出 `select:app-target:<index>`。
+- **Rust 提示**（`crates/vp_global_cli`、`crates/vp_shared`）：通过 `vt_pty_terminal_test_client` 发出（一个新的 git 依赖项，来源与现有的 vite-task crates 相同）。计划中的交互式包选择器基于 `vt_select` 构建，其 `after_render(RenderState)` 钩子正是为此设计的；选择器每次渲染都会发出 `select:app-target:<index>`。
 - **TS 提示**（`packages/prompts`）：一个小型辅助函数（`emitMilestone(name)`）写入相同的字节序列，并接入每个提示组件的渲染循环。命名约定：`<kind>:<id>:<state>`，例如 `text:project-name:my-app`、`select:template:1`、`confirm:approve-builds:yes`、`spinner:install:stop`。提示调用点会获得一个稳定的 `id`（组件类型加上在存在歧义时明确指定的名称）。
 - **非提示同步点**：长时间运行的命令可以标记稳定的生命周期节点（`dev-server:ready`、`watch:rebuilt`），这样服务器和监视模式的测试就有可以等待的节点，然后再发送下一次按键或 ctrl-c。这正是解除搁置的 `command-pack-watch-restart` 用例阻塞的关键。
 
@@ -291,7 +291,7 @@ steps = [
 
 步骤标题包含 `cd <cwd> &&` 和 `ENV=val` 前缀，因此快照本身是自描述的；非零退出会显示为 `**Exit code:** N`。
 
-比较语义来自 `snapshot_test` crate：
+比较语义来自 `vt_snapshot_test` crate：
 
 - 默认运行：不匹配会写入 `snapshots/<case>.md.new` 并使该次测试失败；失败信息是统一 diff，会由 `cargo test` 输出到失败汇总中。
 - `UPDATE_SNAPSHOTS=1 just snapshot-test`：写入快照，删除过时的 `.new` 文件。
@@ -338,7 +338,7 @@ steps = [
 
 `vtt` 中没有对应项的 vp 专属新增命令：`vpt json-edit <file> <dot-path> <value>`（现有 snap-tests 中用于 fixture manifest 编辑的 `json-edit` 辅助工具）以及 `vpt chmod`。
 
-我们曾考虑过直接复用 `vtt` 本身，但最终否决了这一方案。Cargo 的 git 依赖只提供库代码，从不提供依赖项的二进制文件，因此要获取 `vtt` 可执行文件，就需要在本地开发、CI 和 nextest 归档中，通过一个与其他 vite-task git 依赖严格同步锁定的、额外的 `cargo install --git` 步骤来完成。将其作为库复用，则意味着依赖 `vt_bin`，并将整个 `vt` 产品树（任务引擎、TUI、服务器、fspy）拖入 runner 构建中，而实际只需要几个简单的辅助工具。此外，vp 专属子命令还需要先提交上游 PR，再升级依赖，之后这里的测试才能使用它们。如果重复实现最终变成维护负担，指定的演进路径是上游提取：vite-task 将这些子命令移入一个小型库 crate（正如 `pty_terminal` 已经为模拟器提供的功能一样），而 `vtt`/`vpt` 则成为基于该库的轻量级 bin 包装器。
+我们曾考虑过直接复用 `vtt` 本身，但最终否决了这一方案。Cargo 的 git 依赖只提供库代码，从不提供依赖项的二进制文件，因此要获取 `vtt` 可执行文件，就需要在本地开发、CI 和 nextest 归档中，通过一个与其他 vite-task git 依赖严格同步锁定的、额外的 `cargo install --git` 步骤来完成。将其作为库复用，则意味着依赖 `vt_bin`，并将整个 `vt` 产品树（任务引擎、TUI、服务器、fspy）拖入 runner 构建中，而实际只需要几个简单的辅助工具。此外，vp 专属子命令还需要先提交上游 PR，再升级依赖，之后这里的测试才能使用它们。如果重复实现最终变成维护负担，指定的演进路径是上游提取：vite-task 将这些子命令移入一个小型库 crate（正如 `vt_pty_terminal` 已经为模拟器提供的功能一样），而 `vtt`/`vpt` 则成为基于该库的轻量级 bin 包装器。
 
 `vpt` 打印的一切都是确定性的，并且在各平台上完全一致，这直接针对造成 182 个 Windows 跳过案例的最大原因。随着迁移不断发现值得一等化的模式，子命令列表会继续扩展；任何不值得做成子命令的东西，都说明旧案例测试的是 shell，而不是 vp。
 
@@ -357,7 +357,7 @@ steps = [
 - 该测试套件是一个 cargo test 目标：先执行 `cargo build -p vp_global_cli`，再执行 `cargo test -p vp_cli_snapshots --test cli_snapshots`，并封装在 `just snapshot-test` 配方中。分片使用 `cargo nextest --partition`，而不是自定义的 `--shard=i/n` 逻辑。
 - 两种风格从第一天起都会在 CI 中运行，并使用独立的任务。`cli-snapshot-test`（Linux 和 macOS，每个操作系统一个任务）会构建 `packages/cli/dist`，安装 release 二进制文件，并运行完整测试套件；全局风格通过 `VP_SNAP_GLOBAL_VP` 指向已安装的二进制文件，因此无需再次编译 `vp_global_cli`。（对于无法提供其中一种风格的环境，`VP_SNAP_SKIP_FLAVORS` 仍然可用，例如本地运行时没有构建 `dist/`。）
 - Windows 方案复用现有的交叉编译基础设施：`build-windows-tests` 会生成专用于 `-p vp_cli_snapshots` 的 nextest 归档（包含测试二进制文件和 `vpt`），而 `cli-snapshot-test-windows` 任务会在不安装 Rust 工具链的 `windows-latest` 上运行该归档。全局 `vp` 通过 `VP_SNAP_GLOBAL_VP` 使用 `build-windows-cli` 预先构建的版本，JS CLI 则在 runner 上为本地风格构建；nextest 的 `--workspace-remap` 会在运行时重写 `CARGO_MANIFEST_DIR`/`CARGO_BIN_EXE_vpt`，使迁移后的二进制文件能够在 checkout 中找到 fixtures 和辅助工具（runner 之所以优先使用这些运行时值而不是编译时路径，正是因为这个原因）。
-- musl 覆盖率保留其 Alpine 容器任务；`pty_terminal` 已经在 musl 上于内部对 PTY 启动进行串行化。
+- musl 覆盖率保留其 Alpine 容器任务；`vt_pty_terminal` 已经在 musl 上于内部对 PTY 启动进行串行化。
 - 通过/失败取决于测试退出代码。`git diff` 门禁和 `retry-failed-snap-tests.sh` 不适用于新套件。如果某个用例被证明存在不稳定性，修复方式应是制定里程碑或添加脱敏规则，而不是重新运行；临时隔离（`ignore = true` 加上 issue）是缓冲手段。
 
 开发者命令：
@@ -463,7 +463,7 @@ global/local 的拆分重复了 fixture，并让两个表面逐渐漂移（PR #2
 
 ## 发布计划
 
-阶段 1，运行器：添加 git 依赖（`pty_terminal_test`、`pty_terminal_test_client`、`snapshot_test`）、包含 `cli_snapshots` 测试目标和 `vpt` 二进制的 `crates/vp_cli_snapshots` crate、风味配置、脱敏、`just snapshot-test` 配方以及 CI 接入。合入时附带少量手写用例，覆盖两种风味、一个交互式用例以及一个 `local-registry` 用例。
+阶段 1，运行器：添加 git 依赖（`vt_pty_terminal_test`、`vt_pty_terminal_test_client`、`vt_snapshot_test`）、包含 `cli_snapshots` 测试目标和 `vpt` 二进制的 `crates/vp_cli_snapshots` crate、风味配置、脱敏、`just snapshot-test` 配方以及 CI 接入。合入时附带少量手写用例，覆盖两种风味、一个交互式用例以及一个 `local-registry` 用例。
 
 阶段 2，埋点：在 `packages/prompts`（clack 组件）以及 Rust 的 prompt/selector 路径中发出里程碑事件。先落地 PR #2031 的后续 picker 测试和一个 `vp create` 交互流程作为验证用例，并补上已暂存的 watch-restart 用例。
 

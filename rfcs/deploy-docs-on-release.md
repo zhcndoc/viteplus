@@ -46,11 +46,12 @@
 
 ### `.github/actions/deploy-docs`
 
-该复合操作包含所有文档部署共享的步骤：`setup-vp`、Vite Task 缓存的恢复/保存、`vp run build` 和 `vpx void deploy`。其输入包括：
+该复合操作包含所有文档部署共享的步骤：`setup-vp`、使用 Vite Task 远程缓存的 `vp run build`，以及 `vpx void deploy`。其输入包括：
 
 - `void-project`：部署目标。
 - `void-token`：复合操作无法读取 secrets，因此由调用方传入 `secrets.VOID_TOKEN`。
-- `cache-ref` / `cache-sha`（可选，默认值为 `main` / `github.sha`）：用于限定 Vite Task 缓存键的作用域。PR 预览传入 `pr-<number>` 和 head sha，这样可以复现其当前按 PR 区分的缓存键，并在没有对应缓存时回退到 `main` 缓存。
+- `site-origin`（可选）：非生产环境部署时使用的来源。
+- `remote-cache`（可选，默认值为 `read-write`）：Vite Task 远程缓存访问权限。上传缓存的调用方需要授予 `id-token: write` 以进行身份验证；PR 预览传入 `read`，这样可以复用缓存构建但不会上传。
 
 调用方先检出仓库，然后运行该操作。
 
@@ -156,7 +157,7 @@ jobs:
 - `https://main.viteplus.dev` 始终显示 `main` 最新提交中的文档，包括尚未发布的功能。开发者可以获得一个稳定的分享链接，无需等待发布或手动调度。
 - 使用专用项目，而不是共享的 `viteplus-staging` 项目：PR 预览会部署到那里，并会在每次 PR push 时覆盖 `main` 预览。
 - `cancel-in-progress: true`：对于预览而言，只有最新的 `main` 部署重要。生产环境仍保持 `false`。
-- 该工作流可以继续使用 `deploy-docs.yml` 当前使用的 `vite-task-docs-*-main-*` 缓存键，因为两者都构建 `main`；发布运行中的部署也会从同一组键中恢复缓存。
+- 所有文档部署共享 Vite Task 远程缓存；`DOCS_SITE_ORIGIN` 是任务指纹的一部分，因此每个部署目标只会复用自身的构建。
 - 工作流上线前的准备：在 void 平台上创建 `viteplus-main` 项目（部署使用同一个 `VOID_TOKEN` secret），添加 DNS CNAME `main.viteplus.dev` -> `viteplus-main.void.app`，并将自定义域名绑定到该项目。
 
 `deploy-docs-preview.yml` 保留其触发器、`viteplus-staging.void.app` 目标和 PR 评论步骤，现在改为运行相同的复合操作。按 PR 区分的 staging 部署仍然是合并前审查文档变更的场所。
@@ -211,23 +212,11 @@ jobs:
 
 ## 已考虑的替代方案
 
-- **仅限制安装脚本的部署，继续为 `docs/**` 保留推送部署。** 解决了
-  问题 2，但没有解决问题 1，并且会让 `docs/guide/install.md` 与其所描述的
-  脚本逐渐不一致。同一站点上存在两条新鲜度渠道。
-- **版本化文档。** 发布 `main`，但在相应版本发布前隐藏未发布的章节。
-  这需要编写约定以及主题/工具支持，不在本次范围内。
-- **使用从 `release.yml` 调用的可复用工作流（`workflow_call`），
-  而不是复合操作。** `reusable-release-build.yml` 已经先例，但它复用的是
-  整个作业矩阵；文档部署复用的是不同触发器、门控条件和并发设置的作业中的
-  步骤序列，这正是 `.github/actions` 复合操作的用途。`workflow_call` 还带来
-  一些细节问题：被调用的工作流会继承调用方的 `github` 上下文和事件，其工作流级
-  并发设置不会生效，并且必须声明和传递机密。复合操作避免了这三个问题，同时还可供
-  `deploy-docs-preview.yml` 使用。
-- **使用一个工作流文件处理生产环境和 `main` 预览环境，根据触发器选择项目。**
-  从 `github.event_name` 选择 `VOID_PROJECT` 是隐式且脆弱的，而 `release.yml`
-  仍然需要自己的发布门控作业。使用明确指定项目的精简包装器更易读。
-- **将 `main` 预览部署到现有的 `viteplus-staging` 项目。** PR 预览也会部署到
-  该项目，并在每次 PR 推送时覆盖 `main` 预览。
+- **仅限制安装脚本的部署，继续为 `docs/**` 保留推送部署。** 解决了问题 2，但没有解决问题 1，并且会让 `docs/guide/package-management.md` 与其所描述的脚本逐渐不一致。同一站点上存在两条新鲜度渠道。
+- **版本化文档。** 发布 `main`，但在相应版本发布前隐藏未发布的章节。这需要编写约定以及主题/工具支持，不在本次范围内。
+- **使用从 `release.yml` 调用的可复用工作流（`workflow_call`），而不是复合操作。** `reusable-release-build.yml` 已经先例，但它复用的是整个作业矩阵；文档部署复用的是不同触发器、门控条件和并发设置的作业中的步骤序列，这正是 `.github/actions` 复合操作的用途。`workflow_call` 还带来一些细节问题：被调用的工作流会继承调用方的 `github` 上下文和事件，其工作流级并发设置不会生效，并且必须声明和传递机密。复合操作避免了这三个问题，同时还可供 `deploy-docs-preview.yml` 使用。
+- **使用一个工作流文件处理生产环境和 `main` 预览环境，根据触发器选择项目。** 从 `github.event_name` 选择 `VOID_PROJECT` 是隐式且脆弱的，而 `release.yml` 仍然需要自己的发布门控作业。使用明确指定项目的精简包装器更易读。
+- **将 `main` 预览部署到现有的 `viteplus-staging` 项目。** PR 预览也会部署到该项目，并在每次 PR 推送时覆盖 `main` 预览。
 
 ## 未解决的问题
 

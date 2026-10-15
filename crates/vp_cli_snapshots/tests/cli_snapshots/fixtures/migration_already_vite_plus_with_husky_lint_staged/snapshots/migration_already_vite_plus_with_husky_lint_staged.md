@@ -1,27 +1,27 @@
-# 已迁移至 Vite Plus 并配置 Husky lint-staged
+# migration_already_vite_plus_with_husky_lint_staged
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-版本更新将旧版 husky/lint-staged 配置延后至 `--full`
+a version-update defers legacy husky/lint-staged setup to --full
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
-    vite-plus  最新版 → <version>
+• Dependencies:
+    vite-plus  latest → <version>
     vite              → <version>
-• 已配置包管理器设置
-• 已跳过编辑器、钩子和 lint 设置。运行 `vp migrate --full` 以应用这些设置。
+• Package manager settings configured
+• Skipped editor, hooks, and lint setup. Run `vp migrate --full` to apply them.
 ```
 
 ## `vpt print-file package.json`
 
-husky/lint-staged 和 prepare 保持不变
+husky/lint-staged and prepare are left untouched
 
 ```
 {
@@ -37,20 +37,13 @@ husky/lint-staged 和 prepare 保持不变
   },
   "lint-staged": {
     "*": "vp check --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt stat-file .husky --assert dir`
 
-.husky 已保留
+.husky is kept
 
 ```
 .husky: dir
@@ -58,18 +51,19 @@ husky/lint-staged 和 prepare 保持不变
 
 ## `vp migrate --hooks --no-interactive`
 
---hooks 仍会保留检测到的 Husky 配置
+--hooks still preserves a detected Husky setup
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其 hooks、配置和依赖不变。在启用 Vite+ hooks 前，请手动迁移 Husky。
-此项目已经在使用 Vite+！祝编码愉快！
+▲ No package manager is declared in package.json; using pnpm for this migration without adding a pin. Run `vp env pin` to declare it explicitly.
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+This project is already using Vite+! Happy coding!
 ```
 
 ## `vpt print-file package.json`
 
-Husky 和 lint-staged 元数据应保留
+Husky and lint-staged metadata should remain
 
 ```
 {
@@ -85,20 +79,13 @@ Husky 和 lint-staged 元数据应保留
   },
   "lint-staged": {
     "*": "vp check --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file .husky/pre-commit`
 
-Husky 钩子应保持不变
+the Husky hook should remain unchanged
 
 ```
 npx lint-staged
@@ -106,7 +93,7 @@ npx lint-staged
 
 ## `vpt stat-file .husky --assert dir`
 
-.husky 应保持不变
+.husky should remain
 
 ```
 .husky: dir

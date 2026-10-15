@@ -1,11 +1,11 @@
-# 从 tsdown JSON 配置迁移
+# migration_from_tsdown_json_config
 
 ## `vp migrate --no-interactive`
 
-迁移应将导入重写为 vite-plus
+migration should rewrite imports to vite-plus
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 ◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
@@ -14,7 +14,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt stat-file tsdown.config.json --assert-not file`
 
-检查是否应删除 tsdown.config.json
+check tsdown.config.json should be removed
 
 ```
 tsdown.config.json: missing
@@ -22,7 +22,7 @@ tsdown.config.json: missing
 
 ## `vpt print-file vite.config.ts`
 
-检查 vite.config.ts
+check vite.config.ts
 
 ```
 import { defineConfig } from 'vite-plus';
@@ -58,7 +58,7 @@ export default defineConfig({
 
 ## `vpt print-file package.json`
 
-检查 package.json
+check package.json
 
 ```
 {
@@ -72,20 +72,13 @@ export default defineConfig({
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -102,17 +95,18 @@ peerDependencyRules:
 
 ## `vp migrate --no-interactive`
 
-再次运行迁移，以检查其是否具有幂等性
+run migration again to check if it is idempotent
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-此项目已经在使用 Vite+！祝编码愉快！
+▲ No package manager is declared in package.json; using pnpm for this migration without adding a pin. Run `vp env pin` to declare it explicitly.
+This project is already using Vite+! Happy coding!
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查 vite.config.ts
+check vite.config.ts
 
 ```
 import { defineConfig } from 'vite-plus';
@@ -148,7 +142,7 @@ export default defineConfig({
 
 ## `vpt print-file package.json`
 
-检查 package.json
+check package.json
 
 ```
 {
@@ -162,13 +156,6 @@ export default defineConfig({
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```

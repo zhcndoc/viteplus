@@ -1,13 +1,12 @@
-# 创建 next 命令单体仓库应用
+# create_next_command_monorepo_application
 
 ## `vp create vite:application --no-interactive`
 
-monorepo：下一条命令应提示使用 vp run
+monorepo: next command should suggest vp run
 
 ```
-
-使用默认包名：vite-plus-application
-◇ 已用 Vite application 搭建 apps/vite-plus-application
+● Using default package name: vite-plus-application
+◇ Scaffolded apps/vite-plus-application with Vite application
 • Node <version>  pnpm <version>
-→ 下一步：cd apps/vite-plus-application && vp run
+→ Next: cd apps/vite-plus-application && vp run
 ```

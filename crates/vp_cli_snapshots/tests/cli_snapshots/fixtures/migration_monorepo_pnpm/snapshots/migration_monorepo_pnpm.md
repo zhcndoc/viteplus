@@ -1,24 +1,23 @@
-# 将 monorepo 迁移到 pnpm
+# migration_monorepo_pnpm
 
 ## `vp migrate --no-interactive`
 
-迁移应合并 vite.config.ts，并移除 oxlintrc 和 oxfmtrc
+migration should merge vite.config.ts and remove oxlintrc and oxfmtrc
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✔ 已将 .oxlintrc.json 合并到 vite.config.ts
-
-✔ 已将 .oxfmtrc.json 合并到 vite.config.ts
-◇ 已将 . 迁移到 Vite+ <version>
+◆ ✔ Merged .oxlintrc.json into vite.config.ts
+◆ ✔ Merged .oxfmtrc.json into vite.config.ts
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 4 项配置更新，已重写 1 个文件中的导入
-• 已将内联 Vite 插件用 lazyPlugins 包装，以用于检查/代码检查/格式化
+• 4 config updates applied, 1 file had imports rewritten
+• Inline Vite plugins wrapped with lazyPlugins for check/lint/fmt
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查 vite.config.ts
+check vite.config.ts
 
 ```
 import react from '@vitejs/plugin-react';
@@ -64,7 +63,7 @@ export default defineConfig({
 
 ## `vpt stat-file .oxlintrc.json --assert-not file`
 
-检查是否已删除 .oxlintrc.json
+check .oxlintrc.json is removed
 
 ```
 .oxlintrc.json: missing
@@ -72,15 +71,15 @@ export default defineConfig({
 
 ## `vpt stat-file .oxfmtrc.json --assert-not file`
 
-检查 .oxfmtrc.json 已被移除
+check .oxfmtrc.json is removed
 
 ```
-.oxfmtrc.json：缺失
+.oxfmtrc.json: missing
 ```
 
 ## `vpt print-file package.json`
 
-检查 package.json
+check package.json
 
 ```
 {
@@ -116,7 +115,7 @@ export default defineConfig({
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml
+check pnpm-workspace.yaml
 
 ```
 packages:
@@ -124,7 +123,7 @@ packages:
 
 catalog:
   testnpm2: ^1.0.0
-  # 此处的测试注释用于检查注释是否被保留
+  # test comment here to check if the comment is preserved
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vitest: <version>
   vite-plus: <version>
@@ -155,7 +154,7 @@ minimumReleaseAgeExclude:
 
 ## `vpt print-file packages/app/package.json`
 
-检查应用 package.json
+check app package.json
 
 ```
 {
@@ -184,7 +183,7 @@ minimumReleaseAgeExclude:
 
 ## `vpt print-file packages/utils/package.json`
 
-检查 utils package.json
+check utils package.json
 
 ```
 {
@@ -207,7 +206,7 @@ minimumReleaseAgeExclude:
 
 ## `vpt print-file packages/only-oxlint/package.json`
 
-检查 only-oxlint package.json
+check only-oxlint package.json
 
 ```
 {
@@ -223,7 +222,7 @@ minimumReleaseAgeExclude:
 
 ## `vpt print-file packages/only-oxlint/vite.config.ts`
 
-仅检查 only-oxlint vite.config.ts
+check only-oxlint vite.config.ts
 
 ```
 import { defineConfig } from 'vite-plus';
@@ -251,8 +250,8 @@ export default defineConfig({
 
 ## `vpt stat-file packages/only-oxlint/.oxlintrc.json --assert-not file`
 
-检查 only-oxlint .oxlintrc.json 是否已删除
+check only-oxlint .oxlintrc.json is removed
 
 ```
-packages/only-oxlintrc.json: missing
+packages/only-oxlint/.oxlintrc.json: missing
 ```

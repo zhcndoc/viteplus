@@ -1,4 +1,4 @@
-# 迁移_组合式_Husky_自定义目录
+# migration_composed_husky_custom_dir
 
 ## `git init`
 
@@ -18,20 +18,20 @@ echo custom dispatcher
 
 ## `vp migrate --no-interactive`
 
-迁移应跳过自定义 Husky 配置
+migration should skip the custom Husky setup
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。请先手动迁移 Husky，然后再启用 Vite+ 钩子。
-◇ 已将 . 迁移到 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-应保留 prepare 和 Husky 依赖
+prepare and the Husky dependency should remain
 
 ```
 {
@@ -43,20 +43,13 @@ VITE+ - Web 的统一工具链
     "husky": "^9.1.7",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -73,7 +66,7 @@ peerDependencyRules:
 
 ## `vpt print-file .config/husky/pre-commit`
 
-自定义钩子应保持不变
+custom hook should be unchanged
 
 ```
 #!/usr/bin/env sh
@@ -82,7 +75,7 @@ npx lint-staged
 
 ## `vpt print-file .config/husky/_/h`
 
-自定义调度器应保持不变
+custom dispatcher should be unchanged
 
 ```
 #!/usr/bin/env sh
@@ -91,7 +84,7 @@ echo custom dispatcher
 
 ## `vpt stat-file .vite-hooks --assert-not dir`
 
-不应创建 Vite+ hook 树
+no Vite+ hook tree should be created
 
 ```
 .vite-hooks: missing

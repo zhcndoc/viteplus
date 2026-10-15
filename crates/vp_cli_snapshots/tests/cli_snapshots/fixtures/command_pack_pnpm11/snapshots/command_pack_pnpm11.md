@@ -2,33 +2,33 @@
 
 ## `vp pm pack --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm pack [选项] [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm pack [OPTIONS] [-- <PASS_THROUGH_ARGS>...]
 
-创建软件包的 tarball
+Create a tarball of the package
 
-参数：
-  [PASS_THROUGH_ARGS]...  其他参数
+Arguments:
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  -r, --recursive                        打包所有工作区软件包
-  --filter <PATTERN>                     筛选要打包的软件包
-  --out <OUT>                            tarball 的输出路径
-  --pack-destination <PACK_DESTINATION>  保存 tarball 的目录
-  --pack-gzip-level <PACK_GZIP_LEVEL>    Gzip 压缩级别（0-9）
-  --json                                 以 JSON 格式输出
-  -h, --help                             显示帮助信息
+Options:
+  -r, --recursive                        Pack all workspace packages
+  --filter <PATTERN>                     Filter packages to pack
+  --out <OUT>                            Output path for the tarball
+  --pack-destination <PACK_DESTINATION>  Directory where the tarball will be saved
+  --pack-gzip-level <PACK_GZIP_LEVEL>    Gzip compression level (0-9)
+  --json                                 Output in JSON format
+  -h, --help                             Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm pack`
 
-应打包当前软件包
+should pack current package
 
 ```
 package: command-pack-pnpm11@1.0.0
@@ -43,7 +43,7 @@ command-pack-pnpm11-1.0.0.tgz
 
 ## `vp pm pack --out ./dist/package.tgz`
 
-应使用输出文件进行打包
+should pack with output file
 
 ```
 package: command-pack-pnpm11@1.0.0
@@ -60,7 +60,7 @@ Tarball Details
 
 ## `vp pm pack --pack-destination ./dist`
 
-应使用指定的目标目录进行打包
+should pack with destination
 
 ```
 package: command-pack-pnpm11@1.0.0
@@ -77,7 +77,7 @@ Tarball Details
 
 ## `vp pm pack --json --pack-gzip-level 9`
 
-应使用 gzip 压缩级别进行打包
+should pack with gzip compression level
 
 ```
 {
@@ -97,7 +97,7 @@ Tarball Details
 
 ## `vp pm pack --json`
 
-应以 JSON 输出进行打包
+should pack with json output
 
 ```
 {
@@ -117,7 +117,7 @@ Tarball Details
 
 ## `vp pm pack -- --loglevel=warn`
 
-应支持透传参数
+should support pass through arguments
 
 ```
 package: command-pack-pnpm11@1.0.0

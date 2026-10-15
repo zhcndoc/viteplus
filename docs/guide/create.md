@@ -42,7 +42,7 @@ Vite+ 提供以下内置模板：
 
 ## 选项
 
-- `--directory <dir>` 将生成的项目写入指定目标目录
+- `--directory <dir>` 将生成的项目写入指定目标目录。只有内置模板和捆绑的 `@org` 模板支持此选项
 - `--agent <name>` 在脚手架创建过程中生成代理指令文件
 - `--no-agent` 跳过代理指令设置
 - `--editor <name>` 写入编辑器配置文件
@@ -56,6 +56,10 @@ Vite+ 提供以下内置模板：
 - `--list` 输出可用的内置模板和热门模板
 - `--hooks` 启用提交前钩子设置（调度器 + `.vite-hooks` + `staged` 配置）
 - `--no-hooks` 跳过钩子设置
+
+::: info
+向现有 monorepo 添加软件包时，不能使用 `--git` 和 `--no-git`。
+:::
 
 创建完成后，使用 `vp hooks status`、`vp hooks disable` 和 `vp hooks enable` 管理调度器。请参见[提交钩子指南](/guide/commit-hooks)。
 
@@ -130,7 +134,7 @@ vp create vite:generator
 
 本地生成器在单体仓库的 `vite.config.ts` 中的 [`create.templates`](/config/create#create-templates) 里声明。这是唯一的事实来源：只有已注册的模板才会出现在 `vp create` 选择器中。
 
-`vp create vite:generator` 会为你注册生成器，在根目录 `vite.config.ts` 的 `create.templates` 中添加一项：
+`vp create vite:generator` 会为你注册生成器，在根目录 `vite.config.ts` 的 `create.templates` 中添加一项。例如，在 `generators/my-generator` 中创建名为 `my-generator` 的生成器后，注册方式如下：
 
 ```ts
 import { defineConfig } from 'vite-plus';
@@ -138,7 +142,11 @@ import { defineConfig } from 'vite-plus';
 export default defineConfig({
   create: {
     templates: [
-      { name: 'my-generator', description: '生成新组件', template: 'my-generator' },
+      {
+        name: 'my-generator',
+        description: 'A starter for creating a Vite+ code generator.',
+        template: './generators/my-generator',
+      },
     ],
   },
 });

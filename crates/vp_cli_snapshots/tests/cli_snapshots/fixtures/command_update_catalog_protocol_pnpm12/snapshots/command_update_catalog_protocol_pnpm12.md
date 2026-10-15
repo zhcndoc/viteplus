@@ -9,9 +9,8 @@ migrate 通过工作区 catalog 固定工具链
 ```
 VITE+ - The Unified Toolchain for the Web
 
-Formatting code...
-
-Code formatted
+● Formatting code...
+● Code formatted
 ◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
 ✓ Dependencies installed in <duration>

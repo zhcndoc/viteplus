@@ -2,19 +2,19 @@
 
 ## `vp pm approve-builds --all`
 
-pnpm 10.31.0 < 10.32.0 → 被友好的 UserMessage 拒绝（无 `error:` 前缀）
+reject --all before execution on pnpm older than 10.32.0
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-`--all` requires pnpm >= 10.32.0. Upgrade pnpm or pass package names explicitly.
+pnpm < 10.32.0 does not support --all.
 ```
 
 ## `vp pm approve-builds esbuild !core-js`
 
-pnpm 10.31.0 < 11.0.0 → 不支持 `!pkg` 拒绝语法
+pnpm 10.31.0 < 11.0.0 → !pkg deny syntax rejected
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 `!<pkg>` deny syntax requires pnpm >= 11.0.0. Upgrade pnpm or omit the `!` entries.
@@ -22,8 +22,8 @@ pnpm 10.31.0 < 11.0.0 → 不支持 `!pkg` 拒绝语法
 
 ## `vp pm approve-builds esbuild`
 
-在旧版 pnpm 上，普通位置参数仍然有效
+plain positional still works on old pnpm
 
 ```
-没有等待批准的软件包
+There are no packages awaiting approval
 ```

@@ -1,22 +1,22 @@
-# 命令过时_npm10
+# command_outdated_npm10
 
 ## `vp install`
 
-应先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-已添加 4 个软件包，并在 <duration> 内审计了 5 个软件包
+added 4 packages, and audited 5 packages in <duration>
 
-发现 0 个漏洞
+found 0 vulnerabilities
 ```
 
 ## `vp outdated testnpm2`
 
-应显示过期的软件包
+should outdated package
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Package   Current  Wanted  Latest  Location               Depended by
@@ -25,16 +25,16 @@ testnpm2    1.0.0   1.0.0   1.0.1  node_modules/testnpm2  workspace
 
 ## `vp outdated test-vite*`
 
-在 npm 上使用 glob 模式时，outdated 无法正常工作
+should outdated with glob pattern not working on npm
 
 ```
 ```
 
 ## `vp outdated --format json`
 
-应支持 JSON 输出
+should support json output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 {
@@ -64,9 +64,9 @@ testnpm2    1.0.0   1.0.0   1.0.1  node_modules/testnpm2  workspace
 
 ## `vp outdated --format list`
 
-应支持列表输出
+should support list output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 <workspace>/node_modules/test-vite-plus-other-optional:test-vite-plus-other-optional@1.0.0:test-vite-plus-other-optional@1.0.0:test-vite-plus-other-optional@1.1.0:workspace
@@ -76,9 +76,9 @@ testnpm2    1.0.0   1.0.0   1.0.1  node_modules/testnpm2  workspace
 
 ## `vp outdated --format table`
 
-应支持表格输出
+should support table output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Package                        Current  Wanted  Latest  Location                                    Depended by
@@ -89,9 +89,9 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 
 ## `vp outdated testnpm2 --long`
 
-应该支持 --long
+should support --long
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Package   Current  Wanted  Latest  Location               Depended by  Package Type  Homepage
@@ -100,9 +100,9 @@ testnpm2    1.0.0   1.0.0   1.0.1  node_modules/testnpm2  workspace    dependenc
 
 ## `vp outdated -r`
 
-应支持递归输出
+should support recursive output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Package                        Current  Wanted  Latest  Location                                    Depended by
@@ -113,26 +113,23 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 
 ## `vp outdated -P`
 
-应支持 prod 输出
+should support prod output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-warn: npm does not support --prod.
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
-test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
 testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       workspace
 ```
 
-## `vp outdated -D`
+## `NODE_ENV=production vp outdated -D`
 
-应支持 dev 输出
+include outdated dev dependencies in a production environment
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-warn: npm does not support --dev.
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
 test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
@@ -141,59 +138,32 @@ testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2   
 
 ## `vp outdated --no-optional`
 
-应支持无可选依赖项输出
+should support no-optional output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-warn: npm does not support --no-optional.
-Package                        Current  Wanted  Latest  Location                                    Depended by
-test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
-test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
-testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       workspace
+Package                     Current  Wanted  Latest  Location                                 Depended by
+test-vite-plus-top-package    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package  workspace
+testnpm2                      1.0.0   1.0.0   1.0.1  node_modules/testnpm2                    workspace
 ```
 
 ## `vp outdated --compatible`
 
-兼容模式应不输出任何内容
+should reject unsupported --compatible
 
-**退出代码：** 1
-
-```
-warn: npm does not support --compatible.
-Package                        Current  Wanted  Latest  Location                                    Depended by
-test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
-test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
-testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       workspace
-```
-
-## `vpt json-edit package.json optionalDependencies.test-vite-plus-other-optional '"^1.0.0"'`
-
-应支持与可选依赖项兼容的输出。
-
-
-## `vp outdated --compatible`
-
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-warn: npm does not support --compatible.
-Package                        Current  Wanted  Latest  Location                                    Depended by
-test-vite-plus-other-optional    1.0.0   1.1.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
-test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
-testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       workspace
+npm does not support --compatible.
 ```
 
 ## `vp outdated --sort-by name`
 
-应支持按 sort-by 输出
+should reject unsupported --sort-by
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-warn: npm does not support --sort-by.
-Package                        Current  Wanted  Latest  Location                                    Depended by
-test-vite-plus-other-optional    1.0.0   1.1.0   1.1.0  node_modules/test-vite-plus-other-optional  workspace
-test-vite-plus-top-package       1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-top-package     workspace
-testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       workspace
+npm does not support --sort-by.
 ```

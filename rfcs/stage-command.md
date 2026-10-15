@@ -410,7 +410,7 @@ error: 未提供以下必需参数：
 
 ## 文档
 
-- `docs/guide/install.md`：`vp pm <command>` 的“高级”部分列出了转发的命令；添加 `vp pm stage`，附上一段简短的分阶段发布说明，并指向 npm 文档。
+- `docs/guide/package-management.md`：`vp pm <command>` 的“高级”部分列出了转发的命令；添加 `vp pm stage`，附上一段简短的分阶段发布说明，并指向 npm 文档。
 - 在相关位置注明 yarn 的注意事项（`vp pm stage` ≠ `yarn stage`）。
 - 重新生成任何受影响的帮助快照（`command-pm-*`）。
 

@@ -2,7 +2,7 @@
 
 ## `vp update testnpm2 -- --no-audit`
 
-应在 semver 范围内更新软件包
+should update package within semver range
 
 ```
 
@@ -30,12 +30,12 @@ added 3 packages in <duration>
 
 ## `vp up testnpm2 --latest -- --no-audit`
 
-应更新到绝对最新版本
+reject unsupported --latest without updating dependencies
+
+**Exit code:** 1
 
 ```
-警告：npm 不支持 --latest。
-
-已是最新版本，耗时 <duration>
+npm does not support --latest.
 ```
 
 ## `vpt print-file package.json`
@@ -59,11 +59,11 @@ added 3 packages in <duration>
 
 ## `vp update -D -- --no-audit`
 
-应仅更新开发依赖
+preserve npm's native inclusion of dev dependencies
 
 ```
 
-已是最新版本，耗时 <duration>
+up to date in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -87,11 +87,11 @@ added 3 packages in <duration>
 
 ## `vp update -P --no-save -- --no-audit`
 
-应仅更新 dependencies 和 optionalDependencies，而不保存
+preserve npm's production inclusion and no-save options
 
 ```
 
-在 <duration> 内已是最新
+up to date in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -115,7 +115,7 @@ added 3 packages in <duration>
 
 ## `vp rm testnpm2`
 
-应跳过可选依赖
+prepare an optional dependency
 
 ```
 
@@ -128,19 +128,20 @@ found 0 vulnerabilities
 
 ```
 
-已添加 1 个软件包，用时 <duration>
+added 1 package in <duration>
 ```
 
-## `vp update --no-optional --latest -- --no-audit`
+## `vp update --no-optional -- --no-audit`
+
+preserve npm's native optional dependency exclusion
 
 ```
-warn: npm does not support --latest.
 npm warn config optional Use `--omit=optional` to exclude optional dependencies, or
 npm warn config `--include=optional` to include them.
 npm warn config
 npm warn config       Default value does install optional deps unless otherwise omitted.
 
-在 <duration> 内更改了 1 个软件包
+changed 1 package in <duration>
 ```
 
 ## `vpt print-file package.json`
@@ -162,11 +163,11 @@ npm warn config       Default value does install optional deps unless otherwise 
 
 ## `vp update -- --no-audit`
 
-应更新所有软件包，但不会更改 package.json
+should update all packages but won't change the package.json
 
 ```
 
-已添加 2 个软件包，耗时 <duration>
+added 2 packages in <duration>
 ```
 
 ## `vpt print-file package.json`

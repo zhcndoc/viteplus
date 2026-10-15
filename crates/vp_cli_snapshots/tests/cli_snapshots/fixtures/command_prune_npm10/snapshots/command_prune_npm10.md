@@ -2,41 +2,41 @@
 
 ## `vp install`
 
-应首先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-已添加 3 个软件包，并在 <duration> 内审计了 4 个软件包
+added 3 packages, and audited 4 packages in <duration>
 
-发现 0 个漏洞
+found 0 vulnerabilities
 ```
 
 ## `vp pm prune --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm prune [选项] [-- <传递参数>...]
+Usage: vp pm prune [OPTIONS] [-- <PASS_THROUGH_ARGS>...]
 
-移除不必要的软件包
+Remove unnecessary packages
 
-参数：
-  [<传递参数>...]...  其他参数
+Arguments:
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  --prod         移除 devDependencies
-  --no-optional  移除可选依赖
-  -h, --help     打印帮助信息
+Options:
+  --prod         Remove devDependencies
+  --no-optional  Remove optional dependencies
+  -h, --help     Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm prune`
 
-应清理多余的依赖
+should prune extraneous dependencies
 
 ```
 
@@ -47,7 +47,7 @@ found 0 vulnerabilities
 
 ## `vp pm prune --prod`
 
-应清理开发依赖项（使用 --omit=dev）
+should prune dev dependencies (uses --omit=dev)
 
 ```
 
@@ -58,13 +58,13 @@ found 0 vulnerabilities
 
 ## `vp pm prune --no-optional`
 
-应清理可选依赖项（使用 --omit=optional）
+should prune optional dependencies (uses --omit=optional)
 
 ```
 
-已添加 1 个软件包，并在 <duration> 内审核了 3 个软件包
+added 1 package, and audited 3 packages in <duration>
 
-发现 0 个漏洞
+found 0 vulnerabilities
 ```
 
 ## `vp pm prune --prod --no-optional`
@@ -80,11 +80,11 @@ found 0 vulnerabilities
 
 ## `vp pm prune -- --loglevel=warn`
 
-应支持传递参数
+should support pass through arguments
 
 ```
 
-已添加 2 个软件包，并在 <duration> 内审计了 4 个软件包
+added 2 packages, and audited 4 packages in <duration>
 
-发现 0 个漏洞
+found 0 vulnerabilities
 ```

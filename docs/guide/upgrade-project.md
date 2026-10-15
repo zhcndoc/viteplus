@@ -6,11 +6,7 @@
 
 推荐使用 `vp migrate` 更新项目，它可以保持工具链依赖项一致。
 
-更新项目的 `vite-plus` 依赖项后，运行本地 CLI 以对齐工具链版本：
-
-```bash
-./node_modules/.bin/vp migrate
-```
+更新项目依赖项前，请[通过包管理器运行目标迁移器](./migrate.md#without-the-global-cli)。
 
 如果全局 CLI 比项目中的版本更新，运行 `vp migrate` 会将项目升级到该全局版本：
 
@@ -58,4 +54,4 @@ vp migrate
 
 Migrate 会将桥接注册表写入 `.npmrc`。对于 Yarn Berry，它会将注册表写入 `.yarnrc.yml`。它会将 `vite-plus` 和 `vite` 别名固定为匹配的 `0.0.0-commit.<sha>` 版本。`vite` 别名指向 `@voidzero-dev/vite-plus-core`。如果项目 CI 必须测试预览版本，请提交注册表行。
 
-安装完成后，运行 `vp toolchain` 以显示选定的版本。测试完成后，将 `vite-plus` 设置为 `latest`。从 `.npmrc` 或 `.yarnrc.yml` 中移除桥接 `registry` 行。然后运行 `vp install`。
+安装完成后，运行 `vp toolchain` 以显示选定的版本。测试完成后，将 `vite-plus` 设置为 `latest`，并在声明 `vite` 别名的所有位置将其设置为 `npm:@voidzero-dev/vite-plus-core@latest`。从 `.npmrc` 或 `.yarnrc.yml` 中移除预览桥接设置，并恢复之前的 registry。然后运行 `vp install`。

@@ -3,11 +3,11 @@
 ## `vp install -g .`
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-信息：正在使用 Node.js <version> 安装 1 个全局包
-✓ 已安装 just-a-normal-package 0.0.0
-  可执行文件：just-a-normal-package
+info: Installing 1 global package with Node.js <version>
+ Installed just-a-normal-package 0.0.0
+  Bins: just-a-normal-package
 ```
 
 ## `vp install -g ./another-package.tgz`
@@ -16,7 +16,7 @@ VITE+ - Web 的统一工具链
 VITE+ - The Unified Toolchain for the Web
 
 info: Installing 1 global package with Node.js <version>
-✓ Installed another-normal-package 0.0.1
+ Installed another-normal-package 0.0.1
   Bins: another-normal-package
 ```
 

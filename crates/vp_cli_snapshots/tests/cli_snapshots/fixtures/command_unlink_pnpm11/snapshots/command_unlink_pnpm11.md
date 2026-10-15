@@ -2,29 +2,29 @@
 
 ## `vp unlink -h`
 
-应显示帮助信息
+should show help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp unlink [选项] [软件包|目录] [参数]...
+Usage: vp unlink [OPTIONS] [PACKAGE|DIR] [ARGS]...
 
-取消链接软件包
+Unlink packages
 
-参数：
-  [软件包|目录]  要取消链接的软件包名称
-  [参数]...      要传递给软件包管理器的参数
+Arguments:
+  [PACKAGE|DIR]  Package name to unlink
+  [ARGS]...      Arguments to pass to package manager
 
-选项：
-  -r, --recursive  在每个工作区软件包中取消链接
-  -h, --help       打印帮助信息
+Options:
+  -r, --recursive  Unlink in every workspace package
+  -h, --help       Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vpt mkdir -p ../unlink-test-lib`
 
-创建测试库
+create test library
 
 ```
 ```
@@ -37,7 +37,7 @@ VITE+ - Web 的统一工具链
 
 ## `vp link ../unlink-test-lib`
 
-先链接该库
+link the library first
 
 ```
 
@@ -60,7 +60,7 @@ dependencies:
 
 ## `vp unlink unlink-test-lib -- --no-frozen-lockfile`
 
-应当解除该软件包的链接（pnpm v11 在 CI=true 下需要使用 --no-frozen-lockfile）
+should unlink the package (pnpm v11 requires --no-frozen-lockfile under CI=true)
 
 ```
 Already up to date
@@ -81,14 +81,14 @@ Already up to date
 
 ## `vp link ../unlink-test-lib`
 
-再次链接
+link again
 
 ```
 ```
 
 ## `vp unlink -- --no-frozen-lockfile`
 
-应该解除所有软件包的链接
+should unlink all packages
 
 ```
 Already up to date

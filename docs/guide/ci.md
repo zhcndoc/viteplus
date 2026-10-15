@@ -14,20 +14,19 @@
 
 ## GitHub Actions
 
-GitHub Action 会设置 Vite+、所需的 Node.js 版本和包管理器。这意味着通常无需在工作流中单独执行 `setup-node`、包管理器设置或手动依赖缓存步骤。
+GitHub Action 会设置 Vite+、所需的 Node.js 版本和包管理器。这意味着通常无需在工作流中单独执行 `setup-node`、包管理器设置、依赖安装或手动依赖缓存步骤。
 
 ```yaml [.github/workflows/ci.yml]
 - uses: voidzero-dev/setup-vp@<setup-vp-version>
   with:
     node-version: '24'
     cache: true
-- run: vp install
 - run: vp check
 - run: vp test
 - run: vp build
 ```
 
-当 `cache: true` 时，`setup-vp` 会自动为你处理依赖缓存。
+`setup-vp` 默认运行 `vp install`。如果将 `run-install: false`，请确保在运行其他命令前添加 `vp install` 步骤。设置 `cache: true` 后，`setup-vp` 会自动为你处理依赖缓存。
 
 ::: tip
 `setup-vp` 会缓存包管理器数据。要在 CI 运行之间复用 Vite Task 结果，请添加单独的 [Vite Task 的 GitHub Actions 缓存](/guide/github-actions-cache)。
@@ -151,7 +150,7 @@ Dependabot 每周检查 `.github/workflows` 中的 `uses:` 条目。
     node-version: '24'
     cache: true
 
-- run: vp install && vp run dev:setup
+- run: vp run dev:setup
 - run: vp check
 - run: vp test
 ```

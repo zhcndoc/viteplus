@@ -9,5 +9,5 @@
 
 ```
 info: Updating 1 global package with Node.js <version>
-✓ Updated testnpm2 to 1.0.1
+ Updated testnpm2 to 1.0.1
 ```

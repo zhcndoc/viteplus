@@ -1,24 +1,23 @@
-# 迁移_独立_yarn4_幂等
+# migration_standalone_yarn4_idempotent
 
 ## `vp migrate --no-interactive`
 
-首次运行前会自动转换 Yarn Berry PnP
+implicit Yarn Berry PnP converts before the first pass
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ Vite+ 当前不支持 Yarn Plug'n'Play (PnP)。
-
-✔ 已将 Yarn 切换为 node-modules 模式
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Vite+ does not currently support Yarn Plug'n'Play (PnP).
+◆ ✔ Switched Yarn to node-modules mode
+◇ Migrated . to Vite+ <version>
 • Node <version>  yarn <version>
-• 已应用 2 项配置更新，已重写 1 个文件中的导入
-• 已配置包管理器设置
+• 2 config updates applied, 1 file had imports rewritten
+• Package manager settings configured
 ```
 
 ## `vpt print-file package.json`
 
-迁移后的依赖项规范会立即使用 Yarn catalog
+migrated dependency specs use the Yarn catalog immediately
 
 ```
 {
@@ -40,7 +39,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file .yarnrc.yml`
 
-托管的目录条目可用于这些依赖规范
+managed catalog entries are available to those specs
 
 ```
 nodeLinker: node-modules
@@ -54,7 +53,7 @@ catalog:
 
 ## `vpt print-file example.spec.ts`
 
-普通的 Vitest 导入使用 Vite+ 的公共接口
+ordinary Vitest imports use the Vite+ public surface
 
 ```
 import { expect, it } from 'vite-plus/test';
@@ -64,10 +63,10 @@ it('works', () => expect(true).toBe(true));
 
 ## `vp migrate --no-interactive`
 
-一个刚完成迁移的独立 Yarn 项目
+a freshly migrated standalone Yarn project is complete
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-此项目已经在使用 Vite+！祝编码愉快！
+This project is already using Vite+! Happy coding!
 ```

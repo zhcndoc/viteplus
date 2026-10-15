@@ -1,59 +1,59 @@
-# pnpm10 命令列表
+# command_list_pnpm10
 
 ## `vp install`
 
-应首先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-依赖项：
+dependencies:
  test-vite-plus-package-optional 1.0.0
  testnpm2 1.0.1
 
-开发依赖项：
+devDependencies:
  test-vite-plus-package 1.0.0
 
-使用 pnpm <version> 在 <duration> 内完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vp pm list --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm list [OPTIONS] [PATTERN] [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm list [OPTIONS] [PATTERN] [-- <PASS_THROUGH_ARGS>...]
 
-列出已安装的软件包
+List installed packages
 
-参数：
-  [PATTERN]               用于筛选的软件包模式
-  [PASS_THROUGH_ARGS]...  其他参数
+Arguments:
+  [PATTERN]               Package pattern to filter
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  --depth <DEPTH>          依赖树的最大深度
-  --json                   以 JSON 格式输出
-  --long                   显示扩展信息
-  --parseable              可解析的输出格式
-  -P, --prod               仅显示生产依赖
-  -D, --dev                仅显示开发依赖
-  --no-optional            排除可选依赖
-  --exclude-peers          排除对等依赖
-  --only-projects          仅显示项目软件包
-  --find-by <FINDER_NAME>  使用查找器函数
-  -r, --recursive          列出所有工作区中的软件包
-  --filter <PATTERN>       筛选 monorepo 中的软件包
-  -g, --global             列出全局软件包
-  -h, --help               打印帮助信息
+Options:
+  --depth <DEPTH>          Maximum depth of dependency tree
+  --json                   Output in JSON format
+  --long                   Show extended information
+  --parseable              Parseable output format
+  -P, --prod               Only production dependencies
+  -D, --dev                Include dev dependencies
+  --no-optional            Exclude optional dependencies
+  --exclude-peers          Exclude peer dependencies
+  --only-projects          Show only project packages
+  --find-by <FINDER_NAME>  Use a finder function
+  -r, --recursive          List across all workspaces
+  --filter <PATTERN>       Filter packages in monorepo
+  -g, --global             List global packages
+  -h, --help               Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm list`
 
-应列出已安装的软件包
+should list installed packages
 
 ```
 Legend: production dependency, optional only, dev only
@@ -70,7 +70,7 @@ test-vite-plus-package 1.0.0
 
 ## `vp pm list testnpm2`
 
-应列出指定的包
+should list specific package
 
 ```
 Legend: production dependency, optional only, dev only
@@ -83,7 +83,7 @@ testnpm2 1.0.1
 
 ## `vp pm list --depth 0`
 
-应列出具有深度限制的软件包
+should list packages with depth limit
 
 ```
 Legend: production dependency, optional only, dev only
@@ -100,7 +100,7 @@ test-vite-plus-package 1.0.0
 
 ## `vp pm list --json`
 
-应以 JSON 格式列出软件包
+should list packages in JSON format
 
 ```
 [
@@ -137,29 +137,29 @@ test-vite-plus-package 1.0.0
 
 ## `vp pm list --long`
 
-应列出带有扩展信息的软件包
+should list packages with extended info
 
 ```
-图例：生产依赖项、仅可选依赖项、仅开发依赖项
+Legend: production dependency, optional only, dev only
 
-command-list-pnpm10@1.0.0 <工作区>
+command-list-pnpm10@1.0.0 <workspace>
 
-依赖项：
+dependencies:
 test-vite-plus-package-optional 1.0.0
-  仅用于快照测试
+  just for snap-test
   <workspace>/node_modules/.pnpm/test-vite-plus-package-optional@1.0.0/node_modules/test-vite-plus-package-optional
 testnpm2 1.0.1
   <workspace>/node_modules/.pnpm/testnpm2@1.0.1/node_modules/testnpm2
 
-开发依赖项：
+devDependencies:
 test-vite-plus-package 1.0.0
-  仅用于快照测试
+  just for snap-test
   <workspace>/node_modules/.pnpm/test-vite-plus-package@1.0.0/node_modules/test-vite-plus-package
 ```
 
 ## `vp pm list --parseable`
 
-应以可解析格式列出软件包
+should list packages in parseable format
 
 ```
 <workspace>
@@ -170,7 +170,7 @@ test-vite-plus-package 1.0.0
 
 ## `vp pm list --prod`
 
-应仅列出生产依赖
+should list production dependencies only
 
 ```
 Legend: production dependency, optional only, dev only
@@ -184,7 +184,7 @@ testnpm2 1.0.1
 
 ## `vp pm list --dev`
 
-应仅列出开发依赖
+should list development dependencies only
 
 ```
 Legend: production dependency, optional only, dev only
@@ -197,24 +197,24 @@ test-vite-plus-package 1.0.0
 
 ## `vp pm list --no-optional`
 
-应排除可选依赖
+should exclude optional dependencies
 
 ```
-图例：生产依赖、仅可选、仅开发
+Legend: production dependency, optional only, dev only
 
 command-list-pnpm10@1.0.0 <workspace>
 
-依赖项：
+dependencies:
 test-vite-plus-package-optional 1.0.0
 testnpm2 1.0.1
 
-开发依赖项：
+devDependencies:
 test-vite-plus-package 1.0.0
 ```
 
 ## `vp pm list --exclude-peers`
 
-应排除对等依赖
+should exclude peer dependencies
 
 ```
 Legend: production dependency, optional only, dev only
@@ -231,16 +231,16 @@ test-vite-plus-package 1.0.0
 
 ## `vp pm list --only-projects`
 
-应仅列出工作区项目（pnpm 特有）
+should list only workspace projects (pnpm-specific)
 
 ```
 ```
 
 ## `vp pm list --find-by customFinder`
 
-应使用自定义查找器（pnpm 专用）
+should use custom finder (pnpm-specific)
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
  ERR_PNPM_FINDER_NOT_FOUND  No finder with name customFinder is found
@@ -248,24 +248,24 @@ test-vite-plus-package 1.0.0
 
 ## `vp pm list --recursive`
 
-应递归列出工作区中的软件包
+should list packages recursively in workspace
 
 ```
-图例：生产依赖项、仅可选依赖项、仅开发依赖项
+Legend: production dependency, optional only, dev only
 
-command-list-pnpm10@1.0.0 <工作区>
+command-list-pnpm10@1.0.0 <workspace>
 
-依赖项：
+dependencies:
 test-vite-plus-package-optional 1.0.0
 testnpm2 1.0.1
 
-开发依赖项：
+devDependencies:
 test-vite-plus-package 1.0.0
 ```
 
 ## `vp pm list -- --loglevel=warn`
 
-应支持透传参数
+should support pass through arguments
 
 ```
 Legend: production dependency, optional only, dev only

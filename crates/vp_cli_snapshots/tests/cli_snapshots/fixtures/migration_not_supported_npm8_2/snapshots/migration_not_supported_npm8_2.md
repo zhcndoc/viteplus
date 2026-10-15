@@ -1,21 +1,21 @@
-# 不支持迁移_npm8_2
+# migration_not_supported_npm8_2
 
 ## `vp migrate --no-interactive`
 
-迁移应失败，因为不支持该 npm 版本
+migration should fail because npm version is not supported
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✘ npm@8.2.0 不受自动迁移支持，请先将 npm 升级到 >=8.3.0
-Vite+ 目前还无法自动迁移此项目。
+■ ✘ npm@8.2.0 is not supported by auto migration, please upgrade npm to >=8.3.0 first
+Vite+ cannot automatically migrate this project yet.
 ```
 
 ## `vpt print-file package.json`
 
-检查 package.json 是否未更新
+check package.json is not updated
 
 ```
 {

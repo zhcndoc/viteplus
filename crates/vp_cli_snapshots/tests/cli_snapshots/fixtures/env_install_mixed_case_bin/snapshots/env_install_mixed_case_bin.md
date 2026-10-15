@@ -3,11 +3,11 @@
 ## `vp install -g .`
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-信息：正在使用 Node.js <version> 安装 1 个全局软件包
-✓ 已安装 env-install-mixed-case-bin 1.0.0
-  可执行文件：MixedCaseBin
+info: Installing 1 global package with Node.js <version>
+ Installed env-install-mixed-case-bin 1.0.0
+  Bins: MixedCaseBin
 ```
 
 ## `MixedCaseBin`

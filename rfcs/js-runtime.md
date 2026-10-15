@@ -388,9 +388,9 @@ warning: invalid version 'latest' in .node-version, ignoring
 | 空/None           | 找到匹配 | **否**   | 使用最新缓存版本           |
 | 空/None           | 未找到   | **是**   | 获取最新 LTS 版本          |
 
-**精确版本**（例如 `20.18.0`、`v20.18.0`）使用 `node_semver::Version::parse()` 检测，并直接使用，无需网络验证。`v` 前缀会被归一化（去除），因为下载 URL 已经会添加它。
+**精确版本**（例如 `20.18.0`、`v20.18.0`）使用 `js_semver::Version::parse()` 检测，并直接使用，无需网络验证。`v` 前缀会被归一化（去除），因为下载 URL 已经会添加它。
 
-**部分版本** 如 `20` 或 `20.18` 会被 `node-semver` crate 视为范围。
+**部分版本** 如 `20` 或 `20.18` 会被 `js-semver` crate 视为范围。
 
 **semver 范围**（例如 `^24.4.0`）会触发版本解析：
 
@@ -398,7 +398,7 @@ warning: invalid version 'latest' in .node-version, ignoring
 2. 如果存在匹配的缓存版本，则使用最高版本（无需网络请求）
 3. 否则，从 `https://nodejs.org/dist/index.json` 获取版本索引
 4. 将索引本地缓存，TTL 为 1 小时（支持基于 ETag 的条件请求）
-5. 使用 `node-semver` crate 进行与 npm 兼容的范围匹配
+5. 使用 `js-semver` crate 进行与 npm 兼容的范围匹配
 6. 返回满足该范围的最高版本
 
 ### 不匹配检测
@@ -592,7 +592,7 @@ pub enum Error {
     Reqwest(reqwest::Error),
     JoinError(tokio::task::JoinError),
     Json(serde_json::Error),
-    SemverRange(node_semver::SemverError),
+    SemverRange(js_semver::SemverError),
 }
 ```
 
@@ -655,7 +655,7 @@ pub enum Error {
 - 与既定的 `packageManager` 精确版本格式保持一致
 - semver 范围在约束内提供自动更新的灵活性
 - 版本索引在本地缓存（1 小时 TTL）以减少网络请求
-- 使用 `node-semver` crate 解析与 npm 兼容的范围
+- 使用 `js-semver` crate 解析与 npm 兼容的范围
 - `download_runtime()` 接受精确版本；`download_runtime_for_project()` 负责处理范围解析
 
 ### 4. 初始仅支持 Node.js

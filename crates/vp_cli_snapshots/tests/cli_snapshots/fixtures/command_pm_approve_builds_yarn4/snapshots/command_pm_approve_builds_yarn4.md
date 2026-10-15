@@ -2,25 +2,25 @@
 
 ## `vp pm approve-builds`
 
-yarn Berry 警告 — 指向 dependenciesMeta["<pkg>"].built
+yarn Berry warn — points at dependenciesMeta["<pkg>"].built
 
 ```
-warn: yarn does not run third-party build scripts by default. To allow a package, set `dependenciesMeta["<package>"].built: true` in package.json.
+warn: yarn has no native approve-builds command. To restrict third-party build scripts, set `enableScripts: false` in .yarnrc.yml, then allow individual packages with `dependenciesMeta["<package>"].built: true` in the root package.json.
 ```
 
 ## `vp pm approve-builds esbuild`
 
-相同警告（yarn 没有原生命令）
+same warn (no native command on yarn)
 
 ```
-warn: yarn 默认不会运行第三方构建脚本。若要允许某个包，请在 package.json 中设置 `dependenciesMeta["<package>"].built: true`。
+warn: yarn has no native approve-builds command. To restrict third-party build scripts, set `enableScripts: false` in .yarnrc.yml, then allow individual packages with `dependenciesMeta["<package>"].built: true` in the root package.json.
 ```
 
 ## `vp pm approve-builds esbuild -- --silent`
 
-额外参数触发了被丢弃的透传警告
+extras trigger the dropped-pass-through warn
 
 ```
-warn: yarn does not run third-party build scripts by default. To allow a package, set `dependenciesMeta["<package>"].built: true` in package.json.
+warn: yarn has no native approve-builds command. To restrict third-party build scripts, set `enableScripts: false` in .yarnrc.yml, then allow individual packages with `dependenciesMeta["<package>"].built: true` in the root package.json.
 warn: Ignoring pass-through args (--silent): this package manager has no native approve-builds command to forward them to.
 ```

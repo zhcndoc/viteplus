@@ -7,9 +7,8 @@
 ```
 VITE+ - The Unified Toolchain for the Web
 
-Formatting code...
-
-Code formatted
+● Formatting code...
+● Code formatted
 ◇ Updated . to Vite+ <version>
 • Node <version>  bun <version>
 • Dependencies:

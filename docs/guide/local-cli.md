@@ -39,33 +39,49 @@ bunx --package vite-plus vp create
 
 ### 手动安装
 
-如果你要手动将项目迁移到 Vite+，请先安装这些开发依赖：
+如果你要手动将项目迁移到 Vite+，请先将 `vite-plus` 安装为开发依赖：
 
-```bash
-vp install -D vite-plus
+::: code-group
+
+```bash [npm]
+npm install -D vite-plus
 ```
 
-你需要向包管理器添加 overrides，使其他包解析到 Vite+ 的版本：将 `vite` 别名指向 `@voidzero-dev/vite-plus-core`，并将 `vitest` 固定为 Vite+ 打包的版本（运行 `vp --version`），这样整个项目就能与 `vp test` 共享单一的 Vitest 副本。如果不固定 `vitest`，依赖或工作区包可能会拉取与打包运行器不同的 Vitest，从而拆分 Vitest 的内部组件（mocks、`expect`、运行器状态）：
+```bash [Yarn]
+yarn add -D vite-plus
+```
+
+```bash [pnpm]
+pnpm add -D vite-plus
+```
+
+```bash [Bun]
+bun add -D vite-plus
+```
+
+:::
+
+你需要向包管理器添加 overrides，使其他包解析到 Vite+ 的版本：将 `vite` 别名指向 `@voidzero-dev/vite-plus-core`，将 `<vite-plus-version>` 设置为已安装的 `vite-plus` 版本，并将 `vitest` 固定为 `<vitest-version>`。请使用 `vp toolchain vitest` 显示的捆绑版本，这样整个项目就能与 `vp test` 共享单一的 Vitest 副本。如果不固定 `vitest`，依赖或工作区包可能会拉取与捆绑运行器不同的 Vitest，从而拆分 Vitest 的内部组件（mocks、`expect`、运行器状态）：
 
 ::: code-group
 
 ```yaml [pnpm-workspace.yaml]
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: 5.0.1
+  vite@*: npm:@voidzero-dev/vite-plus-core@<vite-plus-version> # Match the installed vite-plus version
+  vitest@*: <vitest-version> # Match the version from vp toolchain vitest
 ```
 
 ```json [npm / Bun package.json]
 "overrides": {
-  "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "5.0.1"
+  "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>",
+  "vitest": "<vitest-version>"
 }
 ```
 
 ```json [Yarn package.json]
 "resolutions": {
-  "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-  "vitest": "5.0.1"
+  "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>",
+  "vitest": "<vitest-version>"
 }
 ```
 
@@ -111,7 +127,7 @@ overrides:
 - 使用 tsdown 执行 [`vp pack`](/guide/pack)
 - 使用 [`vp toolchain`](/guide/upgrade#show-the-toolchain) 检查项目本地包中捆绑的版本
 - 使用 [`vp run`](/guide/run) 并在工作区之间缓存任务
-- 使用当前已在 shell 中激活的 Node.js 运行时执行[包管理器命令](/guide/install)
+- 使用当前已在 shell 中激活的 Node.js 运行时执行[包管理器命令](/guide/package-management)
 - 执行 [`vp create`](/guide/create)、[`vp migrate`](/guide/migrate) 和项目配置命令
 
 本地包无法管理机器级别的 Vite+ 安装。`vp env`、`vp upgrade` 和 `vp implode` 命令需要[全局 CLI](/guide/global-cli)。请通过包管理器升级或移除仅本地安装。

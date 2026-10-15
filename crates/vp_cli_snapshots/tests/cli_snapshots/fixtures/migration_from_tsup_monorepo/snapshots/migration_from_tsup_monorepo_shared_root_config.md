@@ -30,13 +30,10 @@
 ```
 VITE+ - The Unified Toolchain for the Web
 
-tsup configuration detected. Auto-migrating to tsdown...
-
-✔ Created vite.config.ts in vite.config.ts
-
-✔ Added import for tsdown.config.ts in vite.config.ts
-
-Please manually merge tsdown.config.ts into vite.config.ts, see https://viteplus.dev/guide/migrate#tsdown
+● tsup configuration detected. Auto-migrating to tsdown...
+◆ ✔ Created vite.config.ts in vite.config.ts
+◆ ✔ Added import for tsdown.config.ts in vite.config.ts
+● Please manually merge tsdown.config.ts into vite.config.ts, see https://viteplus.dev/guide/migrate#tsdown
 ◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
 • 1 file had imports rewritten

@@ -9,9 +9,9 @@
 - 通过 [Oxlint](https://oxc.rs/docs/guide/usage/linter.html) 进行 Lint 检查
 - 通过 [tsgolint](https://github.com/oxc-project/tsgolint) 进行 TypeScript 类型检查
 
-通过将这些任务合并到单个命令中，`vp check` 比单独运行格式化、Lint 和类型检查工具更快。
+当在 `vite.config.ts` 的 `lint.options` 块中同时启用 `typeAware` 和 `typeCheck` 时，`vp check` 还会通过 TypeScript Go 工具链和 [tsgolint](https://github.com/oxc-project/tsgolint) 支持的 Oxlint 类型感知路径运行 TypeScript 类型检查。`vp create` 和 `vp migrate` 默认同时启用 `typeAware` 和 `typeCheck`。
 
-当在 `vite.config.ts` 的 `lint.options` 块中启用 `typeCheck` 时，`vp check` 还会通过 TypeScript Go 工具链和 [tsgolint](https://github.com/oxc-project/tsgolint) 支持的类型感知路径运行 TypeScript 类型检查。`vp create` 和 `vp migrate` 默认同时启用 `typeAware` 和 `typeCheck`。
+我们建议同时启用 `typeAware` 和 `typeCheck`，使 `vp check` 成为开发期间执行静态检查的单一命令。
 
 我们建议开启 `typeCheck`，这样 `vp check` 就成为开发过程中用于静态检查的单一命令。
 
@@ -19,11 +19,11 @@
 
 ```bash
 vp check
-vp check --fix             # Format and run autofixers.
-vp check --quiet           # Hide lint warnings; still report and fail on errors.
-vp check --no-fmt          # Skip format; run lint (and type-check if enabled).
-vp check --no-lint         # Skip lint rules; keep type-check when enabled.
-vp check --no-fmt --no-lint # Type-check only (requires `typeCheck` enabled).
+vp check --fix              # Format and run autofixers.
+vp check --quiet            # Hide lint warnings; still report and fail on errors.
+vp check --no-fmt           # Skip format; run lint (and type-check if enabled).
+vp check --no-lint          # Skip lint rules; keep type-check when enabled.
+vp check --no-fmt --no-lint # Type-check only (requires both `typeAware` and `typeCheck` enabled).
 ```
 
 ## 配置

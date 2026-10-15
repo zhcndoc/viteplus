@@ -8,9 +8,9 @@
 
 当需要更严格的控制时，使用其他二进制命令：
 
-- `vpx` 默认先在本地解析包的二进制文件，如果找不到则下载；通过 `pkg@version`、`--package/-p` 或 `--shell-mode`，它会通过 `vp dlx` 运行
-- `vp exec` 从当前项目的 `node_modules/.bin` 运行二进制文件
-- `vp dlx` 在不将包添加为依赖项的情况下运行包二进制文件
+- `vpx` 默认按顺序在本地 `node_modules/.bin` 目录、Vite+ 管理的全局软件包和系统 `PATH` 中查找二进制文件，找不到时回退到 `vp dlx`。通过 `pkg@version`、`--package/-p` 或 `--shell-mode`，它会直接通过 `vp dlx` 运行
+- `vp exec` 从本地 `node_modules/.bin` 目录运行命令，找不到时回退到 `PATH`
+- `vp dlx` 在不将软件包添加为依赖项的情况下运行软件包二进制文件
 
 ## `vpx`
 
@@ -31,13 +31,13 @@ vpx <pkg[@version]> [args...]
 ```bash
 vpx eslint .
 vpx create-vue my-app
-vpx typescript@5.5.4 tsc --version
+vpx oxlint@1.85.0 --version
 vpx -p cowsay -c 'echo "hi" | cowsay'
 ```
 
 ## `vp exec`
 
-当二进制文件必须来自当前项目时使用 `vp exec`，例如来自依赖项并安装在 `node_modules/.bin` 中的二进制文件。
+使用 `vp exec` 运行已安装在项目中或可在环境中使用的工具。
 
 ```bash
 vp exec <command> [args...]
@@ -62,5 +62,5 @@ vp dlx <package> [args...]
 
 ```bash
 vp dlx create-vite
-vp dlx typescript tsc --version
+vp dlx oxlint@1.85.0 --version
 ```

@@ -1,22 +1,22 @@
-# 迁移_monorepo_bun
+# migration_monorepo_bun
 
 ## `vp migrate --no-interactive`
 
-迁移应支持 bun 对象形式的工作区
+migration should work with bun object-form workspaces
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✔ 已将 .oxlintrc.json 合并到 vite.config.ts
-◇ 已将 . 迁移到 Vite+ <version>
+◆ ✔ Merged .oxlintrc.json into vite.config.ts
+◇ Migrated . to Vite+ <version>
 • Node <version>  bun <version>
-• 已应用 2 项配置更新，已重写 1 个文件中的导入
-• 已使用 lazyPlugins 包装内联 Vite 插件，以支持检查/代码检查/格式化
+• 2 config updates applied, 1 file had imports rewritten
+• Inline Vite plugins wrapped with lazyPlugins for check/lint/fmt
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查 vite.config.ts
+check vite.config.ts
 
 ```
 import react from '@vitejs/plugin-react';
@@ -56,7 +56,7 @@ export default defineConfig({
 
 ## `vpt stat-file .oxlintrc.json --assert-not file`
 
-检查 .oxlintrc.json 是否已删除
+check .oxlintrc.json is removed
 
 ```
 .oxlintrc.json: missing
@@ -64,7 +64,7 @@ export default defineConfig({
 
 ## `vpt print-file package.json`
 
-检查 package.json 是否保留 workspaces 对象形式
+check package.json preserves workspaces object form
 
 ```
 {
@@ -107,7 +107,7 @@ export default defineConfig({
 
 ## `vpt print-file packages/app/package.json`
 
-检查 app package.json
+check app package.json
 
 ```
 {
@@ -133,7 +133,7 @@ export default defineConfig({
 
 ## `vpt print-file packages/utils/package.json`
 
-检查 utils package.json
+check utils package.json
 
 ```
 {

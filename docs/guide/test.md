@@ -2,7 +2,9 @@
 
 `vp test` 使用 [Vitest](https://vitest.dev) 运行测试。
 
-Vitest 捆绑运行器版本为 `5.0.1`，要求 Node `^22.18.0 || ^24.11.0 || >=26.0.0`。对于现有项目，请先按照 [升级至 Vitest 5](./vitest-v5.md) 操作，再更新依赖。
+Vite+ 依赖 Vitest `5.0.4`，要求 Node `^22.18.0 || ^24.11.0 || >=26.0.0`。对于现有项目，请先按照[升级至 Vitest 5](./vitest-v5.md)操作，再更新依赖。
+
+`vp test` 会优先从 `vite-plus` 的依赖项解析 Vitest，然后再从你的项目中解析。
 
 ## 概述
 

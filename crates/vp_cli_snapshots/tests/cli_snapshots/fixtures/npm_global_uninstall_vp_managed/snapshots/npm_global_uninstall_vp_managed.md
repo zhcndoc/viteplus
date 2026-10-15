@@ -1,20 +1,20 @@
-# npm_全局卸载_vp_管理
+# npm_global_uninstall_vp_managed
 
 ## `vp install -g ./npm-global-vp-managed-pkg`
 
-通过 vp 安装（创建受管理的 shim）
+Install via vp (creates managed shim)
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-信息：正在使用 Node.js <version> 安装 1 个全局软件包
-✓ 已安装 npm-global-vp-managed-pkg 1.0.0
-  可执行文件：npm-global-vp-managed-cli
+info: Installing 1 global package with Node.js <version>
+ Installed npm-global-vp-managed-pkg 1.0.0
+  Bins: npm-global-vp-managed-cli
 ```
 
 ## `npm install -g ./npm-global-vp-managed-pkg`
 
-npm install（应警告冲突）
+npm install (should warn about conflict)
 
 ```
 
@@ -24,16 +24,16 @@ Skipped 'npm-global-vp-managed-cli': managed by `vp install -g npm-global-vp-man
 
 ## `npm uninstall -g npm-global-vp-managed-pkg`
 
-npm uninstall 不应删除 vp 管理的 shim
+npm uninstall should NOT remove the vp-managed shim
 
 ```
 
-已删除 1 个软件包，用时 <duration>
+removed 1 package in <duration>
 ```
 
 ## `vpt stat-file $VP_HOME/bin/npm-global-vp-managed-cli`
 
-Shim 应仍然存在
+Shim should still exist
 
 ```
 <home>/.vite-plus/bin/npm-global-vp-managed-cli: symlink
@@ -41,7 +41,7 @@ Shim 应仍然存在
 
 ## `npm-global-vp-managed-cli`
 
-验证 shim 仍然有效
+Verify the shim still works
 
 ```
 npm-global-vp-managed-cli works
@@ -49,8 +49,8 @@ npm-global-vp-managed-cli works
 
 ## `vp remove -g npm-global-vp-managed-pkg`
 
-清理
+Cleanup
 
 ```
-已卸载 npm-global-vp-managed-pkg
+- Uninstalled npm-global-vp-managed-pkg
 ```

@@ -1,22 +1,22 @@
-# 迁移_prettier
+# migration_prettier
 
 ## `vp migrate --no-interactive`
 
-迁移应检测 Prettier 并自动迁移
+migration should detect prettier and auto-migrate
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-检测到 Prettier 配置。正在自动迁移到 Oxfmt...
-◇ 已将 . 迁移到 Vite+ <version>
+● Prettier configuration detected. Auto-migrating to Oxfmt...
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已将 Prettier 迁移到 Oxfmt
+• 2 config updates applied
+• Prettier migrated to Oxfmt
 ```
 
 ## `vpt print-file package.json`
 
-检查 prettier 是否已移除以及脚本是否已重写
+check prettier removed and scripts rewritten
 
 ```
 {
@@ -31,20 +31,13 @@ VITE+ - Web 的统一工具链
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -61,15 +54,15 @@ peerDependencyRules:
 
 ## `vpt stat-file .prettierrc.json --assert-not file`
 
-检查 prettier 配置已被移除
+check prettier config is removed
 
 ```
-.prettierrc.json：缺失
+.prettierrc.json: missing
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查合并到 vite.config.ts 中的 oxfmt 配置
+check oxfmt config merged into vite.config.ts
 
 ```
 import { defineConfig } from "vite-plus";

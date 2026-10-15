@@ -1,20 +1,20 @@
-# 命令_环境_安装_版本_别名
+# command_env_install_version_alias
 
 ## `vp install -g --node lts ./command-env-install-version-alias-pkg`
 
-使用 LTS 别名安装
+Install with LTS alias
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-信息：正在使用 Node.js <version> 安装 1 个全局软件包
-✓ 已安装 command-env-install-version-alias-pkg 1.0.0
-  二进制文件：command-env-install-version-alias-pkg-cli
+info: Installing 1 global package with Node.js <version>
+ Installed command-env-install-version-alias-pkg 1.0.0
+  Bins: command-env-install-version-alias-pkg-cli
 ```
 
 ## `node -e 'const d=JSON.parse(require('\''fs'\'').readFileSync(process.env.VP_HOME+'\''/bins/command-env-install-version-alias-pkg-cli.json'\'','\''utf8'\'')); const v=parseInt(d.nodeVersion.split('\''.'\'')[0]); console.log('\''LTS major >= 20:'\'', v >= 20)'`
 
-验证 LTS 版本
+Verify LTS version
 
 ```
 LTS major >= 20: true
@@ -22,27 +22,27 @@ LTS major >= 20: true
 
 ## `vp remove -g command-env-install-version-alias-pkg`
 
-清理
+Cleanup
 
 ```
-已卸载 command-env-install-version-alias-pkg
+- Uninstalled command-env-install-version-alias-pkg
 ```
 
 ## `vp install -g --node latest ./command-env-install-version-alias-pkg`
 
-使用 latest 别名安装
+Install with latest alias
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-info: 正在使用 Node.js <version> 安装 1 个全局软件包
-✓ 已安装 command-env-install-version-alias-pkg 1.0.0
-  二进制文件：command-env-install-version-alias-pkg-cli
+info: Installing 1 global package with Node.js <version>
+ Installed command-env-install-version-alias-pkg 1.0.0
+  Bins: command-env-install-version-alias-pkg-cli
 ```
 
 ## `node -e 'const d=JSON.parse(require('\''fs'\'').readFileSync(process.env.VP_HOME+'\''/bins/command-env-install-version-alias-pkg-cli.json'\'','\''utf8'\'')); const v=parseInt(d.nodeVersion.split('\''.'\'')[0]); console.log('\''Latest major >= 20:'\'', v >= 20)'`
 
-验证最新版本
+Verify latest version
 
 ```
 Latest major >= 20: true
@@ -50,8 +50,8 @@ Latest major >= 20: true
 
 ## `vp remove -g command-env-install-version-alias-pkg`
 
-清理
+Cleanup
 
 ```
-已卸载 command-env-install-version-alias-pkg
+- Uninstalled command-env-install-version-alias-pkg
 ```

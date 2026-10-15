@@ -1,24 +1,24 @@
-# 迁移_husky_最新_dist_标签_v9_已安装。
+# migration_husky_latest_dist_tag_v9_installed
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-已安装的 Husky 版本仍应保留
+an installed Husky version should still be preserved
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保留其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
-◇ 已将 . 迁移到 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-Husky 元数据应保持不变
+Husky metadata should remain
 
 ```
 {
@@ -34,20 +34,13 @@ Husky 元数据应保持不变
   },
   "lint-staged": {
     "*.js": "oxlint --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

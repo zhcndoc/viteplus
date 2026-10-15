@@ -2,18 +2,18 @@
 
 ## `vp create @your-org:with-build-dep --no-interactive --approve-builds --package-manager bun --directory approved-app`
 
---approve-builds 会为受限的构建脚本（core-js）运行 `bun pm trust`
+--approve-builds runs `bun pm trust` for the gated build script (core-js)
 
 ```
-◇ 已生成 approved-app
+◇ Scaffolded approved-app
 • Node <version>  bun <version>
-✓ 依赖已安装，耗时 <duration>
-→ 下一步：cd approved-app && vp run
+✓ Dependencies installed in <duration>
+→ Next: cd approved-app && vp run
 ```
 
 ## `vpt print-file approved-app/package.json`
 
-core-js 已记录在 trustedDependencies 中
+core-js recorded under trustedDependencies
 
 ```
 {
@@ -48,22 +48,20 @@ core-js 已记录在 trustedDependencies 中
 
 ## `vp create @your-org:with-build-dep --no-interactive --package-manager bun --directory default-app`
 
-默认运行会显示带有引导信息的受限构建，并保持其不受信任
+default run surfaces the gated build with guidance, leaving it untrusted
 
 ```
-
-未为以下包运行构建脚本：core-js。
-
-这些依赖在构建完成前可能无法正常工作。请在项目中运行 vp pm approve-builds core-js 以批准它们，或者使用 --approve-builds 重新创建。
-◇ 已搭建 default-app
+▲ Build scripts were not run for: core-js.
+● These dependencies may not work until built. Run vp pm approve-builds core-js in the project to approve them, or re-create with --approve-builds.
+◇ Scaffolded default-app
 • Node <version>  bun <version>
-✓ 依赖已安装，用时 <duration>
-→ 下一步：cd default-app && vp run
+✓ Dependencies installed in <duration>
+→ Next: cd default-app && vp run
 ```
 
 ## `vpt print-file default-app/package.json`
 
-没有 trustedDependencies，未运行构建
+no trustedDependencies, the build was not run
 
 ```
 {
@@ -95,7 +93,7 @@ core-js 已记录在 trustedDependencies 中
 
 ## `cd default-app && vp pm approve-builds core-js`
 
-指导中的 `vp pm approve-builds` 命令会批准受限构建
+the guidance's `vp pm approve-builds` command approves the gated build
 
 ```
 bun pm trust <version> (<hash>)
@@ -108,7 +106,7 @@ bun pm trust <version> (<hash>)
 
 ## `vpt print-file default-app/package.json`
 
-core-js 现在已记录在 trustedDependencies 中
+core-js is now recorded under trustedDependencies
 
 ```
 {

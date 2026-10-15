@@ -15,9 +15,9 @@ Vite 任务可以自动跟踪依赖关系，并缓存通过 `vp run` 执行的�
 当发生缓存未命中时，Vite Task 会准确告诉你原因：
 
 ```
-$ vp lint ✗ cache miss: 'src/utils.ts' modified, executing
-$ vp build ✗ cache miss: env 'VITE_GREETING' changed, executing
-$ vp test ✗ cache miss: args changed, executing
+$ vp lint ○ cache miss: 'src/utils.ts' modified, executing
+$ vp build ○ cache miss: env 'VITE_GREETING' changed, executing
+$ vp test ○ cache miss: args changed, executing
 ```
 
 ## 何时启用缓存？

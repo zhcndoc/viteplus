@@ -2,60 +2,60 @@
 
 ## `vp install`
 
-应首先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-bun install <version1.0.0
+bun install <version> (<hash>)
 
  test-vite-plus-package@1.0.0
  test-vite-plus-package-optional@1.0.0
  testnpm2@1.0.1
 
-已安装 3 个软件包 [duration]
+3 packages installed [<duration>]
 ```
 
 ## `vp pm list --help`
 
-应显示帮助
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm list [选项] [模式] [-- <透传参数>]
+Usage: vp pm list [OPTIONS] [PATTERN] [-- <PASS_THROUGH_ARGS>...]
 
-列出已安装的软件包
+List installed packages
 
-参数：
-  [PATTERN]               用于筛选的软件包模式
-  [PASS_THROUGH_ARGS]...  其他参数
+Arguments:
+  [PATTERN]               Package pattern to filter
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  --depth <DEPTH1.0.0          依赖树的最大深度
-  --json                   以 JSON 格式输出
-  --long                   显示扩展信息
-  --parseable              可解析的输出格式
-  -P, --prod               仅显示生产依赖
-  -D, --dev                仅显示开发依赖
-  --no-optional            排除可选依赖
-  --exclude-peers          排除对等依赖
-  --only-projects          仅显示项目软件包
-  --find-by <FINDER_NAME1.0.0  使用查找器函数
-  -r, --recursive          列出所有工作区中的软件包
-  --filter <PATTERN1.0.0       筛选 monorepo 中的软件包
-  -g, --global             列出全局软件包
-  -h, --help               显示帮助
+Options:
+  --depth <DEPTH>          Maximum depth of dependency tree
+  --json                   Output in JSON format
+  --long                   Show extended information
+  --parseable              Parseable output format
+  -P, --prod               Only production dependencies
+  -D, --dev                Include dev dependencies
+  --no-optional            Exclude optional dependencies
+  --exclude-peers          Exclude peer dependencies
+  --only-projects          Show only project packages
+  --find-by <FINDER_NAME>  Use a finder function
+  -r, --recursive          List across all workspaces
+  --filter <PATTERN>       Filter packages in monorepo
+  -g, --global             List global packages
+  -h, --help               Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm list`
 
-应列出已安装的软件包
+should list installed packages
 
 ```
-<ulinear0.001
+<workspace> node_modules (3)
 ├── test-vite-plus-package@1.0.0
 ├── test-vite-plus-package-optional@1.0.0
 └── testnpm2@1.0.1

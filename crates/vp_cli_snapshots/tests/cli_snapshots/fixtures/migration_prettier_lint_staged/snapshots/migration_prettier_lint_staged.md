@@ -1,22 +1,22 @@
-# 迁移_prettier_lint_staged
+# migration_prettier_lint_staged
 
 ## `vp migrate --no-interactive`
 
-迁移应检测 Prettier 并自动迁移，包括 lint-staged
+migration should detect prettier and auto-migrate including lint-staged
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-检测到 Prettier 配置。正在自动迁移到 Oxfmt...
-◇ 已将 . 迁移到 Vite+ <version>
+● Prettier configuration detected. Auto-migrating to Oxfmt...
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-• 已将 Prettier 迁移到 Oxfmt
+• 2 config updates applied
+• Prettier migrated to Oxfmt
 ```
 
 ## `vpt print-file package.json`
 
-检查 prettier 已移除，scripts 已重写，lint-staged 已重写
+check prettier removed, scripts rewritten, lint-staged rewritten
 
 ```
 {
@@ -28,20 +28,13 @@ VITE+ - Web 的统一工具链
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -58,7 +51,7 @@ peerDependencyRules:
 
 ## `vpt print-file vite.config.ts`
 
-检查 oxfmt 配置以及合并到 vite.config.ts 中的 staged 配置
+check oxfmt config and staged config merged into vite.config.ts
 
 ```
 import { defineConfig } from "vite-plus";

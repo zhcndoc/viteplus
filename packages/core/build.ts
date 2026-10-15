@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { copyFile, cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -414,18 +414,15 @@ async function bundleTsdown() {
   // in and they cannot be bundled. Both are core `dependencies`, so they resolve
   // at runtime and CSS bundling works without users installing anything.
   //
-  // `yuku-codegen` and `yuku-parser` (pulled in by `rolldown-plugin-dts` for dts
-  // generation) are napi packages: their loaders `require` a per-platform
-  // `@yuku-*/binding-<platform>/*.node` relative to their own `__dirname`.
-  // Bundling their JS into a core chunk rebinds `__dirname` to `dist/tsdown/`,
-  // so the native binding no longer resolves. Keep them external and list them
-  // as core `dependencies` so each package's loader resolves its own binding
-  // (declared as optionalDependencies) at runtime.
+  // `yuku-parser` (used by `rolldown-plugin-dts`) loads native bindings through
+  // `yuku-core`. Keep it external and declare it as a core dependency so the
+  // native loader resolves its platform package at runtime. Pin its version
+  // to the one resolved by the bundled plugin. `yuku-ast` and
+  // `yuku-codegen` are pure JavaScript in Yuku 0.19 and are bundled into core.
   const tsdownExternal = [
     ...Object.keys(pkgJson.peerDependencies).filter((name) => !bundledTsdownPackages.has(name)),
     'lightningcss',
     'postcss',
-    'yuku-codegen',
     'yuku-parser',
   ];
   const isExternal = (id: string) => tsdownExternal.some((e) => id === e || id.startsWith(`${e}/`));
@@ -691,18 +688,33 @@ async function mergePackageJson() {
   const rolldownPkg = JSON.parse(await readFile(rolldownPkgPath, 'utf-8'));
   const vitePkg = JSON.parse(await readFile(vitePkgPath, 'utf-8'));
   const destPkg = JSON.parse(await readFile(destPkgPath, 'utf-8'));
+  // Read the `rolldown-plugin-dts` that tsdown depends on, which is the copy
+  // bundled into `dist/tsdown/`, rather than core's own devDependency.
+  const dtsPkg = createRequire(join(realpathSync(tsdownSourceDir), 'package.json'))(
+    'rolldown-plugin-dts/package.json',
+  );
 
-  // Merge peerDependencies from tsdown and vite
+  // Merge peerDependencies from rolldown-plugin-dts, tsdown and vite. The bundled
+  // dts plugin still resolves `vue-tsc`, `@volar/typescript`,
+  // `@vue/language-core` and `@typescript/native-preview` from core at runtime,
+  // and its declarations import their types, so isolated installs need them
+  // declared here.
   destPkg.peerDependencies = {
+    ...dtsPkg.peerDependencies,
     ...tsdownPkg.peerDependencies,
     ...vitePkg.peerDependencies,
   };
 
-  // Merge peerDependenciesMeta from tsdown and vite
+  // Merge peerDependenciesMeta from rolldown-plugin-dts, tsdown and vite
   destPkg.peerDependenciesMeta = {
+    ...dtsPkg.peerDependenciesMeta,
     ...tsdownPkg.peerDependenciesMeta,
     ...vitePkg.peerDependenciesMeta,
   };
+
+  // `rolldown` is bundled into core (see bundleRolldown).
+  delete destPkg.peerDependencies.rolldown;
+  delete destPkg.peerDependenciesMeta.rolldown;
 
   // `@tsdown/exe` and `@tsdown/css` are bundled into core (see bundleTsdown), so
   // they must not be advertised as peers anymore. `lightningcss` (which the

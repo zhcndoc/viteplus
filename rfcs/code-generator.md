@@ -1748,6 +1748,7 @@ vp build
 #!/usr/bin/env node
 // tools/generators/ui-lib/bin/index.js
 import { runTemplate } from 'bingo';
+
 import template from '../src/template.js';
 
 runTemplate(template);
@@ -1872,6 +1873,7 @@ vp create @company/generator-ui-lib --name=hooks --deps=@company/utils  # 预选
 // tools/generators/ui-lib/src/template.test.ts
 import { testTemplate } from 'bingo/testers';
 import { describe, expect, it } from 'vitest';
+
 import template from './template.js';
 
 describe('UI Library Generator', () => {
@@ -2001,6 +2003,7 @@ vp create vite:library --name=shared-utils
 // 模板作者使用 bingo 的测试工具进行测试
 import { testTemplate } from 'bingo/testers';
 import { expect, test } from 'vitest';
+
 import template from './template';
 
 test('生成 React 应用', async () => {
@@ -2017,6 +2020,7 @@ Vite+ 模板运行器逻辑也使用 TypeScript/Vitest 进行测试：
 ```typescript
 // 在 vite_generator 包中
 import { describe, expect, it } from 'vitest';
+
 import { detectBingoTemplate, loadWorkspacePackages } from './discovery';
 
 describe('模板检测', () => {

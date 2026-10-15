@@ -1,21 +1,21 @@
-# 迁移_其他_钩子_工具
+# migration_other_hook_tool
 
 ## `vp migrate --no-interactive`
 
-由于 simple-git-hooks，应跳过钩子
+hooks should be skipped due to simple-git-hooks
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 simple-git-hooks — 跳过 Git 钩子设置。请手动配置 Git 钩子，参见 https://viteplus.dev/guide/migrate#git-hook-tools
-◇ 已将 . 迁移到 Vite+ <version>
+▲ ⚠ Detected simple-git-hooks — skipping git hooks setup. Please configure git hooks manually, see https://viteplus.dev/guide/migrate#git-hook-tools
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-应保留 lint-staged 配置、脚本和 simple-git-hooks 配置
+lint-staged config, scripts, and simple-git-hooks config should all be preserved
 
 ```
 {
@@ -34,20 +34,13 @@ VITE+ - Web 的统一工具链
   },
   "lint-staged": {
     "*.ts": "eslint --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

@@ -1,24 +1,24 @@
-# 迁移现有的 Husky v8 钩子
+# migration_existing_husky_v8_hooks
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-应警告 husky v8，并跳过钩子设置
+should warn about husky v8 and skip hooks setup
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
-◇ 已将 . 迁移到 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-husky/lint-staged 应保留在 devDeps 中，prepare 应保持为 husky
+husky/lint-staged should remain in devDeps, prepare should stay as husky
 
 ```
 {
@@ -31,20 +31,13 @@ husky/lint-staged 应保留在 devDeps 中，prepare 应保持为 husky
     "lint-staged": "^15.0.0",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -61,7 +54,7 @@ peerDependencyRules:
 
 ## `vpt print-file .husky/pre-commit`
 
-hook 文件应保持不变（仍然包含引导代码）
+hook file should be unchanged (still has bootstrap)
 
 ```
 . "$(dirname -- "$0")/_/husky.sh"

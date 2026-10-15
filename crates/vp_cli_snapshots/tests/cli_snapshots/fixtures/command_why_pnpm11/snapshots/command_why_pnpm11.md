@@ -2,40 +2,40 @@
 
 ## `vp why --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp why [选项] <软件包>... [-- <透传参数>...]
+Usage: vp why [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-显示安装某个软件包的原因
+Show why a package is installed
 
-参数：
-  <PACKAGES>...           要检查的软件包
-  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Package(s) to check
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --json                   以 JSON 格式输出
-  --long                   显示扩展信息
-  --parseable              显示可解析的输出
-  -r, --recursive          在所有工作区中递归检查
-  --filter <PATTERN>       筛选 monorepo 中的软件包
-  -w, --workspace-root     在工作区根目录中检查
-  -P, --prod               仅检查生产依赖
-  -D, --dev                仅检查开发依赖
-  --depth <DEPTH>          限制树的深度
-  --no-optional            排除可选依赖
-  --exclude-peers          排除对等依赖
-  --find-by <FINDER_NAME>  使用 .pnpmfile.cjs 中定义的查找器函数
-  -h, --help               显示帮助信息
+Options:
+  --json                   Output in JSON format
+  --long                   Show extended information
+  --parseable              Show parseable output
+  -r, --recursive          Check recursively across all workspaces
+  --filter <PATTERN>       Filter packages in monorepo
+  -w, --workspace-root     Check in workspace root
+  -P, --prod               Only production dependencies
+  -D, --dev                Only dev dependencies
+  --depth <DEPTH>          Limit tree depth
+  --no-optional            Exclude optional dependencies
+  --exclude-peers          Exclude peer dependencies
+  --find-by <FINDER_NAME>  Use a finder function defined in .pnpmfile.cjs
+  -h, --help               Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp install`
 
-应该先安装软件包
+should install packages first
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -54,7 +54,7 @@ Done in <duration> using pnpm <version>
 
 ## `vp why testnpm2`
 
-应显示软件包为何被安装
+should show why package is installed
 
 ```
 testnpm2@1.0.1
@@ -65,7 +65,7 @@ Found 1 version of testnpm2
 
 ## `vp explain testnpm2`
 
-应与 explain 别名一起正常工作
+should work with explain alias
 
 ```
 testnpm2@1.0.1
@@ -76,7 +76,7 @@ Found 1 version of testnpm2
 
 ## `vp why test-vite-plus-package`
 
-应显示为何安装了 dev 包
+should show why dev package is installed
 
 ```
 test-vite-plus-package@1.0.0
@@ -87,7 +87,7 @@ Found 1 version of test-vite-plus-package
 
 ## `vp why testnpm2 test-vite-plus-package`
 
-应支持多个包
+should support multiple packages
 
 ```
 test-vite-plus-package@1.0.0
@@ -102,7 +102,7 @@ Found 1 version of testnpm2
 
 ## `vp why testnpm2 --json`
 
-应支持 JSON 输出
+should support json output
 
 ```
 [
@@ -123,19 +123,19 @@ Found 1 version of testnpm2
 
 ## `vp why testnpm2 --long`
 
-应支持长输出
+should support long output
 
 ```
 testnpm2@1.0.1
 │ <workspace>/node_modules/.pnpm/testnpm2@1.0.1/node_modules/testnpm2
-└── command-why-pnpm11@1.0.0 (依赖项)
+└── command-why-pnpm11@1.0.0 (dependencies)
 
-找到 1 个版本的 testnpm2
+Found 1 version of testnpm2
 ```
 
 ## `vp why testnpm2 --parseable`
 
-应支持可解析输出
+should support parseable output
 
 ```
 command-why-pnpm11@1.0.0 > testnpm2@1.0.1
@@ -143,7 +143,7 @@ command-why-pnpm11@1.0.0 > testnpm2@1.0.1
 
 ## `vp why testnpm2 -P`
 
-应仅支持生产依赖
+should support prod dependencies only
 
 ```
 testnpm2@1.0.1
@@ -154,7 +154,7 @@ Found 1 version of testnpm2
 
 ## `vp why test-vite-plus-package -D`
 
-应仅支持开发依赖
+should support dev dependencies only
 
 ```
 test-vite-plus-package@1.0.0
@@ -165,7 +165,7 @@ Found 1 version of test-vite-plus-package
 
 ## `vp why testnpm2 --depth 1`
 
-应支持深度限制
+should support depth limiting
 
 ```
 testnpm2@1.0.1
@@ -176,16 +176,16 @@ Found 1 version of testnpm2
 
 ## `vp why test-vite-plus-package-optional --no-optional`
 
-应排除可选依赖
+should exclude optional dependencies
 
 ```
 ```
 
 ## `vp why testnpm2 --find-by customFinder`
 
-应支持 find-by 选项（pnpm 专用）
+should support find-by option (pnpm-specific)
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 [ERR_PNPM_FINDER_NOT_FOUND] No finder with name customFinder is found
@@ -193,7 +193,7 @@ Found 1 version of testnpm2
 
 ## `vp why testnpm2 -- --reporter=silent`
 
-应支持传递参数
+should support pass through arguments
 
 ```
 testnpm2@1.0.1

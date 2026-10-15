@@ -28,13 +28,6 @@ eslint-plugin-survives 保留在 devDependencies 中（eslint 本身已移除）
     "eslint-plugin-survives": "^1.0.0",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```

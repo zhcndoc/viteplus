@@ -1,21 +1,21 @@
-# 不支持从 pnpm 9.4 迁移
+# migration_not_supported_pnpm9_4
 
 ## `vp migrate --no-interactive`
 
-迁移应失败，因为不支持当前的 pnpm 版本
+migration should fail because pnpm version is not supported
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✘ auto migration 不支持 pnpm@9.4.0，请先将 pnpm 升级到 >=9.5.0
-Vite+ 目前还无法自动迁移此项目。
+■ ✘ pnpm@9.4.0 is not supported by auto migration, please upgrade pnpm to >=9.5.0 first
+Vite+ cannot automatically migrate this project yet.
 ```
 
 ## `vpt print-file package.json`
 
-检查 package.json 未更新
+check package.json is not updated
 
 ```
 {

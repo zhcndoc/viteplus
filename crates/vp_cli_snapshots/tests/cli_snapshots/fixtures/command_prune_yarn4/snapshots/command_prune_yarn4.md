@@ -2,29 +2,29 @@
 
 ## `vp pm prune --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm prune [选项] [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm prune [OPTIONS] [-- <PASS_THROUGH_ARGS>...]
 
-移除不必要的软件包
+Remove unnecessary packages
 
-参数：
-  [PASS_THROUGH_ARGS]...  其他参数
+Arguments:
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  --prod         移除 devDependencies
-  --no-optional  移除可选依赖
-  -h, --help     显示帮助信息
+Options:
+  --prod         Remove devDependencies
+  --no-optional  Remove optional dependencies
+  -h, --help     Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm prune`
 
-应显示警告，说明 yarn 不支持 prune 命令
+should show warning that yarn does not support prune command
 
 ```
 warn: yarn does not have 'prune' command. yarn install will prune extraneous packages automatically.

@@ -9,9 +9,8 @@ migrate 通过 workspace catalog 固定工具链
 ```
 VITE+ - The Unified Toolchain for the Web
 
-Formatting code...
-
-Code formatted
+● Formatting code...
+● Code formatted
 ◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
 ✓ Dependencies installed in <duration>
@@ -44,12 +43,6 @@ peerDependencyRules:
 
 没有需要更新的内容，但裸 key 仍会将 catalog 引用解析掉
 
-```
-✓ Lockfile passes supply-chain policies (verified <duration> ago)
-Already up to date
-
-Done in <duration> using pnpm <version>
-```
 
 ## `vpt print-file package.json`
 
@@ -74,9 +67,8 @@ Done in <duration> using pnpm <version>
 ```
 VITE+ - The Unified Toolchain for the Web
 
-Formatting code...
-
-Code formatted
+● Formatting code...
+● Code formatted
 ◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
 ✓ Dependencies installed in <duration>
@@ -104,12 +96,6 @@ peerDependencyRules:
 
 现在更新对 catalog 引用不产生任何影响
 
-```
-✓ Lockfile passes supply-chain policies (verified <duration> ago)
-Already up to date
-
-Done in <duration> using pnpm <version>
-```
 
 ## `vpt print-file package.json`
 

@@ -29,13 +29,6 @@ VITE+ - Web 的统一工具链
   "devDependencies": {
     "eslint": "^9.0.0",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```

@@ -14,7 +14,7 @@ tsup 配置应自动迁移
 ```
 VITE+ - The Unified Toolchain for the Web
 
-tsup configuration detected. Auto-migrating to tsdown...
+● tsup configuration detected. Auto-migrating to tsdown...
 ◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
 • 2 config updates applied, 1 file had imports rewritten
@@ -82,13 +82,6 @@ tsup 已移除，其脚本使用 vp pack
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```

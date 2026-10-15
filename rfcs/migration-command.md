@@ -225,18 +225,11 @@ ESLint 注释已替换
     "vite": "catalog:",
     "@vitejs/plugin-react": "^4.2.0",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<semver>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
-> 已经声明顶层 `packageManager` 字段的项目会改为保持该字段更新（兼容优先规则，见 [RFC: devEngines 支持](./dev-engines.md)）。
+> 迁移会保留现有的 `packageManager` 或 `devEngines.packageManager` 声明。仅依赖锁文件的项目仍保持未固定状态；如果需要精确的软件包管理器要求，请使用 `vp env pin`（参见 [RFC：devEngines 支持](./dev-engines.md)）。
 
 **迁移后（pnpm，没有现有 `pnpm` 配置）-- `pnpm-workspace.yaml`：**
 

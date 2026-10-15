@@ -1,24 +1,24 @@
-# 迁移_husky_latest_dist_tag
+# migration_husky_latest_dist_tag
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-应针对无法强制转换的 husky 版本发出警告
+should warn about uncoercible husky version
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-husky 仍应位于 devDeps 中
+husky should still be in devDeps
 
 ```
 {
@@ -30,20 +30,13 @@ husky 仍应位于 devDeps 中
     "husky": "latest",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

@@ -2,14 +2,14 @@
 
 ## `vp migrate -h`
 
-迁移帮助信息
+migration help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp migrate [PATH] [OPTIONS]
+Usage: vp migrate [PATH] [OPTIONS]
 
-将独立的 Vite、Vitest、Oxlint、Oxfmt 和 Prettier 项目迁移到统一的 Vite+。
+Migrate existing toolchains to Vite+.
 
 Arguments:
   [PATH]  Target directory to migrate (default: current directory)
@@ -31,40 +31,40 @@ Examples:
   vp migrate my-app             # Migrate a directory
   vp migrate --no-interactive   # Use defaults without prompts
 
-迁移提示：
-  当你希望编码代理驱动迁移时，将以下内容提供给它：
+Migration Prompt:
+  Give this to a coding agent when you want it to drive the migration:
 
   Migrate this project to Vite+.
   Vite+ replaces the split tools for runtime management, package management,
   development, builds, tests, linting, formatting, and packaging.
   Run `vp help` and `vp help migrate` before you make changes.
   Run `vp migrate --no-interactive` in the workspace root.
-  Make sure that the project uses Vite 8+ and Vitest 4.1+.
+  Make sure that the project uses Vite 7+ and Vitest 4+.
 
   After the migration, check imports, configuration, and package aliases.
   Then run `vp install`, `vp check`, `vp test`, and `vp build`.
   Report all required manual work in the migration summary.
 
-文档：https://viteplus.dev/guide/migrate
+Documentation: https://viteplus.dev/guide/migrate
 ```
 
 ## `vp migrate --no-interactive`
 
-迁移处理 lintstagedrc.json
+migration work with lintstagedrc.json
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 迁移到 Vite+ <version>
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
-! 警告：
-  - 找到 .lintstagedrc.json，但 "staged" 已存在于 vite.config.ts 中 — 请手动合并
+• 2 config updates applied
+! Warnings:
+  - .lintstagedrc.json found but "staged" already exists in vite.config.ts — please merge manually
 ```
 
 ## `vpt print-file .lintstagedrc.json`
 
-检查 lintstagedrc.json（内联后应删除）
+check lintstagedrc.json (should be deleted after inlining)
 
 ```
 {
@@ -74,20 +74,13 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file package.json`
 
-检查 package.json
+check package.json
 
 ```
 {
   "name": "migration-lintstagedrc",
   "devDependencies": {
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   },
   "scripts": {
     "prepare": "vp config"
@@ -97,7 +90,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -114,7 +107,7 @@ peerDependencyRules:
 
 ## `vpt print-file vite.config.ts`
 
-检查暂存配置是否已迁移到 vite.config.ts
+check staged config migrated to vite.config.ts
 
 ```
 import { defineConfig } from 'vite-plus';

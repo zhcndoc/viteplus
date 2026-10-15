@@ -2,29 +2,29 @@
 
 ## `vp pm owner --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm owner <COMMAND>
+Usage: vp pm owner <COMMAND>
 
-管理软件包所有者
+Manage package owners
 
-命令：
-  list  列出软件包所有者 [别名：ls]
-  add   添加软件包所有者
-  rm    移除软件包所有者
+Commands:
+  list  List package owners [alias: ls]
+  add   Add package owner
+  rm    Remove package owner
 
-选项：
-  -h, --help  显示帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm owner list testnpm2`
 
-应列出软件包所有者（使用 npm owner）
+should list package owners (uses npm owner)
 
 ```
 fengmk2 <fengmk2@gmail.com>

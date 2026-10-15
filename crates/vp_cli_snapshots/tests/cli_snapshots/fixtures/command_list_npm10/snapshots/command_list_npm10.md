@@ -2,19 +2,19 @@
 
 ## `vp install`
 
-应先安装软件包
+should install packages first
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-已添加 3 个软件包，并在 <duration> 内审计了 4 个软件包
+added 3 packages, and audited 4 packages in <duration>
 
-发现 0 个漏洞
+found 0 vulnerabilities
 ```
 
 ## `vp pm list --json`
 
-应列出已安装的软件包
+should list installed packages
 
 ```
 {
@@ -42,7 +42,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list testnpm2 --json`
 
-应列出指定的软件包
+should list specific package
 
 ```
 {
@@ -60,7 +60,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list --depth 0 --json`
 
-应列出深度限制为 0 的软件包
+should list packages with depth limit
 
 ```
 {
@@ -88,7 +88,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list --long --json`
 
-应列出包含扩展信息的软件包
+should list packages with extended info
 
 ```
 {
@@ -158,7 +158,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list --parseable --json`
 
-应以可解析格式列出软件包
+should list packages in parseable format
 
 ```
 {
@@ -186,7 +186,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list --prod --json`
 
-应仅列出生产依赖（使用 --include prod --include peer）
+should exclude dev dependencies using --omit dev
 
 ```
 {
@@ -198,11 +198,6 @@ VITE+ - 面向 Web 的统一工具链
       "resolved": "https://registry.npmjs.org/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
       "overridden": false
     },
-    "test-vite-plus-package": {
-      "version": "1.0.0",
-      "resolved": "https://registry.npmjs.org/test-vite-plus-package/-/test-vite-plus-package-1.0.0.tgz",
-      "overridden": false
-    },
     "testnpm2": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz",
@@ -212,9 +207,9 @@ VITE+ - 面向 Web 的统一工具链
 }
 ```
 
-## `vp pm list --dev --json`
+## `NODE_ENV=production vp pm list --dev --json`
 
-应仅列出开发依赖（使用 --include dev）
+include installed dev dependencies in a production environment
 
 ```
 {
@@ -242,7 +237,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list --no-optional --json`
 
-应排除可选依赖（使用 --omit optional）
+should exclude optional dependencies (uses --omit optional)
 
 ```
 {
@@ -270,7 +265,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list --exclude-peers --json`
 
-应排除对等依赖（使用 --omit peer）
+should exclude peer dependencies (uses --omit peer)
 
 ```
 {
@@ -293,7 +288,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vp pm list -- --loglevel=warn --json`
 
-应支持透传参数
+should support pass through arguments
 
 ```
 {

@@ -1,4 +1,4 @@
-# 迁移前提交环境设置
+# migration_pre_commit_env_setup
 
 ## `git init`
 
@@ -18,7 +18,7 @@ npm test
 
 ## `vpt print-file .husky/pre-commit`
 
-迁移前检查 pre-commit 钩子
+check pre-commit hook before migration
 
 ```
 #!/usr/bin/env sh
@@ -29,20 +29,20 @@ npm test
 
 ## `vp migrate --no-interactive`
 
-迁移应保留现有的 Husky 钩子
+migration should preserve the existing Husky hook
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file .husky/pre-commit`
 
-检查 Husky 钩子是否未被更改
+check the Husky hook is unchanged
 
 ```
 #!/usr/bin/env sh

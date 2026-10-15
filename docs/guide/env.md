@@ -171,14 +171,22 @@ vp-use --unset
 
 在 CI 中，`vp env use` 无需 shell 初始化即可运行。它会在解析后的状态目录中，为每个运行时或包管理器写入一个临时会话文件，例如 `.session-node-version` 或 `.session-pnpm-version`。同一任务中后续的 shim 调用会使用这些文件解析相同的环境。
 
+#### Shell 补全
+
+全局 CLI 支持 Bash、Zsh、Fish、Nushell 和 PowerShell 中的 Tab 补全。运行 `vp env setup` 并按照输出的 shell 设置说明启用它。按 Tab 补全命令，或在 `vp run` 和 `vpr` 后补全项目任务名称。
+
+- **Zsh**：如果 shell 尚未初始化补全，请在加载设置脚本前运行 `autoload -Uz compinit; compinit`
+- **Nushell**：补全要求 `PATH` 中存在 `fish`
+
 ### 管理
 
 - `vp env default` 显示全局 Node.js 默认版本和每个已配置的包管理器版本。裸版本设置 Node.js；`pnpm@10.18.0` 等限定规格设置该包管理器 shim 的默认版本，而不会替换 Bun、Yarn 或 npm 的默认版本。除非指定范围，否则 `--unset` 会清除所有默认值
-- `vp env pin` 显示或写入项目固定版本。现有的 `.node-version` 和顶层 `packageManager` 字段会继续更新，以保持兼容性。如果当前目录中现有的 `.nvmrc` 是有效的 Node.js 来源，则会更新它；其中的注释和其他非版本内容会被保留。否则，Vite+ 会写入匹配的 `devEngines` 条目。使用 `--target node-version`、`--target nvmrc`、`--target dev-engines` 或 `--target package-manager` 可显式选择目标。在子目录中固定版本不会修改继承的 `.nvmrc`
+- `vp env default <lts|latest>` 和 `<package-manager>@latest` 会在每次使用时重新解析，因此默认版本会跟随新版本发布，包括新的主版本。设置 `24` 或 `pnpm@10` 等其他版本和范围时，会解析为一个精确版本
+- `vp env pin` 显示或写入项目固定版本。现有的 `.node-version` 和顶层 `packageManager` 字段会继续更新，以保持兼容性。如果当前目录中的现有 `.nvmrc` 是有效的 Node.js 来源，则会更新它；其中的注释和其他非版本内容会被保留。否则，Vite+ 会写入匹配的 `devEngines` 条目。使用 `--target node-version`、`--target nvmrc`、`--target dev-engines` 或 `--target package-manager` 可显式选择目标。在子目录中固定版本不会修改继承的 `.nvmrc`
 - `vp env unpin` 默认移除两个有效的固定版本；追加选择器可移除其中一个。较低优先级的声明不会被删除
 - `vp env use` 激活完整的项目环境。显式规格会覆盖选定的组件；除非指定范围，否则 `--unset` 会清除两者
 - `vp env install` 安装完整的解析环境、选定的组件或显式规格
-- `vp env uninstall` 移除显式指定的精确 Node.js 版本或限定的包管理器版本
+- `vp env uninstall` 移除通过显式版本或选择器（例如 `22` 或 `lts`）解析出的 Node.js 版本。包管理器要求带限定符的精确版本，例如 `pnpm@10.18.0`
 - `vp env clean` 移除未使用的安装。使用 `clean node`、`clean pm` 或具体的管理器。当前版本和已配置的默认版本会被保留
 - `vp env exec` 在解析后的环境中运行命令。使用 `--node` 和 `--package-manager`；`--npm` 是 `--package-manager npm@…` 的别名
 - `vp node` 使用解析后的 Node.js 运行时，并将选定的包管理器路径暴露给子进程
@@ -186,7 +194,7 @@ vp-use --unset
 ### 检查
 
 - `vp env current` 显示当前解析后的环境
-- `vp env doctor` 运行环境诊断
+- `vp env doctor` 运行环境诊断。追加 `node` 聚焦 Node.js，追加 `pm` 检查所有包管理器，或追加 `npm`、`pnpm`、`yarn` 或 `bun` 检查指定的包管理器
 - `vp env which` 显示将使用的工具路径
 - `vp env list` 分别显示 Node.js、npm、pnpm、Yarn 和 Bun 部分；选择器可缩小输出范围
 - `vp env list-remote` 并发获取 Node.js 和全部四个包管理器注册表；选择器可缩小网络请求范围。`--lts` 会隐式选择 Node.js
@@ -208,13 +216,17 @@ vp env off pnpm               # Prefer system pnpm only
 vp env print                  # Print PATH setup for both components
 
 # Manage
+vp env pin lts                # Pin Node.js only to an exact version
 vp env pin lts pnpm@10        # Pin both project components to exact versions
 vp env install                # Install the complete resolved environment
-vp env default node@24        # Set the global Node.js default
-vp env default pnpm@10        # Set pnpm's global default version
 vp env use 20 pnpm@10         # Override both components for this shell
 vp env use --unset pnpm       # Remove only the pnpm session version
 vp env use --unset pm         # Remove all package-manager session versions
+
+# Manage (global)
+vp env default lts            # Always use the latest LTS, including new majors
+vp env default node@24        # Pin the Node.js default to an exact version
+vp env default pnpm@10        # Pin the pnpm default to an exact version
 vp env clean                  # Remove unused managed Node.js and package manager versions
 
 # Inspect
@@ -244,7 +256,7 @@ vp node -e "console.log(1+1)" # Shorthand: forward any node flag or argument
     "source": "devEngines.runtime",
     "source_path": "/project/package.json",
     "project_root": "/project",
-    "bin_path": "/home/.vite-plus/js_runtime/node/22.0.0/bin/node",
+    "bin_path": "/home/.local/share/vite-plus/js_runtime/node/22.0.0/bin/node",
     "installed": true,
     "mode": "managed"
   },
@@ -255,8 +267,8 @@ vp node -e "console.log(1+1)" # Shorthand: forward any node flag or argument
     "source_path": "/project/package.json",
     "project_root": "/project",
     "bin_paths": {
-      "pnpm": "/home/.vite-plus/package_manager/pnpm/10.18.0/pnpm/bin/pnpm",
-      "pnpx": "/home/.vite-plus/package_manager/pnpm/10.18.0/pnpm/bin/pnpx"
+      "pnpm": "/home/.local/share/vite-plus/package_manager/pnpm/10.18.0/pnpm/bin/pnpm",
+      "pnpx": "/home/.local/share/vite-plus/package_manager/pnpm/10.18.0/pnpm/bin/pnpx"
     },
     "installed": true,
     "mode": "managed"

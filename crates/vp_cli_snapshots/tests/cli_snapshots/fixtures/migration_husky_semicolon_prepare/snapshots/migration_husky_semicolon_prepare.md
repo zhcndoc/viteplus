@@ -1,24 +1,24 @@
-# 迁移_husky_分号_prepare
+# migration_husky_semicolon_prepare
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-迁移应保留由分号连接的 Husky prepare 脚本
+migration should preserve a semicolon-composed Husky prepare script
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
-◇ 已将 . 迁移到 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-prepare 脚本和 Husky 依赖应保留
+the prepare script and Husky dependency should remain
 
 ```
 {
@@ -34,20 +34,13 @@ prepare 脚本和 Husky 依赖应保留
   },
   "lint-staged": {
     "*.js": "oxlint --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

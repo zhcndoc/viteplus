@@ -1,21 +1,21 @@
-# 迁移_eslint_nuxt_跳过
+# migration_eslint_nuxt_skip
 
 ## `vp migrate --no-interactive`
 
-检测到 `@nuxt/eslint` — ESLint 迁移已跳过，并显示警告
+@nuxt/eslint detected — ESLint migration is skipped with a warning
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-检测到 @nuxt/eslint — 已跳过 ESLint 自动迁移。@nuxt/eslint 将 ESLint 接入特定于框架的流程，而 Vite+ 目前尚无法进行无缝迁移。你的 ESLint 配置已保留。若要手动迁移，请从 package.json 中移除 @nuxt/eslint，然后重新运行 `vp migrate`。
-◇ 已将 . 迁移到 Vite+ <version>
+▲ @nuxt/eslint detected — automatic ESLint migration is skipped. @nuxt/eslint wires ESLint into a framework-specific flow that Vite+ cannot migrate cleanly yet. Your ESLint setup is preserved. To migrate manually, remove @nuxt/eslint from package.json and re-run `vp migrate`.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
+• 2 config updates applied
 ```
 
 ## `vpt print-file package.json`
 
-eslint、@nuxt/eslint 和 eslint.config.mjs 已保留
+eslint, @nuxt/eslint, and eslint.config.mjs are preserved
 
 ```
 {
@@ -36,20 +36,13 @@ eslint、@nuxt/eslint 和 eslint.config.mjs 已保留
     "eslint": "^9.0.0",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt stat-file eslint.config.mjs --assert file`
 
-eslint 配置文件未被删除
+eslint config file is NOT deleted
 
 ```
 eslint.config.mjs: file

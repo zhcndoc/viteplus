@@ -2,30 +2,30 @@
 
 ## `vp pm view --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm view [选项] <PACKAGE> [FIELD] [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm view [OPTIONS] <PACKAGE> [FIELD] [-- <PASS_THROUGH_ARGS>...]
 
-从注册表查看软件包信息
+View package information from the registry
 
-参数：
-  <PACKAGE>               包名称，可包含版本号
-  [FIELD]                 要查看的特定字段
-  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGE>               Package name with optional version
+  [FIELD]                 Specific field to view
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --json      以 JSON 格式输出
-  -h, --help  打印帮助信息
+Options:
+  --json      Output in JSON format
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm view testnpm2`
 
-应查看 lodash 软件包信息（使用 npm view）
+should view lodash package information (uses npm view)
 
 ```
 testnpm2@1.0.1 | ISC | deps: none | versions: 2
@@ -45,7 +45,7 @@ release-1: 1.0.1
 
 ## `vp pm view testnpm2 version`
 
-应查看 lodash 的版本字段（使用 npm view）
+should view lodash version field (uses npm view)
 
 ```
 1.0.1
@@ -53,7 +53,7 @@ release-1: 1.0.1
 
 ## `vp pm view testnpm2@1.0.0`
 
-应查看 lodash 的特定版本（使用 npm view）
+should view specific version of lodash (uses npm view)
 
 ```
 testnpm2@1.0.0 | ISC | deps: none | versions: 2
@@ -73,7 +73,7 @@ release-1: 1.0.1
 
 ## `vp pm view testnpm2 dist.tarball`
 
-应查看嵌套字段（使用 npm view）
+should view nested field (uses npm view)
 
 ```
 https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
@@ -81,14 +81,14 @@ https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
 
 ## `vp pm view testnpm2 dependencies`
 
-应查看依赖项对象（使用 npm view）
+should view dependencies object (uses npm view)
 
 ```
 ```
 
 ## `vp pm view testnpm2 dist.tarball --json`
 
-应以 JSON 格式查看 package.dist.tarball 信息（使用 npm view）
+should view package.dist.tarball info in JSON format (uses npm view)
 
 ```
 "https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz"
@@ -96,7 +96,7 @@ https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
 
 ## `vp pm view testnpm2 version --json`
 
-应以 JSON 格式查看字段（使用 npm view）
+should view field in JSON format (uses npm view)
 
 ```
 "1.0.1"
@@ -104,7 +104,7 @@ https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
 
 ## `vp pm view testnpm2 -- --loglevel=warn`
 
-应支持传递参数（使用 npm view）
+should support pass through arguments (uses npm view)
 
 ```
 testnpm2@1.0.1 | ISC | deps: none | versions: 2

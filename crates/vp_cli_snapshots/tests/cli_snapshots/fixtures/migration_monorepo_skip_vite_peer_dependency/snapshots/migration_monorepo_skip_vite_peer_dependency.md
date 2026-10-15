@@ -1,4 +1,4 @@
-# 迁移 monorepo 跳过 Vite 对等依赖
+# migration_monorepo_skip_vite_peer_dependency
 
 ## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
 
@@ -7,19 +7,20 @@ record the original runner version without adding a direct dependency
 
 ## `vp migrate --no-interactive`
 
-迁移应保留工作区包中的 Vite 对等依赖契约
+migration should preserve vite peer contracts in workspace packages
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 迁移至 Vite+ <版本>
-• Node <版本>  pnpm <版本>
-• 已应用 2 项配置更新，已重写 1 个文件中的导入
+▲ No package manager is declared in package.json; using pnpm for this migration without adding a pin. Run `vp env pin` to declare it explicitly.
+◇ Migrated . to Vite+ <version>
+• Node <version>  pnpm <version>
+• 2 config updates applied, 1 file had imports rewritten
 ```
 
 ## `vpt print-file packages/vite-plugin/src/index.ts`
 
-vite-plugin 将 vite 作为 peerDeps：vite 的导入保持公开，vitest 会进行重写
+vite-plugin has vite in peerDeps: vite imports stay public, vitest rewrites
 
 ```
 import { defineConfig, type Plugin } from 'vite';
@@ -47,20 +48,13 @@ export default defineConfig({
 
 ## `vpt print-file package.json`
 
-检查根目录的 package.json（没有 peerDependencies）
+check root package.json (no peerDependencies)
 
 ```
 {
   "name": "migration-monorepo-skip-vite-peer-dependency",
   "devDependencies": {
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   },
   "scripts": {
     "prepare": "vp config"
@@ -70,7 +64,7 @@ export default defineConfig({
 
 ## `vpt print-file packages/vite-plugin/package.json`
 
-Vite 对等依赖版本范围得以保留
+vite peer range is preserved
 
 ```
 {

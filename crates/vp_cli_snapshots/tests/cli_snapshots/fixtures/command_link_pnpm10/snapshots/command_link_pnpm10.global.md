@@ -2,41 +2,41 @@
 
 ## `vp link -h`
 
-应显示帮助信息
+should show help message
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp link [PACKAGE|DIR] [ARGS]...
+Usage: vp link [PACKAGE|DIR] [ARGS]...
 
-链接软件包以进行本地开发
+Link packages for local development
 
-参数：
-  [PACKAGE|DIR]  要链接的软件包名称或目录
-  [ARGS]...      要传递给软件包管理器的参数
+Arguments:
+  [PACKAGE|DIR]  Package name or directory to link
+  [ARGS]...      Arguments to pass to package manager
 
-选项：
-  -h, --help  打印帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp install`
 
-安装初始依赖
+install initial dependencies
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-依赖：
+dependencies:
  testnpm2 1.0.1
 
-使用 pnpm <version> 在 <duration> 内完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt mkdir -p ../test-lib-pnpm`
 
-创建测试库
+create test library
 
 ```
 ```
@@ -49,7 +49,7 @@ VITE+ - Web 的统一工具链
 
 ## `vp link ../test-lib-pnpm`
 
-应链接本地目录
+should link local directory
 
 ```
 Packages: -1
@@ -91,7 +91,7 @@ importers:
 
 ## `vp ln ../test-lib-pnpm`
 
-应该能与 ln 别名一起工作
+should work with ln alias
 
 ```
 Lockfile is up to date, resolution step is skipped
@@ -128,7 +128,7 @@ importers:
 
 ## `vp unlink ../test-lib-pnpm`
 
-应该解除该软件包的链接
+should unlink the package
 
 ```
 Nothing to unlink
@@ -137,7 +137,7 @@ Nothing to unlink
 ## `vp unlink testnpm2`
 
 ```
-没有可取消链接的内容
+Nothing to unlink
 ```
 
 ## `vpt print-file package.json pnpm-lock.yaml`

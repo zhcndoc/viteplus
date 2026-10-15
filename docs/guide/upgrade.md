@@ -41,6 +41,12 @@ vp upgrade <version>              # 安装特定版本
 vp upgrade --registry <registry>  # 使用自定义 npm registry
 ```
 
+### 自动检查更新
+
+全局 CLI 会在正常使用终端时于后台检查更新，并将结果缓存 24 小时。发现有更新版本时，它会向 stderr 打印通知，但不会安装该版本。
+
+设置 `VP_NO_UPDATE_CHECK=1` 可禁用这些检查和通知。在 CI 和 Homebrew 安装中，这些检查也会被禁用。
+
 ### 将现有安装迁移到拆分目录布局
 
 Vite+ 0.3.0 是首个支持拆分目录布局的版本。Vite+ 0.2.x 及更早版本对全新安装和升级使用单根目录布局。

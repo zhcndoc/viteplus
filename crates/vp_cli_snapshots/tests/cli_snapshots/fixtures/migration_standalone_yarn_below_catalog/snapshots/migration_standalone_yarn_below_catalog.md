@@ -1,24 +1,23 @@
-# 迁移_独立_yarn_低于_catalog
+# migration_standalone_yarn_below_catalog
 
 ## `vp migrate --no-interactive`
 
-Yarn < 4.10.0 无法解析 `catalog:`，因此托管的规范仍保持为具体版本
+Yarn < 4.10.0 cannot resolve `catalog:`, so managed specs stay concrete
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ Vite+ 当前不支持 Yarn Plug'n'Play (PnP)。
-
-✔ 已将 Yarn 切换至 node-modules 模式
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Vite+ does not currently support Yarn Plug'n'Play (PnP).
+◆ ✔ Switched Yarn to node-modules mode
+◇ Migrated . to Vite+ <version>
 • Node <version>  yarn <version>
-• 已应用 2 项配置更新
-• 已配置包管理器设置
+• 2 config updates applied
+• Package manager settings configured
 ```
 
 ## `vpt print-file package.json`
 
-具体规范：通过 @voidzero-dev/vite-plus-core 别名使用 `vite`，不使用 `catalog:` 引用
+concrete specs: `vite` via the @voidzero-dev/vite-plus-core alias, no `catalog:` references
 
 ```
 {
@@ -40,7 +39,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file .yarnrc.yml`
 
-已配置 node-modules 链接器，但未写入 catalog 字段
+node-modules linker is configured, but no catalog field is written
 
 ```
 nodeLinker: node-modules

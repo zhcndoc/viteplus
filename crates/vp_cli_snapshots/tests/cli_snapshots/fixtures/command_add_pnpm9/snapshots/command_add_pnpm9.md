@@ -2,18 +2,18 @@
 
 ## `vp add --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp add [选项] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
+Usage: vp add [OPTIONS] <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 
-将软件包添加到依赖项
+Add packages to dependencies
 
-参数：
-  <PACKAGES>...           要添加的软件包
-  [PASS_THROUGH_ARGS]...  要传递给软件包管理器的其他参数
+Arguments:
+  <PACKAGES>...           Packages to add
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
 Options:
   -P, --save-prod                     Save to `dependencies` (default)
@@ -26,7 +26,7 @@ Options:
   --allow-build <NAMES>               A list of package names allowed to run postinstall
   --ignore-scripts                    Do not run lifecycle scripts
   --no-optional                       Do not install optionalDependencies
-  --frozen-lockfile                   Fail if lockfile needs to be updated
+  --frozen-lockfile                   Don't update lockfile
   --no-frozen-lockfile                Allow lockfile updates
   --lockfile-only                     Only update lockfile, don't install
   --prefer-offline                    Use cached packages when available
@@ -43,12 +43,12 @@ Options:
   --concurrency <CONCURRENCY>         Number of global package installs to run in parallel (only with -g)
   -h, --help                          Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp add testnpm2 -D`
 
-应将软件包添加为开发依赖项
+should add package as dev dependencies
 
 ```
 
@@ -73,7 +73,7 @@ Done in <duration> using pnpm <version>
 
 ## `vp add testnpm2 test-vite-plus-install`
 
-应将软件包添加到依赖项中
+should add packages to dependencies
 
 ```
 
@@ -101,9 +101,9 @@ Done in <duration> using pnpm <version>
 
 ## `vp add testnpm2 test-vite-plus-install --allow-build=test-vite-plus-install`
 
-由于 pnpm@9 不支持 allow-build，因此应报错
+should error because allow-build is not supported at pnpm@9
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
  ERROR  Unknown option: 'allow-build'
@@ -112,18 +112,18 @@ For help, run: pnpm help add
 
 ## `vp install test-vite-plus-package@1.0.0 --save-peer`
 
-应该为添加安装包别名
+should install package alias for add
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 peerDependencies:
  test-vite-plus-package 1.0.0
 
 devDependencies:
- test-vite-plus-package 1.0.0 已存在于 devDependencies 中，未将其移动到 dependencies。
+ test-vite-plus-package 1.0.0 already in devDependencies, was not moved to dependencies.
 
-在 <duration> 内使用 pnpm <version> 完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json`
@@ -148,7 +148,7 @@ devDependencies:
 
 ## `vp add test-vite-plus-package-optional -O`
 
-应将软件包添加为可选依赖项
+should add package as optional dependencies
 
 ```
 
@@ -183,7 +183,7 @@ Done in <duration> using pnpm <version>
 
 ## `vp add test-vite-plus-package-optional -- --loglevel=warn`
 
-支持传递参数
+support pass through arguments
 
 ```
 ```

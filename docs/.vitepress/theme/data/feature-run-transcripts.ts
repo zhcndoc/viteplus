@@ -21,7 +21,7 @@ export const featureRunTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: 'vp run:', tone: 'brand', bold: true },
-          { text: ' 0/2 命中缓存（0%）。', tone: 'muted' },
+          { text: ' 0/2 命中缓存（0%），2/2 成功。', tone: 'muted' },
         ],
       },
     ],
@@ -54,7 +54,7 @@ export const featureRunTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: 'vp run:', tone: 'brand', bold: true },
-          { text: ' 2/2 命中缓存（100%），节省 1.24s。', tone: 'muted' },
+          { text: ' 2/2 命中缓存（100%），2/2 成功，节省 1.24s。', tone: 'muted' },
         ],
       },
     ],
@@ -89,7 +89,7 @@ export const featureRunTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: 'vp run:', tone: 'brand', bold: true },
-          { text: ' 1/2 命中缓存（50%），节省 528ms。', tone: 'muted' },
+          { text: ' 1/2 命中缓存（50%），2/2 成功，节省 528ms。', tone: 'muted' },
         ],
       },
     ],
@@ -126,7 +126,7 @@ export const featureRunTranscripts: TerminalTranscript[] = [
       {
         segments: [
           { text: 'vp run:', tone: 'brand', bold: true },
-          { text: ' 0/2 命中缓存（0%）。', tone: 'muted' },
+          { text: ' 0/2 命中缓存（0%），2/2 成功。', tone: 'muted' },
         ],
       },
     ],

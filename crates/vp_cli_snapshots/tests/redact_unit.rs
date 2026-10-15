@@ -79,6 +79,50 @@ fn masks_vitest_v5_timing_but_preserves_coverage_percentages() {
 }
 
 #[test]
+fn omits_optional_vitest_transform_cache_hint() {
+    let summary = " Tests  1 passed (1)\n Duration  3.4s (transform 84%, tests 16%)\n";
+    for project in ["", "[unit] "] {
+        for ci_hint in [
+            "",
+            "           on CI this only helps when the cache directory is persisted between runs\n",
+        ] {
+            let hint = format!(
+                "\n Transform {project}transforming modules took 2.8s · 84% of tracked time, re-done on every run\n\
+                 {}persist transforms across runs with fsModuleCache: true\n\
+                 {ci_hint}{}learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns\n",
+                "           ", "           "
+            );
+            let expected = redact_output(summary.to_owned(), &[], true);
+            assert_eq!(redact_output(format!("{summary}{hint}"), &[], true), expected);
+            assert_eq!(
+                redact_output(format!("{summary}{}", hint.trim_end_matches('\n')), &[], true),
+                expected
+            );
+            assert_eq!(
+                redact_output(format!("{summary}{hint}").replace('\n', "\r\n"), &[], true),
+                expected
+            );
+            assert_eq!(
+                redact_output(format!("{summary}{hint}\nnext command\n"), &[], true),
+                format!("{expected}\nnext command\n")
+            );
+        }
+    }
+}
+
+#[test]
+fn preserves_transform_errors_and_incomplete_cache_hints() {
+    for input in [
+        "Transform failed: cannot load module\n",
+        "\n Transform transforming modules took 2.8s · 84% of tracked time, re-done on every run\n",
+        "persist transforms across runs with fsModuleCache: true\n",
+        "learn more: https://example.com/improving-performance\n",
+    ] {
+        assert_eq!(redact_output(input.to_owned(), &[], true), input.replace("2.8s", "<duration>"));
+    }
+}
+
+#[test]
 fn masks_vitest_api_port_but_preserves_other_localhost_urls() {
     let input = "API started at http://localhost:63316/\nBrowser runner started at http://localhost:63317/__vitest_test__/?sessionId=keep-session\nhttp://localhost:9229/\n";
     assert_eq!(
@@ -185,6 +229,37 @@ fn masks_bun_build_hash_only_in_bun_banners() {
     // Parenthesized hex without a preceding masked version stays verbatim.
     let unrelated = "commit (deadbeef1) applied\n".to_owned();
     assert_eq!(redact_output(unrelated.clone(), &[], true), unrelated);
+}
+
+#[test]
+fn drops_bun_slow_filesystem_warning_with_optional_progress() {
+    let result = concat!(
+        "\n./node_modules/core-js @3.39.0\n",
+        " ✓ [postinstall]: node -e \"try{require('./postinstall')}catch(e){}\"\n",
+        "\n 1 script ran across 1 package [12ms]\n",
+    );
+    let expected = redact_output(format!("bun pm trust v1.4.0 (34cbb9a40)\n{result}"), &[], true);
+    for prefix in ["", "  ⚙️  core-js [1/1] ", "  ⚙ @scope/pkg [12/34] "] {
+        for cache in ["/private/tmp/vp-local-registry-bun-PXkDcD", "C:/cache with spaces/bun"] {
+            let input = format!(
+                "bun pm trust v1.4.0 (34cbb9a40)\n\
+                 {prefix}warn: Slow filesystem detected. If {cache} is a network drive, consider setting $BUN_INSTALL_CACHE_DIR to a local folder.\n\
+                 {result}"
+            );
+            assert_eq!(redact_output(input, &[], true), expected);
+        }
+    }
+}
+
+#[test]
+fn preserves_other_bun_warnings_and_script_failures() {
+    let input = concat!(
+        "warn: install failed for core-js\n",
+        "  ⚙️  core-js [1/1] warn: postinstall failed\n",
+        "warn: Slow filesystem detected. Custom diagnostic.\n",
+        "error: postinstall script from \"core-js\" exited with 1\n",
+    );
+    assert_eq!(redact_output(input.to_owned(), &[], true), input);
 }
 
 #[test]
@@ -503,6 +578,26 @@ fn masks_vitest_ecosystem_versions_but_not_unrelated_deps() {
             "    \"typescript\": \"5.4.0\"\n",
         )
     );
+}
+
+#[test]
+fn masks_vitest_wildcard_override_versions_but_preserves_selectors_and_ranges() {
+    for version in ["5.0.3", "5.1.0", "6.0.0-beta.1"] {
+        let input = format!("  '@vitest/browser@*': {version}\n  \"vitest@*\": \"{version}\"\n");
+        assert_eq!(
+            redact_output(input, &[], true),
+            "  '@vitest/browser@*': <version>\n  \"vitest@*\": \"<version>\"\n"
+        );
+    }
+    let input = concat!(
+        "  '@vitest/browser@*': 'catalog:'\n",
+        "  '@vitest/browser@4.0.0': 4.0.13\n",
+        "  '@vitest/browser@^4': 4.0.13\n",
+        "  '@vitest/browser@*': ^5.0.0\n",
+        "  '@vitest/browser-webdriverio': ^5.0.0\n",
+        "  'typescript@*': 5.4.0\n",
+    );
+    assert_eq!(redact_output(input.to_owned(), &[], true), input);
 }
 
 #[test]

@@ -1,4 +1,4 @@
-# 迁移单仓库 Yarn 4
+# migration_monorepo_yarn4
 
 ## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
 
@@ -7,26 +7,24 @@ record the original runner version without adding a direct dependency
 
 ## `vp migrate --no-interactive`
 
-迁移应合并 vite.config.ts 并移除 oxlintrc
+migration should merge vite.config.ts and remove oxlintrc
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ Vite+ 当前不支持 Yarn Plug'n'Play (PnP)。
-
-✔ 已将 Yarn 切换至 node-modules 模式
-
-✔ 已将 .oxlintrc.json 合并到 vite.config.ts
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Vite+ does not currently support Yarn Plug'n'Play (PnP).
+◆ ✔ Switched Yarn to node-modules mode
+◆ ✔ Merged .oxlintrc.json into vite.config.ts
+◇ Migrated . to Vite+ <version>
 • Node <version>  yarn <version>
-• 已应用 2 项配置更新，1 个文件的导入已重写
-• 已使用 lazyPlugins 包装内联 Vite 插件，以支持 check/lint/fmt
-• 已配置包管理器设置
+• 2 config updates applied, 1 file had imports rewritten
+• Inline Vite plugins wrapped with lazyPlugins for check/lint/fmt
+• Package manager settings configured
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查 vite.config.ts
+check vite.config.ts
 
 ```
 import react from '@vitejs/plugin-react';
@@ -66,7 +64,7 @@ export default defineConfig({
 
 ## `vpt stat-file .oxlintrc.json --assert-not file`
 
-检查 .oxlintrc.json 是否已删除
+check .oxlintrc.json is removed
 
 ```
 .oxlintrc.json: missing
@@ -74,7 +72,7 @@ export default defineConfig({
 
 ## `vpt print-file package.json`
 
-检查 package.json
+check package.json
 
 ```
 {
@@ -114,7 +112,7 @@ export default defineConfig({
 
 ## `vpt print-file .yarnrc.yml`
 
-检查 .yarnrc.yml
+check .yarnrc.yml
 
 ```
 nodeLinker: node-modules
@@ -129,7 +127,7 @@ catalog:
 
 ## `vpt print-file packages/app/package.json`
 
-检查 app package.json
+check app package.json
 
 ```
 {
@@ -158,7 +156,7 @@ catalog:
 
 ## `vpt print-file packages/utils/package.json`
 
-检查 utils package.json
+check utils package.json
 
 ```
 {

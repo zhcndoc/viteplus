@@ -2,61 +2,61 @@
 
 ## `vp outdated --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp outdated [选项] [软件包]... [-- <透传参数>...]
+Usage: vp outdated [OPTIONS] [PACKAGES]... [-- <PASS_THROUGH_ARGS>...]
 
-检查过时的软件包
+Check for outdated packages
 
-参数：
-  [软件包]...             要检查的软件包名称
-  [透传参数]...           要传递给软件包管理器的其他参数
+Arguments:
+  [PACKAGES]...           Package name(s) to check
+  [PASS_THROUGH_ARGS]...  Additional arguments to pass through to the package manager
 
-选项：
-  --long                       显示扩展信息
-  --format <格式>              输出格式：table（默认）、list 或 json
-  -r, --recursive              检查所有工作区中的软件包
-  --filter <模式>              筛选 monorepo 中的软件包
-  -w, --workspace-root         包含工作区根目录
-  -P, --prod                   仅检查生产环境和可选依赖
-  -D, --dev                    仅检查开发依赖
-  --no-optional                排除可选依赖
-  --compatible                 仅显示兼容版本
-  --sort-by <字段>             按字段排序结果
-  -g, --global                 检查全局安装的软件包
-  --concurrency <并发数>       并行执行的全局软件包检查数量（仅与 -g 一起使用）
-  -h, --help                   显示帮助信息
+Options:
+  --long                       Show extended information
+  --format <FORMAT>            Output format: table (default), list, or json
+  -r, --recursive              Check recursively across all workspaces
+  --filter <PATTERN>           Filter packages in monorepo
+  -w, --workspace-root         Include workspace root
+  -P, --prod                   Only production and optional dependencies
+  -D, --dev                    Include dev dependencies
+  --no-optional                Exclude optional dependencies
+  --compatible                 Only show compatible versions
+  --sort-by <FIELD>            Sort results by field
+  -g, --global                 Check globally installed packages
+  --concurrency <CONCURRENCY>  Number of global package checks to run in parallel (only with -g)
+  -h, --help                   Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp install`
 
-应先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-依赖项：
- testnpm2 1.0.0（1.0.1 可用）
+dependencies:
+ testnpm2 1.0.0 (1.0.1 is available)
 
-可选依赖项：
- test-vite-plus-other-optional 1.0.0（1.1.0 可用）
+optionalDependencies:
+ test-vite-plus-other-optional 1.0.0 (1.1.0 is available)
 
-开发依赖项：
- test-vite-plus-top-package 1.0.0（1.1.0 可用）
+devDependencies:
+ test-vite-plus-top-package 1.0.0 (1.1.0 is available)
 
-使用 pnpm <version> 在 <duration> 内完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vp outdated testnpm2`
 
-应显示过时的软件包
+should outdated package
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────┬─────────┬────────┐
@@ -68,9 +68,9 @@ VITE+ - Web 的统一工具链
 
 ## `vp outdated test-vite*`
 
-应使用一个 glob 模式显示过时的依赖
+should outdated with one glob pattern
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────────────┬─────────┬────────┐
@@ -84,9 +84,9 @@ VITE+ - Web 的统一工具链
 
 ## `vp outdated test-vite* *npm*`
 
-应使用多个 glob 模式执行 outdated
+should outdated with multiple glob patterns
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────────────┬─────────┬────────┐
@@ -102,9 +102,9 @@ VITE+ - Web 的统一工具链
 
 ## `vp outdated --format json`
 
-应支持 JSON 输出
+should support json output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 {
@@ -134,9 +134,9 @@ VITE+ - Web 的统一工具链
 
 ## `vp outdated --format list`
 
-应支持列表输出
+should support list output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 testnpm2
@@ -151,9 +151,9 @@ test-vite-plus-top-package (dev)
 
 ## `vp outdated --format table`
 
-应支持表格输出
+should support table output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────────────┬─────────┬────────┐
@@ -169,9 +169,9 @@ test-vite-plus-top-package (dev)
 
 ## `vp outdated testnpm2 --long --format list`
 
-应支持 --long
+should support --long
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 testnpm2
@@ -180,9 +180,9 @@ testnpm2
 
 ## `vp outdated -r`
 
-应支持递归输出
+should support recursive output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────────────┬─────────┬────────┬─────────────────────────┐
@@ -198,9 +198,9 @@ testnpm2
 
 ## `vp outdated -P`
 
-应支持 prod 输出
+should support prod output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────────────┬─────────┬────────┐
@@ -214,9 +214,9 @@ testnpm2
 
 ## `vp outdated -D`
 
-应支持开发依赖输出
+should support dev output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────┬─────────┬────────┐
@@ -228,9 +228,9 @@ testnpm2
 
 ## `vp outdated --no-optional`
 
-应支持无可选依赖输出
+should support no-optional output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────┬─────────┬────────┐
@@ -244,19 +244,19 @@ testnpm2
 
 ## `vp outdated --compatible`
 
-兼容模式应不输出任何内容
+should compatible output nothing
 
 ```
 ```
 
 ## `vpt json-edit package.json optionalDependencies.test-vite-plus-other-optional '"^1.0.0"'`
 
-应支持与可选依赖项兼容的输出
+should support compatible output with optional dependencies
 
 
 ## `vp outdated --compatible`
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────────────┬─────────┬────────┐
@@ -268,9 +268,9 @@ testnpm2
 
 ## `vp outdated --sort-by name`
 
-应支持按排序方式输出
+should support sort-by output
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 ┌──────────────────────────────────────────┬─────────┬────────┐

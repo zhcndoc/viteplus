@@ -65,7 +65,7 @@ vp migrate my-app
 
 运行迁移之前：
 
-- 对于尚未使用 Vite+ 的项目，请先升级到 Vite 8+ 和 Vitest 4.1+
+- 对于尚未使用 Vite+ 的项目，请先升级到 Vite 7+ 和 Vitest 4+
 - 确保了解需要保留的现有 lint、格式化或测试设置
 
 运行迁移之后：
@@ -95,21 +95,21 @@ Vite+ 1.0 包含 Vitest 5 的破坏性变更。请同时阅读 [Vite+ 兼容性�
 
 ### 不使用全局 CLI
 
-使用满足 `^22.18.0 || ^24.11.0 || >=26.0.0` 的现有 Node.js 运行时。通过包管理器运行目标迁移器，无需先将它添加到项目中。对于 `1.0.0` 版本：
+使用满足 `^22.18.0 || ^24.11.0 || >=26.0.0` 的现有 Node.js 运行时。通过包管理器运行目标迁移器，无需先将它添加到项目中。对于 `1.1.0` 版本：
 
 ::: code-group
 
 ```bash [pnpm]
-pnpm dlx --package=vite-plus@1.0.0 vp migrate --no-interactive
+pnpm dlx --package=vite-plus@1.1.0 vp migrate --no-interactive
 ```
 
 ```bash [npm]
-npx --package=vite-plus@1.0.0 vp migrate --no-interactive
+npx --package=vite-plus@1.1.0 vp migrate --no-interactive
 ```
 
 :::
 
-将 `1.0.0` 替换为目标版本。要使用预览版，请使用 PR 中的版本，并在 `vp` 命令之前向 `pnpm` 或 `npx` 传入 `--registry=https://registry-bridge.viteplus.dev`。请在 `--package` 中显式指定版本，以确保运行的是目标迁移器，而不是旧的本地 CLI。
+将 `1.1.0` 替换为目标版本。要使用预览版，请使用 PR 中的版本，并在 `vp` 命令之前向 `pnpm` 或 `npx` 传入 `--registry=https://registry-bridge.viteplus.dev`。请在 `--package` 中显式指定版本，以确保运行的是目标迁移器，而不是旧的本地 CLI。
 
 迁移后，完成依赖安装，并使用更新后的本地 CLI 验证：
 
@@ -151,7 +151,7 @@ npm exec -- vp build
 
 ### Vitest
 
-Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会通过 `vite-plus/test*` 重新导出上游 `vitest@5.0.1`，因此对于 node 模式测试，只需安装一个 `vite-plus` 即可，无需直接安装 `vitest`。
+Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会通过 `vite-plus/test*` 重新导出上游 `vitest@5.0.4`，因此对于 node 模式测试，只需安装一个 `vite-plus` 即可，无需直接安装 `vitest`。
 
 对于浏览器模式，可以使用 `vite-plus` 中包含的基础浏览器 runtime（`@vitest/browser`）和 Preview 提供程序（`@vitest/browser-preview`）。如果要使用 Playwright 或 WebdriverIO，还需要选择加入对应的提供程序（`@vitest/browser-playwright` 或 `@vitest/browser-webdriverio`）及其框架 peer（`playwright` 或 `webdriverio`）。
 
@@ -162,10 +162,10 @@ Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会通过 `vite-plus/te
 如果您是手动迁移，请改为将所有导入更新为 `vite-plus/test*`：
 
 ```ts
-// 之前
-import { defineConfig } from 'vitest/config';
-import { describe, expect, it, vi } from 'vitest';
+// before
 import { playwright } from '@vitest/browser-playwright';
+import { describe, expect, it, vi } from 'vitest';
+import { defineConfig } from 'vitest/config';
 
 const { page } = await import('@vitest/browser/context');
 
@@ -183,7 +183,7 @@ const { page } = await import('vite-plus/test/browser/context');
 
 对于 tsdown 0.23，`vp migrate` 会更新 `pack` 块和 `tsdown.config.*` 中受支持的静态选项。现有 Vite+ 项目和工作区包即使不使用 `--full` 也会执行此迁移。选项映射和需要手动审查的情况，请参阅 [Pack 配置迁移规则](./migrate-rules.md#pack-configuration)。
 
-如果缺少 `deps.resolveDepSubpath: true`，迁移会插入该设置以保留此前的默认行为；启用了 ATTW 检查且没有显式设置时，也会插入 `attw.profile: 'strict'`。每个插入的设置都带有 `tsdown <0.23 compatibility` 注释，包含文档链接和移除说明。显式设置保持不变。
+当项目已安装的 tsdown 版本低于 0.23 或无法确定时，转换会通过插入 `deps.resolveDepSubpath: true` 来保留之前的默认行为；启用了 ATTW 检查且缺少这些设置时，还会插入 `attw.profile: 'strict'`。对于 Vite+ pack 配置，它会读取已安装的 `vite-plus/dist/toolchain.json`。这也包括在迁移重写导入之前已经导入 `vite-plus/pack` 的 `tsdown.config.*` 文件。独立的 tsdown 配置使用其已安装的 tsdown 版本。没有此清单的旧版 Vite+ 会保留旧的默认值。已经使用 tsdown 0.23 或更高版本的项目不会获得这些默认值。每个插入的设置都带有 `tsdown <0.23 compatibility` 注释、文档链接和移除说明。显式设置保持不变。
 
 首次运行 `vp pack` 时请保留这些设置。验证通过后，再检查软件包是否可以采用新的默认值：
 
@@ -220,7 +220,7 @@ export default defineConfig({
 
 ### lint-staged
 
-Vite+ 用其自身的 `staged` 块（在 `vite.config.ts` 中）取代了 lint-staged。仅支持 `staged` 配置格式。独立的非 JSON 格式 `.lintstagedrc` 和 `lint-staged.config.*` 不会被自动迁移。
+Vite+ 用其自身的 `staged` 块（在 `vite.config.ts` 中）取代了 lint-staged。`vp staged` 从 `vite.config.ts` 中的 `staged` 块读取配置，而不是从独立的 lint-staged 配置文件读取。独立的非 JSON 格式 `.lintstagedrc` 和 `lint-staged.config.*` 不会被自动迁移。
 
 将您的 lint-staged 规则移动到 `staged` 块中：
 
@@ -229,7 +229,7 @@ import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   staged: {
-    '*.{js,ts,tsx,vue,svelte}': 'vp check --fix',
+    '*': 'vp check --fix',
   },
 });
 ```

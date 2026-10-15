@@ -1,21 +1,21 @@
-# 迁移_ESLint_单仓库_仅限包
+# migration_eslint_monorepo_package_only
 
 ## `vp migrate --no-interactive`
 
-迁移应针对仅存在于包中的 eslint 发出警告
+migration should warn about package-only eslint
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-在工作区包中检测到 ESLint，但未找到根配置。包级 ESLint 必须手动迁移。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ESLint detected in workspace packages but no root config found. Package-level ESLint must be migrated manually.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
+• 2 config updates applied
 ```
 
 ## `vpt print-file package.json`
 
-检查根目录 package.json
+check root package.json
 
 ```
 {
@@ -35,7 +35,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file packages/app/package.json`
 
-检查 app 的 eslint 配置已保留（未迁移）
+check app eslint preserved (not migrated)
 
 ```
 {
@@ -56,7 +56,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file packages/app/eslint.config.mjs`
 
-检查 package eslint 配置已保留
+check package eslint config preserved
 
 ```
 export default [

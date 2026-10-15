@@ -2,41 +2,41 @@
 
 ## `vp link -h`
 
-应显示帮助信息
+should show help message
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp link [PACKAGE|DIR] [ARGS]...
+Usage: vp link [PACKAGE|DIR] [ARGS]...
 
-链接用于本地开发的软件包
+Link packages for local development
 
-参数：
-  [PACKAGE|DIR]  要链接的软件包名称或目录
-  [ARGS]...      要传递给包管理器的参数
+Arguments:
+  [PACKAGE|DIR]  Package name or directory to link
+  [ARGS]...      Arguments to pass to package manager
 
-选项：
-  -h, --help  打印帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp install`
 
-安装初始依赖
+install initial dependencies
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-依赖：
+dependencies:
  testnpm2 1.0.1
 
-使用 pnpm <version> 在 <duration> 内完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt mkdir -p ../test-lib-pnpm`
 
-创建测试库
+create test library
 
 ```
 ```
@@ -49,7 +49,7 @@ VITE+ - Web 的统一工具链
 
 ## `vp link ../test-lib-pnpm`
 
-应链接本地目录
+should link local directory
 
 ```
 Packages: -1
@@ -91,7 +91,7 @@ importers:
 
 ## `vp ln ../test-lib-pnpm`
 
-应该与 ln 别名配合工作
+should work with ln alias
 
 ```
 Lockfile is up to date, resolution step is skipped
@@ -128,7 +128,7 @@ importers:
 
 ## `vp unlink ../test-lib-pnpm -- --no-frozen-lockfile`
 
-应当解除该软件包的链接（pnpm v11 在 `CI=true` 下需要使用 `--no-frozen-lockfile`，以避免出现 ERR_PNPM_LOCKFILE_CONFIG_MISMATCH）
+should unlink the package (pnpm v11 requires --no-frozen-lockfile under CI=true to avoid ERR_PNPM_LOCKFILE_CONFIG_MISMATCH)
 
 ```
 Already up to date
@@ -137,10 +137,10 @@ Already up to date
 ## `vp unlink testnpm2 -- --no-frozen-lockfile`
 
 ```
-testnpm2 已链接到 <workspace>/node_modules，来自 <case>/test-lib-pnpm
-已经是最新版本
+testnpm2 is linked to <workspace>/node_modules from <case>/test-lib-pnpm
+Already up to date
 
-依赖项：
+dependencies:
 - testnpm2 1.0.0
  testnpm2 1.0.1
 ```

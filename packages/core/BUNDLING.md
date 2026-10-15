@@ -81,8 +81,8 @@ await cp(join(rolldownPluginUtilsDir, 'dist'), join(projectDir, 'dist', 'pluginu
 
 **更新**：
 
-- `peerDependencies` - 合并自 tsdown 和 vite
-- `peerDependenciesMeta` - 合并自 tsdown 和 vite
+- `peerDependencies` - 合并自 rolldown-plugin-dts、tsdown 和 vite（不包括捆绑的软件包）
+- `peerDependenciesMeta` - 合并自 rolldown-plugin-dts、tsdown 和 vite（不包括捆绑的软件包）
 - `bundledVersions` - 记录 vite、rolldown 和 tsdown 的版本
 
 ---

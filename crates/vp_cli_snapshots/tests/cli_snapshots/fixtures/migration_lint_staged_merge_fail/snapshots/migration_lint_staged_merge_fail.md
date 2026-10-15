@@ -34,13 +34,6 @@ VITE+ - Web 的统一工具链
   "lint-staged": {
     "*.css": "stylelint --fix"
   },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
-  },
   "scripts": {
     "prepare": "vp config"
   }

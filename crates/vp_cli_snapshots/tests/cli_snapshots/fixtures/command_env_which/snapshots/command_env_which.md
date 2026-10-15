@@ -2,7 +2,7 @@
 
 ## `vp env exec node --version`
 
-请先确保已安装 Node.js
+Ensure Node.js is installed first
 
 ```
 <version>
@@ -10,7 +10,7 @@
 
 ## `vp env which node`
 
-核心工具 - 显示解析后的 Node.js 二进制文件路径
+Core tool - shows resolved Node.js binary path
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -22,46 +22,46 @@ VITE+ - The Unified Toolchain for the Web
 
 ## `vp env which npm`
 
-核心工具 - 显示解析后的 npm 二进制路径
+Core tool - shows resolved npm binary path
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 <home>/.vite-plus/js_runtime/node/<version>/bin/npm
-  版本:    20.18.0
-  来源:     <workspace>/.node-version
+  Version:    20.18.0
+  Source:     <workspace>/.node-version
 ```
 
 ## `vp env which npx`
 
-核心工具 - 显示已解析的 npx 二进制文件路径
+Core tool - shows resolved npx binary path
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 <home>/.vite-plus/js_runtime/node/<version>/bin/npx
-  版本：      20.18.0
-  来源：      <workspace>/.node-version
+  Version:    20.18.0
+  Source:     <workspace>/.node-version
 ```
 
 ## `vp install -g cowsay@1.6.0`
 
-通过 vp 安装全局软件包
+Install a global package via vp
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-信息：正在使用 Node.js <version> 安装 1 个全局软件包
-✓ 已安装 cowsay 1.6.0
-  可执行文件：cowsay、cowthink
+info: Installing 1 global package with Node.js <version>
+ Installed cowsay 1.6.0
+  Bins: cowsay, cowthink
 ```
 
 ## `vp env which cowsay`
 
-全局软件包 - 显示带元数据的二进制文件路径
+Global package - shows binary path with metadata
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 <home>/.vite-plus/packages/cowsay/<uuid>/lib/node_modules/cowsay/./cli.js
   Package:    cowsay@1.6.0
@@ -72,17 +72,17 @@ VITE+ - Web 统一工具链
 
 ## `vp remove -g cowsay`
 
-清理
+Cleanup
 
 ```
-已卸载 cowsay
+- Uninstalled cowsay
 ```
 
 ## `vp env which unknown-tool`
 
-未知工具 - 错误消息
+Unknown tool - error message
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 VITE+ - The Unified Toolchain for the Web

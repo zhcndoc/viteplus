@@ -2,22 +2,22 @@
 
 ## `vp install -g --concurrency 1 ./parallel-pkg-a ./parallel-pkg-b`
 
-安装多个全局软件包
+Install multiple global packages
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-信息：正在使用 Node.js <version> 安装 2 个全局软件包
-✓ 已安装 parallel-pkg-a 1.0.0
-  可执行文件：parallel-a
+\x1b[94;1minfo: Installing 2 global packages with Node.js <version>
+\x1b[32m+ Installed \x1b[1mparallel-pkg-a \x1b[1m1.0.0
+  Bins: \x1b[1mparallel-a
 
-✓ 已安装 parallel-pkg-b 2.0.0
-  可执行文件：parallel-b
+\x1b[32m+ Installed \x1b[1mparallel-pkg-b \x1b[1m2.0.0
+  Bins: \x1b[1mparallel-b
 ```
 
 ## `parallel-a`
 
-两个二进制文件都应该可以调用
+Both binaries should be callable
 
 ```
 parallel-a ok
@@ -31,9 +31,9 @@ parallel-b ok
 
 ## `vp remove -g parallel-pkg-a parallel-pkg-b`
 
-清理
+Installation and removal use plus/minus markers and the same package styling
 
 ```
-已卸载 parallel-pkg-a
-已卸载 parallel-pkg-b
+\x1b[31m- Uninstalled \x1b[1mparallel-pkg-a
+\x1b[31m- Uninstalled \x1b[1mparallel-pkg-b
 ```

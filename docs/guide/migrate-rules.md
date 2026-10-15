@@ -7,7 +7,7 @@ Except for [Before You Migrate](#before-you-migrate), which lists steps you take
 ## 迁移前
 
 1. 运行 `vp upgrade`，以便全局 CLI 使用最新的迁移规则。过时的本地 `vite-plus` 并不会阻止迁移：当项目的本地副本版本较旧时，迁移会委托给全局 CLI。
-2. 在必要时将项目升级到 Vite 8+ 和 Vitest 4.1+。
+2. 在必要时将项目升级到 Vite 7+ 和 Vitest 4+。
 3. 从工作区根目录运行 `vp migrate`。在自动化环境中使用 `--no-interactive`。
 4. 检查每个发生变更的清单、包管理器配置、源码重写结果和生成的锁文件。
 5. 使用 `vp install`、`vp check`、`vp test` 和 `vp build` 进行验证。
@@ -18,9 +18,8 @@ Except for [Before You Migrate](#before-you-migrate), which lists steps you take
 
 对于已经依赖 `vite-plus` 的项目，`vp migrate` 只执行升级：它会更新依赖和包管理器配置，并完成导入。它不会修改项目设置。
 
-- `--full` 还会运行设置操作：Git hooks、编辑器配置、代理文件、ESLint 和 Prettier 迁移、框架 shim、tsconfig 的 `baseUrl` 修复，以及从 `.nvmrc`/Volta 到 `.node-version` 的转换。
+- `--full` 还会运行设置操作：Git hooks、编辑器配置、代理文件、ESLint、Prettier 和 tsup 迁移、框架 shim、tsconfig 的 `baseUrl` 修复，以及从 `.nvmrc`/Volta 到 `.node-version` 的转换。
 - `--hooks`、`--agent` 和 `--editor` 可在不使用 `--full` 的情况下选择单个设置操作。
-- 当默认升级跳过了本应执行的设置操作时，它会提示运行 `vp migrate --full`。全新的（非 Vite+）项目始终会运行完整迁移。
 
 ## Pack 配置
 
@@ -43,7 +42,7 @@ Except for [Before You Migrate](#before-you-migrate), which lists steps you take
 
 当缺少 `deps.resolveDepSubpath` 时，迁移会将其设置为 `true`，以保留之前的默认行为。如果已启用 ATTW 检查且未设置 profile，则会添加 `profile: 'strict'`。显式值（包括 `false`）保持不变。
 
-`noExternal` 会移动到 `deps.alwaysBundle`，并保留匹配器表达式、引用和回调方法。现有的 `deps.alwaysBundle` 值保持不变。
+迁移会在最终安装依赖之前检查项目已安装的 tsdown 版本。对于 Vite+ pack 配置，它会读取已安装的 `vite-plus/dist/toolchain.json`。这也包括在迁移重写导入之前已经导入 `vite-plus/pack` 的 `tsdown.config.*` 文件。独立的 tsdown 配置使用其已安装的 tsdown 版本。没有此清单的旧版 Vite+ 会保留旧的默认值。对于 tsdown 0.23 或更高版本，迁移不会插入兼容性默认值；对于较旧或未知版本，如果缺少 `deps.resolveDepSubpath`，则会将其设置为 `true` 以保留之前的默认行为。启用 ATTW 检查且未设置 profile 时，会使用 `profile: 'strict'`。显式值（包括 `false`）保持不变。
 
 插入的设置会附带文档链接和采用新默认值的说明。移除 `deps.resolveDepSubpath: true` 可[按原样保留外部子路径导入](https://tsdown.dev/options/dependencies#deps-resolvedepsubpath)。移除插入的 `attw.profile: 'strict'` 可使用新的 `esm-only` [解析配置](https://tsdown.dev/options/lint#profiles)，但这会跳过 `node10` 和 CommonJS 解析检查。如果软件包需要保留之前的行为，请保留相应设置。对于显式设置，迁移不会添加这些注释。
 
@@ -94,6 +93,10 @@ build: {
 ## 依赖规则
 
 ### 版本选择
+
+迁移会保留项目的软件包管理器声明策略。现有的 `packageManager` 或 `devEngines.packageManager` 字段仍是事实来源，而仅依赖锁文件的项目仍保持未固定状态。具体来说，迁移不会将其自身安装时使用的软件包管理器版本转变为贡献者或 CI 所需的新精确版本。迁移推断出未声明的软件包管理器时，会打印警告；希望显式固定版本的项目可以使用 `vp env pin`。
+
+下面概述各工具链依赖项的处理方式：
 
 | 依赖                           | 处理方式                                                                                                                                                           |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

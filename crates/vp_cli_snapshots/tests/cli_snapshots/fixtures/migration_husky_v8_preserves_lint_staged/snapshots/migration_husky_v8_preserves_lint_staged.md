@@ -1,24 +1,24 @@
-# 迁移_husky_v8_保留_lint_staged
+# migration_husky_v8_preserves_lint_staged
 
 ## `git init`
 
 
 ## `vp migrate --no-interactive`
 
-应警告 husky v8，并保留 lint-staged 配置
+should warn about husky v8, preserve lint-staged config
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到 Husky — 保持其钩子、配置和依赖不变。在启用 Vite+ 钩子之前，请手动迁移 Husky。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ Detected Husky — leaving its hooks, configuration, and dependencies unchanged. Migrate Husky manually before enabling Vite+ hooks.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-lint-staged 配置仍应保留在 package.json 中
+lint-staged config should still be in package.json
 
 ```
 {
@@ -34,20 +34,13 @@ lint-staged 配置仍应保留在 package.json 中
   },
   "lint-staged": {
     "*.{js,ts}": "eslint --fix"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

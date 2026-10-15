@@ -2,23 +2,24 @@
 
 ## `vp migrate --no-interactive --no-hooks --no-agent --no-editor`
 
-即使 Vite+ 已安装在 pnpm 项目中，也应完成核心重写
+should finish core rewrites even when vite-plus is already installed in a pnpm project
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+▲ No package manager is declared in package.json; using pnpm for this migration without adding a pin. Run `vp env pin` to declare it explicitly.
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖项：
+• Dependencies:
     vite-plus  0.1.24 → <version>
     vite              → <version>
-• 已重写 1 个文件中的导入
-• 已配置包管理器设置
+• 1 file had imports rewritten
+• Package manager settings configured
 ```
 
 ## `vpt print-file package.json`
 
-应重写 scripts，不添加 package.json overrides
+scripts should be rewritten without adding package.json overrides
 
 ```
 {
@@ -45,20 +46,13 @@ VITE+ - Web 的统一工具链
     "typescript": "~6.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-应配置 pnpm overrides 和 peerDependencyRules
+pnpm overrides and peerDependencyRules should be configured
 
 ```
 catalog:
@@ -75,7 +69,7 @@ peerDependencyRules:
 
 ## `vpt print-file vite.config.ts`
 
-vite 导入应被重写
+vite imports should be rewritten
 
 ```
 import { defineConfig } from 'vite-plus'
@@ -89,7 +83,7 @@ export default defineConfig({
 
 ## `vpt print-file tsconfig.app.json`
 
-vite/client 已保留（问题 #2004：tsconfig 不是 vite.config）
+vite/client is preserved (issue #2004: tsconfig is not a vite.config)
 
 ```
 {
@@ -101,7 +95,7 @@ vite/client 已保留（问题 #2004：tsconfig 不是 vite.config）
 
 ## `vpt stat-file AGENTS.md --assert-not file`
 
-已禁用的代理设置不应写入指令
+disabled agent setup should not write instructions
 
 ```
 AGENTS.md: missing
@@ -109,15 +103,15 @@ AGENTS.md: missing
 
 ## `vpt stat-file .vite-hooks --assert-not dir`
 
-已禁用的钩子设置不应写入钩子
+disabled hook setup should not write hooks
 
 ```
-.vite-hooks：缺失
+.vite-hooks: missing
 ```
 
 ## `vpt stat-file .vscode --assert-not dir`
 
-已禁用的编辑器设置不应写入编辑器配置
+disabled editor setup should not write editor config
 
 ```
 .vscode: missing

@@ -1,4 +1,4 @@
-const localMigrationPrompt = `无需全局安装时，请从工作区根目录通过包管理器运行目标 CLI。对于 1.0.0 版本，使用 \`pnpm dlx --package=vite-plus@1.0.0 vp migrate --no-interactive\` 或 \`npx --package=vite-plus@1.0.0 vp migrate --no-interactive\`。先将命令中的 \`migrate --no-interactive\` 替换为 \`help migrate\`，以阅读帮助。这些命令会获取目标 CLI，不会预先替换旧项目依赖。`;
+const localMigrationPrompt = `无需全局安装时，请从工作区根目录通过包管理器运行目标 CLI。对于 1.1.0 版本，使用 \`pnpm dlx --package=vite-plus@1.1.0 vp migrate --no-interactive\` 或 \`npx --package=vite-plus@1.1.0 vp migrate --no-interactive\`。先将命令中的 \`migrate --no-interactive\` 替换为 \`help migrate\`，以阅读帮助。这些命令会获取目标 CLI，不会预先替换旧项目依赖。`;
 
 const compatibilityReviewPrompt = `建立通过的基线后，尝试移除生成的“Vitest v4 兼容设置”，且不改动代码或只进行少量局部修复：
 
@@ -21,14 +21,14 @@ export const migrationPrompt = `将此项目迁移到 Vite+，同时保留应用
 
 检查工作区并保留无关改动。确认工作区根目录、包管理器、脚本、配置文件和正在使用的工具。如果项目已使用 Vite+，请按照迁移指南中的升级流程操作并保留现有设置；除非我提出要求，否则不要使用 \`--full\`。
 
-对于尚未使用 Vite+ 的项目，请检查所用工具的前置要求：Vite 8+ 和 Vitest 4.1+。开始 Vite+ 迁移前，先完成所需的上游升级并验证。之后保留这些清单、锁文件和已安装的软件包，以便迁移器识别原始 Vitest 版本。运行迁移前，不要安装 \`vite-plus\`，也不要将 Vitest 升级到目标版本所捆绑的版本。
+对于尚未使用 Vite+ 的项目，请检查所用工具的前置要求：Vite 7+ 和 Vitest 4+。开始 Vite+ 迁移前，先完成所需的上游升级并验证。之后保留这些清单、锁文件和已安装的软件包，以便迁移器识别原始 Vitest 版本。运行迁移前，不要安装 \`vite-plus\`，也不要将 Vitest 升级到目标版本所捆绑的版本。
 
 使用目标 Vite+ 1.0 正式版或预览版中的 CLI。Node.js 运行时请遵循兼容性指南。全局安装不是必需的：
 
 - 如果已全局安装 \`vp\`，请按照 ${__DOCS_ORIGIN__}/guide/upgrade 选择目标版本，并运行 \`vp toolchain --global\` 检查。运行 \`vp help\` 和 \`vp help migrate\` 后，从工作区根目录运行 \`vp migrate --no-interactive\`。
 - ${localMigrationPrompt}
 
-将 \`1.0.0\` 替换为目标正式版的版本号。使用预览版时，请使用对应 PR 中的版本，并在 \`vp\` 命令之前向 pnpm 或 npx 传入 \`--registry=https://registry-bridge.viteplus.dev\`。
+将 \`1.1.0\` 替换为目标正式版的版本号。使用预览版时，请使用对应 PR 中的版本，并在 \`vp\` 命令之前向 pnpm 或 npx 传入 \`--registry=https://registry-bridge.viteplus.dev\`。
 
 不要使用旧项目的 \`node_modules/.bin/vp\` 运行迁移。从工作区根目录迁移 monorepo，以保持共享清单、catalog、override 和锁文件一致。
 
@@ -64,7 +64,7 @@ export const upgradePrompt = `将此项目从 Vite+ 0.3.x 升级到 Vite+ 1.0，
 - 如果已全局安装 \`vp\`，请按照 ${__DOCS_ORIGIN__}/guide/upgrade 升级，并运行 \`vp toolchain --global\` 检查。运行 \`vp help migrate\` 后，从工作区根目录运行 \`vp migrate --no-interactive\`。
 - ${localMigrationPrompt}
 
-将 \`1.0.0\` 替换为目标正式版的版本号。使用预览版时，请使用对应 PR 中的版本，并在 \`vp\` 命令之前向 pnpm 或 npx 传入 \`--registry=https://registry-bridge.viteplus.dev\`。不要使用旧项目的 \`node_modules/.bin/vp\` 运行迁移。保留现有项目设置；除非我提出要求，否则不要使用 \`--full\`。
+将 \`1.1.0\` 替换为目标正式版的版本号。使用预览版时，请使用对应 PR 中的版本，并在 \`vp\` 命令之前向 pnpm 或 npx 传入 \`--registry=https://registry-bridge.viteplus.dev\`。不要使用旧项目的 \`node_modules/.bin/vp\` 运行迁移。保留现有项目设置；除非我提出要求，否则不要使用 \`--full\`。
 
 解决所有 \`BLOCK\` 项后重新运行迁移。即使迁移成功退出，也要根据文档链接审查每个 \`REVIEW\` 项。保持测试意图，并在首次验证时保留生成的 Vitest v4 和 tsdown <0.23 兼容设置及其注释。
 
@@ -91,7 +91,7 @@ export const setupPrompt = `我想在项目中使用 Vite+。Vite+ 是由 \`vp\`
 
 安装后打开新的终端。脚手架创建前，请按照 ${__DOCS_ORIGIN__}/guide/upgrade 选择目标正式版或预览版，并运行 \`vp toolchain --global\` 检查。
 
-未全局安装时，请使用兼容性指南中受支持的 Node.js 运行时。对于 1.0.0 正式版，请运行 \`pnpm dlx --package=vite-plus@1.0.0 vp create\` 或 \`npx --package=vite-plus@1.0.0 vp create\`。将 \`1.0.0\` 替换为目标正式版的版本号。使用预览版时，请使用对应 PR 中的版本，并在 \`vp\` 命令之前向 pnpm 或 npx 传入 \`--registry=https://registry-bridge.viteplus.dev\`。
+未全局安装时，请使用兼容性指南中受支持的 Node.js 运行时。对于 1.1.0 正式版，请运行 \`pnpm dlx --package=vite-plus@1.1.0 vp create\` 或 \`npx --package=vite-plus@1.1.0 vp create\`。将 \`1.1.0\` 替换为目标正式版的版本号。使用预览版时，请使用对应 PR 中的版本，并在 \`vp\` 命令之前向 pnpm 或 npx 传入 \`--registry=https://registry-bridge.viteplus.dev\`。
 
 运行 \`vp install\`、\`vp check\` 和 \`vp test\`，然后应用运行 \`vp build\`，库运行 \`vp pack\`。未全局安装 CLI 时，请使用项目的包管理器安装依赖，并通过它运行本地 CLI，例如 \`pnpm exec vp check\` 或 \`npm exec -- vp check\`。说明如何使用 \`vp dev\` 启动开发服务器，以及使用 \`vp run <task>\` 运行项目脚本或任务。报告设置变更、验证结果和剩余工作。除非我提出要求，否则不要提交或推送。
 

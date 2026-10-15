@@ -1,33 +1,26 @@
-# 创建_monorepo_本地模板简写
+# create_monorepo_local_template_shorthand
 
 ## `vp create starter --no-interactive --no-agent -- --directory my-app`
 
-运行本地 create.templates 条目；生成的 pkg 通过简写声明 fmt/lint
+run the local create.templates entry; generated pkg declares fmt/lint via shorthand
 
 ```
-
-正在生成项目…
-
-正在运行：node <workspace>/packages/starter-template/bin/index.mjs --directory my-app
-已将 starter-template 克隆到 my-app
-
-正在进行 Monorepo 集成...
-
-packages/my-app/vite.config.ts 中已存在 lint 配置 — 已移除多余的 packages/my-app/.oxlintrc.json
-
-packages/my-app/vite.config.ts 中已存在 fmt 配置 — 已移除多余的 packages/my-app/.oxfmtrc.json
-
-正在格式化代码...
-
-代码已格式化
-◇ 已搭建 packages/my-app
+◇ Generating project…
+● Running: node <workspace>/packages/starter-template/bin/index.mjs --directory my-app
+cloned starter-template to my-app
+◇ Monorepo integration...
+● lint config already present in packages/my-app/vite.config.ts — removed redundant packages/my-app/.oxlintrc.json
+● fmt config already present in packages/my-app/vite.config.ts — removed redundant packages/my-app/.oxfmtrc.json
+● Formatting code...
+● Code formatted
+◇ Scaffolded packages/my-app
 • Node <version>  pnpm <version>
-→ 下一步：cd packages/my-app && vp run
+→ Next: cd packages/my-app && vp run
 ```
 
 ## `vpt print-file packages/my-app/vite.config.ts`
 
-fmt/lintr 保持简写即可，不要注入重复的内联 fmt:/lint: 块（#1836）
+fmt/lint stay shorthand only, no injected duplicate inline fmt:/lint: blocks (#1836)
 
 ```
 import { defineConfig } from "vite-plus";
@@ -46,16 +39,16 @@ export default defineConfig(({ mode }) => {
 
 ## `vpt stat-file packages/my-app/.oxlintrc.json --assert-not file`
 
-独立的 lint 配置合并已跳过且已移除
+standalone lint config merge-skipped and removed
 
 ```
-packages/my-app/.oxlintrc.json: 缺失
+packages/my-app/.oxlintrc.json: missing
 ```
 
 ## `vpt stat-file packages/my-app/.oxfmtrc.json --assert-not file`
 
-独立 fmt 配置合并已跳过并已移除
+standalone fmt config merge-skipped and removed
 
 ```
-packages/my-app/.oxfmtrc.json: 缺失
+packages/my-app/.oxfmtrc.json: missing
 ```

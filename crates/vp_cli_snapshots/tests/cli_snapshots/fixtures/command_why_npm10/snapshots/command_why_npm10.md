@@ -2,19 +2,19 @@
 
 ## `vp install`
 
-应先安装软件包
+should install packages first
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-已添加 3 个软件包，并审核了 4 个软件包，耗时 <duration>
+added 3 packages, and audited 4 packages in <duration>
 
-发现 0 个漏洞
+found 0 vulnerabilities
 ```
 
 ## `vp why testnpm2`
 
-应显示安装该软件包的原因（使用 npm explain）
+should show why package is installed (uses npm explain)
 
 ```
 testnpm2@1.0.1
@@ -24,7 +24,7 @@ node_modules/testnpm2
 
 ## `vp explain testnpm2`
 
-应适用于 explain 别名
+should work with explain alias
 
 ```
 testnpm2@1.0.1
@@ -34,7 +34,7 @@ node_modules/testnpm2
 
 ## `vp why test-vite-plus-package`
 
-应显示安装 dev 包的原因
+should show why dev package is installed
 
 ```
 test-vite-plus-package@1.0.0 dev
@@ -44,7 +44,7 @@ node_modules/test-vite-plus-package
 
 ## `vp why testnpm2 --json`
 
-应支持 JSON 输出
+should support json output
 
 ```
 [
@@ -75,7 +75,7 @@ node_modules/test-vite-plus-package
 
 ## `vp why testnpm2 test-vite-plus-package`
 
-应支持多个软件包
+should support multiple packages
 
 ```
 testnpm2@1.0.1
@@ -89,51 +89,47 @@ node_modules/test-vite-plus-package
 
 ## `vp why testnpm2 --long`
 
-应警告 --long 不受 npm 支持
+should reject --long because npm does not support it
+
+**Exit code:** 1
 
 ```
-warn: npm does not support --long.
-testnpm2@1.0.1
-node_modules/testnpm2
-  testnpm2@"1.0.1" from the root project
+npm does not support --long.
 ```
 
 ## `vp why testnpm2 --parseable`
 
-应警告 npm 不支持 --parseable
+should reject --parseable because npm does not support it
+
+**Exit code:** 1
 
 ```
-警告：npm 不支持 --parseable。
-testnpm2@1.0.1
-node_modules/testnpm2
-  testnpm2@"1.0.1" 来自根项目
+npm does not support --parseable.
 ```
 
 ## `vp why testnpm2 -P`
 
-应警告 `--prod` 不受 npm 支持
+should reject --prod because npm does not support it
+
+**Exit code:** 1
 
 ```
-warn: npm does not support --prod.
-testnpm2@1.0.1
-node_modules/testnpm2
-  testnpm2@"1.0.1" from the root project
+npm does not support --prod.
 ```
 
 ## `vp why testnpm2 --find-by customFinder`
 
-应警告 --find-by 不受 npm 支持
+should reject --find-by because npm does not support it
+
+**Exit code:** 1
 
 ```
-警告：npm 不支持 --find-by。
-testnpm2@1.0.1
-node_modules/testnpm2
-  根项目中的 testnpm2@"1.0.1"
+npm does not support --find-by.
 ```
 
 ## `vp why testnpm2 -- --omit=dev`
 
-应支持传递参数
+should support pass through arguments
 
 ```
 testnpm2@1.0.1

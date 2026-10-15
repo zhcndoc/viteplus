@@ -2,25 +2,25 @@
 
 ## `vp add testnpm2 -D -w --filter=* -- --no-audit`
 
-准备软件包
+prepare packages
 
 ```
 
-已添加 3 个软件包，用时 <duration>
+added 3 packages in <duration>
 ```
 
 ## `vp add test-vite-plus-install -w --filter=* -- --no-audit`
 
 ```
 
-已在 <duration> 内添加 1 个包
+added 1 package in <duration>
 ```
 
 ## `vp add test-vite-plus-package-optional -O --filter=* -- --no-audit`
 
 ```
 
-已添加 1 个软件包，用时 <duration>
+added 1 package in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -70,7 +70,7 @@
 
 ## `vp remove testnpm2 -r -- --no-audit`
 
-应从所有工作区和根目录中移除软件包
+should remove package from all workspaces and root
 
 ```
 
@@ -115,11 +115,11 @@ removed 1 package in <duration>
 
 ## `vp remove -O test-vite-plus-package-optional -r -- --no-audit`
 
-应从所有工作区中移除可选依赖包
+preserve npm's save-optional behavior across workspaces
 
 ```
 
-已移除 1 个包，耗时 <duration>
+removed 1 package in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -154,11 +154,11 @@ removed 1 package in <duration>
 
 ## `vp remove test-vite-plus-install --filter=app -- --no-audit`
 
-应通过 filter=app 移除软件包
+should remove package by filter=app
 
 ```
 
-已是最新版本，耗时 <duration>
+up to date in <duration>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -190,7 +190,7 @@ removed 1 package in <duration>
 
 ## `vp remove test-vite-plus-install --filter=* -- --no-audit`
 
-应通过 filter=* 移除软件包
+should remove package by filter=*
 
 ```
 

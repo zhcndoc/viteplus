@@ -404,7 +404,7 @@ A small shared Rust helper (in `vp_shared`) will own "edit one field in package.
 
 ### 阶段 5：文档与测试
 
-1. 根据需要更新 `docs/guide/env.md`、`docs/guide/install.md`、`docs/config/*`。
+1. 根据需要更新 `docs/guide/env.md`、`docs/guide/package-management.md`、`docs/config/*`。
 2. ~~更新 [rfcs/package-manager-detection.md](./package-manager-detection.md)（将 `devEngines.packageManager` 从未来增强功能移入算法）以及 [rfcs/env-command.md](./env-command.md)（解析链）。~~ 已与本 RFC 一并完成，同时也包括 [rfcs/js-runtime.md](./js-runtime.md) 和 [rfcs/migration-command.md](./migration-command.md)。
 3. 添加快照测试（本地和全局），覆盖：固定到 devEngines、在已有 `.node-version` 的情况下固定、从 devEngines 取消固定、使用 `devEngines.packageManager` 安装（精确值、范围、数组、不支持的名称、与 `packageManager` 字段冲突）、doctor 冲突输出、create/migrate 输出。
 4. 在 `package_manager.rs` 和 `package_json.rs` 中现有测试套件旁添加 Rust 单元测试。

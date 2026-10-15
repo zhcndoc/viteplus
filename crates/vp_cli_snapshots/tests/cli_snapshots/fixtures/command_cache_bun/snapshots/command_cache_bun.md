@@ -2,31 +2,31 @@
 
 ## `vp pm cache --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp pm cache <SUBCOMMAND> [-- <PASS_THROUGH_ARGS>...]
+Usage: vp pm cache <SUBCOMMAND> [-- <PASS_THROUGH_ARGS>...]
 
-管理包缓存
+Manage package cache
 
-参数：
-  <SUBCOMMAND>            子命令：dir、path、clean
-  [PASS_THROUGH_ARGS]...  其他参数
+Arguments:
+  <SUBCOMMAND>            Subcommand: dir, path, clean
+  [PASS_THROUGH_ARGS]...  Additional arguments
 
-选项：
-  -h, --help  打印帮助信息
+Options:
+  -h, --help  Print help
 
-文档：https://viteplus.dev/guide/install
+Documentation: https://viteplus.dev/guide/package-management
 ```
 
 ## `vp pm cache dir`
 
-应显示缓存目录
+should show cache directory
 
 
 ## `vp pm cache path`
 
-应显示缓存路径（`dir` 的别名）
+should show cache path (alias for dir)
 

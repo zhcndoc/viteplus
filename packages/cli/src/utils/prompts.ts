@@ -1,5 +1,5 @@
 import * as prompts from '@voidzero-dev/vite-plus-prompts';
-import semver from 'semver';
+import { coerce, isGreaterThanOrEqual } from 'verkit';
 
 import { downloadPackageManager as downloadPackageManagerBinding } from '../../binding/index.js';
 import { PackageManager } from '../types/index.ts';
@@ -36,11 +36,11 @@ export function shouldIgnoreScriptsForAutoInstall(
   if (packageManager !== PackageManager.pnpm) {
     return false;
   }
-  const coerced = packageManagerVersion ? semver.coerce(packageManagerVersion)?.version : undefined;
+  const coerced = packageManagerVersion ? coerce(packageManagerVersion) : undefined;
   if (!coerced) {
     return false;
   }
-  return semver.gte(coerced, '11.0.0');
+  return isGreaterThanOrEqual(coerced, '11.0.0');
 }
 
 export function cancelAndExit(message = 'Operation cancelled', exitCode = 0): never {
@@ -80,12 +80,14 @@ export async function downloadPackageManager(
   version: string,
   interactive?: boolean,
   silent = false,
+  cwd?: string,
 ) {
   const spinner = silent ? getSilentSpinner() : getSpinner(interactive);
   spinner.start(`${packageManager}@${version} installing...`);
   const downloadResult = await downloadPackageManagerBinding({
     name: packageManager,
     version,
+    cwd,
   });
   spinner.stop(`${packageManager}@${downloadResult.version} installed`);
   return downloadResult;

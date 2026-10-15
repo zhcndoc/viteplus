@@ -32,11 +32,13 @@ $ node compile-legacy-app.js
 不指定任务名称直接运行 `vp run` 可进入交互式任务选择器：
 
 ```
-选择一个任务（↑/↓，Enter 执行，Esc 清除）：
+Select a task (↑/↓, Enter to run, type to search):
 
   › build: node compile-legacy-app.js
     test: jest
 ```
+
+启用 [shell 补全](/guide/env#shell-completion) 后，在 `vp run ` 或 `vpr ` 后按 Tab，可补全项目中的任务名称。
 
 ## 内置命令与脚本
 
@@ -69,8 +71,8 @@ $ node compile-legacy-app.js
 如果没有变化，下次运行时输出会从缓存中重放：
 
 ```
-$ node compile-legacy-app.js ✓ 命中缓存，正在重放
-✓ 构建完成，用时 69 秒
+$ node compile-legacy-app.js ◉ cache hit, replaying
+✓ built in 69s
 
 ---
 vp run: 命中缓存，节省了 69 秒。
@@ -79,7 +81,7 @@ vp run: 命中缓存，节省了 69 秒。
 如果有输入发生变化，任务会重新运行：
 
 ```
-$ node compile-legacy-app.js ✗ 未命中缓存：'legacy/index.js' 已修改，正在执行
+$ node compile-legacy-app.js ○ cache miss: 'legacy/index.js' modified, executing
 ```
 
 ## 任务定义
@@ -250,18 +252,18 @@ $ vp build
 ✓ 构建完成，用时 28 毫秒
 
 ---
-vp run: 0/2 命中缓存（0%）。
+vp run: 0/2 cache hit (0%), 2/2 successful.
 ```
 
-每个子任务都有独立的缓存条目。如果只更改了 `.ts` 文件但 lint 仍通过，则下次运行 `vp run --cache check` 时只会重新运行 `vp build`：
+每个子任务都有独立的缓存条目。例如，如果只供构建使用的文件（如 `index.html`）发生变化，则下次运行 `vp run --cache check` 时只会重新运行构建：
 
 ```
-$ vp lint ✓ 命中缓存，正在重放
-$ vp build ✗ 未命中缓存：'src/index.ts' 已修改，正在执行
-✓ 构建完成，用时 30 毫秒
+$ vp lint ◉ cache hit, replaying
+$ vp build ○ cache miss: 'index.html' modified, executing
+✓ built in 30ms
 
 ---
-vp run: 1/2 命中缓存（50%），节省了 120 毫秒。
+vp run: 1/2 cache hit (50%), 2/2 successful, 120ms saved.
 ```
 
 ### 嵌套的 `vp run`

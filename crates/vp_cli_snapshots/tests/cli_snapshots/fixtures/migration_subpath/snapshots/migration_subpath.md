@@ -1,24 +1,24 @@
-# 迁移子路径
+# migration_subpath
 
 ## `git init`
 
 
 ## `vp migrate foo --no-interactive`
 
-带子路径的迁移工作
+migration work with subpath
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ 检测到子目录项目 — 跳过 Git hooks 设置。请在仓库根目录配置 hooks。
-◇ 已将 foo 迁移至 Vite+ <version>
+▲ ⚠ Subdirectory project detected — skipping git hooks setup. Configure hooks at the repository root.
+◇ Migrated foo to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file foo/package.json`
 
-检查 package.json
+check package.json
 
 ```
 {
@@ -34,20 +34,13 @@ VITE+ - 面向 Web 的统一工具链
   },
   "devDependencies": {
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file foo/vite.config.ts`
 
-检查 vite.config.ts
+check vite.config.ts
 
 ```
 import { defineConfig } from 'vite-plus';
@@ -60,7 +53,7 @@ export default defineConfig({
 
 ## `vpt stat-file .vite-hooks --assert-not dir`
 
-根 git hooks 未为子目录迁移设置
+root git hooks are NOT set up for a subdirectory migration
 
 ```
 .vite-hooks: missing
@@ -68,7 +61,7 @@ export default defineConfig({
 
 ## `vpt print-file foo/pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:

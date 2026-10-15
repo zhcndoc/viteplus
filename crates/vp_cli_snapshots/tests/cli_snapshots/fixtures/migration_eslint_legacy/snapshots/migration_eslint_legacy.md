@@ -1,14 +1,14 @@
-# ESLint 旧版迁移
+# migration_eslint_legacy
 
 ## `vp migrate --no-interactive`
 
-应显示旧版 eslint 配置警告
+should show legacy eslint config warning
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-检测到旧版 ESLint 配置（.eslintrc）。自动迁移到 Oxlint 需要 ESLint v9+ 及扁平配置格式（eslint.config.*）。请先升级到 ESLint v9：https://eslint.org/docs/latest/use/migrate-to-9.0.0
-◇ 已将 . 迁移到 Vite+ <version>
+▲ Legacy ESLint configuration detected (.eslintrc). Automatic migration to Oxlint requires ESLint v9+ with flat config format (eslint.config.*). Please upgrade to ESLint v9 first: https://eslint.org/docs/latest/use/migrate-to-9.0.0
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新
+• 2 config updates applied
 ```

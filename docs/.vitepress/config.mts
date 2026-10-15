@@ -52,7 +52,7 @@ const guideSidebar = [
         ],
       },
       { text: '更新 Vite+', link: '/guide/upgrade-project' },
-      { text: '包管理', link: '/guide/install' },
+      { text: '包管理', link: '/guide/package-management' },
     ],
   },
   {

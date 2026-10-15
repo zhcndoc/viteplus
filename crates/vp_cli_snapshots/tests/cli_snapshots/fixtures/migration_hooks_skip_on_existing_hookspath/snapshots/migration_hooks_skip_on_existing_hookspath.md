@@ -1,4 +1,4 @@
-# 迁移钩子在现有钩子路径上被跳过
+# migration_hooks_skip_on_existing_hookspath
 
 ## `git init`
 
@@ -8,20 +8,20 @@
 
 ## `vp migrate --no-interactive`
 
-应跳过 hooks，因为 core.hooksPath 已设置
+should skip hooks because core.hooksPath is already set
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-⚠ core.hooksPath 已设置为 ".custom-hooks" — 保持现有的 hook 设置不变。
-◇ 已将 . 迁移至 Vite+ <version>
+▲ ⚠ core.hooksPath is already set to ".custom-hooks" — leaving the existing hook setup unchanged.
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 1 项配置更新
+• 1 config update applied
 ```
 
 ## `vpt print-file package.json`
 
-该软件包不应获得钩子策略或生命周期变更
+the package should not gain hook policy or lifecycle changes
 
 ```
 {
@@ -29,20 +29,13 @@ VITE+ - 面向 Web 的统一工具链
   "devDependencies": {
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "<version>",
-      "onFail": "download"
-    }
   }
 }
 ```
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-检查 pnpm-workspace.yaml 是否包含 overrides 和 catalog
+check pnpm-workspace.yaml has overrides and catalog
 
 ```
 catalog:
@@ -59,7 +52,7 @@ peerDependencyRules:
 
 ## `git config --local core.hooksPath`
 
-仍应为 .custom-hooks
+should still be .custom-hooks
 
 ```
 .custom-hooks

@@ -36,8 +36,8 @@ use std::{
 
 use cp_r::CopyOptions;
 use flavor::{Flavor, FlavorRuntime};
-use pty_terminal_test::{CommandBuilder, ScreenSize, TestTerminal};
 use redact::redact_output;
+use vt_pty_terminal_test::{CommandBuilder, ScreenSize, TestTerminal};
 
 /// Default per-step timeout. Windows CI needs longer due to process startup
 /// overhead and slower I/O. Individual steps override via `timeout` (ms).
@@ -154,12 +154,14 @@ impl Step {
     /// Shell-escaped command line including any env-var prefix and non-default
     /// cwd, without the comment (e.g. `cd packages/a && MY_ENV=1 vp check`).
     fn display_command_line(&self, default_cwd: &str) -> String {
+        // Headings are display-only: keep them identical across platforms and
+        // shells instead of letting shell_escape::escape inspect MSYSTEM.
         let argv_str = self
             .argv
             .iter()
             .map(|s| {
                 if s.contains(|c: char| c.is_whitespace() || c == '"') {
-                    shell_escape::escape(s.as_str().into()).into_owned()
+                    shell_escape::unix::escape(s.as_str().into()).into_owned()
                 } else {
                     s.clone()
                 }
@@ -178,7 +180,7 @@ impl Step {
             command
         } else {
             let cwd = if cwd.is_empty() { "." } else { cwd };
-            format!("cd {} && {command}", shell_escape::escape(cwd.into()))
+            format!("cd {} && {command}", shell_escape::unix::escape(cwd.into()))
         }
     }
 
@@ -1212,7 +1214,7 @@ fn run_case(
     local_registry_pack: Option<&Path>,
     report: &report::Report,
 ) -> Result<(), String> {
-    let snapshots = snapshot_test::Snapshots::new(fixture_path.join("snapshots"));
+    let snapshots = vt_snapshot_test::Snapshots::new(fixture_path.join("snapshots"));
 
     // Copy the fixture to a per-case staging directory so the test runs in
     // isolation and workspace-root discovery doesn't walk past the fixture.
