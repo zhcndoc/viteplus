@@ -41,18 +41,23 @@ vp env pin 22.0.0 pnpm@10.18.0  # Also both components
 
 如果没有任何目录声明版本，Vite+ 会使用全局默认版本（`vp env default`），然后使用最新的 LTS 版本。
 
+这些规则用于为项目命令选择 Node.js。安装器默认使用最新的 LTS 版本。只有 [`VP_SETUP_NODE_VERSION`](/guide/global-cli#vp-setup-node-version) 会改变安装器安装依赖时使用的运行时；[`setup-vp`](/guide/ci#node-js-during-installation) 会根据 CI 输入或项目声明提供此覆盖。
+
 `devEngines.runtime` 的优先级高于 `engines.node`，因为它声明的是开发环境需求，而 `engines.node` 是面向使用者的支持范围。`vp env doctor` 会在声明来源冲突时发出警告。
 
 ::: tip 在 Vite+ 运行时管理中使用 pnpm
 pnpm 也可以管理 `devEngines.runtime` 中声明的运行时。当 pnpm 和 Vite+ 同时管理 Node.js 时，它们可能分别下载相同版本或选择不同版本，导致不同命令之间的行为不一致。
 
-如果你希望由 Vite+ 管理 Node.js，pnpm 11+ 支持通过 [`runtimeOnFail`](https://pnpm.io/settings/cli#runtimeonfail) 全局禁用 pnpm 的自动运行时管理：
+如果项目使用 Vite+ 管理 Node.js 和 pnpm 版本，请将以下设置加入项目的 `pnpm-workspace.yaml`（pnpm 11+）：
 
-```bash
-pnpm config set --global runtimeOnFail ignore
+```yaml
+runtimeOnFail: ignore
+pmOnFail: ignore
 ```
 
-此设置还会禁用 pnpm 对其他已声明运行时的自动管理，包括 Bun 和 Deno。在全局设置之前，请考虑你的项目是否依赖此行为。
+[`runtimeOnFail`](https://pnpm.io/settings/cli#runtimeonfail) 会禁用 pnpm 对已声明运行时的自动管理。[`pmOnFail`](https://pnpm.io/settings/cli#pmonfail) 会阻止 pnpm 切换到 `package.json` 中声明的包管理器版本。请提交这些设置，让项目使用统一的策略。
+
+`runtimeOnFail: ignore` 也会影响其他已声明的运行时，包括 Bun 和 Deno。如果项目依赖 pnpm 管理这些运行时，请在启用此设置前考虑这一点。现有项目切换到此策略后，下次安装可能会更改 `pnpm-lock.yaml` 中的运行时条目；请检查并将这些更改与配置一同提交。
 :::
 
 ## 包管理器选择
@@ -76,7 +81,7 @@ pnpm config set --global runtimeOnFail ignore
 | `VP_YARN_VERSION` | `yarn`、`yarnpkg`           |
 | `VP_BUN_VERSION`  | `bun`、`bunx`               |
 
-这些变量接受版本或范围，例如 `10.18.0`、`10` 或 `latest`，并覆盖对应 shim 的项目版本和默认版本。它们不会改变 `vp install` 所选择的管理器或版本。
+这些变量接受版本、范围或 npm dist-tag，例如 `10.18.0`、`10`、`latest` 或 `latest-10`，并覆盖对应 shim 的项目版本和默认版本。它们不会改变 `vp install` 所选择的管理器或版本。
 
 `vp env use pnpm@10.20.0` 会为当前 shell 设置 `VP_PNPM_VERSION`，就像 `vp env use node@22` 会设置 `VP_NODE_VERSION` 一样。每个包管理器都有自己的覆盖，因此切换 Yarn 不会清除 pnpm 的覆盖。`vp env use` 不会设置或清除 `VP_PACKAGE_MANAGER`。
 
@@ -87,12 +92,14 @@ VP_PACKAGE_MANAGER=pnpm@10.18.0 vp install
 VP_PNPM_VERSION=10.20.0 pnpm --version
 ```
 
-这些覆盖在托管模式下生效。包管理器也可以在 Vite+ 启动它之后自行执行版本切换；例如，pnpm 的 `managePackageManagerVersions` 设置可能会切换回 `package.json` 中的版本。
+这些覆盖在托管模式下生效。包管理器也可以在 Vite+ 启动它之后自行切换版本；例如，pnpm 11+ 的 [`pmOnFail`](https://pnpm.io/settings/cli#pmonfail) 默认值为 `download`，可能会切换回 `package.json` 中的版本。若要由 Vite+ 控制 pnpm 版本，请在项目的 `pnpm-workspace.yaml` 中设置 `pmOnFail: ignore`。pnpm 10 中对应的设置是 `managePackageManagerVersions`。
 
 项目选择仅适用于对应的 shim。例如，pnpm 控制 `pnpm`、`pnpx`、`pn` 和 `pnx`；调用 `npm` 仍会独立解析 npm。如果没有匹配的项目选择，指定的 shim 会使用其配置的默认版本；如果未配置，则使用最新版本且不会提示。`npm` shim 会回退到 Node.js 捆绑的 npm。当没有项目版本或全局默认版本时，`vp env use npm` 会为当前 shell 选择最新的独立 npm 版本。
 
-::: details 最新版本缓存
-当指定的 shim 回退到最新版本时，解析出的版本会缓存一小时。当无法连接注册表时，过期的缓存仍可用。
+包管理器规格遵循 npm 的顺序：确切版本、semver 范围，然后是 dist-tag。`default` 是 `latest` 的别名；但对于 npm，它表示选择 `PATH` 中的 npm。
+
+::: details Dist-tag 缓存
+解析包管理器 dist-tag（例如 `latest` 或 `latest-10`）时，包括命名 shim 回退到最新版本的情况，解析出的版本都会缓存一小时。当无法连接注册表时，过期缓存仍可使用。
 :::
 
 `pn` 与 `pnpm` 使用相同的托管二进制文件，`pnx` 与 `pnpx` 使用相同的托管二进制文件（`pnpm dlx`）。这些别名也适用于 v11 之前的托管 pnpm 版本。
@@ -180,16 +187,16 @@ vp-use --unset
 
 ### 管理
 
-- `vp env default` 显示全局 Node.js 默认版本和每个已配置的包管理器版本。裸版本设置 Node.js；`pnpm@10.18.0` 等限定规格设置该包管理器 shim 的默认版本，而不会替换 Bun、Yarn 或 npm 的默认版本。除非指定范围，否则 `--unset` 会清除所有默认值
-- `vp env default <lts|latest>` 和 `<package-manager>@latest` 会在每次使用时重新解析，因此默认版本会跟随新版本发布，包括新的主版本。设置 `24` 或 `pnpm@10` 等其他版本和范围时，会解析为一个精确版本
-- `vp env pin` 显示或写入项目固定版本。现有的 `.node-version` 和顶层 `packageManager` 字段会继续更新，以保持兼容性。如果当前目录中的现有 `.nvmrc` 是有效的 Node.js 来源，则会更新它；其中的注释和其他非版本内容会被保留。否则，Vite+ 会写入匹配的 `devEngines` 条目。使用 `--target node-version`、`--target nvmrc`、`--target dev-engines` 或 `--target package-manager` 可显式选择目标。在子目录中固定版本不会修改继承的 `.nvmrc`
-- `vp env unpin` 默认移除两个有效的固定版本；追加选择器可移除其中一个。较低优先级的声明不会被删除
-- `vp env use` 激活完整的项目环境。显式规格会覆盖选定的组件；除非指定范围，否则 `--unset` 会清除两者
-- `vp env install` 安装完整的解析环境、选定的组件或显式规格
-- `vp env uninstall` 移除通过显式版本或选择器（例如 `22` 或 `lts`）解析出的 Node.js 版本。包管理器要求带限定符的精确版本，例如 `pnpm@10.18.0`
-- `vp env clean` 移除未使用的安装。使用 `clean node`、`clean pm` 或具体的管理器。当前版本和已配置的默认版本会被保留
-- `vp env exec` 在解析后的环境中运行命令。使用 `--node` 和 `--package-manager`；`--npm` 是 `--package-manager npm@…` 的别名
-- `vp node` 使用解析后的 Node.js 运行时，并将选定的包管理器路径暴露给子进程
+- `vp env default` 显示全局 Node.js 默认版本和各个已配置的包管理器版本。未限定的版本用于设置 Node.js；`pnpm@10.18.0` 等限定规格会设置相应包管理器 shim 的默认版本，而不会替换 Bun、Yarn 或 npm 的默认值。除非指定范围，否则 `--unset` 会清除所有默认值。
+- `vp env default <lts|latest>` 和 `pnpm@latest`、`pnpm@latest-10` 等包管理器 dist-tag 会在每次使用时重新解析，因此默认值会跟随对应标签；`latest` 也会跟随新的主版本。其他版本和范围（例如 `24` 或 `pnpm@10`）会在设置时解析为确切版本。
+- `vp env pin` 显示或写入项目固定版本。为保持兼容性，现有的 `.node-version` 和顶层 `packageManager` 字段仍会更新。如果当前目录中的 `.nvmrc` 是生效的 Node.js 来源，就会更新该文件，并保留注释及其他非版本内容；否则 Vite+ 会写入对应的 `devEngines` 条目。使用 `--target node-version`、`--target nvmrc`、`--target dev-engines` 或 `--target package-manager` 可显式指定目标。在子目录中固定版本不会修改继承的 `.nvmrc`。
+- `vp env unpin` 默认移除两个生效的固定版本；追加选择器可只移除其中一个。较低优先级的声明不会被删除。
+- `vp env use` 激活完整的项目环境。显式规格会覆盖选定的组件；除非指定范围，否则 `--unset` 会清除两者。
+- `vp env install` 安装完整的解析环境、选定的组件或显式规格。
+- `vp env uninstall` 移除通过显式版本或选择器（例如 `22` 或 `lts`）解析出的 Node.js 版本。包管理器要求使用带限定符的确切版本，例如 `pnpm@10.18.0`。
+- `vp env clean` 移除未使用的安装。使用 `clean node`、`clean pm` 或具体的包管理器。当前版本和已配置的默认版本会被保留。
+- `vp env exec` 在解析后的环境中运行命令。使用 `--node` 和 `--package-manager`；`--npm` 是 `--package-manager npm@…` 的别名。
+- `vp node` 使用解析后的 Node.js 运行时，并向子进程提供选定的包管理器路径。
 
 ### 检查
 
@@ -217,7 +224,9 @@ vp env print                  # Print PATH setup for both components
 
 # Manage
 vp env pin lts                # Pin Node.js only to an exact version
+vp env pin node@26            # Pin Node.js 26 to an exact version
 vp env pin lts pnpm@10        # Pin both project components to exact versions
+vp env pin pnpm@latest-10     # Pin pnpm to the version of its latest-10 dist-tag
 vp env install                # Install the complete resolved environment
 vp env use 20 pnpm@10         # Override both components for this shell
 vp env use --unset pnpm       # Remove only the pnpm session version

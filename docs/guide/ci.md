@@ -4,13 +4,23 @@
 
 ## 概述
 
-[`voidzero-dev/setup-vp`](https://github.com/voidzero-dev/setup-vp) 为 GitHub Actions、GitLab CI/CD 和 Azure Pipelines 提供集成。三者都会安装 Vite+，并可以安装项目依赖。GitHub Action 和 Azure Pipelines 模板还可以自动设置 Node.js 和缓存包管理器数据，而 GitLab CI/CD 模板使用作业提供的 Node.js 运行时和缓存配置。
+[`voidzero-dev/setup-vp`](https://github.com/voidzero-dev/setup-vp) 为 GitHub Actions、GitLab CI/CD 和 Azure Pipelines 提供集成。三者都会安装 Vite+，可以选择项目的 Node.js 版本，也可以安装项目依赖。GitHub Action 和 Azure Pipelines 模板还可以自动缓存包管理器数据。GitLab CI/CD 使用作业自身的缓存配置，并要求先提供 Node.js 才能启动设置运行时。
 
 ## setup-vp 版本管理
 
 在每个示例中，将 `<setup-vp-version>` 设置为 [`setup-vp` 发布页面](https://github.com/voidzero-dev/setup-vp/releases)中的确切版本。也可以改用 commit SHA。不要使用 `v1` 标签。`v1` 标签不再接收更新。
 
 运行 `vp migrate`，即可将 GitHub Actions 工作流和 `.github` 下的复合操作中确切的 `voidzero-dev/setup-vp@v1` 引用替换为与你的 Vite+ 版本对应的最新已知确切发布版本。现有的确切版本和 commit SHA 将保持不变。
+
+## 安装期间使用的 Node.js
+
+Vite+ 安装器默认使用最新的 Node.js LTS 版本。对于支持 [`VP_SETUP_NODE_VERSION`](/guide/global-cli#vp-setup-node-version) 的版本，`setup-vp` 也可以在安装期间使用项目声明的版本。如果该版本同时满足全局 CLI 和固定版本 `pnpm` 的要求，就无需再次下载 Node.js。
+
+`setup-vp` 会在启动安装器前选择版本。显式指定的 Node.js 版本优先于版本文件输入。如果两者都未指定，它会依据[项目声明的优先顺序](/guide/env#node-js-selection)检查当前工作目录及其父目录。集成会通过 `VP_SETUP_NODE_VERSION` 传递所选版本；安装器本身不会读取项目声明。
+
+未指定版本、禁用了 Node.js 管理，或所选版本不兼容时，安装过程会使用 LTS。旧版安装器会保留原有行为。自动发现项目版本不会创建会话覆盖，因此后续命令仍会按目录正常选择版本。
+
+集成会自动处理这些安装器变量。在 GitHub Actions 和 GitLab CI/CD 中配置 `node-version` 或 `node-version-file`；在 Azure Pipelines 中配置 `nodeVersion` 或 `nodeVersionFile`。完整输入列表请参阅 [`setup-vp` 文档](https://github.com/voidzero-dev/setup-vp#inputs)。
 
 ## GitHub Actions
 
@@ -53,7 +63,7 @@ test:
 
 GitLab CI/CD 集成与 GitHub Action 在以下几方面有所不同：
 
-- 该模板不会安装 Node.js。请使用如上所示的 Node.js 镜像，或以其他方式在作业中提供 Node.js。
+- 启动设置运行时需要 Node.js。请使用如上所示的 Node.js 镜像，或以其他方式在作业中提供 Node.js。使用 `node-version` 或 `node-version-file` 可通过 `vp env use` 选择受管理的项目运行时。
 - 使用作业的 GitLab [`cache`](https://docs.gitlab.com/ci/yaml/#cache) 关键字配置依赖缓存。
 - 使用带有 Bash 以及 `curl` 或 `wget` 的类 Unix 运行器环境。
 
@@ -90,7 +100,7 @@ steps:
 
 将 `ref` 和 `setupRef` 固定为相同的标签或 commit SHA，以实现严格的可复现性。
 
-Azure Pipelines 模板支持 Microsoft 托管的 Linux、macOS 和 Windows 代理。它使用 Azure 原生的 `UseNode@1` 和 `Cache@2` 任务来设置 Node.js 并缓存包管理器数据。
+Azure Pipelines 模板支持 Microsoft 托管的 Linux、macOS 和 Windows 代理。`UseNode@1` 通过 `bootstrapNodeVersion` 提供启动设置运行时所需的 Node.js。`nodeVersion` 和 `nodeVersionFile` 参数会通过 `vp env use` 选择受管理的项目运行时。`Cache@2` 用于缓存包管理器数据。
 
 如需高级配置和完整的参数参考，请参阅 [`setup-vp` Azure Pipelines 文档](https://github.com/voidzero-dev/setup-vp#azure-pipelines)。
 

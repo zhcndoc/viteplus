@@ -1,4 +1,9 @@
-# 更改透传环境配置
+# change_passthrough_env_config
+
+## `node check-temp-socket.mjs`
+
+The isolated temporary directory must support Unix sockets even for long fixture names
+
 
 ## `MY_ENV=1 vp run hello`
 
@@ -9,7 +14,7 @@ $ node -p process.env.MY_ENV
 
 ## `MY_ENV=2 vp run hello`
 
-MY_ENV 是透传变量。应该命中第 1 步创建的缓存
+MY_ENV is pass-through. should hit the cache created by the first run
 
 ```
 $ node -p process.env.MY_ENV ◉ cache hit, replaying
@@ -21,7 +26,7 @@ vp run: cache hit, <duration> saved.
 
 ## `VITE_TASK_PASS_THROUGH_ENVS=MY_ENV,MY_ENV2 MY_ENV=2 vp run hello`
 
-由于未跟踪的环境变量配置发生变化，缓存应失效
+cache should be invalidated because untrackedEnv config changed
 
 ```
 $ node -p process.env.MY_ENV ○ cache miss: untracked env config changed, executing

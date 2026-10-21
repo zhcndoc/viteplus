@@ -26,19 +26,7 @@ Prepare the pinned runtime before the staged command's 10-second limit
 --no-concurrent 运行 staged 任务且不会停滞
 
 ```
-⋯ Backing up original state…
-✔ Done backing up original state (<hash>)!
-⋯ Running tasks for staged files…
-    *.txt — 1 file
-      ⋯ vpt print linted
-
 ✔ vpt print linted
-
-✔ Done running tasks for staged files!
-⋯ Staging changes from tasks…
-✔ Done staging changes from tasks!
-⋯ Cleaning up temporary files…
-✔ Done cleaning up temporary files!
 
 → vpt print linted:
 linted <workspace>/a.txt

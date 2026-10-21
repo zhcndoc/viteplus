@@ -2,53 +2,39 @@
 
 ## `vp dlx --help`
 
-应显示帮助信息
+should show help message
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp dlx [选项] <参数>...
+Usage: vp dlx [OPTIONS] <ARGS>...
 
-下载并执行软件包，无需全局安装
+Download and execute a package without installing it globally
 
-参数：
-  <参数>...  要执行的软件包及参数
+Arguments:
+  <ARGS>...  Package to execute and arguments
 
-选项：
-  -p, --package <名称>  运行前要安装的软件包
-  -c, --shell-mode      在 shell 环境中执行
-  -s, --silent          除所执行命令的输出外，禁止所有输出
-  -h, --help            显示帮助信息
+Options:
+  -p, --package <NAME>  Package(s) to install before running
+  -c, --shell-mode      Execute within a shell environment
+  -s, --silent          Suppress all output except the executed command's output
+  -h, --help            Print help
 
-文档：https://viteplus.dev/guide/vpx
+Documentation: https://viteplus.dev/guide/vpx
 ```
 
-## `vp dlx -s cowsay hello`
+## `vp dlx -s vp-test-echo hello`
 
-应使用 pnpm dlx 运行 cowsay
-
-```
- _______
-< hello >
- -------
-        \   ^__^
-         \  (oo)\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
-```
-
-## `vp dlx -s cowsay@1.6.0 hello`
-
-应运行指定版本
+should run vp-test-echo with pnpm dlx
 
 ```
- _______
-< hello >
- -------
-        \   ^__^
-         \  (oo)\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
+hello
+```
+
+## `vp dlx -s vp-test-echo@1.0.0 hello`
+
+should run specific version
+
+```
+hello
 ```

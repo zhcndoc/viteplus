@@ -95,21 +95,21 @@ Vite+ 1.0 包含 Vitest 5 的破坏性变更。请同时阅读 [Vite+ 兼容性�
 
 ### 不使用全局 CLI
 
-使用满足 `^22.18.0 || ^24.11.0 || >=26.0.0` 的现有 Node.js 运行时。通过包管理器运行目标迁移器，无需先将它添加到项目中。对于 `1.1.0` 版本：
+使用满足 `^22.18.0 || ^24.11.0 || >=26.0.0` 的现有 Node.js 运行时。通过包管理器运行目标迁移器，无需先将它添加到项目中。以下示例使用 `1.3.0` 版本：
 
 ::: code-group
 
 ```bash [pnpm]
-pnpm dlx --package=vite-plus@1.1.0 vp migrate --no-interactive
+pnpm dlx --package=vite-plus@1.3.0 vp migrate --no-interactive
 ```
 
 ```bash [npm]
-npx --package=vite-plus@1.1.0 vp migrate --no-interactive
+npx --package=vite-plus@1.3.0 vp migrate --no-interactive
 ```
 
 :::
 
-将 `1.1.0` 替换为目标版本。要使用预览版，请使用 PR 中的版本，并在 `vp` 命令之前向 `pnpm` 或 `npx` 传入 `--registry=https://registry-bridge.viteplus.dev`。请在 `--package` 中显式指定版本，以确保运行的是目标迁移器，而不是旧的本地 CLI。
+将 `1.3.0` 替换为目标版本。要使用预览版，请使用 PR 中的版本，并在 `vp` 命令之前向 `pnpm` 或 `npx` 传入 `--registry=https://registry-bridge.viteplus.dev`。请在 `--package` 中显式指定版本，以确保运行的是目标迁移器，而不是旧的本地 CLI。
 
 迁移后，完成依赖安装，并使用更新后的本地 CLI 验证：
 
@@ -151,7 +151,7 @@ npm exec -- vp build
 
 ### Vitest
 
-Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会通过 `vite-plus/test*` 重新导出上游 `vitest@5.0.4`，因此对于 node 模式测试，只需安装一个 `vite-plus` 即可，无需直接安装 `vitest`。
+Vitest 会通过 `vp migrate` 自动迁移。`vite-plus` 会通过 `vite-plus/test*` 重新导出上游 `vitest@5.0.5`，因此对于 Node 模式测试，只需安装一个 `vite-plus` 即可，无需直接安装 `vitest`。
 
 对于浏览器模式，可以使用 `vite-plus` 中包含的基础浏览器 runtime（`@vitest/browser`）和 Preview 提供程序（`@vitest/browser-preview`）。如果要使用 Playwright 或 WebdriverIO，还需要选择加入对应的提供程序（`@vitest/browser-playwright` 或 `@vitest/browser-webdriverio`）及其框架 peer（`playwright` 或 `webdriverio`）。
 

@@ -211,9 +211,10 @@ npm v12 会跳过依赖安装脚本（`preinstall` / `install` / `postinstall`�
   - **依赖：** `ci`、`prune`、`list`、`rebuild`、`approve-builds`
   - **补丁：** `patch`、`patch-commit`
   - **打包和发布：** `pack`、`version`、`publish`、`stage`、`dist-tag`、`deprecate`
-  - **检查：** `view`、`search`、`audit`、`fund`、`ping`
-  - **身份验证和访问：** `login`、`logout`、`whoami`、`token`、`owner`
+  - **检查：** `view`、`search`、`licenses`、`audit`、`fund`、`ping`
+  - **身份验证和访问：** `login`、`logout`、`whoami`、`token`、`owner`、`team`
   - **配置：** `config`、`cache`
+  - **软件包清单：** `pkg get`、`pkg set`、`pkg delete`、`pkg fix`
 
   命令支持取决于包管理器及其版本。运行 `vp pm --help` 列出命令，或运行 `vp pm <command> --help` 查看可用选项。
 
@@ -224,6 +225,22 @@ vp pm config get registry
 vp pm cache clean -- --force
 vp pm audit --json
 ```
+
+#### 软件包清单
+
+`vp pm pkg` 使用检测到的包管理器读取和更新 `package.json` 中的字段。
+
+```bash
+vp pm pkg get name
+vp pm pkg set scripts.build="vite build"
+vp pm pkg set private=true --json
+vp pm pkg delete scripts.build
+vp pm pkg fix
+```
+
+npm 从 7.20.0 起支持 `get`、`set` 和 `delete`，从 9.8.0 起支持 `fix`。pnpm 从 11.3.0 起支持全部四个命令；Bun 从 1.2.19 起通过 `bun pm pkg` 支持这些命令。Yarn 和不受支持的版本会显示警告并成功退出，不会更改清单；这与 `vp pm patch` 的行为一致。
+
+原生行为会得到保留。例如，npm 的 `get` 会返回 JSON，而 pnpm 默认会输出不带引号的单个字符串值。使用 `--json` 可请求 JSON 输出，或将传给 `set` 的值解析为 JSON。其他原生命令选项可放在 `--` 之后传入。`fix` 执行的修正取决于包管理器。
 
 #### 分阶段发布
 

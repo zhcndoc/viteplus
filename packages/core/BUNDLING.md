@@ -1,29 +1,29 @@
-# 核心包捆绑架构
+# Core Package Bundling Architecture
 
-本文档说明了 `@voidzero-dev/vite-plus-core` 如何将多个上游项目捆绑为一个统一包。
+This document explains how `@voidzero-dev/vite-plus-core` bundles multiple upstream projects into a single unified package.
 
-## 概览
+## Overview
 
-核心包采用**多项目打包策略**，整合了 4 个上游项目：
+The core package uses a **multi-project bundling strategy** that combines 4 upstream projects:
 
-| 项目                    | 源位置                                                         | 用途                      |
-| ----------------------- | -------------------------------------------------------------- | ------------------------- |
-| `@rolldown/pluginutils` | `rolldown/packages/rolldown/node_modules/@rolldown/pluginutils` | Rolldown 插件工具集       |
-| `rolldown`              | `rolldown/packages/rolldown`                                    | Rolldown 打包器           |
+| Project                 | Source Location                                                 | Purpose                   |
+| ----------------------- | --------------------------------------------------------------- | ------------------------- |
+| `@rolldown/pluginutils` | `rolldown/packages/rolldown/node_modules/@rolldown/pluginutils` | Rolldown plugin utilities |
+| `rolldown`              | `rolldown/packages/rolldown`                                    | Rolldown bundler          |
 | `vite`                  | `vite/packages/vite`                                            | Vite v8 beta              |
-| `tsdown`                | `node_modules/tsdown`                                           | TypeScript 构建工具       |
+| `tsdown`                | `node_modules/tsdown`                                           | TypeScript build tool     |
 
-这种方式使用户能够通过单个包访问 Vite、Rolldown 及相关工具，并保持一致的模块标识符重写。
+This approach enables users to access Vite, Rolldown, and related tools through a single package with consistent module specifier rewrites.
 
 ---
 
-## 构建步骤
+## Build Steps
 
-构建过程按顺序执行 5 个步骤：
+The build process executes 5 steps in sequence:
 
-### 步骤 1：捆绑 Rolldown Pluginutils（`bundleRolldownPluginutils`）
+### Step 1: Bundle Rolldown Pluginutils (`bundleRolldownPluginutils`)
 
-**操作**：复制预构建的 dist 目录。
+**Action**: Copies pre-built dist directory.
 
 ```typescript
 await cp(join(rolldownPluginUtilsDir, 'dist'), join(projectDir, 'dist', 'pluginutils'), {
@@ -31,69 +31,71 @@ await cp(join(rolldownPluginUtilsDir, 'dist'), join(projectDir, 'dist', 'pluginu
 });
 ```
 
-**输入**：`rolldown/packages/rolldown/node_modules/@rolldown/pluginutils/dist/`
-**输出**：`dist/pluginutils/`
+**Input**: `rolldown/packages/rolldown/node_modules/@rolldown/pluginutils/dist/`
+**Output**: `dist/pluginutils/`
 
-### 步骤 2：捆绑 Rolldown（`bundleRolldown`）
+### Step 2: Bundle Rolldown (`bundleRolldown`)
 
-**操作**：复制 dist 目录并重写模块标识符。
+**Action**: Copies dist directory and rewrites module specifiers.
 
-**转换**：
+**Transformations**:
 
 - `@rolldown/pluginutils` → `@voidzero-dev/vite-plus-core/rolldown/pluginutils`
 - `rolldown/*` → `@voidzero-dev/vite-plus-core/rolldown/*`
-- 在发布构建中：支持的 `@rolldown/binding-*` → `@voidzero-dev/vite-plus-*`
+- Replace the WebContainer fallback's `rolldown/package.json` lookup with the bundled Rolldown version. The WASM download must use that version, not the core package version.
+- In release builds: supported `@rolldown/binding-*` → `@voidzero-dev/vite-plus-*`
 
-**输入**：`rolldown/packages/rolldown/dist/`
-**输出**：`dist/rolldown/`
+**Input**: `rolldown/packages/rolldown/dist/`
+**Output**: `dist/rolldown/`
 
-### 步骤 3：构建 Vite（`buildVite`）
+### Step 3: Build Vite (`buildVite`)
 
-**操作**：使用自定义转换进行完整的 Rolldown 构建。
+**Action**: Full Rolldown build with custom transforms.
 
-这是最复杂的步骤，使用上游的 `vite-rolldown.config` 并做了如下修改：
+This is the most complex step, using the upstream `vite-rolldown.config` with modifications:
 
-1. **筛选外部依赖** - 捆绑 `picomatch`、`tinyglobby`、`fdir`、`rolldown`、`yaml`，而不是将它们保留为外部依赖
-2. **添加 RewriteImportsPlugin** - 在构建时重写 vite/rolldown 导入
-3. **重写静态路径** - 修复 `VITE_PACKAGE_DIR`、`CLIENT_ENTRY`、`BUNDLED_DEV_CLIENT_ENTRY`、`ENV_ENTRY` 常量
-4. **复制其他文件** - `misc/`、`.d.ts` 文件、`types/`、`client.d.ts`
+1. **Filter externals** - Bundles `picomatch`, `tinyglobby`, `fdir`, `rolldown`, `yaml` instead of keeping them external
+2. **Add RewriteImportsPlugin** - Rewrites vite/rolldown imports at build time
+3. **Rewrite static paths** - Fixes `VITE_PACKAGE_DIR`, `CLIENT_ENTRY`, `BUNDLED_DEV_CLIENT_ENTRY`, `ENV_ENTRY` constants
+4. **Copy additional files** - `misc/`, `.d.ts` files, `types/`, `client.d.ts`
+5. **Copy the bin script** - `bin/vite.js`, with its CLI import pointed at `../node/cli.js`. `vp dev`, `vp build`, and `vp preview` start through it, as `vite` does, so the startup time (`ready in N ms`), `--debug`, `--filter`, `--profile`, and Node's compile cache work
 
-**输入**：`vite/packages/vite/`
-**输出**：`dist/vite/`
+**Input**: `vite/packages/vite/`
+**Output**: `dist/vite/`
 
-### 步骤 4：捆绑 Tsdown（`bundleTsdown`）
+### Step 4: Bundle Tsdown (`bundleTsdown`)
 
-**操作**：使用 CJS 依赖处理重新捆绑 tsdown。
+**Action**: Re-bundles tsdown with CJS dependency handling.
 
-**流程**：
+**Process**:
 
-1. 使用 Rolldown 捆绑 `tsdown/dist/run.mjs` 和 `tsdown/dist/index.mjs`
-2. 使用 `find-create-require.ts` 检测第三方 CJS 模块
-3. 使用 `build-cjs-deps.ts` 捆绑检测到的 CJS 依赖
-4. 使用 `rolldown-plugin-dts` 捆绑类型声明
+1. Bundle `tsdown/dist/run.mjs` and `tsdown/dist/index.mjs` using Rolldown
+2. Detect third-party CJS modules using `find-create-require.ts`
+3. Bundle detected CJS dependencies using `build-cjs-deps.ts`
+4. Bundle type declarations using `rolldown-plugin-dts`
 
-**输入**：`node_modules/tsdown/dist/`
-**输出**：`dist/tsdown/`
+**Input**: `node_modules/tsdown/dist/`
+**Output**: `dist/tsdown/`
 
-### 步骤 5：合并 package.json（`mergePackageJson`）
+### Step 5: Merge Package.json (`mergePackageJson`)
 
-**操作**：合并上游包的元数据并记录捆绑版本。
+**Action**: Merges metadata from upstream packages and records bundled versions.
 
-**更新**：
+**Updates**:
 
-- `peerDependencies` - 合并自 rolldown-plugin-dts、tsdown 和 vite（不包括捆绑的软件包）
-- `peerDependenciesMeta` - 合并自 rolldown-plugin-dts、tsdown 和 vite（不包括捆绑的软件包）
-- `bundledVersions` - 记录 vite、rolldown 和 tsdown 的版本
+- `peerDependencies` - Merged from rolldown-plugin-dts, tsdown and vite (minus bundled packages)
+- `peerDependenciesMeta` - Merged from rolldown-plugin-dts, tsdown and vite (minus bundled packages)
+- `bundledVersions` - Records vite, rolldown, and tsdown versions
 
 ---
 
-## 模块标识符重写系统
+## Module Specifier Rewriting System
 
-构建使用两种互补的重写机制：
+The build uses two complementary rewriting mechanisms:
 
-### 构建时重写（RewriteImportsPlugin）
+### Build-Time Rewriting (RewriteImportsPlugin)
 
-位于 `build-support/rewrite-imports.ts` 中，这个 Rolldown 插件在捆绑期间重写导入：
+Located in `build-support/rewrite-imports.ts`, this Rolldown plugin rewrites imports during bundling:
 
 ```typescript
 export const RewriteImportsPlugin: Plugin = {
@@ -115,12 +117,12 @@ export const RewriteImportsPlugin: Plugin = {
 };
 ```
 
-### 构建后重写（AST-grep）
+### Post-Build Rewriting (AST-grep)
 
-位于 `build-support/rewrite-module-specifiers.ts` 中，这个工具使用 AST-grep 重写已构建文件中的标识符：
+Located in `build-support/rewrite-module-specifiers.ts`, this utility rewrites specifiers in already-built files using AST-grep:
 
-| 原始导入                  | 重写后的导入                                         |
-| ------------------------- | ---------------------------------------------------- |
+| Original Import           | Rewritten Import                                      |
+| ------------------------- | ----------------------------------------------------- |
 | `vite`                    | `@voidzero-dev/vite-plus-core`                        |
 | `vite/*`                  | `@voidzero-dev/vite-plus-core/*`                      |
 | `rolldown`                | `@voidzero-dev/vite-plus-core/rolldown`               |
@@ -128,72 +130,82 @@ export const RewriteImportsPlugin: Plugin = {
 | `@rolldown/pluginutils`   | `@voidzero-dev/vite-plus-core/rolldown/pluginutils`   |
 | `@rolldown/pluginutils/*` | `@voidzero-dev/vite-plus-core/rolldown/pluginutils/*` |
 
-### 发布构建：原生绑定重写
+### Detecting Missed Rewrites
 
-在发布构建期间（`RELEASE_BUILD=1`），`bundleRolldown()` 通过 `build-support/rewrite-rolldown-binding.ts` 重写 Rolldown 的原生绑定 require。对于 CLI 的 `napi.targets` 中的每个平台（通过 `parseTriple` 映射为 napi 平台后缀），加载器中的 `@rolldown/binding-<suffix>` require 会变为 `@voidzero-dev/vite-plus-<suffix>`，并且该分支的版本保护会从 Rolldown 版本切换为 core 的版本，这也是 Vite+ 平台包发布时所使用的版本。
+`__tests__/build-artifacts.spec.ts` snapshots the remaining bare `rolldown` and `@rolldown/pluginutils` names in all built JavaScript and declarations. It parses string literals and template literals, then records references to constants and their aliases. This includes package names passed to `require.resolve()` or `import.meta.resolve()`, which import-only checks miss.
 
-**特定平台的绑定重写**，每个 `packages/cli/package.json` 中的 `napi.targets` 条目对应一个重写（参见 [CLI 包捆绑](../cli/BUNDLING.md#napi-targets) 中的目标表），例如：
+The snapshot allows CLI branding, embedded package metadata, and the browser runtime import that Vite rewrites before serving. Review new entries when upstream code changes; do not accept unresolved Node package lookups. Dynamically constructed names can escape static checks, so the installed-package bundled dev snapshots also verify runtime resolution without a separate Rolldown installation.
 
-| 原始导入                        | 重写后的导入                             |
+Native `@rolldown/binding-*` references have separate rewrite checks, described below.
+
+The `rolldown_webcontainer_fallback` CLI snapshot executes the packed binding loader in a simulated WebContainer. It checks fresh and cached WASM bindings without a standalone `rolldown` package. The fixture uses real Node metadata resolution and a fake installer, and asserts that both paths use the bundled Rolldown version.
+
+### Release Build: Native Binding Rewriting
+
+During release builds (`RELEASE_BUILD=1`), `bundleRolldown()` rewrites Rolldown's native binding requires through `build-support/rewrite-rolldown-binding.ts`. For every platform in the CLI's `napi.targets` (mapped to napi platform suffixes with `parseTriple`), the loader's `@rolldown/binding-<suffix>` requires become `@voidzero-dev/vite-plus-<suffix>`, and that branch's version guard switches from the Rolldown version to core's version, which is what the Vite+ platform packages are published as.
+
+**Platform-specific binding rewrites**, one per `napi.targets` entry in `packages/cli/package.json` (see the target table in [CLI Package Bundling](../cli/BUNDLING.md#napi-targets)), for example:
+
+| Original Import                    | Rewritten Import                         |
 | ---------------------------------- | ---------------------------------------- |
 | `@rolldown/binding-darwin-arm64`   | `@voidzero-dev/vite-plus-darwin-arm64`   |
 | `@rolldown/binding-linux-x64-musl` | `@voidzero-dev/vite-plus-linux-x64-musl` |
 
-对于 Vite+ 不提供的那些平台（android、freebsd、`wasm32-wasi` 回退版本、`darwin-universal` 等），其标识符仍保持为 `@rolldown/binding-*`，并继续保留上游版本保护。如果重写后的标识符数量和版本保护数量与 napi-rs 加载器的结构不一致，构建将失败，因此加载器格式发生变化时不会发布不完整的重写结果。
+Specifiers for platforms Vite+ does not ship (android, freebsd, the `wasm32-wasi` fallback, `darwin-universal`, ...) stay on `@rolldown/binding-*` and keep their upstream version guards. The build fails if the rewritten specifier and guard counts diverge from the napi-rs loader shape, so a loader format change cannot ship a partial rewrite.
 
-**这很重要，因为**：
+**Why this matters**:
 
-1. **自包含分发** - 用户无需安装单独的 `@rolldown/binding-*` 包
-2. **声明式依赖图** - Core 通过自身的 `optionalDependencies` 解析绑定（由 `packages/cli/publish-native-addons.ts` 在发布期间注入），因此 pnpm 的全局虚拟存储和 Yarn PnP 无需依赖隐藏的提升即可正常工作，并且 core 不再需要反向依赖 `vite-plus`
-3. **版本对齐** - 每个重写分支的保护都会检查平台包版本是否与 core 版本一致；两者始终同步发布
+1. **Self-contained distribution** - Users don't need to install separate `@rolldown/binding-*` packages
+2. **Declared dependency graph** - Core resolves the binding through its own `optionalDependencies` (injected during publish by `packages/cli/publish-native-addons.ts`), so pnpm's global virtual store and Yarn PnP work without hidden hoisting, and core no longer requires back into `vite-plus`
+3. **Version alignment** - Each rewritten branch's guard checks the platform package version against core's version; both are published lockstep
 
-**解析链**：
+**Resolution chain**:
 
 ```
-用户代码导入 '@voidzero-dev/vite-plus-core/rolldown'
+User code imports '@voidzero-dev/vite-plus-core/rolldown'
   → dist/rolldown/index.mjs
     → requires '@voidzero-dev/vite-plus-<platform>'
-      (由 '@rolldown/binding-<platform>' 重写而来)
-      → vite-plus.<platform>.node（包含 rolldown_binding）
+      (rewritten from '@rolldown/binding-<platform>')
+      → vite-plus.<platform>.node (contains rolldown_binding)
 ```
 
-详情请参阅 [CLI 包捆绑](../cli/BUNDLING.md#rolldown-native-binding-integration)，了解 CLI 如何编译和发布平台包，并参阅 `rfcs/core-binding-resolution.md` 了解相关设计。
+See [CLI Package Bundling](../cli/BUNDLING.md#rolldown-native-binding-integration) for details on how the CLI compiles and publishes the platform packages, and `rfcs/core-binding-resolution.md` for the design.
 
 ---
 
-## CJS 依赖处理
+## CJS Dependency Handling
 
-Tsdown 使用 `createRequire()` 来加载某些 CommonJS 依赖。这些依赖会被检测并特殊处理：
+Tsdown uses `createRequire()` to load some CommonJS dependencies. These are detected and bundled specially:
 
-### 检测（`find-create-require.ts`）
+### Detection (`find-create-require.ts`)
 
-使用 `oxc-parser` 查找如下模式：
+Uses `oxc-parser` to find patterns like:
 
 ```javascript
-// 模式 1：静态导入
+// Pattern 1: Static import
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 require('some-cjs-package');
 
-// 模式 2：全局模块
+// Pattern 2: Global module
 const require = globalThis.process.getBuiltinModule('module').createRequire(import.meta.url);
 require('some-cjs-package');
 ```
 
-### 捆绑（`build-cjs-deps.ts`）
+### Bundling (`build-cjs-deps.ts`)
 
-创建 CJS 入口文件并使用 Rolldown 进行捆绑：
+Creates CJS entry files and bundles them with Rolldown:
 
 ```typescript
-// 创建：npm_entry_some_cjs_package.cjs
+// Creates: npm_entry_some_cjs_package.cjs
 module.exports = require('some-cjs-package');
 ```
 
-原始的 `require("some-cjs-package")` 调用会被重写为 `require("./npm_entry_some_cjs_package.cjs")`。
+The original `require("some-cjs-package")` calls are rewritten to `require("./npm_entry_some_cjs_package.cjs")`.
 
 ---
 
-## 输出结构
+## Output Structure
 
 ```
 dist/
@@ -201,7 +213,7 @@ dist/
 │   ├── index.js
 │   ├── index.d.ts
 │   └── filter/
-├── rolldown/              # Rolldown 打包器
+├── rolldown/              # Rolldown bundler
 │   ├── index.mjs
 │   ├── index.d.mts
 │   ├── config.mjs
@@ -212,6 +224,8 @@ dist/
 │   ├── plugins-index.mjs
 │   └── ...
 ├── vite/                  # Vite
+│   ├── bin/
+│   │   └── vite.js        # Entry for vp dev/build/preview
 │   ├── node/
 │   │   ├── index.js
 │   │   ├── index.d.ts
@@ -225,104 +239,104 @@ dist/
 │   ├── misc/
 │   ├── types/
 │   └── client.d.ts
-└── tsdown/                # TypeScript 构建工具
+└── tsdown/                # TypeScript build tool
     ├── index.js
     ├── index-types.d.ts
     ├── run.js
-    └── npm_entry_*.cjs    # 打包的 CJS 依赖
+    └── npm_entry_*.cjs    # Bundled CJS deps
 ```
 
 ---
 
-## 包导出
+## Package Exports
 
-| 导出路径                     | 指向                                   | 描述                    |
+| Export Path                     | Points To                                | Description             |
 | ------------------------------- | ---------------------------------------- | ----------------------- |
-| `.`                             | `./dist/vite/node/index.js`              | Vite 主入口             |
-| `./client`                      | types: `./dist/vite/client.d.ts`         | 客户端环境类型          |
-| `./dist/client/*`               | `./dist/vite/client/*`                   | 客户端运行时文件        |
-| `./internal`                    | `./dist/vite/node/internal.js`           | Vite 内部 API           |
-| `./lib`                         | `./dist/tsdown/index.js`                 | Tsdown 库               |
-| `./module-runner`               | `./dist/vite/node/module-runner.js`      | Vite 模块运行器         |
-| `./rolldown`                    | `./dist/rolldown/index.mjs`              | Rolldown 主入口         |
-| `./rolldown/config`             | `./dist/rolldown/config.mjs`             | Rolldown 配置辅助函数   |
-| `./rolldown/experimental`       | `./dist/rolldown/experimental-index.mjs` | 实验性功能              |
-| `./rolldown/filter`             | `./dist/rolldown/filter-index.mjs`       | 过滤工具                |
-| `./rolldown/parallelPlugin`     | `./dist/rolldown/parallel-plugin.mjs`    | 并行插件支持            |
-| `./rolldown/parseAst`           | `./dist/rolldown/parse-ast-index.mjs`    | AST 解析                |
-| `./rolldown/plugins`            | `./dist/rolldown/plugins-index.mjs`      | 内置插件                |
-| `./rolldown/pluginutils`        | `./dist/pluginutils/index.js`            | 插件工具集              |
-| `./rolldown/pluginutils/filter` | `./dist/pluginutils/filter/index.js`     | 过滤工具                |
-| `./types/*`                     | `./dist/vite/types/*`                    | 类型定义                |
+| `.`                             | `./dist/vite/node/index.js`              | Vite main entry         |
+| `./client`                      | types: `./dist/vite/client.d.ts`         | Client ambient types    |
+| `./dist/client/*`               | `./dist/vite/client/*`                   | Client runtime files    |
+| `./internal`                    | `./dist/vite/node/internal.js`           | Internal Vite APIs      |
+| `./lib`                         | `./dist/tsdown/index.js`                 | Tsdown library          |
+| `./module-runner`               | `./dist/vite/node/module-runner.js`      | Vite module runner      |
+| `./rolldown`                    | `./dist/rolldown/index.mjs`              | Rolldown main entry     |
+| `./rolldown/config`             | `./dist/rolldown/config.mjs`             | Rolldown config helpers |
+| `./rolldown/experimental`       | `./dist/rolldown/experimental-index.mjs` | Experimental features   |
+| `./rolldown/filter`             | `./dist/rolldown/filter-index.mjs`       | Filter utilities        |
+| `./rolldown/parallelPlugin`     | `./dist/rolldown/parallel-plugin.mjs`    | Parallel plugin support |
+| `./rolldown/parseAst`           | `./dist/rolldown/parse-ast-index.mjs`    | AST parsing             |
+| `./rolldown/plugins`            | `./dist/rolldown/plugins-index.mjs`      | Built-in plugins        |
+| `./rolldown/pluginutils`        | `./dist/pluginutils/index.js`            | Plugin utilities        |
+| `./rolldown/pluginutils/filter` | `./dist/pluginutils/filter/index.js`     | Filter utilities        |
+| `./types/*`                     | `./dist/vite/types/*`                    | Type definitions        |
 
 ---
 
-## 源目录
+## Source Directories
 
-| 上游项目                  | 源位置                                                                | 关系       |
-| ------------------------- | --------------------------------------------------------------------- | ---------- |
-| `@rolldown/pluginutils`   | `../../rolldown/packages/rolldown/node_modules/@rolldown/pluginutils` | npm 依赖   |
-| `rolldown`                | `../../rolldown/packages/rolldown`                                    | Git 子模块 |
-| `vite`                    | `../../vite/packages/vite`                                            | Git 子模块 |
-| `tsdown`                  | `node_modules/tsdown`                                                 | npm 依赖   |
+| Upstream Project        | Source Location                                                       | Relation       |
+| ----------------------- | --------------------------------------------------------------------- | -------------- |
+| `@rolldown/pluginutils` | `../../rolldown/packages/rolldown/node_modules/@rolldown/pluginutils` | npm dependency |
+| `rolldown`              | `../../rolldown/packages/rolldown`                                    | Git submodule  |
+| `vite`                  | `../../vite/packages/vite`                                            | Git submodule  |
+| `tsdown`                | `node_modules/tsdown`                                                 | npm dependency |
 
 ---
 
-## 构建依赖
+## Build Dependencies
 
-| 包                    | 作用                                  |
+| Package               | Purpose                               |
 | --------------------- | ------------------------------------- |
-| `rolldown`            | 用于构建 vite 和 tsdown 的打包器       |
-| `rolldown-plugin-dts` | TypeScript 声明文件打包               |
-| `@ast-grep/napi`      | 构建后模块标识符重写                  |
-| `oxc-parser`          | tsdown 中的 CJS require 检测         |
-| `oxfmt`               | 用于 package.json 的代码格式化       |
-| `tinyglobby`          | 用于复制文件的文件 glob 匹配          |
+| `rolldown`            | Bundler for building vite and tsdown  |
+| `rolldown-plugin-dts` | TypeScript declaration bundling       |
+| `@ast-grep/napi`      | Post-build module specifier rewriting |
+| `oxc-parser`          | CJS require detection in tsdown       |
+| `oxfmt`               | Code formatting for package.json      |
+| `tinyglobby`          | File globbing for copying files       |
 
 ---
 
-## 维护：更新打包版本
+## Maintenance: Updating Bundled Versions
 
-### 更新 Vite
+### Updating Vite
 
-1. 将 `vite` Git 子模块更新到新版本
-2. 运行 `pnpm -C packages/core build`
-3. 验证 `package.json` 中的 `bundledVersions.vite` 已更新
-4. 使用 `pnpm test` 进行测试
+1. Update the `vite` git submodule to the new version
+2. Run `pnpm -C packages/core build`
+3. Verify `bundledVersions.vite` in `package.json` is updated
+4. Test with `pnpm test`
 
-### 更新 Rolldown
+### Updating Rolldown
 
-1. 将 `rolldown` Git 子模块更新到新版本
-2. 运行 `pnpm -C packages/core build`
-3. 验证 `package.json` 中的 `bundledVersions.rolldown` 已更新
-4. 使用 `pnpm test` 进行测试
+1. Update the `rolldown` git submodule to the new version
+2. Run `pnpm -C packages/core build`
+3. Verify `bundledVersions.rolldown` in `package.json` is updated
+4. Test with `pnpm test`
 
-### 更新 Tsdown
+### Updating Tsdown
 
-1. 更新 `devDependencies` 中的 `tsdown` 版本
-2. 运行 `pnpm install`
-3. 运行 `pnpm -C packages/core build`
-4. 检查是否有新的 CJS 依赖（构建会自动检测它们）
-5. 验证 `package.json` 中的 `bundledVersions.tsdown` 已更新
-6. 使用 `pnpm test` 进行测试
+1. Update `tsdown` version in `devDependencies`
+2. Run `pnpm install`
+3. Run `pnpm -C packages/core build`
+4. Check for new CJS dependencies (build will detect them automatically)
+5. Verify `bundledVersions.tsdown` in `package.json` is updated
+6. Test with `pnpm test`
 
 ---
 
-## 构建命令
+## Build Commands
 
 ```bash
-# 构建核心包
+# Build the core package
 pnpm -C packages/core build
 
-# 发布构建（将受支持的 @rolldown/binding-* 重写为 @voidzero-dev/vite-plus-*）
+# Release build (rewrites supported @rolldown/binding-* to @voidzero-dev/vite-plus-*)
 RELEASE_BUILD=1 pnpm -C packages/core build
 ```
 
 ---
 
-## 技术参考
+## Technical Reference
 
-### 构建流程
+### Build Flow
 
 ```
 1. bundleRolldownPluginutils()    Copy pre-built dist
@@ -339,10 +353,10 @@ RELEASE_BUILD=1 pnpm -C packages/core build
 5. mergePackageJson()             Merge metadata + record versions
 ```
 
-### 关键常量
+### Key Constants
 
 ```typescript
-// 源目录
+// Source directories
 const rolldownPluginUtilsDir = resolve(
   projectDir,
   '..',
@@ -355,13 +369,13 @@ const rolldownSourceDir = resolve(projectDir, '..', '..', 'rolldown', 'packages'
 const rolldownViteSourceDir = resolve(projectDir, '..', '..', 'vite', 'packages', 'vite');
 const tsdownSourceDir = resolve(projectDir, 'node_modules/tsdown');
 
-// 用于重写的包名
+// Package name used for rewrites
 const targetPackage = '@voidzero-dev/vite-plus-core';
 ```
 
-### 打包版本跟踪
+### Bundled Versions Tracking
 
-`package.json` 中的 `bundledVersions` 字段记录了所打包的上游项目的精确版本：
+The `bundledVersions` field in `package.json` records the exact versions of bundled upstream projects:
 
 ```json
 {
@@ -373,4 +387,4 @@ const targetPackage = '@voidzero-dev/vite-plus-core';
 }
 ```
 
-该字段会在每次构建期间由 `mergePackageJson()` 自动更新。
+This is automatically updated by `mergePackageJson()` during each build.

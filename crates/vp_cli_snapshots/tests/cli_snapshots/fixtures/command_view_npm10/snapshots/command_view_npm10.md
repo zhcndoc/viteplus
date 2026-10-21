@@ -5,7 +5,7 @@
 应查看 testnpm2 软件包信息
 
 ```
-https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
+http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz
 ```
 
 ## `vp pm info testnpm2 dist.tarball`
@@ -13,7 +13,7 @@ https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
 应该将 info 别名指向 view
 
 ```
-https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
+http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz
 ```
 
 ## `vp pm show testnpm2 dist.tarball`
@@ -21,5 +21,5 @@ https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
 应显示用于查看的别名
 
 ```
-https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz
+http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz
 ```

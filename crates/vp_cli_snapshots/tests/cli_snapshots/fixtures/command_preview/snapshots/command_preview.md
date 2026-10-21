@@ -1,10 +1,24 @@
-# 命令预览
+# command_preview
 
 ## `vp preview --port 12312312312`
 
-有意使用无效端口（超出 0-65535 范围）以触发端口错误
+without a build, preview stops on the missing dist directory before it tries the port, as `vite preview` does
 
-**退出代码：** 1
+**Exit code:** 1
+
+```
+error when starting preview server:
+Error: The directory "dist" does not exist. Did you build your project?
+```
+
+## `vpt mkdir dist`
+
+
+## `vp preview --port 12312312312`
+
+intentionally use an invalid port (exceeds 0-65535) to trigger port error
+
+**Exit code:** 1
 
 ```
 error when starting preview server:

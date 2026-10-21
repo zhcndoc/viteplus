@@ -2,8 +2,13 @@
 
 ## `vp pm owner list testnpm2`
 
-应列出软件包所有者（使用 npm owner）
+should list package owners using native Yarn Classic
 
 ```
-fengmk2 <fengmk2@gmail.com>
+yarn owner <version>
+warning package.json: No license field
+[1/1] Getting owners for package "testnpm2"...
+info fengmk2 <fengmk2@gmail.com>
+
+Done in <duration>.
 ```

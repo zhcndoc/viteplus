@@ -30,17 +30,10 @@ pnpm shim 下载原生二进制文件并解析固定的 packageManager 版本（
 12.0.0-beta.0
 ```
 
-## `pnpx --silent cowsay hello`
+## `pnpx --silent vp-test-echo hello`
 
 pnpx shim 注入 dlx，使原生二进制文件运行该软件包
 
 ```
- _______
-< hello >
- -------
-        \   ^__^
-         \  (oo)\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
+hello
 ```

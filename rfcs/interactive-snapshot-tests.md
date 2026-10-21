@@ -1,74 +1,74 @@
-# RFC：交互式 CLI 快照测试
+# RFC: Interactive CLI Snapshot Tests
 
-## 总结
+## Summary
 
-用一个新的快照测试方案替换当前的 snap-test 运行器：该方案将每个测试用例都运行在一个真实的伪终端（PTY）中，并由 vt100 屏幕模拟器提供支持。测试用例可以脚本化完整的交互会话：它们发送按键（方向键、回车、Ctrl-C、自由文本），并基于 CLI 发出的渲染里程碑进行同步，因此提示符、选择器、加载动画和监视模式都变成了可直接测试的一等对象。快照是 Markdown 文件，内容为渲染后的终端屏幕，并使用真实的通过/失败语义进行比较（通过 `UPDATE_SNAPSHOTS=1` 接受变更），而不是当前那种重新生成后再检查 git diff 的模式。
+Replace the current snap-test runner with a new snapshot-test solution that runs every test case inside a real pseudo-terminal (PTY) backed by a vt100 screen emulator. Test cases can script full interactive sessions: they send keystrokes (arrows, enter, ctrl-c, free text) and synchronize on render milestones emitted by the CLI, so prompts, pickers, spinners, and watch modes become first-class testable surfaces. Snapshots are Markdown files containing rendered terminal screens, compared with real pass/fail semantics (`UPDATE_SNAPSHOTS=1` to accept changes) instead of the current regenerate-and-inspect-git-diff model.
 
-该运行器复用了 vite-task 仓库中已经存在的 PTY/终端模拟/里程碑/快照相关 crate（`vt_pty_terminal`、`vt_pty_terminal_test`、`vt_pty_terminal_test_client`、`vt_snapshot_test`），而 vite-plus 也已经将它们作为其他 crate 的 git 依赖在使用。现有的两个目录树（`snap-tests/` 和 `snap-tests-global/`）将合并为一个统一的 fixture 目录树，其中每个用例都会声明它是在全局 Rust `vp` 二进制下运行，还是在本地 JS CLI 下运行（或两者都运行）。
+The runner reuses the PTY/terminal-emulation/milestone/snapshot crates that already exist in the vite-task repository (`vt_pty_terminal`, `vt_pty_terminal_test`, `vt_pty_terminal_test_client`, `vt_snapshot_test`), which vite-plus already consumes as git dependencies for other crates. The two existing trees (`snap-tests/` and `snap-tests-global/`) merge into a single fixture tree where each case declares whether it runs under the global Rust `vp` binary or the local JS CLI (or both).
 
-这是一项彻底切换：新的格式与旧的 `steps.json`/`snap.txt` 格式不兼容，也不会尝试兼容。一个迁移工具可以在一次命令中把旧的用例目录转换为新的 fixture；当整个测试集完成迁移后，旧运行器就会被删除。
+This is a clean break: the new format is not compatible with the old `steps.json`/`snap.txt` format and does not try to be. A migration tool converts old case directories to new fixtures in one command, and the old runner is deleted once the corpus is migrated.
 
-## 动机
+## Motivation
 
-### 交互空白
+### The interactive gap
 
-当前运行器完全无法测试交互行为：
+The current runner cannot test interactive behavior at all:
 
-- 每条命令都以 `stdin: null` 和 `CI=true` 运行，因此 CLI 总是走非交互路径。
-- 364 个 fixture 显式传入了 `--no-interactive`；没有任何 fixture 驱动过提示。
-- 交互式 UX 回归（spinner 覆盖 prompt 的渲染、选择器导航、ctrl-c 取消）只能通过人工、借助基于 tmux 的手动流程来捕获。
+- Every command runs with `stdin: null` and `CI=true`, so the CLI always takes its non-interactive path.
+- 364 fixtures pass `--no-interactive` explicitly; zero fixtures drive a prompt.
+- Interactive UX regressions (spinner-over-prompt rendering, picker navigation, ctrl-c cancellation) can only be caught by hand, via a tmux-based manual workflow.
 
-这阻碍了当前工作真正需要的覆盖率。PR #2031（`vp -C` 和 app-root 解析）把其交互式包选择器列为一个无法测试的后续项，而它在“交互式终端中单个可运行项自动选择”分支中发布时，也没有在交互式终端里运行测试。`vp create` 和 `vp migrate` 的提示流程（模板选择、approve-builds 确认、覆盖提示）对实际的提示循环都没有自动化覆盖。暂存的 `snap-tests-todo/command-pack-watch-restart` 用例之所以存在，正是因为 watch 模式重启需要一个可以输入内容的终端。
+This blocks real coverage that current work needs. PR #2031 (`vp -C` and app-root resolution) lists its interactive package picker as an untestable follow-up, and its "single-runnable auto-select in interactive terminals" branch ships without a test that runs in an interactive terminal. `vp create` and `vp migrate` prompt flows (template selection, approve-builds confirmation, overwrite prompts) have no automated coverage of the actual prompt loop. The parked `snap-tests-todo/command-pack-watch-restart` case exists precisely because watch-mode restart needs a terminal you can type into.
 
-### 当前运行器中的结构性问题
+### Structural problems in the current runner
 
-对 `packages/tools/src/snap-test.ts` 和约 529 个用例的审计暴露出一些补丁无法很好修复的问题：
+The audit of `packages/tools/src/snap-test.ts` and the ~529-case corpus surfaced problems that patching cannot fix well:
 
-1. **没有断言。** 运行器总是覆盖 `snap.txt` 并以 0 退出。失败检测发生在运行器之外（CI 中的 `git diff`，本地则依赖人工自觉）。AGENTS.md 不得不对此警告两次。
-2. **没有终端。** 输出是从重定向的管道中捕获的，因此任何依赖 TTY 的内容（提示渲染、spinner 行为、颜色选择、终端宽度）都未被测试，或者测试的是用户永远看不到的模式。
-3. **规范化债务。** `replaceUnstableOutput` 有大约 50 条正则替换，用来掩盖 spinner 帧、按包管理器划分的进度行、ANSI 残留、持续时间等内容。其中很多都存在于此，是因为并发写入者产生的原始字节流本身就不稳定。渲染后的屏幕网格能消除整类问题。
-4. **超时泄漏。** 超时的命令不会被杀死；进程之所以还能存活，只是因为运行器最后调用了 `process.exit(0)`。
-5. **共享全局状态。** 所有用例共享 `VP_HOME=~/.vite-plus`，这迫使 19 个用例使用 `serial: true`，并让其余用例潜藏跨用例干扰。全局运行器还强制要求在每次运行前执行 `pnpm bootstrap-cli`，以便安装好的二进制与检出内容逐字节匹配。
-6. **Shell 语义漂移。** 命令通过 `@yarnpkg/shell` 运行，这是一个进程内 JS shell，拥有自己的一套注释剥离和无 glob 规则。182 个 fixture 跳过了 Windows，而 shell/工具差异是主要原因之一。
-7. **不稳定性只是被管理，而非被消除。** CI 最多会对变更过的用例重跑两次（`retry-failed-snap-tests.sh`），并在 diff 停止变化时接受结果。
+1. **No assertions.** The runner always overwrites `snap.txt` and exits 0. Failure detection lives outside the runner (`git diff` in CI, human discipline locally). AGENTS.md has to warn about this twice.
+2. **No terminal.** Output is captured from redirected pipes, so anything that depends on a TTY (prompt rendering, spinner behavior, color decisions, terminal width) is untested or tested in a mode users never see.
+3. **Normalization debt.** `replaceUnstableOutput` is ~50 regex substitutions masking spinner frames, per-package-manager progress lines, ANSI remnants, durations, and more. Much of it exists because raw byte streams from concurrent writers are inherently unstable. A rendered screen grid eliminates whole classes of this.
+4. **Timeouts leak.** Timed-out commands are not killed; the process survives only because the runner ends with `process.exit(0)`.
+5. **Shared global state.** All cases share `VP_HOME=~/.vite-plus`, forcing `serial: true` on 19 cases and leaving latent cross-case interference for the rest. The global runner also hard-requires `pnpm bootstrap-cli` before every run so the installed binary byte-matches the checkout.
+6. **Shell semantics drift.** Commands run through `@yarnpkg/shell`, an in-process JS shell with its own comment-stripping and no-glob rules. 182 fixtures skip Windows, and shell/tool differences are a major reason.
+7. **Flakiness is managed, not removed.** CI reruns changed cases up to twice (`retry-failed-snap-tests.sh`) and accepts the result if the diff stops moving.
 
-### 为什么不扩展旧运行器
+### Why not extend the old runner
 
-给 `snap-test.ts` 增加 PTY 模式，会保留无断言模型、shell 层、共享的 `VP_HOME` 和双树分离，同时还要叠加最难的部分（确定性的交互同步）；而这又建立在一个 Node PTY 栈之上，它还得重新学习平台层面的经验教训（ConPTY 输出重排、musl PTY 崩溃、macOS EIO 截断），而这些教训已经被 vite-task crates 编码好了。带迁移路径的干净第二套系统，比就地重建更便宜。
+Adding a PTY mode to `snap-test.ts` would keep the no-assertion model, the shell layer, the shared `VP_HOME`, and the two-tree split, while adding the hardest part (deterministic interactive synchronization) on top of a Node PTY stack that would need to relearn platform lessons (ConPTY output reordering, musl PTY crashes, macOS EIO truncation) that the vite-task crates already encode. A clean second system with a migration path is cheaper than an in-place rebuild.
 
-## 先例：vite-task 的快照套件
+## Prior art: vite-task's snapshot suite
 
-vite-task 仓库已经实现了与此设计完全相同的可用方案，如今被大约 190 个快照文件使用，包括交互式选择器导航和 ctrl-c 取消等场景。其组成如下：
+The vite-task repository has a working implementation of exactly this design, used by ~190 snapshot files today, including interactive selector navigation and ctrl-c cancellation cases. Its pieces:
 
-| Crate                         | 角色                                                                                                                                                                                                                                                                             |
+| Crate                         | Role                                                                                                                                                                                                                                                                            |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vt_pty_terminal`             | 在 PTY 中生成子进程（`portable-pty`），通过 `vt100` 模拟器传递输出，响应光标位置查询，并处理终端大小调整和 ctrl-c。封装了平台相关的变通方案：Windows 上使用 ConPTY、用于规避 musl PTY 崩溃的全局锁，以及用于避免 EIO 截断的 macOS 从属文件描述符生命周期处理。 |
-| `vt_pty_terminal_test`        | `TestTerminal` 包装器以及 `Reader::expect_milestone(name)`：阻塞等待子进程发出指定名称的里程碑，然后返回渲染后的屏幕。                                                                                                                                            |
-| `vt_pty_terminal_test_client` | 子进程侧辅助工具，通过窗口标题更新将里程碑编码为（`OSC 2 ; vt-pty-terminal-test:<32-hex-id>:<base64url(name)>`，每次发出时使用一个新的 id），这些信息能够在 Unix PTY 和 Windows ConPTY 中存活，并与其标记的输出按顺序到达。 |
-| `vt_snapshot_test`            | 极简快照存储：通过 `UPDATE_SNAPSHOTS=1` 进行比较或更新，发生不匹配时写入 `<name>.new`，并将统一差异作为失败消息返回。                                                                                                                                          |
+| `vt_pty_terminal`             | Spawns a child in a PTY (`portable-pty`), feeds output through a `vt100` emulator, answers cursor-position queries, handles resize and ctrl-c. Encodes platform workarounds: ConPTY on Windows, a global lock for musl PTY crashes, macOS slave-fd lifetime for EIO truncation. |
+| `vt_pty_terminal_test`        | `TestTerminal` wrapper plus `Reader::expect_milestone(name)`: block until the child emits a named milestone, then return the rendered screen.                                                                                                                                   |
+| `vt_pty_terminal_test_client` | Child-side helper that encodes milestones as window-title updates (`OSC 2 ; vt-pty-terminal-test:<32-hex-id>:<base64url(name)>`, a fresh id per emission), which survive both Unix PTYs and Windows ConPTY and arrive in-order with the output they mark.                       |
+| `vt_snapshot_test`            | Minimal snapshot store: compare or update via `UPDATE_SNAPSHOTS=1`, write `<name>.new` on mismatch, return a unified diff as the failure message.                                                                                                                               |
 
-在此基础上，`vt_bin/tests/e2e_snapshots` 实现了一个 `libtest-mimic` 自定义测试目标：fixture 在 `snapshots.toml` 中声明用例，步骤采用 argv 数组（不使用 shell），交互式步骤包含有序的 `interactions` 列表，并且每个用例都会生成一个 Markdown 快照，其中包含命令行、交互日志，以及在每个里程碑和退出时捕获的带围栏终端截图。
+On top of these, `vt_bin/tests/e2e_snapshots` implements a `libtest-mimic` custom test target: fixtures declare cases in `snapshots.toml`, steps are argv arrays (no shell), interactive steps carry an ordered `interactions` list, and each case produces one Markdown snapshot containing the command lines, the interaction log, and fenced terminal screenshots captured at each milestone and at exit.
 
-vite-plus 已经通过 git 依赖 vite-task 的 crate（`fspy`、`vt_glob`、`vt_path`、`vt_str`、`vt`、`vt_workspace`），而 Rust CLI 的交互式选择器工作计划基于 `vt_select` 开展；该 crate 已经提供了里程碑发出所需的 `after_render` 钩子。复用这套技术栈是实现确定性交互式测试的最低风险路径。
+vite-plus already depends on vite-task crates via git (`fspy`, `vt_glob`, `vt_path`, `vt_str`, `vt`, `vt_workspace`), and the Rust CLI's interactive picker work is planned on `vt_select`, which already exposes the `after_render` hook that milestone emission needs. Reusing this stack is the lowest-risk path to deterministic interactive testing.
 
-## 目标
+## Goals
 
-- 以确定性方式测试交互式会话：脚本化按键输入，基于明确的渲染里程碑进行同步，绝不依赖睡眠或输出轮询。
-- 真正的断言：快照不匹配会以统一 diff 使测试失败；更新是显式的可选操作。
-- 一个 fixture 树；每个用例声明 `vp` 变体（全局 Rust 二进制、本地 JS CLI，或两者都有）。
-- 完整的进程隔离：每个用例独立的 `VP_HOME`、清理后的环境、受控的 `PATH`、超时后杀死子进程。
-- 保留目前行之有效的部分：fixture 目录模型、本地 npm 仓库集成、平台过滤、分片 CI。
-- 一个用于现有 `steps.json` 语料库的一键迁移工具，并提供一份明确的需要人工处理的报告。
+- Test interactive sessions deterministically: scripted keystrokes, synchronized on explicit render milestones, never on sleeps or output polling.
+- Real assertions: a snapshot mismatch fails the test with a unified diff; updates are an explicit opt-in.
+- One fixture tree; each case declares the `vp` flavor (global Rust binary, local JS CLI, or both).
+- Full process isolation: per-case `VP_HOME`, cleared environment, controlled `PATH`, killed-on-timeout children.
+- Keep what works today: fixture-directory model, local npm registry integration, platform filters, sharded CI.
+- A one-command migration tool for the existing `steps.json` corpus, with an explicit report of what needs human attention.
 
-## 非目标
+## Non-goals
 
-- 与旧的 `steps.json`/`snap.txt` 格式兼容。旧快照不会被翻译；会记录并审查新的基线。
-- 替换单元测试或 ecosystem-ci/e2e 测试套件。此 RFC 只替换 snap-test 层。
-- 测试真实终端模拟器（iTerm、Windows Terminal）。vt100 模拟是契约，与 vite-task 相同。
+- Compatibility with the old `steps.json`/`snap.txt` format. Old snapshots are not translated; new baselines are recorded and reviewed.
+- Replacing unit tests or the ecosystem-ci/e2e suites. This RFC only replaces the snap-test layer.
+- Testing real terminal emulators (iTerm, Windows Terminal). The vt100 emulation is the contract, same as vite-task.
 
-## 设计概览
+## Design overview
 
-新布局（名称仍可继续讨论）：
+New layout (names open to bikeshedding):
 
 ```
 crates/vp_cli_snapshots/          # dev-only crate, never published or packaged
@@ -76,45 +76,45 @@ crates/vp_cli_snapshots/          # dev-only crate, never published or packaged
 │                                   #   vt_pty_terminal_test, vt_snapshot_test
 ├── src/bin/vpt.rs                  # test utility multitool (own bin target)
 └── tests/cli_snapshots/
-    ├── main.rs                     # libtest-mimic 运行器（harness = false）
-    ├── redact.rs                   # 输出规范化
-    ├── flavor.rs                   # 全局/本地 vp 提供
+    ├── main.rs                     # libtest-mimic runner (harness = false)
+    ├── redact.rs                   # output normalization
+    ├── flavor.rs                   # global/local vp provisioning
     └── fixtures/
         └── <case-dir>/
-            ├── snapshots.toml      # case 声明
-            ├── package.json        # fixture 文件，原样复制
+            ├── snapshots.toml      # case declarations
+            ├── package.json        # fixture files, copied verbatim
             ├── ...
-            ├── mock-manifest.json  # 可选，本地 registry cases
-            ├── tarballs/           # 可选，本地 registry cases
+            ├── mock-manifest.json  # optional, local-registry cases
+            ├── tarballs/           # optional, local-registry cases
             └── snapshots/
-                └── <case>.md       # 记录的快照
+                └── <case>.md       # recorded snapshots
 ```
 
-运行器是一个专用的 workspace crate，而不是 `crates/vp_global_cli` 的测试目标。产品 crate 保持不变：其目标列表中没有仅用于测试的 bin，依赖关系图中没有 `vpt` 依赖，也无需维护任何打包排除项。`vpt` 本身就是运行器 crate 的一个 bin 目标，因此 `CARGO_BIN_EXE_vpt` 仍然可以直接解析到它。
+The runner is a dedicated workspace crate, not a test target of `crates/vp_global_cli`. The product crate stays untouched: no test-only bin in its target list, no `vpt` dependencies in its dependency graph, no packaging exclusions to maintain. `vpt` is a bin target of the runner crate itself, so `CARGO_BIN_EXE_vpt` still resolves it for free.
 
-这种布局唯一放弃的是 `CARGO_BIN_EXE_vp`（Cargo 只会为定义该二进制文件的 package 的测试设置它）。取而代之的是，运行器在运行时根据自身的可执行文件位置解析 `vp`：测试二进制文件会从 `target/<profile>/deps/` 运行，因此全局二进制文件位于其父目录中（这与 `assert_cmd::cargo_bin` 所采用的技术相同）。相比通过 `env!` 嵌入编译时绝对路径，运行时查找也更适合 Windows CI 流程，因为 nextest 归档文件是在 Linux 上构建、在另一台机器上运行的。构建顺序由入口配方处理（`just snapshot-test` 和 pnpm 包装器会先运行 `cargo build -p vp_global_cli`，再运行 `cargo test -p vp_cli_snapshots`）；如果找不到二进制文件，运行器会立即失败，并给出相应指令，而不是使用过时的构建进行测试。
+The one thing this layout gives up is `CARGO_BIN_EXE_vp` (Cargo only sets it for tests of the package that defines the binary). Instead the runner resolves `vp` at runtime from its own executable location: test binaries run from `target/<profile>/deps/`, so the global binary sits in the parent directory (the same technique `assert_cmd::cargo_bin` uses). A runtime lookup is also friendlier to the Windows CI flow, where nextest archives are built on Linux and run on another machine, than a compile-time absolute path baked in by `env!`. Build ordering is handled by the entry-point recipe (`just snapshot-test` and the pnpm wrapper run `cargo build -p vp_global_cli` before `cargo test -p vp_cli_snapshots`); if the binary is missing, the runner fails fast with that instruction rather than testing a stale build.
 
-每个 case 的执行流程：
+Execution flow per case:
 
-1. 将 fixture 目录复制到一个新的临时目录（这样 workspace-root 发现会在此停止，且 case 可以自由修改文件）。
-2. 配置 case 环境：临时 `VP_HOME`、临时 npm 全局前缀、基于固定基线重建的已清空 env、`PATH` 由每个 case 的 bin 目录（所选 `vp` flavor、`vpt`、node）加上最小系统目录组成。
-3. 对每一步：在新的 PTY 中启动 argv（500x500 网格，`TERM=xterm-256color`），运行其 `interactions`（每个 `expect-milestone` 捕获一次屏幕），等待退出或在超时后杀死，捕获最终屏幕，进行脱敏，并追加到 case 的 Markdown 文档中。
-4. 将文档与 `snapshots/<case>.md` 比较；若不匹配，则写出 `<case>.md.new` 并用统一 diff 失败退出。若设置了 `UPDATE_SNAPSHOTS=1`，则直接写入快照。
+1. Copy the fixture directory to a fresh temp dir (so workspace-root discovery stops there, and cases can mutate files freely).
+2. Provision the case environment: temp `VP_HOME`, temp npm global prefix, cleared env rebuilt from a fixed baseline, `PATH` composed from a per-case bin dir (the selected `vp` flavor, `vpt`, node) plus minimal system dirs.
+3. For each step: spawn the argv in a fresh PTY (500x500 grid, `TERM=xterm-256color`), run its `interactions` (each `expect-milestone` captures a screen), wait for exit or kill on timeout, capture the final screen, redact, and append to the case's Markdown document.
+4. Compare the document against `snapshots/<case>.md`; on mismatch write `<case>.md.new` and fail with a unified diff. With `UPDATE_SNAPSHOTS=1`, write the snapshot instead.
 
-trial 名称格式为 `<fixture-dir>::<case>[::<flavor>]`，因此 `cargo test --test cli_snapshots -- create` 的筛选方式和今天的子串筛选类似，而 `libtest-mimic` 则免费提供了并行执行、`--ignored` 以及精确名称选择。
+Trial names are `<fixture-dir>::<case>[::<flavor>]`, so `cargo test --test cli_snapshots -- create` filters like today's substring filter, and `libtest-mimic` gives parallelism, `--ignored`, and exact-name selection for free.
 
-## 测试用例格式
+## Test case format
 
-每个 fixture 目录都包含一个 `snapshots.toml`，其中声明一个或多个 case。
+Each fixture directory contains one `snapshots.toml` declaring one or more cases.
 
-### Case 字段
+### Case fields
 
 ```toml
 [[case]]
-name = "create_interactive_template_pick"   # [A-Za-z0-9_]+，命名快照文件
+name = "create_interactive_template_pick"   # [A-Za-z0-9_]+, names the snapshot file
 vp = "local"                                # "local" | "global" | ["local", "global"]
 comment = """
-在模板选择器中按下向下箭头会选中第二个模板。
+Arrow-down in the template picker selects the second template.
 """
 cwd = "packages/app"                        # optional, relative to fixture root
 skip-platforms = ["windows"]                # optional; values: "windows", "linux",
@@ -128,50 +128,50 @@ seed-runtime = true                         # default; symlink a provisioned man
 env = { CUSTOM_ENV = "value" }             # optional; case-wide env additions
 unset-env = ["GITHUB_ACTIONS"]              # optional; remove from the baseline env
 steps = [ ... ]
-after = [ ... ]                             # 可选的清理步骤，绝不会被快照记录
+after = [ ... ]                             # optional cleanup steps, never snapshotted
 ```
 
-说明：
+Notes:
 
-- `vp` 替代了树分裂。`"local"` 会将 JS CLI（`packages/cli/bin`）放在 `PATH` 的最前面；`"global"` 则使用新构建的 Rust 二进制。列表形式会为每种 flavor 注册一个 trial，并生成各自独立的快照文件（`<case>.local.md`、`<case>.global.md`）；它存在的目的是为了像命令路由这类一致性用例，其中 global 和 local 必须表现完全相同，共享 fixture 能保证它们保持一致。
-- `skip-platforms` 保留了当前 `ignoredPlatforms` 的排除语义（来自 vite-task 的包含式 `platform` 字段对这个语料库来说不那么方便，因为 Windows 排除占主导）。
-- 不再有 `serial` 字段。按 case 隔离的 `VP_HOME` 和 npm-prefix 隔离消除了旧 runner 中强制需要它的共享状态；迁移工具会删除旧的 `serial: true` 标记并进行报告。
+- `vp` replaces the tree split. `"local"` puts the JS CLI (`packages/cli/bin`) first on `PATH`; `"global"` uses the freshly built Rust binary. The list form registers one trial per flavor with separate snapshot files (`<case>.local.md`, `<case>.global.md`); it exists for parity cases such as command routing, where global and local must behave identically and a shared fixture keeps them honest.
+- `skip-platforms` keeps the exclude semantics of today's `ignoredPlatforms` (the include-one `platform` field from vite-task is less convenient for this corpus, where Windows exclusion dominates).
+- There is no `serial` field. Per-case `VP_HOME` and npm-prefix isolation removes the shared state that forced it in the old runner; the migration tool drops old `serial: true` flags and reports them.
 
-### Step 字段
+### Step fields
 
-一个 step 要么是裸 argv 数组，要么是一个表：
+A step is either a bare argv array or a table:
 
 ```toml
 steps = [
-  ["vp", "check"],                                # 简写
+  ["vp", "check"],                                # shorthand
   { argv = ["vp", "create"],
-    cwd = "sub",                                  # 可选，相对于 staged root
-    comment = "第二次运行命中缓存",                 # 可选，会渲染到快照中
-    envs = [["ADBLOCK", "1"]],                    # 可选的每步 env
-    timeout = 120000,                             # 可选，毫秒；默认 50s（local-registry 时为 120s）
-    snapshot = true,                              # false：运行但不将屏幕纳入快照
-    tty = true,                                   # false：pipe 模式（无 PTY），用于显式测试
-                                                  #   “stdout 不是 TTY” 的行为
-    formatted-snapshot = false,                   # true：保留 SGR 颜色/样式转义
+    cwd = "sub",                                  # optional, relative to staged root
+    comment = "second run hits the cache",        # optional, rendered in the snapshot
+    envs = [["ADBLOCK", "1"]],                    # optional per-step env
+    timeout = 120000,                             # optional ms; default 50s (120s local-registry)
+    snapshot = true,                              # false: run but omit screen from snapshot
+    tty = true,                                   # false: pipe mode (no PTY), for explicit
+                                                  #   "stdout is not a TTY" behavior tests
+    formatted-snapshot = false,                   # true: keep SGR color/style escapes
     interactions = [ ... ] },
 ]
 ```
 
-语义：
+Semantics:
 
-- `argv[0]` 可以是 `vp`、`vpr`、`vpx`、`vpt`，或者允许列表中的真实工具（`node`、`git`、`npm`、`pnpm`、`yarn`、`bun`）。其他所有内容（文件检查、设置、断言）都通过 `vpt` 进行，这样在 Windows 上的行为就一致。这里没有 shell：没有 `&&`、没有重定向、没有注释剥离、没有 glob 意外。
-- Steps 按顺序执行。非零退出码会记录在快照中（`**Exit code:** N`），并继续执行；某个 step 超时会杀掉子进程，记录 `timeout`，并跳过剩余步骤。
-- `snapshot = false` 用同样的“仅在成功时省略输出”语义替代了当前的 `ignoreOutput`：step 标题和退出码仍会出现，而失败 step 会保留其屏幕用于诊断；只有成功输出会被省略。
-- `tty = false` 会使用管道而不是 PTY 启动，适用于专门测试被管道/CI 风格输出的用例。默认是真正的 PTY，这与当前默认相反：被测试的 CLI 会看到一个 TTY，除非 case 另有说明，这与用户看到的行为一致。
+- `argv[0]` may be `vp`, `vpr`, `vpx`, `vpt`, or an allow-listed real tool (`node`, `git`, `npm`, `pnpm`, `yarn`, `bun`). Everything else (file inspection, setup, assertions) goes through `vpt` so behavior is identical on Windows. There is no shell: no `&&`, no redirection, no comment stripping, no glob surprises.
+- Steps run sequentially. Nonzero exit codes are recorded in the snapshot (`**Exit code:** N`) and execution continues; a step timeout kills the child, records `timeout`, and skips the remaining steps.
+- `snapshot = false` replaces today's `ignoreOutput` with the same on-success-only semantics: the step heading and exit code still appear and a failing step keeps its screen for diagnosis; only successful output is omitted.
+- `tty = false` spawns with pipes instead of a PTY for cases that specifically test piped/CI-style output. The default is a real PTY, which flips today's default: the CLI under test sees a TTY unless the case says otherwise, matching what users see.
 
-### 交互
+### Interactions
 
-交互式 step 携带一个有序的 `interactions` 列表，并在 PTY 上执行：
+Interactive steps carry an ordered `interactions` list, executed against the PTY:
 
 ```toml
 interactions = [
-  { "expect-milestone" = "text:project-name" },      # 等待，然后捕获屏幕
-  { write = "my-app" },                              # 原始字节，不带换行
+  { "expect-milestone" = "text:project-name" }, # wait, then capture the screen
+  { write = "my-app" }, # raw bytes, no newline
   { "expect-milestone" = "text:project-name:my-app" },
   { "write-key" = "enter" },
   { "expect-milestone" = "select:template:0" },
@@ -181,23 +181,26 @@ interactions = [
 ]
 ```
 
-- `expect-milestone` 会阻塞，直到 CLI 发出指定的 milestone，然后将渲染后的屏幕捕获到快照中。如果在到达 milestone 之前发生 EOF，则该 step 失败，并在错误中包含屏幕内容。
-- `write` / `write-line` 发送文本（`write-line` 会附加平台换行）。
-- `write-key` 发送一个命名按键：`up`、`down`、`left`、`right`、`enter`、`escape`、`space`、`tab`、`backspace`、`ctrl-c`。随着提示组件的需要，这个集合会扩展（例如 clack multiselect 会使用 `space`）。
+- `expect-milestone` blocks until the CLI emits the named milestone, then captures the rendered screen into the snapshot. EOF before the milestone fails the step with the screen content in the error.
+- `write` / `write-line` send text (`write-line` appends the platform newline).
+- `write-key` sends a named key: `up`, `down`, `left`, `right`, `enter`, `escape`, `space`, `tab`, `backspace`, `ctrl-c`. The set extends as prompt components need (clack multiselect uses `space`, for example).
 
-等待是基于事件驱动的，只依赖显式 milestone。没有 wait-for-text，没有 idle detection，也没有 sleep 原语；这些机制正是让基于 PTY 的测试在其他地方普遍不稳定的原因。
+Waiting is event-driven on explicit milestones only. There is no wait-for-text, no idle detection, and no sleep primitive; those are the mechanisms that made PTY-based testing flaky everywhere else.
 
-### 示例：PR #2031 的后续
+### Example: the PR #2031 follow-up
 
-PR #2031 无法测试的交互式包选择器将变为：
+The interactive package picker that PR #2031 could not test becomes:
 
 ```toml
 [[case]]
 name = "app_root_interactive_picker"
 vp = "global"
-comment = "在工作区根目录直接运行 `vp dev` 会打开包选择器；按下向下箭头会选中 web app，在下一个提示处按 ctrl-c 会干净退出。"
+comment = "Bare `vp dev` at a workspace root opens the package picker; arrow-down selects the web app, ctrl-c on the next prompt exits cleanly."
 steps = [
-  { argv = ["vp", "dev"], interactions = [
+  { argv = [
+    "vp",
+    "dev",
+  ], interactions = [
     { "expect-milestone" = "select:app-target:0" },
     { "write-key" = "down" },
     { "expect-milestone" = "select:app-target:1" },
@@ -206,64 +209,64 @@ steps = [
 ]
 ```
 
-随后快照会包含光标位置为 0 时的渲染选择器、光标位置为 1 时的渲染选择器，以及取消输出，全部都是纯文本屏幕。
+The snapshot then contains the rendered picker at cursor position 0, at cursor position 1, and the cancellation output, all as plain-text screens.
 
-## 选择并配置 vp 变体
+## Choosing and provisioning the vp flavor
 
-### 全局（`vp = "global"`）
+### Global (`vp = "global"`)
 
-运行器会运行新构建的 Rust 二进制文件，该文件从测试可执行文件旁边的目标目录中解析（参见设计概览），并以 `vp`、`vpr` 和 `vpx` 为名称链接到每个用例的 bin 目录中。`VP_GLOBAL_CLI_JS_SCRIPTS_DIR` 指向检出目录中的 `packages/cli/dist`，与当前相同。
+The runner runs the freshly built Rust binary, resolved from the target directory next to the test executable (see Design overview), linked into the per-case bin dir under the names `vp`, `vpr`, and `vpx`. `VP_GLOBAL_CLI_JS_SCRIPTS_DIR` points at the checkout's `packages/cli/dist`, as today.
 
-这消除了当前全局运行器的两个固定成本：
+This removes two standing costs of the current global runner:
 
-- 不再需要 `pnpm bootstrap-cli`，也不再需要对 `~/.vite-plus/bin/vp` 做字节级匹配断言；被测试的二进制始终是当前检出版本构建出来的。
-- 不再共享 `~/.vite-plus`。每个用例都有一个临时的 `VP_HOME`，因此 `vp env` 的修改、全局安装以及默认版本变更都不会在不同用例之间相互干扰，`serial` 也随之消失。由于空的 home 目录会让任何会触及运行时的命令下载一个约 50MB 的托管 Node 归档，运行器会为每个用例的 `VP_HOME/js_runtime` 预先建立一个符号链接，指向一个已预配置好的运行时：如果设置了 `VP_SNAP_JS_RUNTIME_DIR` 就使用它（CI 会在该位置恢复缓存的运行时），否则使用开发者真实的 `~/.vite-plus/js_runtime`。这个预置内容主要用于读取；测试运行时配置本身的用例可以通过 `seed-runtime = false` 选择不使用，并承担下载成本。
+- No `pnpm bootstrap-cli` requirement and no byte-match assertion against `~/.vite-plus/bin/vp`; the binary under test is always the checkout's build.
+- No shared `~/.vite-plus`. Each case gets a temp `VP_HOME`, so `vp env` mutations, global installs, and default-version changes cannot interfere across cases and `serial` disappears. Because an empty home makes any runtime-touching command download a ~50MB managed Node archive, the runner seeds each case's `VP_HOME/js_runtime` as a symlink to an already-provisioned runtime: `VP_SNAP_JS_RUNTIME_DIR` when set (CI restores a cached runtime there), else the developer's real `~/.vite-plus/js_runtime`. The seed is read-mostly; cases that test runtime provisioning itself opt out with `seed-runtime = false` and pay the download.
 
-### 本地（`vp = "local"`）
+### Local (`vp = "local"`)
 
-每个用例的 bin 目录前置的是 `packages/cli/bin`（JS 分发入口），这要求 `PATH` 上有 `node`，并且 `packages/cli` 已构建，这两者本来就是当前本地运行器的前置条件。`VP_SNAP_LOCAL_CLI_BIN_DIR` 会在构建后的 `dist/` 位于其他位置时覆盖默认的 `<repo>/packages/cli/bin`（例如另一个检出目录、CI 工件目录）；如果缺少 dist 条目，运行器会快速失败，并提示执行 `pnpm build`。
+The per-case bin dir fronts `packages/cli/bin` (the JS dispatch), which requires `node` on `PATH` and a built `packages/cli`, both already prerequisites of today's local runner. `VP_SNAP_LOCAL_CLI_BIN_DIR` overrides the default `<repo>/packages/cli/bin` when the built `dist/` lives elsewhere (another checkout, a CI artifact directory); the runner fails fast with a `pnpm build` instruction when the dist entry is missing.
 
-### 两者都用
+### Both
 
-`vp = ["local", "global"]` 是用于对齐验证的工具。它会从一个 fixture 生成两个试验和两份快照。命令面向的用例（帮助输出、路由、`-C` 处理、错误信息）是它的目标使用场景；重量级用例应当只选择一种变体。
+`vp = ["local", "global"]` is the parity tool. It produces two trials and two snapshots from one fixture. Command-surface cases (help output, routing, `-C` handling, error messages) are the intended users; heavyweight cases should pick one flavor.
 
-## 执行模型
+## Execution model
 
-- **PTY 和屏幕。** 每一步都会在一个新的 PTY 中启动，使用 500x500 的网格（足够大，不会因换行和滚动扭曲输出；超过 500 行的输出是否捕获回滚内容仍是一个未决问题）。输出会持续流入 vt100 模拟器；屏幕内容始终从模拟器读取，而不是直接从原始字节读取。普通捕获会去除所有样式；`formatted-snapshot = true` 会保留 SGR 颜色代码（以转义后的 `\x1b[31m` 文本形式呈现），用于断言颜色行为的场景，并继承自 `vt_pty_terminal` 的 ConPTY 一致性修复（去除裸 SGR-reset）。
-- **环境。** 子进程环境会被清空并重建：固定基线（`VP_CLI_TEST=1`、`VP_EMIT_MILESTONES=1`、`TERM=xterm-256color`、git 身份、临时 `VP_HOME`、临时 `NPM_CONFIG_PREFIX`、受控的 `HOME`），一小组平台允许列表（Windows 需要 `SYSTEMROOT`、`APPDATA` 等），然后是用例级 `env`/`unset-env`，最后是步骤级 `envs`。今天那种约 40 条模式的透传允许列表及其泄漏风险将不复存在。基线中明确不包含：`CI=true` 和 `NO_COLOR`（PTY 让真实的交互行为成为默认，网格渲染也使颜色剥离变得不必要）。
-- **超时。** 每一步默认 50 秒（`local-registry` 用例为 120 秒），可按步骤覆盖。超时时会杀死子进程，将退出状态记录为 `timeout`，并跳过剩余步骤。不会遗留进程。
-- **退出码。** 非零时会记录在快照中。失败时，执行会跳过该步骤“行”的其余部分（直到并包括下一个 `continue-on-failure = true` 步骤之前的所有内容），并在其后恢复；如果前方没有边界，则按 shell 风格直接停止整个用例。迁移器会精确复现旧语义：`&&` 链中的成员保持默认的停止行为，每个旧命令行的最后一步都会携带边界标记，因此链中间失败会跳过该行，而下一行仍会运行；后续步骤也不会为同一行中已损坏的前置设置生成输出背书。
-- **并发。** `libtest-mimic` 会并行运行测试。vite-task 在 Linux 上串行执行，是因为并行 PTY 测试中 ctrl-c 信号路由存在不稳定性；在这么大的语料规模下，我们应当把这种串行化限定到对信号敏感的用例（一个 `serial-signals` 标记或一个专用分片），而不是整个测试套件。这个问题需要在实现过程中通过测量来决定。
+- **PTY and screen.** Each step spawns in a fresh PTY with a 500x500 grid (large enough that wrapping and scrolling do not distort output; scrollback capture is an open question for outputs beyond 500 rows). Output feeds a vt100 emulator continuously; screens are read from the emulator, never from raw bytes. Plain capture flattens all styling; `formatted-snapshot = true` preserves SGR color codes (rendered as escaped `\x1b[31m` text) for cases that assert color behavior, with the ConPTY parity fix (bare SGR-reset stripping) inherited from `vt_pty_terminal`.
+- **Environment.** The child env is cleared and rebuilt: fixed baseline (`VP_CLI_TEST=1`, `VP_EMIT_MILESTONES=1`, `TERM=xterm-256color`, git identity, temp `VP_HOME`, temp `NPM_CONFIG_PREFIX`, controlled `HOME`), a small platform allow-list (Windows needs `SYSTEMROOT`, `APPDATA`, etc.), then case `env`/`unset-env`, then step `envs`. Today's ~40-pattern passthrough allow-list and its leakage risks go away. Notably absent from the baseline: `CI=true` and `NO_COLOR` (the PTY makes real interactive behavior the default, and the grid render makes color stripping unnecessary).
+- **Timeouts.** Per-step, default 50s (120s for `local-registry` cases), overridable per step. On timeout the child is killed, the exit is recorded as `timeout`, and remaining steps are skipped. No leaked processes.
+- **Exit codes.** Recorded in the snapshot when nonzero. On failure, execution skips the rest of the step's "line" (everything up to and including the next `continue-on-failure = true` step) and resumes after it; with no boundary ahead, the case stops, shell-style. The migrator reproduces legacy semantics exactly: `&&` chain members keep the stopping default and each legacy command line's final step carries the boundary marker, so a mid-chain failure skips its line while the next line still runs, and later steps never bless output from a broken same-line setup.
+- **Concurrency.** `libtest-mimic` runs trials in parallel. vite-task serializes on Linux because of ctrl-c signal-routing flakiness in parallel PTY tests; with a corpus this size we should scope that serialization to signal-sensitive cases (a `serial-signals` marker or a dedicated shard) rather than the whole suite. This needs measurement during implementation.
 
-## 里程碑协议和 CLI 仪器化
+## Milestone protocol and CLI instrumentation
 
-里程碑是 CLI 在确定性的渲染点写入其输出流中的不可见标记。其编码采用 vite-task 协议：更新窗口标题（`OSC 2 ; vt-pty-terminal-test:<32-hex-id>:<base64url(name)>`），每次发出时使用一个全新的随机 id，因此重复的名称仍可作为不同的标题变更被观察到。它可在 Unix PTY 和 Windows ConPTY 中传递，与其标记的输出按顺序到达，并且在真实终端的屏幕内容中不会渲染出任何内容。
+A milestone is an invisible marker the CLI writes into its output stream at a deterministic render point. The encoding is the vite-task protocol: a window-title update (`OSC 2 ; vt-pty-terminal-test:<32-hex-id>:<base64url(name)>`) with a fresh random id per emission so repeated names stay observable as distinct title changes. It survives Unix PTYs and Windows ConPTY, arrives in-order with the output it marks, and renders as nothing in a real terminal's screen content.
 
-只有在 `VP_EMIT_MILESTONES=1` 时才会发出该标记，而只有 runner 会设置这个变量。vp 是一个广泛分发的 CLI，其输出会被管道传递到日志和其他工具中，因此像 vite-task 那样无条件发出并不适合这里。
+Emission is gated on `VP_EMIT_MILESTONES=1`, which only the runner sets. vp is a widely distributed CLI whose output gets piped into logs and other tools, so unconditional emission (vite-task's choice) is not appropriate here.
 
-仪器化点：
+Instrumentation points:
 
-- **Rust 提示**（`crates/vp_global_cli`、`crates/vp_shared`）：通过 `vt_pty_terminal_test_client` 发出（一个新的 git 依赖项，来源与现有的 vite-task crates 相同）。计划中的交互式包选择器基于 `vt_select` 构建，其 `after_render(RenderState)` 钩子正是为此设计的；选择器每次渲染都会发出 `select:app-target:<index>`。
-- **TS 提示**（`packages/prompts`）：一个小型辅助函数（`emitMilestone(name)`）写入相同的字节序列，并接入每个提示组件的渲染循环。命名约定：`<kind>:<id>:<state>`，例如 `text:project-name:my-app`、`select:template:1`、`confirm:approve-builds:yes`、`spinner:install:stop`。提示调用点会获得一个稳定的 `id`（组件类型加上在存在歧义时明确指定的名称）。
-- **非提示同步点**：长时间运行的命令可以标记稳定的生命周期节点（`dev-server:ready`、`watch:rebuilt`），这样服务器和监视模式的测试就有可以等待的节点，然后再发送下一次按键或 ctrl-c。这正是解除搁置的 `command-pack-watch-restart` 用例阻塞的关键。
+- **Rust prompts** (`crates/vp_global_cli`, `crates/vp_shared`): emit via `vt_pty_terminal_test_client` (a new git dependency, same source as the existing vite-task crates). The planned interactive package picker builds on `vt_select`, whose `after_render(RenderState)` hook was designed for exactly this; the picker emits `select:app-target:<index>` per render.
+- **TS prompts** (`packages/prompts`): a small helper (`emitMilestone(name)`) writes the same byte sequence, wired into each prompt component's render loop. Naming convention: `<kind>:<id>:<state>`, for example `text:project-name:my-app`, `select:template:1`, `confirm:approve-builds:yes`, `spinner:install:stop`. Prompt call sites gain a stable `id` (the component kind plus an explicit name where ambiguous).
+- **Non-prompt sync points**: long-running commands may mark stable lifecycle points (`dev-server:ready`, `watch:rebuilt`) so tests of servers and watch modes have something to wait on before sending the next keystroke or ctrl-c. This is what unblocks the parked `command-pack-watch-restart` case.
 
-里程碑名称会刻意编码渲染后的状态（查询文本、光标索引、选择项），而不只是一个事件名。在按下 `down` 后等待 `select:template:1`，意味着屏幕截图不会与渲染发生竞争。
+The milestone name deliberately encodes post-render state (query text, cursor index, selection), not just an event name. Waiting for `select:template:1` after pressing `down` means the screen capture cannot race the render.
 
-## 快照格式和更新工作流
+## Snapshot format and update workflow
 
-每个用例（每种 flavor）对应一个 Markdown 文件，参照 vite-task：
+One Markdown file per case (per flavor), mirroring vite-task:
 
 ````markdown
 # create_interactive_template_pick
 
-在模板选择器中按下箭头向下键会选中第二个模板。
+Arrow-down in the template picker selects the second template.
 
 ## `vp create`
 
 **→ expect-milestone:** `select:template:0`
 
 ```
-◆  选择一个模板：
+◆  Select a template:
 │  › vite-react
 │    vite-vue
 │    library
@@ -274,7 +277,7 @@ steps = [
 **→ expect-milestone:** `select:template:1`
 
 ```
-◆  选择一个模板：
+◆  Select a template:
 │    vite-react
 │  › vite-vue
 │    library
@@ -283,200 +286,200 @@ steps = [
 **← write-key:** `enter`
 
 ```
-◇  选择一个模板：
+◇  Select a template:
 │  vite-vue
-...退出后的最终界面...
+...final screen after exit...
 ```
 ````
 
-步骤标题包含 `cd <cwd> &&` 和 `ENV=val` 前缀，因此快照本身是自描述的；非零退出会显示为 `**Exit code:** N`。
+Step headings include `cd <cwd> &&` and `ENV=val` prefixes so the snapshot is self-describing; nonzero exits appear as `**Exit code:** N`.
 
-比较语义来自 `vt_snapshot_test` crate：
+Comparison semantics come from the `vt_snapshot_test` crate:
 
-- 默认运行：不匹配会写入 `snapshots/<case>.md.new` 并使该次测试失败；失败信息是统一 diff，会由 `cargo test` 输出到失败汇总中。
-- `UPDATE_SNAPSHOTS=1 just snapshot-test`：写入快照，删除过时的 `.new` 文件。
-- 缺少快照会导致失败，并写出 `.new` 文件供审查，因此全新的用例会走同样的审查流程。
+- Default run: mismatch writes `snapshots/<case>.md.new` and fails the trial; the failure message is a unified diff, printed by `cargo test` in the failures summary.
+- `UPDATE_SNAPSHOTS=1 just snapshot-test`: writes snapshots, removes stale `.new` files.
+- A missing snapshot is a failure that writes the `.new` file for review, so brand-new cases follow the same review path.
 
-这取代了“始终重新生成”的模式。CI 不再为了正确性依赖对 `snap.txt` 做 `git diff`，也不再依赖重试脚本；快照失败就意味着测试失败。
+This replaces the regenerate-always model. CI stops depending on `git diff` over `snap.txt` and the retry script for correctness; a failing snapshot is a failing test.
 
-## 输出规范化
+## Output normalization
 
-在截图进入快照之前，会先对捕获到的屏幕内容进行脱敏处理，这部分移植自 vite-task 的 `redact.rs`，并扩展了仍然必要的、vp 特定的规则：
+Redaction runs on captured screens before they enter the snapshot, ported from vite-task's `redact.rs` and extended with the vp-specific rules that remain necessary:
 
-- 路径：临时 staging 根目录、`VP_HOME`、home 目录、workspace 根目录、Windows 分隔符以及 `\\?\` 前缀。
-- 持续时间、大小、线程数、UUID、内容哈希。
-- 在与版本无关的场景中，打包工具所带的版本号。
-- 注册表主机（npmjs 与 mirror）。
-- 无序的诊断块（按排序处理，就像 vite-task 对多线程 lint 输出所做的那样）。
+- Paths: staged temp root, `VP_HOME`, home dir, workspace root, Windows separators and `\\?\` prefixes.
+- Durations, sizes, thread counts, UUIDs, content hashes.
+- Version numbers of bundled tools where the case is not about versions.
+- Registry host (npmjs vs mirror).
+- Unordered diagnostic blocks (sorted, as vite-task does for multithreaded lint output).
 
-相对于目前大约 50 个正则表达式，应该缩减或消失的内容包括：spinner 帧遮罩（网格显示的是渲染后的最终状态，而不是动画帧）、ANSI 清理（普通捕获会去除样式）、包管理器进度行遮罩（进度是在网格上原地渲染，而不是在字节流中累积），以及 stdout/stderr 交错处理的技巧（两者都输入同一个终端，这本来就是用户看到的效果）。脱敏模块应从最小集合开始，只在确有需要时才增长；每新增一个正则，都是一个值得先弄清楚的确定性问题。
+What should shrink or disappear relative to today's ~50 regexes: spinner-frame masking (the grid shows the rendered final state, not animation frames), ANSI cleanup (plain capture strips styling), package-manager progress-line masking (progress renders in place on a grid instead of accumulating in a byte stream), and stdout/stderr interleaving hacks (both feed one terminal, which is what users see anyway). The redaction module should start minimal and grow only on demonstrated need; every regex added back is a determinism bug worth understanding first.
 
-## vpt 测试工具
+## The vpt test utility
 
-`vpt` 是一个小型 Rust 多功能工具（`crates/vp_cli_snapshots` 的一个 bin 目标，因此其依赖不会触及产品 crate），用于替代旧语料库中占主导地位的 shell 内建命令（427 个 `cat`、141 个 `test`，以及 `mkdir`/`rm`/`ls`/`echo`/`cp`/`chmod`/`printf` 和 `json-edit`）。
+`vpt` is a small Rust multitool (a bin target of `crates/vp_cli_snapshots`, so its dependencies never touch the product crates) replacing the shell built-ins that dominate the old corpus (427 `cat`, 141 `test`, plus `mkdir`/`rm`/`ls`/`echo`/`cp`/`chmod`/`printf` and `json-edit`).
 
-它刻意不是一种新设计。vite-task 的 `vtt` 多功能工具已经覆盖了这部分几乎全部能力，并提供了 20 个子命令，因此 `vpt` 在重叠之处直接采用 `vtt` 的子命令名称和语义，并移植其实现（它们按设计只依赖 std，每个只有几十行）。保持契约完全一致意味着 fixtures、快照和使用习惯可以在两个仓库之间直接迁移。
+It is deliberately not a new design. vite-task's `vtt` multitool already covers almost all of this surface with 20 subcommands, so `vpt` adopts `vtt`'s subcommand names and semantics verbatim wherever they overlap and ports the implementations (they are std-only by design, a few dozen lines each). Keeping the contract identical means fixtures, snapshots, and habits transfer between the two repos.
 
-用于设置和断言的子命令（替代旧案例中的 shell 内建命令），全部与 `vtt` 对齐：
+Setup and assertion subcommands (replacing shell built-ins in old cases), all `vtt`-aligned:
 
-| 子命令                                                       | 替代                                          |
-| ------------------------------------------------------------ | --------------------------------------------- |
-| `vpt print-file <file>`                                      | `cat`（快照文件内容）                         |
-| `vpt stat-file <path>`                                       | `test -f x && echo ...` 存在性检查            |
-| `vpt write-file` / `vpt touch-file` / `vpt replace-file-content` | `echo`/`printf` 重定向、就地修改 fixture     |
-| `vpt list-dir` / `vpt mkdir` / `vpt rm` / `vpt cp`           | coreutils 用法                                 |
-| `vpt grep-file <pattern> <file>`                             | 内容断言                                       |
-| `vpt pipe-stdin <data> -- <argv>...`                         | 无需 shell 的管道 stdin 场景                  |
+| Subcommand                                                       | Replaces                                          |
+| ---------------------------------------------------------------- | ------------------------------------------------- |
+| `vpt print-file <file>`                                          | `cat` (snapshot file contents)                    |
+| `vpt stat-file <path>`                                           | `test -f x && echo ...` existence checks          |
+| `vpt write-file` / `vpt touch-file` / `vpt replace-file-content` | `echo`/`printf` redirects, in-place fixture edits |
+| `vpt list-dir` / `vpt mkdir` / `vpt rm` / `vpt cp`               | coreutils usage                                   |
+| `vpt grep-file <pattern> <file>`                                 | content assertions                                |
+| `vpt pipe-stdin <data> -- <argv>...`                             | piped-stdin scenarios without a shell             |
 
-有效载荷子命令，适用于被测试命令会启动其他命令的情况（`vp run` 任务执行、缓存、取消、stdio 透传），与它们在 `vtt` 中的对应命令相同：
+Payload subcommands, for cases where the command under test spawns other commands (`vp run` task execution, caching, cancellation, stdio passthrough), same as their `vtt` counterparts:
 
-| 子命令                                                          | 用途                                                               |
-| --------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `vpt print` / `vpt print-color` / `vpt print-env` / `vpt print-cwd` | 确定性的任务输出；颜色、环境变量和 cwd 传递到任务中 |
-| `vpt check-tty` / `vpt read-stdin`                              | 启动任务的 stdio 连接                                             |
-| `vpt exit <code>` / `vpt exit-on-ctrlc` / `vpt barrier`         | 退出码处理、取消、并发同步                                         |
+| Subcommand                                                          | Purpose                                                               |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `vpt print` / `vpt print-color` / `vpt print-env` / `vpt print-cwd` | deterministic task output; color, env, and cwd propagation into tasks |
+| `vpt check-tty` / `vpt read-stdin`                                  | stdio wiring of spawned tasks                                         |
+| `vpt exit <code>` / `vpt exit-on-ctrlc` / `vpt barrier`             | exit-code handling, cancellation, concurrency synchronization         |
 
-`vtt` 中没有对应项的 vp 专属新增命令：`vpt json-edit <file> <dot-path> <value>`（现有 snap-tests 中用于 fixture manifest 编辑的 `json-edit` 辅助工具）以及 `vpt chmod`。
+vp-specific additions with no `vtt` counterpart: `vpt json-edit <file> <dot-path> <value>` (the existing snap-tests `json-edit` helper for fixture manifest edits) and `vpt chmod`.
 
-我们曾考虑过直接复用 `vtt` 本身，但最终否决了这一方案。Cargo 的 git 依赖只提供库代码，从不提供依赖项的二进制文件，因此要获取 `vtt` 可执行文件，就需要在本地开发、CI 和 nextest 归档中，通过一个与其他 vite-task git 依赖严格同步锁定的、额外的 `cargo install --git` 步骤来完成。将其作为库复用，则意味着依赖 `vt_bin`，并将整个 `vt` 产品树（任务引擎、TUI、服务器、fspy）拖入 runner 构建中，而实际只需要几个简单的辅助工具。此外，vp 专属子命令还需要先提交上游 PR，再升级依赖，之后这里的测试才能使用它们。如果重复实现最终变成维护负担，指定的演进路径是上游提取：vite-task 将这些子命令移入一个小型库 crate（正如 `vt_pty_terminal` 已经为模拟器提供的功能一样），而 `vtt`/`vpt` 则成为基于该库的轻量级 bin 包装器。
+Reusing `vtt` itself was considered and rejected. Cargo git dependencies provide library code only, never a dependency's binaries, so obtaining the `vtt` executable would require an out-of-band `cargo install --git` pinned in lockstep with the other vite-task git deps across local dev, CI, and nextest archives. Reusing it as a library would mean depending on `vt_bin` and dragging the entire `vt` product tree (task engine, TUI, server, fspy) into the runner build for a handful of trivial helpers. And vp-specific subcommands would then need upstream PRs plus dep bumps before tests here could use them. If the duplication ever becomes a maintenance burden, the designated path is upstream extraction: vite-task moves the subcommands into a small library crate (as `vt_pty_terminal` already is for the emulator) and `vtt`/`vpt` become thin bin wrappers over it.
 
-`vpt` 打印的一切都是确定性的，并且在各平台上完全一致，这直接针对造成 182 个 Windows 跳过案例的最大原因。随着迁移不断发现值得一等化的模式，子命令列表会继续扩展；任何不值得做成子命令的东西，都说明旧案例测试的是 shell，而不是 vp。
+Everything `vpt` prints is deterministic and platform-identical, which directly attacks the biggest cause of the 182 Windows skips. The subcommand list grows as migration finds patterns worth first-classing; anything not worth a subcommand is a sign the old case was testing the shell, not vp.
 
-## 本地注册表集成
+## Local registry integration
 
-在某个用例中设置 `local-registry = true` 会同时替代 `localVitePlusPackages` 和 `node $SNAP_LOCAL_REGISTRY -- ...` 包装约定：
+`local-registry = true` on a case replaces both `localVitePlusPackages` and the `node $SNAP_LOCAL_REGISTRY -- ...` wrapper convention:
 
-- 运行器会在每次运行时打包一次检出版本中的 `vite-plus` 和 `@voidzero-dev/vite-plus-core`（复用 `packages/tools/src/pack-local-vite-plus.ts`）。
-- 对于每个用例，它会启动 `packages/tools/src/local-npm-registry.ts`，并将按包管理器区分的注册表环境变量（npm/pnpm/yarn/bun）注入到每一步中，因此夹具命令会直接是普通的 `vp migrate ...`，而不是通过包装器调用。
-- 对于组织包夹具，`mock-manifest.json` + `tarballs/` 的旁车约定保持不变。
+- The runner packs the checkout's `vite-plus` and `@voidzero-dev/vite-plus-core` once per run (reusing `packages/tools/src/pack-local-vite-plus.ts`).
+- Per case, it starts `packages/tools/src/local-npm-registry.ts` and injects the per-package-manager registry env (npm/pnpm/yarn/bun) into every step, so fixture commands are plain `vp migrate ...` instead of wrapper invocations.
+- The `mock-manifest.json` + `tarballs/` sidecar convention carries over unchanged for org-package fixtures.
 
-注册表工具本身没有变化；它已经能够在上游 packuments 之上提供打包好的 tarball，并带有正确的完整性信息和适用于最小发布年龄安全策略的发布时间，而且它仍然与 ecosystem-ci 以及本地 `vp create`/`vp migrate` 迭代共享。
+The registry tool itself is unchanged; it already serves packed tarballs overlaid on upstream packuments with correct integrity and min-release-age-safe publish times, and it stays shared with ecosystem-ci and local `vp create`/`vp migrate` iteration.
 
-## CI 集成
+## CI integration
 
-- 该测试套件是一个 cargo test 目标：先执行 `cargo build -p vp_global_cli`，再执行 `cargo test -p vp_cli_snapshots --test cli_snapshots`，并封装在 `just snapshot-test` 配方中。分片使用 `cargo nextest --partition`，而不是自定义的 `--shard=i/n` 逻辑。
-- 两种风格从第一天起都会在 CI 中运行，并使用独立的任务。`cli-snapshot-test`（Linux 和 macOS，每个操作系统一个任务）会构建 `packages/cli/dist`，安装 release 二进制文件，并运行完整测试套件；全局风格通过 `VP_SNAP_GLOBAL_VP` 指向已安装的二进制文件，因此无需再次编译 `vp_global_cli`。（对于无法提供其中一种风格的环境，`VP_SNAP_SKIP_FLAVORS` 仍然可用，例如本地运行时没有构建 `dist/`。）
-- Windows 方案复用现有的交叉编译基础设施：`build-windows-tests` 会生成专用于 `-p vp_cli_snapshots` 的 nextest 归档（包含测试二进制文件和 `vpt`），而 `cli-snapshot-test-windows` 任务会在不安装 Rust 工具链的 `windows-latest` 上运行该归档。全局 `vp` 通过 `VP_SNAP_GLOBAL_VP` 使用 `build-windows-cli` 预先构建的版本，JS CLI 则在 runner 上为本地风格构建；nextest 的 `--workspace-remap` 会在运行时重写 `CARGO_MANIFEST_DIR`/`CARGO_BIN_EXE_vpt`，使迁移后的二进制文件能够在 checkout 中找到 fixtures 和辅助工具（runner 之所以优先使用这些运行时值而不是编译时路径，正是因为这个原因）。
-- musl 覆盖率保留其 Alpine 容器任务；`vt_pty_terminal` 已经在 musl 上于内部对 PTY 启动进行串行化。
-- 通过/失败取决于测试退出代码。`git diff` 门禁和 `retry-failed-snap-tests.sh` 不适用于新套件。如果某个用例被证明存在不稳定性，修复方式应是制定里程碑或添加脱敏规则，而不是重新运行；临时隔离（`ignore = true` 加上 issue）是缓冲手段。
+- The suite is a cargo test target: `cargo build -p vp_global_cli` followed by `cargo test -p vp_cli_snapshots --test cli_snapshots`, wrapped in a `just snapshot-test` recipe. Sharding uses `cargo nextest --partition` instead of the custom `--shard=i/n` logic.
+- Both flavors run in CI from day one, in dedicated jobs. `cli-snapshot-test` (Linux and macOS, one leg per OS) builds `packages/cli/dist`, installs the release binary, and runs the full suite with the global flavor pointed at the installed binary via `VP_SNAP_GLOBAL_VP`, so no second `vp_global_cli` compile is needed. (`VP_SNAP_SKIP_FLAVORS` remains available for environments that cannot provide one of the flavors, e.g. local runs without a built `dist/`.)
+- The Windows story reuses the existing cross-compile infrastructure: `build-windows-tests` produces a dedicated `-p vp_cli_snapshots` nextest archive (carrying the test binary and `vpt`), and the `cli-snapshot-test-windows` job runs it on `windows-latest` with no Rust toolchain. The global `vp` comes prebuilt from `build-windows-cli` via `VP_SNAP_GLOBAL_VP`, the JS CLI is built on the runner for the local flavor, and nextest's `--workspace-remap` rewrites `CARGO_MANIFEST_DIR`/`CARGO_BIN_EXE_vpt` at run time so the relocated binaries find fixtures and helpers in the checkout (the runner prefers those runtime values over compile-time paths for exactly this reason).
+- musl coverage keeps its Alpine container leg; `vt_pty_terminal` already serializes PTY spawn on musl internally.
+- Pass/fail is the test exit code. The `git diff` gate and `retry-failed-snap-tests.sh` do not apply to the new suite. If a case proves flaky, the fix is a milestone or a redaction rule, not a rerun; a temporary quarantine (`ignore = true` plus an issue) is the pressure valve.
 
-开发者命令：
+Developer commands:
 
 ```bash
-just snapshot-test                                                  # 构建 vp，运行全部测试
-just snapshot-test create                                           # 子字符串过滤
-UPDATE_SNAPSHOTS=1 just snapshot-test create_basic                  # 接受变更
-cargo test -p vp_cli_snapshots --test cli_snapshots -- create     # 直接运行，如果 vp 已构建
+just snapshot-test                                                  # build vp, run all
+just snapshot-test create                                           # substring filter
+UPDATE_SNAPSHOTS=1 just snapshot-test create_basic                  # accept changes
+cargo test -p vp_cli_snapshots --test cli_snapshots -- create     # direct, if vp is built
 ```
 
-轻量的 pnpm 包装器（`pnpm snapshot-test [filter]`）保持与当前脚本一致的 DX 体验。
+Thin pnpm wrappers (`pnpm snapshot-test [filter]`) keep DX parity with today's scripts.
 
-## 迁移工具
+## Migration tool
 
-一个一条命令的转换器 `tool migrate-snap-tests` 位于 `packages/tools` 中旧运行器旁边（TypeScript，因为旧格式的 shell 字符串会被 `@yarnpkg/parsers` 解析，这是旧运行器实际使用的语法）：
+A one-command converter, `tool migrate-snap-tests`, lives next to the old runner in `packages/tools` (TypeScript, because the old format's shell strings are parsed with `@yarnpkg/parsers`, the grammar the old runner actually used):
 
 ```bash
 tool migrate-snap-tests packages/cli/snap-tests --vp local [name-filter]
 tool migrate-snap-tests packages/cli/snap-tests-global --vp global [name-filter]
 ```
 
-对于每个旧 case 目录，它都会在 `crates/vp_cli_snapshots/tests/cli_snapshots/fixtures/` 下生成一个新的 fixture，并追加到迁移报告中。
+For each old case directory it emits a new fixture under `crates/vp_cli_snapshots/tests/cli_snapshots/fixtures/` and appends to a migration report.
 
-### 字段映射
+### Field mapping
 
-| 旧 (`steps.json`)                                 | 新 (`snapshots.toml`)                                       |
+| Old (`steps.json`)                                 | New (`snapshots.toml`)                                       |
 | -------------------------------------------------- | ------------------------------------------------------------ |
-| 树位置（`snap-tests` / `snap-tests-global`）      | `vp = "local"` / `vp = "global"`（来自 `--vp`）              |
-| `commands: [...]`                                  | 通过命令转换得到 `steps = [...]`（见下文）                   |
-| `env`（值为 `""`）                                 | `env` 表（`unset-env` 条目）                                 |
-| `ignoredPlatforms: ["win32", {os, libc}]`          | `skip-platforms`（`win32` 映射为 `windows`，`darwin` 映射为 `macos`） |
+| tree location (`snap-tests` / `snap-tests-global`) | `vp = "local"` / `vp = "global"` (from `--vp`)               |
+| `commands: [...]`                                  | `steps = [...]` via command translation (below)              |
+| `env` (value `""`)                                 | `env` table (`unset-env` entry)                              |
+| `ignoredPlatforms: ["win32", {os, libc}]`          | `skip-platforms` (`win32` to `windows`, `darwin` to `macos`) |
 | `ignoreOutput: true`                               | `snapshot = false`                                           |
 | `timeout`                                          | `timeout`                                                    |
-| `serial: true`                                     | 丢弃，并报告（由隔离机制取代）                               |
+| `serial: true`                                     | dropped, reported (isolation replaces it)                    |
 | `localVitePlusPackages: true`                      | `local-registry = true`                                      |
-| `linkCheckoutPackages: true`                       | case 标志，原样保留                                          |
-| `after: [...]`                                     | `after` 步骤                                                 |
-| fixture 文件、`mock-manifest.json`、`tarballs/`   | 原样复制                                                     |
-| 命令上的 ` # trailing comment`                    | step 的 `comment`                                            |
+| `linkCheckoutPackages: true`                       | case flag, carried over                                      |
+| `after: [...]`                                     | `after` steps                                                |
+| fixture files, `mock-manifest.json`, `tarballs/`   | copied verbatim                                              |
+| ` # trailing comment` on a command                 | step `comment`                                               |
 
-### 命令转换
+### Command translation
 
-每个旧命令字符串都会被解析为 shell AST 并转换：
+Each old command string is parsed into a shell AST and translated:
 
-- 简单命令：一个 argv step。
-- `a && b && c`：连续 steps（快照记录的退出码现在携带“必须成功”的断言；粒度变化没问题，因为快照无论如何都会重新记录）。
-- coreutils 和辅助工具（`cat`、`test -f ... && echo`、`mkdir`、`rm`、`ls`、`cp`、`chmod`、`echo`/`printf` 重定向、`json-edit`）：映射为 `vpt` 等价物。
-- `node $SNAP_LOCAL_REGISTRY -- <cmd>`：设置 `local-registry = true` 并展开为 `<cmd>`。
-- 其他任何内容（管道、`||`、子 shell、无法识别的重定向）：作为带有 `TODO(migrate)` 注释的 step 输出，并列入报告以便手工转换。
+- Simple command: one argv step.
+- `a && b && c`: consecutive steps (the snapshot's recorded exit codes now carry the "must succeed" assertion; granularity changes are fine because snapshots are re-recorded anyway).
+- Coreutils and helpers (`cat`, `test -f ... && echo`, `mkdir`, `rm`, `ls`, `cp`, `chmod`, `echo`/`printf` redirects, `json-edit`): mapped to `vpt` equivalents.
+- `node $SNAP_LOCAL_REGISTRY -- <cmd>`: sets `local-registry = true` and unwraps to `<cmd>`.
+- Anything else (pipes, `||`, subshells, unrecognized redirects): emitted as a step with a `TODO(migrate)` comment and listed in the report for hand conversion.
 
-这个语料库使这项工作变得可行：在 2,343 条命令中，有 1,403 条以 `vp` 开头，而剩余长尾主要正是上面列出的 coreutils 模式。
+The corpus makes this tractable: of 2,343 commands, 1,403 start with `vp`, and the long tail is dominated by exactly the coreutils patterns above.
 
-### 快照重新定基线
+### Snapshot re-baselining
 
-旧的 `snap.txt` 文件不会被转换；这些格式衡量的内容不同（字节流 vs 渲染后的屏幕）。每批次的迁移流程如下：
+Old `snap.txt` files are not converted; the formats measure different things (byte stream vs rendered screens). The migration workflow per batch is:
 
-1. `tool migrate-snap-tests <old-dir> --vp <flavor> <filter>` 
-2. `UPDATE_SNAPSHOTS=1 just snapshot-test <filter>` 记录基线
-3. 将新的 `.md` 与旧的 `snap.txt` 逐个审查对比（这一步很适合由 agent 执行：相同的命令、相同的 fixture、“新的快照是否断言了旧的快照所断言的一切”）
-4. 在同一个 PR 中删除已迁移的旧 case 目录，这样任何时刻每个 case 都只存在于一棵目录树中。
+1. `tool migrate-snap-tests <old-dir> --vp <flavor> <filter>`
+2. `UPDATE_SNAPSHOTS=1 just snapshot-test <filter>` to record baselines
+3. Review each new `.md` against the old `snap.txt` (this review is well-suited to an agent pass: same commands, same fixture, "does the new snapshot assert everything the old one did")
+4. Delete the migrated old case directories in the same PR, so every case lives in exactly one tree at all times
 
-## 决策
+## Decisions
 
-### 重用 vite-task crates 的 Rust runner，而不是重新实现一个 Node 版本
+### Rust runner reusing vite-task crates, not a Node reimplementation
 
-曾考虑过使用 TypeScript runner（node-pty 加上一个 JS vt100，例如 `@xterm/headless`），因为当前 runner 和本地 CLI 都是 TS。之所以否决，是因为：里程碑协议、ConPTY 的顺序怪癖、musl 下的 PTY 崩溃、macOS 的 EIO 截断，以及 snapshot/diff 机制，这些在本仓库可通过现有依赖模式（指向 vite-task 的 git 依赖）直接复用的 crates 中都已经解决并经过实战检验；node-pty 是一个带有自身构建/预编译矩阵的原生模块；而 Rust 的 `libtest-mimic` 目标可以与工作区现有的 `just test` / nextest / xwin CI 机制集成。TS 端仍然会参与其中（`packages/prompts` 中的里程碑发出、迁移工具、本地 registry），但进程编排由 Rust 负责。
+A TypeScript runner (node-pty plus a JS vt100 such as `@xterm/headless`) was considered, since the current runner and the local CLI are TS. Rejected because: the milestone protocol, ConPTY ordering quirks, musl PTY crashes, macOS EIO truncation, and the snapshot/diff mechanics are already solved and battle-tested in crates this repo can consume with an existing dependency pattern (git deps on vite-task); node-pty is a native module with its own build/prebuilt matrix; and a Rust `libtest-mimic` target integrates with the workspace's existing `just test` / nextest / xwin CI machinery. The TS side still participates (milestone emission in `packages/prompts`, the migration tool, the local registry), but process orchestration is Rust.
 
-### 专用 runner crate，而不是 `vp_global_cli` 的测试目标
+### Dedicated runner crate, not a test target of `vp_global_cli`
 
-vite-task 将其 runner 放在产品 bin crate（`vt_bin`）中，这正是其测试能够使用 `CARGO_BIN_EXE_vt` 的原因。这里曾考虑照搬这一做法，但最终否决了。Bin target 不能使用 dev-dependencies，因此 `vpt` 的依赖会变成 `vp_global_cli` 的常规依赖，使产品构建图膨胀并包含仅供测试使用的代码；每次构建该 package 的发布版本都会额外生成一个二进制文件，而打包流程必须永远将其排除；并且产品 crate 的 manifest 也将不再准确描述产品本身。专用的 `crates/vp_cli_snapshots`（设置 `publish = false`，完全排除在发布构建之外）可以将这些内容全部隔离在产品之外。代价是需要在运行时从 target 目录解析 `vp`，而不能使用 `env!("CARGO_BIN_EXE_vp")`，并且需要一个用于保证构建顺序的包装 recipe；对于 Windows 上重新放置的 nextest 归档而言，运行时查找也是更稳健的选择。
+vite-task hosts its runner inside the product bin crate (`vt_bin`), which is what makes `CARGO_BIN_EXE_vt` available to its tests. Mirroring that here was considered and rejected. Bin targets cannot use dev-dependencies, so `vpt`'s dependencies would become regular dependencies of `vp_global_cli`, growing the product build graph with test-only code; every release build of the package would produce an extra binary that packaging must exclude forever; and the product crate's manifest would stop describing the product. A dedicated `crates/vp_cli_snapshots` (with `publish = false`, excluded from release builds entirely) keeps all of that out of the product. The price is resolving `vp` at runtime from the target directory instead of `env!("CARGO_BIN_EXE_vp")`, plus a build-ordering wrapper recipe; the runtime lookup is also the more robust choice for relocated nextest archives on Windows.
 
-### 使用 argv 步骤和 `vpt`，而不是 shell
+### argv steps and `vpt`, not a shell
 
-进程内 JS shell 是旧 runner 最大的平台漂移和隐藏语义来源之一。使用 argv 数组加上一个确定性的 multitool，可以让每一步在各个平台上的行为完全一致，并使 snapshot 的命令标题真实可信。代价是要把现有的 shell 单行命令翻译过来，不过这个成本只需由迁移工具承担一次。
+The in-process JS shell is one of the old runner's biggest sources of platform drift and hidden semantics. Argv arrays plus a deterministic multitool make every step's behavior identical across platforms and make the snapshot's command headings honest. The cost, translating existing shell one-liners, is paid once by the migration tool.
 
-### 使用里程碑，而不是等待文本或空闲检测
+### Milestones, not wait-for-text or idle detection
 
-等待文本会与部分渲染发生竞态（文本可能在帧完成前就出现），并且在复制内容变化时会悄无声息地失效。空闲检测从定义上就依赖时序。里程碑只需少量 CLI 仪表化工作，却能在命名的渲染状态上实现精确同步；vite-task 的 selector 测试证明了它在所有三大操作系统家族上都能做到逐按键级别的确定性。
+Wait-for-text races partial renders (the text can appear before the frame finishes) and breaks silently when copy changes. Idle detection is timing-dependent by definition. Milestones cost a small amount of CLI instrumentation and buy exact synchronization on named render states; vite-task's selector tests demonstrate keystroke-by-keystroke determinism on all three OS families.
 
-### 通过环境变量控制里程碑发出
+### Env-gated milestone emission
 
-vite-task 会无条件发出里程碑（它们在真实终端里不可见）。vp 通过 `VP_EMIT_MILESTONES=1` 来控制发出，因为它的输出经常会被管道传输、记录日志，并被其他工具解析；“在终端中不可见”并不等同于“在字节流中不存在”。这个开关只是在每次渲染时进行一次环境变量检查。
+vite-task emits milestones unconditionally (they are invisible in real terminals). vp gates emission on `VP_EMIT_MILESTONES=1` because its output is routinely piped, logged, and parsed by other tooling; invisible-in-a-terminal is not the same as absent-from-a-byte-stream. The gate is a single env check per render.
 
-### 使用 `UPDATE_SNAPSHOTS` 进行真正的断言，而不是始终重新生成
+### Real assertions with `UPDATE_SNAPSHOTS`, not regenerate-always
 
-重新生成模型让每次运行都“通过”，而把正确性外包给 `git diff` 的纪律和 CI 重试循环。默认进行比较、显式提供更新开关，这正是所有主流 snapshot 工具的做法，也使 CI 可以彻底移除这个测试套件的重试脚本。
+The regenerate model made every run "pass" and outsourced correctness to `git diff` discipline plus a CI retry loop. Compare-by-default with an explicit update flag is how every mainstream snapshot tool works, and it lets CI drop the retry script for this suite entirely.
 
-### 一棵树按 case 区分风格，再加上一个双风格矩阵
+### One tree with per-case flavor, plus a both-flavors matrix
 
-global/local 的拆分重复了 fixture，并让两个表面逐渐漂移（PR #2031 先提交了 local snap tests，并把 global 的留到后续）。按 case 提供 `vp` 字段可以消除重复；`["local", "global"]` 这种形式则把一致性从约定变成了测试。
+The global/local split duplicated fixtures and let the two surfaces drift (PR #2031 shipped local snap tests and deferred the global ones as a follow-up). A per-case `vp` field removes the duplication; the `["local", "global"]` form turns parity from a convention into a test.
 
-### 每个 case 独立的 VP_HOME，而不是共享的 `~/.vite-plus`
+### Per-case VP_HOME, not shared `~/.vite-plus`
 
-共享的全局状态迫使使用 `serial`、带来顺序风险，以及 bootstrap 的字节级匹配检查。基于每次运行模板克隆出来的每个 case 独立 home，使 case 之间与顺序无关，并让被测二进制的目标对象清晰明确。代价是每次运行时要预先提供一次模板，但这取代了 `pnpm bootstrap-cli` 前置步骤，而不是增加它。
+Shared global state forced `serial`, ordering hazards, and the bootstrap byte-match check. Per-case homes cloned from a per-run template make cases order-independent and make the binary under test unambiguous. The cost is provisioning the template once per run, which replaces the `pnpm bootstrap-cli` prerequisite rather than adding to it.
 
-## 备选方案
+## Alternatives considered
 
-- **为 `snap-test.ts` 扩展一个 PTY 模式。** 保留所有结构性问题（没有断言、shell 语义、共享 home、两棵树），并且仍然需要从头在 node-pty 上解决交互式同步这一最难的部分。
-- **基于 tmux 的测试。** 适合手动验证（这也是目前捕获交互式 bug 的方式），但依赖宿主机上的 tmux，额外引入一层带有自身时序的模拟层，并且在 Windows CI 上没有跨平台方案。
-- **`expect`/`expectrl` 风格的模式等待。** 基于字节流的模式匹配本质上就是带额外步骤的文本等待；同样存在非确定性，而且没有渲染后的屏幕快照。
-- **保留两棵树，只为新用例增加交互性。** 会无限期保留 fixture 的重复和漂移，并让旧语料继续停留在重试循环模型上；而迁移工具已经足够便宜，不值得这样做。
+- **Extend `snap-test.ts` with a PTY mode.** Keeps all structural problems (no assertions, shell semantics, shared home, two trees) and still requires solving interactive synchronization, the hardest part, from scratch on node-pty.
+- **tmux-driven testing.** Works for manual verification (it is how interactive bugs are caught today) but depends on a host tmux, adds a second emulation layer with its own timing, and has no cross-platform story for Windows CI.
+- **`expect`/`expectrl` style pattern-waiting.** Pattern-on-byte-stream is wait-for-text with extra steps; same nondeterminism, plus no rendered-screen snapshots.
+- **Keep two trees, add interactivity only to new cases.** Preserves fixture duplication and drift indefinitely and leaves the old corpus on the retry-loop model; the migration tool makes unification cheap enough to not want this.
 
-## 发布计划
+## Rollout plan
 
-阶段 1，运行器：添加 git 依赖（`vt_pty_terminal_test`、`vt_pty_terminal_test_client`、`vt_snapshot_test`）、包含 `cli_snapshots` 测试目标和 `vpt` 二进制的 `crates/vp_cli_snapshots` crate、风味配置、脱敏、`just snapshot-test` 配方以及 CI 接入。合入时附带少量手写用例，覆盖两种风味、一个交互式用例以及一个 `local-registry` 用例。
+Phase 1, runner: add the git deps (`vt_pty_terminal_test`, `vt_pty_terminal_test_client`, `vt_snapshot_test`), the `crates/vp_cli_snapshots` crate with its `cli_snapshots` test target and `vpt` bin, flavor provisioning, redaction, the `just snapshot-test` recipe, and CI wiring. Land with a handful of hand-written cases covering both flavors, one interactive case, and one `local-registry` case.
 
-阶段 2，埋点：在 `packages/prompts`（clack 组件）以及 Rust 的 prompt/selector 路径中发出里程碑事件。先落地 PR #2031 的后续 picker 测试和一个 `vp create` 交互流程作为验证用例，并补上已暂存的 watch-restart 用例。
+Phase 2, instrumentation: milestone emission in `packages/prompts` (clack components) and in the Rust prompt/selector paths. Land the PR #2031 follow-up picker tests and a `vp create` interactive flow as the proof cases, plus the parked watch-restart case.
 
-阶段 3，迁移：先落地 `tool migrate-snap-tests`，然后分批迁移到可审查的批次中（建议顺序：先迁移 `snap-tests-global`，因为它从 VP_HOME 隔离中受益最大，然后再迁移 `snap-tests`）。在此阶段，旧套件和新套件会在 CI 中并行运行；每个批次 PR 都会删除它所迁移的旧用例。
+Phase 3, migration: land `tool migrate-snap-tests`, then migrate in reviewable batches (suggested order: `snap-tests-global` first, since it gains the most from VP_HOME isolation, then `snap-tests`). Old and new suites run side by side in CI during this phase; each batch PR deletes the old cases it migrates.
 
-阶段 4，移除：删除 `snap-test.ts`、重试脚本、`snap-test*` 包脚本、旧的 CI 任务，以及 `snap-tests*/` 目录树。更新 `AGENTS.md` 和 `CONTRIBUTING.md`。
+Phase 4, removal: delete `snap-test.ts`, the retry script, the `snap-test*` package scripts, the old CI legs, and the `snap-tests*/` trees. Update AGENTS.md and CONTRIBUTING.md.
 
-从阶段 1 落地的那一刻起，新测试就会以新格式编写。
+New tests are written in the new format from the moment Phase 1 lands.
 
-## 未决问题
+## Open questions
 
-1. **滚动回溯捕获。** 一个 500 行的网格已覆盖几乎所有情况；对于少数输出更长的命令，我们是把 vt100 的滚动回溯捕获到快照中，还是将过长输出视为一个案例气味？
-2. **Linux 并行性。** vite-task 为了解决 ctrl-c 测试中的信号路由不稳定问题，在 Linux 上强制使用 `--test-threads=1`。在约 529 个用例的情况下，我们需要将其限定作用域（只序列化对信号敏感的用例）或者彻底解决；这需要在 Phase 1 中测量。
-3. **运行时下载用例。** 已在 Phase 1 中解决：每个用例的 `VP_HOME/js_runtime` 通过从 `VP_SNAP_JS_RUNTIME_DIR`（或真实的 `~/.vite-plus/js_runtime`）建立符号链接进行预置，而 `seed-runtime = false` 会让某个用例选择真正空的 home。剩下未决的是，运行时提供类用例是否应该在 CI 中从网络下载，还是从本地归档 fixture 下载。
-4. **构建配置。** 包装器 recipe 决定 `vp` 使用哪个 profile 构建；如果调试构建的 vp 对安装密集型用例来说太慢，那么让它使用 `--release`（或专用 profile）构建，而 runner 本身仍保持在测试 profile 上，可能是正确答案。此时运行时查找必须从匹配的 profile 目录解析二进制文件。
-5. **Prompt ids。** `<kind>:<id>:<state>` 这种命名需要为 `packages/prompts` 和 Rust prompts 中的每个交互式调用点提供稳定的 `id`；这些 id 是在所有地方显式传入，还是通过派生并可覆盖的方式生成，是需要在 Phase 2 中确定的实现细节。
+1. **Scrollback capture.** A 500-row grid covers almost all cases; for the few commands with longer output, do we capture vt100 scrollback into the snapshot or treat over-long output as a case smell?
+2. **Linux parallelism.** vite-task forces `--test-threads=1` on Linux for signal-routing flakiness in ctrl-c tests. With ~529 cases we need that scoped (serialize only signal-sensitive cases) or solved; needs measurement in Phase 1.
+3. **Runtime-download cases.** Resolved during Phase 1: each case's `VP_HOME/js_runtime` is seeded via symlink from `VP_SNAP_JS_RUNTIME_DIR` (or the real `~/.vite-plus/js_runtime`), and `seed-runtime = false` opts a case into a genuinely empty home. What remains open is whether runtime-provisioning cases should download from the network in CI or from a local archive fixture.
+4. **Build profile.** The wrapper recipe decides which profile `vp` is built with; if a debug-build vp is too slow for install-heavy cases, building it with `--release` (or a dedicated profile) while the runner itself stays on the test profile is the likely answer. The runtime lookup must then resolve the binary from the matching profile directory.
+5. **Prompt ids.** The `<kind>:<id>:<state>` naming needs stable `id`s for every interactive call site in `packages/prompts` and the Rust prompts; whether ids are explicit arguments everywhere or derived-with-override is an implementation detail to settle in Phase 2.

@@ -5,7 +5,7 @@
 未固定版本的 pnpm shim 解析最新版本
 
 
-## `NPM_CONFIG_REGISTRY=http://127.0.0.1:9 pnpm --version`
+## `node assert-registry-cache.mjs pnpm`
 
 未固定版本的 shim 复用其新鲜的最新版本缓存，而无需访问 registry
 

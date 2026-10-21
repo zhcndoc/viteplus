@@ -20,6 +20,40 @@ vp create <template>
 vp create <template> -- <template-options>
 ```
 
+### 未安装全局 CLI
+
+如果尚未安装[全局 `vp`](/guide/global-cli)，Vite+ 提供了 `create-vite-plus` 软件包，可通过包管理器运行 `vp create`。
+
+::: code-group
+
+```bash [pnpm]
+pnpm create vite-plus
+```
+
+```bash [npm]
+npm create vite-plus@latest
+```
+
+```bash [Yarn]
+yarn create vite-plus
+```
+
+```bash [Bun]
+bun create vite-plus
+```
+
+:::
+
+除非传入 `--package-manager` 或在现有工作区内创建，否则新项目会使用执行该命令的包管理器。参数会原样转发给 `vp create`，因此第一个参数是模板，而非目标目录：
+
+```bash
+pnpm create vite-plus vite:application --directory my-app
+```
+
+如果使用 npm，传给 `vp create` 的选项前需要加上 `--`，例如 `npm create vite-plus@latest -- vite:application --directory my-app`。
+
+创建项目后，通过包管理器运行 `vp`，例如 `pnpm exec vp run`。
+
 ## 内置模板
 
 Vite+ 提供以下内置模板：

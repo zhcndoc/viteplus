@@ -71,6 +71,8 @@ irm https://vite.plus/ps1 | iex
 
 在 Windows 上，你也可以下载并运行 [`vp-setup.exe`](https://setup.viteplus.dev)。
 
+安装器默认使用最新的 Node.js LTS 安装 JavaScript 依赖。CI 集成可以通过 [`VP_SETUP_NODE_VERSION`](#vp-setup-node-version) 选择其他兼容版本。
+
 安装后，打开一个新的 shell 并运行：
 
 ```bash
@@ -104,6 +106,22 @@ Vite+ 安装器（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已安
   # PowerShell
   $env:VP_VERSION = "1.2.3"; irm https://vite.plus/ps1 | iex
   ```
+
+#### `VP_SETUP_NODE_VERSION`
+
+- **用途**：选择用于安装全局 CLI JavaScript 依赖的 Node.js 版本。`setup-vp` 等 CI 集成会设置此变量，以复用项目运行时。
+- **值**：确切版本、版本范围或别名，例如 `22.23.1`、`22`、`^22.18.0`、`lts` 或 `latest`。安装器会将其解析为一个确切版本。
+- **默认值**：未设置或为空（使用最新的 Node.js LTS）。项目文件、`VP_NODE_VERSION`、会话覆盖和用户级默认值不会改变此默认行为。
+- **兼容性**：解析后的版本必须同时满足全局 CLI 和固定版本 `pnpm` 的 Node.js 要求。否则安装器会使用 LTS。值无效或无法解析时会报错。
+- **作用范围**：仅用于初次安装依赖。此变量不会设置项目固定版本、会话覆盖或全局默认值。`vp upgrade` 和旧版安装器仍使用 LTS。
+
+#### `VP_SETUP_NODE_VERSION_FILE`
+
+- **用途**：供需要获取 `VP_SETUP_NODE_VERSION` 所解析确切版本的集成使用的可选输出文件。
+- **内容**：成功安装依赖后写入解析出的版本，例如 `22.23.1`。如果安装时因兼容性要求改用 LTS，文件仍会包含所请求版本解析出的值。
+- **默认值**：未设置（不写入文件）。如果 `VP_SETUP_NODE_VERSION` 未设置或为空，或跳过依赖安装，安装器也不会写入文件。
+
+`setup-vp` 会自动管理此文件。请使用它的 Node.js 输入配置 CI 作业。
 
 #### `VP_HOME`
 
@@ -223,6 +241,7 @@ Vite+ 安装器（`vp-setup.exe`、`install.ps1` 和 `install.sh`）以及已安
 
 - **用途**：覆盖 Node.js 版本
 - **默认值**：无（自动检测）
+- **作用范围**：运行时命令。安装器安装依赖时，请使用 [`VP_SETUP_NODE_VERSION`](#vp-setup-node-version)。
 - **示例**：
   ```bash
   # 使用指定的 Node.js 版本运行命令

@@ -28,7 +28,7 @@ found 0 vulnerabilities
       "dependencies": {
         "testnpm2": {
           "version": "1.0.1",
-          "resolved": "https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz",
+          "resolved": "http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz",
           "overridden": false
         }
       }
@@ -40,7 +40,7 @@ found 0 vulnerabilities
       "dependencies": {
         "test-vite-plus-package-optional": {
           "version": "1.0.0",
-          "resolved": "https://registry.npmjs.org/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
+          "resolved": "http://127.0.0.1:<port>/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
           "overridden": false
         },
         "testnpm2": {
@@ -68,7 +68,7 @@ found 0 vulnerabilities
       "dependencies": {
         "testnpm2": {
           "version": "1.0.1",
-          "resolved": "https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz",
+          "resolved": "http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz",
           "overridden": false
         }
       }
@@ -80,7 +80,7 @@ found 0 vulnerabilities
       "dependencies": {
         "test-vite-plus-package-optional": {
           "version": "1.0.0",
-          "resolved": "https://registry.npmjs.org/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
+          "resolved": "http://127.0.0.1:<port>/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
           "overridden": false
         },
         "testnpm2": {
@@ -108,12 +108,12 @@ found 0 vulnerabilities
       "dependencies": {
         "test-vite-plus-package-optional": {
           "version": "1.0.0",
-          "resolved": "https://registry.npmjs.org/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
+          "resolved": "http://127.0.0.1:<port>/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
           "overridden": false
         },
         "testnpm2": {
           "version": "1.0.1",
-          "resolved": "https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz",
+          "resolved": "http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz",
           "overridden": false
         }
       }
@@ -138,7 +138,7 @@ found 0 vulnerabilities
       "dependencies": {
         "testnpm2": {
           "version": "1.0.1",
-          "resolved": "https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz",
+          "resolved": "http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz",
           "overridden": false
         }
       }
@@ -150,7 +150,7 @@ found 0 vulnerabilities
       "dependencies": {
         "test-vite-plus-package-optional": {
           "version": "1.0.0",
-          "resolved": "https://registry.npmjs.org/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
+          "resolved": "http://127.0.0.1:<port>/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
           "overridden": false
         },
         "testnpm2": {
@@ -178,7 +178,7 @@ found 0 vulnerabilities
       "dependencies": {
         "testnpm2": {
           "version": "1.0.1",
-          "resolved": "https://registry.npmjs.org/testnpm2/-/testnpm2-1.0.1.tgz",
+          "resolved": "http://127.0.0.1:<port>/testnpm2/-/testnpm2-1.0.1.tgz",
           "overridden": false
         }
       }
@@ -190,7 +190,7 @@ found 0 vulnerabilities
       "dependencies": {
         "test-vite-plus-package-optional": {
           "version": "1.0.0",
-          "resolved": "https://registry.npmjs.org/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
+          "resolved": "http://127.0.0.1:<port>/test-vite-plus-package-optional/-/test-vite-plus-package-optional-1.0.0.tgz",
           "overridden": false
         },
         "testnpm2": {

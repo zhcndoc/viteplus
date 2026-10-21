@@ -1,15 +1,15 @@
-# 使用工作区添加 pnpm9 的命令
+# command_add_pnpm9_with_workspace
 
 ## `vp add testnpm2 -D -w`
 
-应将软件包添加到工作区根目录
+should add package to workspace root
 
 ```
 
 devDependencies:
  testnpm2 ^1.0.1
 
-已完成，用时 <duration>，使用 pnpm <version>
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json`
@@ -27,25 +27,25 @@ devDependencies:
 
 ## `vp add @vite-plus-test/utils --workspace`
 
-应将 @vite-plus-test/utils 添加到工作区根目录
+should add @vite-plus-test/utils to workspace root
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
  ERR_PNPM_ADDING_TO_ROOT  Running this command will add the dependency to the workspace root, which might not be what you want - if you really meant it, make it explicit by running this command again with the -w flag (or --workspace-root). If you don't want to see this warning anymore, you may set the ignore-workspace-root-check setting to true.
 ```
 
-*（跳过了 1 个步骤到下一个行边界：步骤失败）*
+*(skipped 1 step(s) to the next line boundary: step failed)*
 
 ## `vp add testnpm2 test-vite-plus-install@1.0.0 --filter app`
 
-应将软件包添加到 packages/app
+should add packages to packages/app
 
 ```
-.                                        |  警告  `node_modules` 已存在。仅安装锁定文件会使其过时
+.                                        |  WARN  `node_modules` is present. Lockfile only installation will make it out-of-date
 .                                        |   +1 +
 
-完成于 <duration>，使用 pnpm <version>
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -75,12 +75,12 @@ devDependencies:
 
 ## `vp add @vite-plus-test/utils --workspace --filter app`
 
-应将 @vite-plus-test/utils 添加到 packages/app
+should add @vite-plus-test/utils to packages/app
 
 ```
-.                                        |  警告  已存在 `node_modules`。仅安装锁文件会使其过时
+.                                        |  WARN  `node_modules` is present. Lockfile only installation will make it out-of-date
 
-使用 pnpm <version> 在 <duration> 内完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json`
@@ -111,7 +111,7 @@ devDependencies:
 
 ## `vp add -E testnpm2 test-vite-plus-install --filter *`
 
-应将 testnpm2 test-vite-plus-install 添加到除工作区根目录外的所有软件包
+should add testnpm2 test-vite-plus-install to all packages except workspace root
 
 ```
 
@@ -150,13 +150,13 @@ Done in <duration> using pnpm <version>
 
 ## `vp install test-vite-plus-package@1.0.0 --filter * --workspace-root`
 
-应使用 add 命令安装软件包别名
+should install packages alias for add command
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 .                                        |   +1 +
 
-已在 <duration> 内使用 pnpm <version> 完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json packages/app/package.json packages/utils/package.json pnpm-workspace.yaml`
@@ -198,24 +198,32 @@ packages:
 
 ## `vp add --filter app test-vite-plus-package-optional --save-catalog-name v1`
 
-应报错，因为 `save-catalog-name` 在 pnpm@9 中不受支持
+should error because save-catalog-name is not supported at pnpm@9
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
- ERROR  Unknown option: 'save-catalog-name'
-Did you mean 'save-optional'? Use "--config.unknown=value" to force an unknown option.
-For help, run: pnpm help add
+pnpm < 10.12.0 does not support --save-catalog-name.
 ```
 
 ## `vp add --filter=./packages/utils test-vite-plus-package-optional -O --save-catalog v2`
 
-因为 pnpm@9 不支持 save-catalog，所以应该报错
+should error because save-catalog is not supported at pnpm@9
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
- 错误  未知选项：'save-catalog'
-你是不是想使用 'save-exact' 或 'save-prod'？使用 "--config.unknown=value" 可强制使用未知选项。
-如需帮助，请运行：pnpm help add
+pnpm < 10.12.0 does not support --save-catalog.
+```
+
+## `vp install testnpm2 --save-catalog`
+
+The install alias must apply the add catalog version guard.
+
+**Exit code:** 1
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+pnpm < 10.12.0 does not support --save-catalog.
 ```

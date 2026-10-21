@@ -21,6 +21,7 @@
 vp check
 vp check --fix              # Format and run autofixers.
 vp check --quiet            # Hide lint warnings; still report and fail on errors.
+vp check --deny-warnings    # Treat lint warnings as errors.
 vp check --no-fmt           # Skip format; run lint (and type-check if enabled).
 vp check --no-lint          # Skip lint rules; keep type-check when enabled.
 vp check --no-fmt --no-lint # Type-check only (requires both `typeAware` and `typeCheck` enabled).
