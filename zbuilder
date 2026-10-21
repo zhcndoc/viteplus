@@ -1,0 +1,39 @@
+FROM --platform=$BUILDPLATFORM node:24-bookworm AS build
+
+RUN npm install --global pnpm@12.11.2
+
+WORKDIR /app/docs
+COPY docs/package.json docs/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+WORKDIR /app
+COPY --exclude=node_modules \
+    --exclude=docs/node_modules \
+    --exclude=.git \
+    --exclude=docs/.vitepress/cache \
+    --exclude=docs/.vitepress/dist \
+    --exclude=docs/.vitepress/.temp \
+    . .
+
+RUN cd docs && pnpm run build
+
+FROM caddy:2-alpine
+
+COPY --from=build /app/docs/.vitepress/dist /srv
+
+COPY <<'EOF' /etc/caddy/Caddyfile
+:80 {
+    root * /srv
+    encode zstd gzip
+
+    try_files {path} {path}.html
+    file_server
+
+    handle_errors 404 {
+        rewrite * /404.html
+        file_server
+    }
+}
+EOF
+
+EXPOSE 80
