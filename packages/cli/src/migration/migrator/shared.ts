@@ -2,13 +2,89 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import * as prompts from '@voidzero-dev/vite-plus-prompts';
-import { coerce, satisfies } from 'verkit';
+import type { OxlintConfig } from 'oxlint';
+import { coerce, isLessThan, satisfies, tryParse } from 'verkit';
 
-import { VITEST_VERSION, VITE_PLUS_OVERRIDE_PACKAGES } from '../../utils/constants.ts';
+import {
+  VITEST_VERSION,
+  VITE_PLUS_OVERRIDE_PACKAGES,
+  coreAliasVersion,
+} from '../../utils/constants.ts';
 import { readJsonFile } from '../../utils/json.ts';
 import { detectPackageMetadata } from '../../utils/package.ts';
 import { displayRelative } from '../../utils/path.ts';
 import { addManualStep, addMigrationWarning, type MigrationReport } from '../report.ts';
+
+// Commands whose effects prevent literal analysis of later invocations.
+export const SHELL_STATE_COMMANDS: readonly string[] = [
+  'cd',
+  'pushd',
+  'popd',
+  '.',
+  'source',
+  'eval',
+  'export',
+  'set',
+  'unset',
+];
+
+/** Locate the executable after a supported package-manager wrapper. */
+export function getCommandStartIndex(argv: readonly string[]): number {
+  if (!['pnpm', 'npm', 'yarn', 'bun', 'npx', 'bunx'].includes(argv[0])) {
+    return 0;
+  }
+  let start = 1;
+  if (argv[start] === 'exec' || argv[start] === 'x' || argv[start] === 'dlx') {
+    start++;
+  }
+  // `npx --yes tsx`: skip the install prompt flag.
+  if (argv[start] === '-y' || argv[start] === '--yes') {
+    start++;
+  }
+  if (argv[start] === '--') {
+    start++;
+  }
+  return start;
+}
+
+// Scans that decide whether a removed tool is still used. Built output can still load
+// it after migration, so skip only installed source and VCS metadata.
+export const RETENTION_SCAN_SKIP_DIRS: ReadonlySet<string> = new Set([
+  'node_modules',
+  '.git',
+  '.hg',
+  '.svn',
+]);
+
+// Oxlint does not inherit these fields through `extends`.
+export const OXLINT_OWNER_CONFIG_KEYS = new Set(['env', 'globals', 'settings', 'ignorePatterns']);
+
+export interface OxlintConfigFile {
+  filename: string;
+  config: OxlintConfig;
+  extends: OxlintConfigFile[];
+  // Keep declared paths as well as canonical sources for JSON fallback cleanup.
+  extendsPaths: string[];
+  // A dependency must use the same generated module in its owning workspace.
+  shared?: boolean;
+  // A committed or previously generated module that workspace consumers can reuse.
+  modulePath?: string;
+}
+
+export interface OxlintConfigMigration {
+  file: OxlintConfigFile;
+  // Completion belongs to each workspace path, even when symlinks share a source.
+  migrated?: boolean;
+}
+
+export type PreparedOxlintConfigs = Map<string, OxlintConfigMigration | Error>;
+
+export interface OxlintModulePlan {
+  configContent: string;
+  imports: string[];
+  completionMarker?: string;
+  modules: Map<string, { file: OxlintConfigFile; content: string }>;
+}
 
 // All known lint-staged config file names.
 // JSON-parseable ones come first so rewriteLintStagedConfigFile can rewrite them.
@@ -139,6 +215,54 @@ export const VITEST_BROWSER_DEP_NAMES = [
 // and must be left untouched.
 export const VITEST_IS_MANAGED_OVERRIDE = 'vitest' in VITE_PLUS_OVERRIDE_PACKAGES;
 
+/**
+ * pnpm before 10.2.0 applies the `vite@*` alias override to peer ranges too, so
+ * every `vite` peer reads `vite@npm:@voidzero-dev/vite-plus-core@<version>` and
+ * fails against the installed core. Those versions need the `vite` peer rule
+ * whatever the core version. An unknown version counts as a current pnpm.
+ */
+const PNPM_PEERS_USE_ALIAS_TARGET_VERSION = '10.2.0';
+
+function pnpmAppliesAliasOverrideToPeers(pnpmVersion: string | undefined): boolean {
+  const version = pnpmVersion ? coerce(pnpmVersion) : null;
+  return version !== null && isLessThan(version, PNPM_PEERS_USE_ALIAS_TARGET_VERSION);
+}
+
+/**
+ * Whether pnpm still needs the managed `vite` peer rule (`allowAny: [vite]`,
+ * `allowedVersions: { vite: '*' }`) for the given core alias.
+ *
+ * A stable core version encodes the bundled Vite version (`8.3.5000` bundles
+ * Vite `8.3.5`, see rfcs/core-version-alignment.md). Package managers check
+ * `vite` peer ranges against it correctly, so the rule would only hide real
+ * incompatibilities. Every other spec still needs the rule: a preview
+ * (`0.0.0-commit.<sha>`), a Vite+ prerelease (`8.4.0-vp.0` fails `^8.0.0`), a
+ * `1.x` core from before the alignment, a dist-tag, or a `file:` or URL spec
+ * whose version is unknown.
+ *
+ * Major 8 is the first aligned core major. `packages/tools/src/core-version.ts`
+ * owns the version scheme; the CLI cannot import it, so keep the two in sync.
+ */
+export function vitePeerDependencyRuleRequired(
+  viteSpec: string | undefined,
+  pnpmVersion: string | undefined,
+): boolean {
+  if (pnpmAppliesAliasOverrideToPeers(pnpmVersion)) {
+    return true;
+  }
+  const aliasVersion = coreAliasVersion(viteSpec);
+  if (aliasVersion === undefined) {
+    return true;
+  }
+  const version = tryParse(aliasVersion);
+  return (
+    !version ||
+    version.major < 8 ||
+    (version.prerelease?.length ?? 0) > 0 ||
+    (version.build?.length ?? 0) > 0
+  );
+}
+
 // Fallback specs used when normalizing a stale wrapper alias. Real user
 // ranges (e.g. `vitest: ^3.0.0`) are preserved — only the wrapper alias is
 // rewritten. For `vitest`, we substitute the vitest version vite-plus
@@ -262,7 +386,7 @@ function checkPackageVersion(projectPath: string, name: string, minVersion: stri
   return true;
 }
 
-type PnpmPeerDependencyRules = {
+export type PnpmPeerDependencyRules = {
   allowAny?: string[];
   allowedVersions?: Record<string, string>;
   [key: string]: unknown;

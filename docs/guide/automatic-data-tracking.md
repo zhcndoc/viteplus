@@ -49,7 +49,7 @@ Vite Task 无法跟踪对环境变量的读取，并且它也并不总能判断�
 
 这些限制不适用于 `vp build`：Vite 会自动报告 [协作式追踪](#cooperative-tracking) 元数据，包括 `VITE_*`、`NODE_ENV`，以及不应成为输入或输出的 Vite 管理缓存路径。标准的 `vp build` 任务不需要手动设置 `input`、`output` 或 `env`。
 
-### 覆盖输入和输出
+### 覆盖输入和输出 {#override-inputs-and-outputs}
 
 [`cache.input`](/config/run#cache-input) 决定哪些变化会使缓存失效。[`cache.output`](/config/run#cache-output) 决定 Vite Task 在命中缓存时恢复哪些文件。
 
@@ -104,7 +104,7 @@ tasks: {
 
 当命中缓存时不应恢复任何文件，请设置 `output: []`。
 
-## 协作式跟踪
+## 协作式跟踪 {#cooperative-tracking}
 
 文件系统跟踪会记录访问情况。它无法知道某个工具为什么使用了某个路径。
 

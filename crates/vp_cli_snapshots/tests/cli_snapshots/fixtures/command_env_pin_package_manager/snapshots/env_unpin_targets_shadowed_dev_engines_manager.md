@@ -12,6 +12,8 @@
 VITE+ - The Unified Toolchain for the Web
 
 ✓ Removed package-manager pin
+  File: package.json
+  Field: devEngines.packageManager
 ```
 
 ## `vpt print-file package.json`

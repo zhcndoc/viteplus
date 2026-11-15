@@ -16,6 +16,7 @@ VITE+ - Web 的统一工具链
     @vitest/browser-playwright  4.1.10 → <version>
     @vitest/coverage-v8         4.1.10 → <version>
 • Package manager settings configured
+• Removed `vite` from pnpm peerDependencyRules: the core version now matches the bundled Vite
 ```
 
 ## `vpt print-file package.json`
@@ -62,9 +63,7 @@ overrides:
   vitest@*: 'catalog:'
 peerDependencyRules:
   allowAny:
-    - vite
     - vitest
   allowedVersions:
-    vite: '*'
     vitest: '*'
 ```

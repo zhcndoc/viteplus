@@ -74,6 +74,8 @@ Vite+ 提供以下内置模板：
 
 运行 `vp create --list` 可查看 Vite+ 识别的内置模板和常用简写模板。
 
+第三方模板运行后，`vp create` 会将生成的项目迁移到 Vite+。如果独立项目已经依赖 `vite-plus`，`vp create` 会跳过迁移并保留模板选择的工具。
+
 ## 选项
 
 - `--directory <dir>` 将生成的项目写入指定目标目录。只有内置模板和捆绑的 `@org` 模板支持此选项
@@ -95,7 +97,7 @@ Vite+ 提供以下内置模板：
 向现有 monorepo 添加软件包时，不能使用 `--git` 和 `--no-git`。
 :::
 
-创建完成后，使用 `vp hooks status`、`vp hooks disable` 和 `vp hooks enable` 管理调度器。请参见[提交钩子指南](/guide/commit-hooks)。
+创建完成后，使用 `vp hooks status`、`vp hooks disable` 和 `vp hooks enable` 管理调度器。请参见[提交钩子](/guide/commit-hooks)。
 
 ### 依赖构建脚本
 

@@ -72,7 +72,7 @@ Vite+ 1.0 已发布。我们会持续改进，并欢迎社区反馈。如果有�
 - 如果状态显示 `Preference: disabled (local)`，请使用 `vp hooks enable` 重新启用
 - 检查是否通过 `VP_GIT_HOOKS=0` 有意跳过了钩子
 
-要在此克隆版本中停止钩子而不删除项目策略文件，请运行 `vp hooks disable`。有关完整工作流程，请参阅[提交钩子指南](/guide/commit-hooks)。
+要在此克隆版本中停止钩子而不删除项目策略文件，请运行 `vp hooks disable`。有关完整工作流程，请参阅[提交钩子](/guide/commit-hooks)。
 
 一个最小的分阶段配置示例如下：
 

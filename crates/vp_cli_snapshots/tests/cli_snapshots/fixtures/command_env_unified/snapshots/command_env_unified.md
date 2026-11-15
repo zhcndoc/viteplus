@@ -38,6 +38,8 @@ Node.js 固定会保留包清单结构
 VITE+ - The Unified Toolchain for the Web
 
 ✓ Pinned package manager to pnpm@10.18.0
+  File: package.json
+  Field: devEngines.packageManager
 note: Package manager will be downloaded on first use.
 ```
 
@@ -145,6 +147,8 @@ VITE+ - The Unified Toolchain for the Web
 
 ✓ Removed devEngines.runtime node entry from <workspace>/package.json
 ✓ Removed package-manager pin
+  File: package.json
+  Field: devEngines.packageManager
 ```
 
 ## `vpt print-file package.json`

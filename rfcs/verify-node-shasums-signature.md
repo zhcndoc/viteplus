@@ -155,7 +155,7 @@ pub struct ShasumsSignature {
 
 ### 逃生通道：跳过签名验证
 
-设置 `VP_NODE_SKIP_SIGNATURE_VERIFY`（任意值即可）会完全跳过 PGP 验证，并直接使用
+设置 `VP_NODE_SKIP_SIGNATURE_VERIFY`（任意非空值）会完全跳过 PGP 验证，并直接使用
 明文 `SHASUMS256.txt`，无论 `required` 是什么。这是为未来密钥环或证书问题可能阻止安装
 而预留的刻意关闭选项，类似 asdf 的 `NODEJS_CHECK_SIGNATURES=no` 和 mise 的
 `verify_checksums`/签名设置。下面两点确保它不会在不知不觉中削弱安装安全性：

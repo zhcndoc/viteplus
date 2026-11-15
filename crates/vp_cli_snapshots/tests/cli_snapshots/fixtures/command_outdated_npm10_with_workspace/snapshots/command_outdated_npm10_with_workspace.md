@@ -1,4 +1,4 @@
-# npm10 工作区中的过时命令
+# command_outdated_npm10_with_workspace
 
 ## `vp install`
 
@@ -12,9 +12,9 @@ found 0 vulnerabilities
 
 ## `vp outdated testnpm2 -w`
 
-应在工作区根目录显示过时信息
+should outdated in workspace root
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Package   Current  Wanted  Latest  Location               Depended by
@@ -23,15 +23,16 @@ testnpm2    1.0.0   1.0.0   1.0.1  node_modules/testnpm2  workspace
 
 ## `vp outdated testnpm2 --filter app`
 
-应显示指定包中的过时依赖
+should outdated in specific package
 
+```
 ```
 
 ## `vp outdated --filter * --format json`
 
-应显示所有包中的过期依赖
+should outdated in all packages
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 {
@@ -47,12 +48,30 @@ testnpm2    1.0.0   1.0.0   1.0.1  node_modules/testnpm2  workspace
 
 ## `vp outdated -r`
 
-应递归检查过时的依赖
+should check workspace dependencies without the root
 
-**退出代码：** 1
+**Exit code:** 1
+
+```
+Package                        Current  Wanted  Latest  Location                                    Depended by
+test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  app@
+```
+
+## `vp outdated -r -w`
+
+should check root and workspace dependencies
+
+**Exit code:** 1
 
 ```
 Package                        Current  Wanted  Latest  Location                                    Depended by
 test-vite-plus-other-optional    1.0.0   1.0.0   1.1.0  node_modules/test-vite-plus-other-optional  app@
 testnpm2                         1.0.0   1.0.0   1.0.1  node_modules/testnpm2                       workspace
+```
+
+## `vp outdated -r --filter @vite-plus-test/utils`
+
+should preserve workspace filtering
+
+```
 ```

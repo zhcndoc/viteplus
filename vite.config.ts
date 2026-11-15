@@ -2,7 +2,7 @@ import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   staged: {
-    '*.@(js|ts|tsx|md|yaml|yml)': 'vp check --fix',
+    '*.@(js|ts|tsx|md|yaml|yml|toml)': 'vp check --fix',
     '*.rs': 'cargo fmt --',
   },
   lint: {
@@ -77,6 +77,7 @@ export default defineConfig({
       './ecosystem-ci/**',
       './vite/**',
       './rolldown/**',
+      './oxc-node/**',
       '**/node_modules/**',
       // PTY snapshot fixtures; also excluded in lint/fmt here and tsconfig.json
       'crates/vp_cli_snapshots/tests/cli_snapshots/fixtures/**',

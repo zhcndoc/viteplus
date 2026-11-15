@@ -86,7 +86,11 @@ tasks: {
 
 - **类型:** `string | string[]`
 
-定义要为该任务运行的 shell 命令。该字符串会由 shell 解释，因此空格、引号、`&&`、管道符和重定向都可以像在命令行中写的那样正常工作。
+定义要为该任务运行的命令。
+
+::: info
+Vite Task 会自行解析简单命令和 `&&` 链，而不会将它们交给 shell，因此它们在各个平台上的行为一致。管道符或重定向等其他 shell 语法在不同平台上的行为可能不同。
+:::
 
 ```ts [vite.config.ts]
 tasks: {
@@ -113,7 +117,7 @@ tasks: {
 
 在 `vite.config.ts` 中定义的每个任务都必须包含自己的 `command`。你不能在 `vite.config.ts` 和 `package.json` 中定义同名任务。
 
-使用 `&&` 连接的命令（或以数组形式提供的命令）会自动拆分为可独立缓存的子任务。参见[复合命令](/guide/run#compound-commands)。
+数组项以及不含其他 shell 语法的 `&&` 链会自动拆分为可独立缓存的子任务。参见[复合命令](/guide/run#compound-commands)。
 
 ### `dependsOn`
 
@@ -261,7 +265,8 @@ tasks: {
     command: 'vp build',
     cache: {
       // 使用 `{ auto: true }` 进行自动指纹识别（默认）。
-      input: [{ auto: true }, '!**/*.tsbuildinfo', '!dist/**'],
+      // Keep the build task's `dist` folder from affecting this task.
+      input: [{ auto: true }, '!dist/**'],
     },
   },
 }
@@ -340,14 +345,14 @@ tasks: {
 
 使用 `{ auto: true }` 可以在添加显式输出 glob 的同时保留自动写入跟踪。
 
-这在任务会写入不应从缓存恢复的文件时很有用。例如，可排除 TypeScript 的 `.tsbuildinfo` 文件：
+这在任务会写入不应从缓存恢复的文件时很有用，例如调试日志：
 
 ```ts [vite.config.ts]
 tasks: {
-  typecheck: {
-    command: 'tsc --build',
+  build: {
+    command: 'node build.mjs',
     cache: {
-      output: [{ auto: true }, '!*.tsbuildinfo'],
+      output: [{ auto: true }, '!build.log'],
     },
   },
 }

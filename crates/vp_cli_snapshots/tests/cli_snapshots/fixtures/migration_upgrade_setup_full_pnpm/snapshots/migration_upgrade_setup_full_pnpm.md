@@ -2,31 +2,34 @@
 
 ## `vpt chmod +x fix-baseurl.mjs`
 
-将 baseUrl 修复器替换为桩，以便 dlx 保持离线
+stub the baseUrl fixer so the dlx stays offline
 
 ```
 ```
 
 ## `vp migrate --full --no-interactive`
 
-现有的 Vite+ 项目：升级并完成完整设置
+existing Vite+ project: upgrade plus the full setup
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
+• Dependencies:
     vite-plus  0.1.21 → <version>
     vite              → <version>
-• 已应用 2 项配置更新
-• Node 版本管理器文件已迁移为 .node-version
-• 已配置包管理器设置
+• 2 config updates applied
+• Node version manager file migrated to .node-version
+• Package manager settings configured
+• Removed `vite` from pnpm peerDependencyRules: the core version now matches the bundled Vite
+→ Manual follow-up:
+  - Remove the "volta" field from package.json
 ```
 
 ## `vpt print-file package.json`
 
-已应用 vite-plus 版本升级
+vite-plus version upgrade is applied
 
 ```
 {
@@ -42,6 +45,9 @@ VITE+ - Web 的统一工具链
       "onFail": "download"
     }
   },
+  "volta": {
+    "node": "24.11.0"
+  },
   "scripts": {
     "prepare": "vp config"
   }
@@ -50,23 +56,15 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file .node-version`
 
-完整设置过程会将 .nvmrc 迁移为 .node-version
+volta.node is migrated to .node-version by the full setup
 
 ```
 24.11.0
 ```
 
-## `vpt stat-file .nvmrc --assert-not file`
-
-原始的 .nvmrc 已被移除
-
-```
-.nvmrc: missing
-```
-
 ## `vpt print-file tsconfig.json`
 
-完整设置会移除 tsconfig 中的 baseUrl
+tsconfig baseUrl is removed by the full setup
 
 ```
 {

@@ -73,6 +73,7 @@ vite-task changes often affect CLI output, which means snapshot tests need updat
   - **Changed defaults or behavior**: Update any docs that describe the old behavior
   - **Removed/deprecated options**: Remove or mark as deprecated in the relevant docs
 - If no user-facing changes are found, skip this step.
+- Docs also link to files in the vite-task repo, such as the JSON Schemas for `vp run --json`, by permalinks that carry the full vite-task commit hash. Find them with `grep -rn 'github.com/voidzero-dev/vite-task/blob/' docs/`, replace the old hash with the new full hash, and check that each linked path still exists at the new commit (for example `gh api "repos/voidzero-dev/vite-task/contents/<path>?ref=<new-hash>" --silent`). If a file moved or its content changed in a way the docs describe, update the link target or the surrounding text too.
 
 ### 8. Create the PR
 
@@ -91,9 +92,9 @@ After creating the PR, automatically watch CI without asking the user first. Ens
 - **Test** (Linux, Mac, Windows): Rust unit tests
 - **CLI snapshot test** (Linux, Mac, Windows): the PTY snapshot suite - most likely to fail on a vite-task bump (runner compiles against vite-task crates AND asserts CLI output)
 - **Run task**: Task runner integration tests
-- **Cargo Deny**: License/advisory checks (may have pre-existing failures unrelated to bump)
+- **Security Analysis**: Fix any `cargo deny` advisories. It runs only when `Cargo.lock` changes, so a green `main` does not mean the lockfile is clean.
 
-The only **required** status check for merging is `done`, which aggregates the other checks (excluding Cargo Deny).
+The only **required** status check for merging is `done`, which aggregates the other checks (excluding Security Analysis).
 
 ## Notes
 

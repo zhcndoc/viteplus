@@ -1,4 +1,4 @@
-# 迁移升级：仅适用于浏览器源码的 pnpm
+# migration_upgrade_browser_source_only_pnpm
 
 ## `vpt write-file node_modules/vitest/package.json '{"name":"vitest","version":"4.1.11"}'`
 
@@ -7,23 +7,24 @@ record the original runner version without adding a direct dependency
 
 ## `vp migrate --no-interactive`
 
-应恢复仅源代码浏览器提供程序
+source-only browser provider should be restored
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖项：
+• Dependencies:
     vite-plus        latest → <version>
     vite                    → <version>
     @vitest/browser  4.1.8  → <version>
-• 已配置包管理器设置
+• Package manager settings configured
+• Removed `vite` from pnpm peerDependencyRules: the core version now matches the bundled Vite
 ```
 
 ## `vpt print-file package.json`
 
-应存在 provider、框架 peer 和本地 vitest
+provider, framework peer, and local vitest should be present
 
 ```
 {
@@ -46,7 +47,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-应存在共享的 vitest catalog 和 override
+shared vitest catalog and override should be present
 
 ```
 catalog:
@@ -59,9 +60,7 @@ overrides:
   vitest@*: 'catalog:'
 peerDependencyRules:
   allowAny:
-    - vite
     - vitest
   allowedVersions:
-    vite: '*'
     vitest: '*'
 ```

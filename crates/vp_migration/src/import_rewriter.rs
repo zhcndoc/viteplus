@@ -10,7 +10,7 @@ use rayon::prelude::*;
 use regex::Regex;
 use vp_error::Error;
 
-use crate::{ast_grep, file_walker, pack_config};
+use crate::{ast_grep, file_walker, import_merge, pack_config};
 
 /// ast-grep rules for rewriting vite imports and declare module statements
 ///
@@ -112,6 +112,8 @@ rule:
   pattern: $STR
   kind: string
   regex: ^['"]vite/.+['"]$
+  not:
+    regex: ^['"]vite/rolldown(/.*)?['"]$
   inside:
     kind: import_statement
 transform:
@@ -128,6 +130,8 @@ rule:
   pattern: $STR
   kind: string
   regex: ^['"]vite/.+['"]$
+  not:
+    regex: ^['"]vite/rolldown(/.*)?['"]$
   inside:
     kind: export_statement
 transform:
@@ -144,6 +148,8 @@ rule:
   pattern: $STR
   kind: string
   regex: ^['"]vite/.+['"]$
+  not:
+    regex: ^['"]vite/rolldown(/.*)?['"]$
   inside:
     kind: arguments
     inside:
@@ -165,6 +171,8 @@ rule:
   pattern: $STR
   kind: string
   regex: ^['"]vite/.+['"]$
+  not:
+    regex: ^['"]vite/rolldown(/.*)?['"]$
   inside:
     kind: arguments
     inside:
@@ -202,6 +210,8 @@ rule:
   pattern: $STR
   kind: string
   regex: ^['\"]vite/.+['\"]$
+  not:
+    regex: ^['"]vite/rolldown(/.*)?['"]$
   inside:
     kind: module
 transform:
@@ -1738,6 +1748,11 @@ static RE_REF_VITE_SUBPATH: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"^(\s*///\s*<reference\s+types\s*=\s*["'])vite/(.+?)(["']\s*/>)"#).unwrap()
 });
 
+/// `vite/rolldown[/...]` is not re-exported by `vite-plus`, so it stays untouched.
+static RE_REF_VITE_ROLLDOWN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"^\s*///\s*<reference\s+types\s*=\s*["']vite/rolldown(/[^"']*)?["']"#).unwrap()
+});
+
 /// bare `tsdown` → `vite-plus/pack`
 static RE_REF_TSDOWN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"^(\s*///\s*<reference\s+types\s*=\s*["'])tsdown(["']\s*/>)"#).unwrap()
@@ -1986,7 +2001,9 @@ fn rewrite_reference_types(
             }
         }
         if !skip_packages.skip_vite {
-            if apply_regex_replace(line, &RE_REF_VITE_SUBPATH, "${1}vite-plus/${2}${3}") {
+            if !RE_REF_VITE_ROLLDOWN.is_match(line)
+                && apply_regex_replace(line, &RE_REF_VITE_SUBPATH, "${1}vite-plus/${2}${3}")
+            {
                 changed = true;
                 continue;
             }
@@ -2407,6 +2424,7 @@ fn rewrite_import(
         skip_packages,
         preserve_vitest_in_nuxt_package,
         is_vite_config,
+        file_path.to_str(),
     )?;
     if let Some(preserve_defaults) = preserve_defaults {
         let rewritten =
@@ -2448,16 +2466,7 @@ fn rewrite_import_content(
     content: &str,
     skip_packages: &SkipPackages,
 ) -> Result<RewriteResult, Error> {
-    rewrite_import_content_with_options(content, skip_packages, false)
-}
-
-#[cfg(test)]
-fn rewrite_import_content_with_options(
-    content: &str,
-    skip_packages: &SkipPackages,
-    preserve_unscoped_vitest: bool,
-) -> Result<RewriteResult, Error> {
-    rewrite_import_content_full(content, skip_packages, preserve_unscoped_vitest, true)
+    rewrite_import_content_full(content, skip_packages, false, true, None)
 }
 
 fn rewrite_import_content_full(
@@ -2465,6 +2474,7 @@ fn rewrite_import_content_full(
     skip_packages: &SkipPackages,
     preserve_unscoped_vitest: bool,
     vite_config_file: bool,
+    filename: Option<&str>,
 ) -> Result<RewriteResult, Error> {
     // Fast path: skip AST parsing if the file doesn't contain any target strings
     if !content_may_need_rewriting(content, skip_packages) {
@@ -2542,6 +2552,16 @@ fn rewrite_import_content_full(
         preserve_unscoped_vitest,
         &mut preserved_vitest,
     );
+
+    // Merge adjacent duplicate imports that the per-statement ast-grep rules
+    // above create when two imports end up referencing the same module. Only
+    // run when the rules actually changed something, so files that merely
+    // already happen to have duplicate imports are left untouched.
+    if updated
+        && let Some(merged) = import_merge::merge_duplicate_imports(content, &new_content, filename)
+    {
+        new_content = merged;
+    }
 
     Ok(RewriteResult { content: new_content, updated, preserved_vitest, warnings: Vec::new() })
 }
@@ -2862,26 +2882,6 @@ mod tests {
     }
 
     #[test]
-    fn test_rewrite_import_content_vite() {
-        let vite_config = r#"import { defineConfig } from 'vite'
-
-export default defineConfig({
-  plugins: [],
-});"#;
-
-        let result = rewrite_import_content(vite_config, &SkipPackages::default()).unwrap();
-        assert!(result.updated);
-        assert_eq!(
-            result.content,
-            r#"import { defineConfig } from 'vite-plus'
-
-export default defineConfig({
-  plugins: [],
-});"#
-        );
-    }
-
-    #[test]
     fn test_rewrite_import_content_vite_double_quotes() {
         let vite_config = r#"import { defineConfig } from "vite";
 
@@ -2958,6 +2958,55 @@ export default defineConfig({
         let result = rewrite_import_content(vite_config, &SkipPackages::default()).unwrap();
         assert!(!result.updated);
         assert_eq!(result.content, vite_config);
+    }
+
+    #[test]
+    fn test_rewrite_import_content_vite_plus_duplicate_merge() {
+        let vite_config = r#"import type { Plugin } from 'vite'
+import { defineConfig } from 'vite-plus'
+
+const noop = (): Plugin => ({ name: 'noop' })
+
+export default defineConfig({
+  plugins: [noop()],
+});
+"#;
+
+        let result = rewrite_import_content(vite_config, &SkipPackages::default()).unwrap();
+        assert!(result.updated);
+        assert_eq!(
+            result.content,
+            r#"import { defineConfig, type Plugin } from 'vite-plus';
+
+const noop = (): Plugin => ({ name: 'noop' })
+
+export default defineConfig({
+  plugins: [noop()],
+});
+"#
+        );
+    }
+
+    #[test]
+    fn test_rewrite_import_content_duplicate_merge_preserves_other_content() {
+        let input = "import { defineConfig } from 'vite';\nconst keep = 1;\nimport type { Plugin } from 'vite-plus';\nimport { a } from 'other';\nimport { b } from 'other';";
+        let result = rewrite_import_content(input, &SkipPackages::default()).unwrap();
+        assert!(result.updated);
+        assert_eq!(result.content, input.replace("'vite'", "'vite-plus'"));
+    }
+
+    #[test]
+    fn test_rewrite_import_content_preserves_existing_duplicate_imports() {
+        let imports =
+            "import { defineConfig } from 'vite-plus';\nimport type { Plugin } from 'vite-plus';";
+        let result = rewrite_import_content(imports, &SkipPackages::default()).unwrap();
+        assert!(!result.updated);
+        assert_eq!(result.content, imports);
+
+        let input = format!("{imports}\nconst test = import('vitest');");
+        let result = rewrite_import_content(&input, &SkipPackages::default()).unwrap();
+        assert!(result.updated);
+        assert_eq!(result.content, input.replace("'vitest'", "'vite-plus/test'"));
     }
 
     #[test]
@@ -3302,6 +3351,26 @@ export default ModuleRunner;"#;
             r#"import { ModuleRunner } from 'vite-plus/module-runner';
 
 export default ModuleRunner;"#
+        );
+    }
+
+    #[test]
+    fn test_rewrite_import_content_vite_rolldown_subpath_is_kept() {
+        let vite_config = r#"/// <reference types="vite/rolldown/plugins" />
+import "vite/rolldown/plugins";
+import { viteAliasPlugin } from 'vite/rolldown/plugins';
+import 'vite/rolldown';
+export * from "vite/rolldown/utils";
+const a = require('vite/rolldown/plugins');
+const b = await import('vite/rolldown/plugins');
+declare module 'vite/rolldown/plugins' {}
+import { ModuleRunner } from 'vite/module-runner';"#;
+
+        let result = rewrite_import_content(vite_config, &SkipPackages::default()).unwrap();
+        assert!(result.updated);
+        assert_eq!(
+            result.content,
+            vite_config.replace("'vite/module-runner'", "'vite-plus/module-runner'")
         );
     }
 
@@ -4170,8 +4239,7 @@ import type { Context, ESTree } from '@oxlint/plugins';"#;
         assert!(result.updated);
         assert_eq!(
             result.content,
-            r#"import { definePlugin, defineRule } from "vite-plus/lint/plugins";
-import type { Context, ESTree } from 'vite-plus/lint/plugins';"#
+            r#"import { definePlugin, defineRule, type Context, type ESTree } from "vite-plus/lint/plugins";"#
         );
     }
 
@@ -4202,8 +4270,7 @@ import { defineRule as rule } from "oxlint";"#;
         assert!(result.updated);
         assert_eq!(
             result.content,
-            r#"import type { Context } from 'vite-plus/lint/plugins';
-import { defineRule as rule } from "vite-plus/lint/plugins";"#
+            "import { defineRule as rule, type Context } from 'vite-plus/lint/plugins';"
         );
     }
 
@@ -5571,14 +5638,6 @@ const { defineConfig } = require('vite-plus');"#
     // ====================================
 
     #[test]
-    fn test_rewrite_reference_types_vite_client() {
-        let content = r#"/// <reference types="vite/client" />"#;
-        let result = rewrite_import_content(content, &SkipPackages::default()).unwrap();
-        assert!(result.updated);
-        assert_eq!(result.content, r#"/// <reference types="vite-plus/client" />"#);
-    }
-
-    #[test]
     fn test_rewrite_reference_types_vite_client_single_quotes() {
         let content = r#"/// <reference types='vite/client' />"#;
         let result = rewrite_import_content(content, &SkipPackages::default()).unwrap();
@@ -5589,30 +5648,6 @@ const { defineConfig } = require('vite-plus');"#
     #[test]
     fn test_rewrite_reference_types_bare_vite() {
         let content = r#"/// <reference types="vite" />"#;
-        let result = rewrite_import_content(content, &SkipPackages::default()).unwrap();
-        assert!(result.updated);
-        assert_eq!(result.content, r#"/// <reference types="vite-plus" />"#);
-    }
-
-    #[test]
-    fn test_rewrite_reference_types_bare_vitest() {
-        let content = r#"/// <reference types="vitest" />"#;
-        let result = rewrite_import_content(content, &SkipPackages::default()).unwrap();
-        assert!(result.updated);
-        assert_eq!(result.content, r#"/// <reference types="vite-plus/test" />"#);
-    }
-
-    #[test]
-    fn test_rewrite_reference_types_vitest_globals() {
-        let content = r#"/// <reference types="vitest/globals" />"#;
-        let result = rewrite_import_content(content, &SkipPackages::default()).unwrap();
-        assert!(result.updated);
-        assert_eq!(result.content, r#"/// <reference types="vite-plus/test/globals" />"#);
-    }
-
-    #[test]
-    fn test_rewrite_reference_types_vitest_config() {
-        let content = r#"/// <reference types="vitest/config" />"#;
         let result = rewrite_import_content(content, &SkipPackages::default()).unwrap();
         assert!(result.updated);
         assert_eq!(result.content, r#"/// <reference types="vite-plus" />"#);
@@ -5641,14 +5676,6 @@ const { defineConfig } = require('vite-plus');"#
             assert!(result.updated, "@vitest/browser/{sub} reference should be rewritten");
             assert_eq!(result.content, format!(r#"/// <reference types="{expected}" />"#));
         }
-    }
-
-    #[test]
-    fn test_rewrite_reference_types_vitest_scoped_browser_context() {
-        let content = r#"/// <reference types="@vitest/browser/context" />"#;
-        let result = rewrite_import_content(content, &SkipPackages::default()).unwrap();
-        assert!(result.updated);
-        assert_eq!(result.content, r#"/// <reference types="vite-plus/test/browser/context" />"#);
     }
 
     #[test]

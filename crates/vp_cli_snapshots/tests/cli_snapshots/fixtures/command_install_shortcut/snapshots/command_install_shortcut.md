@@ -1,26 +1,26 @@
-# 安装快捷方式命令
+# command_install_shortcut
 
 ## `vp run install`
 
-安装快捷方式
+install shortcut
 
 ```
-$ vp install ⊘ 缓存已禁用
+$ vp install ⊘ cache disabled
 
-依赖项：
- tslib 2.8.1
+dependencies:
+ is-number 7.0.0
 
-使用 pnpm <version> 在 <duration> 内完成
+Done in <duration> using pnpm <version>
 ```
 
 ## `vp run install`
 
-安装快捷方式命中缓存
+install shortcut hit cache
 
 ```
-$ vp install ⊘ 缓存已禁用
-锁定文件已是最新，跳过解析步骤
-已是最新
+$ vp install ⊘ cache disabled
+Lockfile is up to date, resolution step is skipped
+Already up to date
 
-使用 pnpm <version> 在 <duration> 内完成
+Done in <duration> using pnpm <version>
 ```

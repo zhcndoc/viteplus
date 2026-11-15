@@ -5,6 +5,7 @@
 //! 2. Node.js installation (if needed)
 //! 3. Tool execution (core shims and package binaries)
 
+use vp_command::FirstPathMatch;
 use vp_pm_cli::{PackageManagerType, ensure_package_manager_bin};
 use vp_shared::{PrependOptions, ToolPathEnv, env_vars, output};
 use vt_path::{AbsolutePath, AbsolutePathBuf, current_dir};
@@ -16,12 +17,15 @@ use super::{
 use crate::{
     commands::{
         env::{
-            bin_config::{BinConfig, BinSource},
+            bin_config::{BinConfig, BinSource, validate_bin_name},
             config::{self, ShimMode},
             package_manager,
             package_metadata::PackageMetadata,
         },
-        global::install::is_protected_shim,
+        global::{
+            bin_lock,
+            install::{extract_binaries, is_protected_shim},
+        },
     },
     error::Error,
 };
@@ -234,21 +238,29 @@ fn check_npm_global_install_result(
     }
 
     let is_interactive = vp_shared::is_stdin_terminal();
+    let lock = match bin_lock::acquire_sync() {
+        Ok(lock) => lock,
+        Err(error) => {
+            output::error(&error.to_string());
+            return;
+        }
+    };
     // (bin_name, source_path, package_name)
     let mut missing_bins: Vec<(String, AbsolutePathBuf, String)> = Vec::new();
     let mut managed_conflicts: Vec<(String, String)> = Vec::new();
 
     for spec in packages {
         let Some(package_name) = resolve_package_name(spec) else { continue };
-        let Some((_, content)) = read_npm_package_json(npm_prefix, node_dir, &package_name) else {
+        let Some((package_dir, content)) =
+            read_npm_package_json(npm_prefix, node_dir, &package_name)
+        else {
             continue;
         };
         let Ok(package_json) = serde_json::from_str::<serde_json::Value>(&content) else {
             continue;
         };
-        let bin_names = extract_bin_names(&package_json);
-
-        for bin_name in bin_names {
+        for bin in extract_binaries(&package_json, &package_dir) {
+            let bin_name = bin.name;
             // Skip protected shims (core shims and default env shims). Tell
             // the user for non-core names: npm installed the package, but the
             // binary stays unlinked.
@@ -325,6 +337,9 @@ fn check_npm_global_install_result(
         }
     }
 
+    // Never hold the lock while waiting for a user to answer the prompt.
+    drop(lock);
+
     // Deduplicate by bin_name so that when two packages declare the same binary,
     // only the last one is linked (matching npm's "last writer wins" behavior).
     let missing_bins = dedup_missing_bins(missing_bins);
@@ -363,50 +378,50 @@ fn check_npm_global_install_result(
     };
 
     if should_link {
-        for (bin_name, source_path, package_name) in &missing_bins {
-            create_bin_link(&bin_dir, bin_name, source_path, package_name, node_version);
-        }
+        link_missing_npm_bins(&bin_dir, &missing_bins, node_version);
     }
 }
 
-/// Extract binary names from a package.json value.
-fn extract_bin_names(package_json: &serde_json::Value) -> Vec<String> {
-    let mut bins = Vec::new();
-
-    if let Some(bin) = package_json.get("bin") {
-        match bin {
-            serde_json::Value::String(_) => {
-                // Single binary with package name
-                if let Some(name) = package_json["name"].as_str() {
-                    let bin_name = name.split('/').last().unwrap_or(name);
-                    bins.push(bin_name.to_string());
-                }
+fn link_missing_npm_bins(
+    bin_dir: &AbsolutePath,
+    missing_bins: &[(String, AbsolutePathBuf, String)],
+    node_version: &str,
+) {
+    let _lock = match bin_lock::acquire_sync() {
+        Ok(lock) => lock,
+        Err(error) => {
+            output::error(&error.to_string());
+            return;
+        }
+    };
+    for (bin_name, source_path, package_name) in missing_bins {
+        // A different operation may have claimed this name while the prompt was open.
+        match BinConfig::load_sync(bin_name) {
+            Ok(Some(config)) if config.source == BinSource::Vp => {
+                output::warn(&vt_str::format!(
+                    "Skipped '{bin_name}': managed by `vp install -g {}`.",
+                    config.package
+                ));
+                continue;
             }
-            serde_json::Value::Object(map) => {
-                for name in map.keys() {
-                    bins.push(name.clone());
-                }
+            Err(error) => {
+                output::error(&error.to_string());
+                continue;
             }
             _ => {}
         }
-    }
-
-    bins
-}
-
-/// Extract the relative path for a specific bin name from a package.json "bin" field.
-fn extract_bin_path(package_json: &serde_json::Value, bin_name: &str) -> Option<String> {
-    match package_json.get("bin")? {
-        serde_json::Value::String(path) => {
-            // Single binary — matches if the package name's last segment equals bin_name
-            let pkg_name = package_json["name"].as_str()?;
-            let expected = pkg_name.split('/').last().unwrap_or(pkg_name);
-            if expected == bin_name { Some(path.clone()) } else { None }
+        if std::fs::symlink_metadata(bin_dir.join(bin_name)).is_ok() {
+            continue;
         }
-        serde_json::Value::Object(map) => {
-            map.get(bin_name).and_then(|v| v.as_str()).map(str::to_string)
+        #[cfg(windows)]
+        if ["exe", "cmd"].iter().any(|extension| {
+            std::fs::symlink_metadata(bin_dir.join(format!("{bin_name}.{extension}"))).is_ok()
+        }) {
+            continue;
         }
-        _ => None,
+        if source_path.as_path().exists() {
+            create_bin_link(bin_dir, bin_name, source_path, package_name, node_version);
+        }
     }
 }
 
@@ -418,6 +433,10 @@ pub(crate) fn create_bin_link(
     package_name: &str,
     node_version: &str,
 ) {
+    if let Err(error) = validate_bin_name(bin_name) {
+        output::error(&error.to_string());
+        return;
+    }
     let mut linked = false;
 
     #[cfg(unix)]
@@ -505,6 +524,13 @@ fn remove_npm_global_uninstall_links(
     npm_prefix: &AbsolutePath,
 ) {
     let Ok(bin_dir) = config::get_bin_dir() else { return };
+    let _lock = match bin_lock::acquire_sync() {
+        Ok(lock) => lock,
+        Err(error) => {
+            output::error(&error.to_string());
+            return;
+        }
+    };
 
     for (bin_name, package_name, package_dir) in bin_entries {
         // Skip protected shims: a stale Npm BinConfig must not let
@@ -572,10 +598,13 @@ fn remove_npm_global_uninstall_links(
                 Ok(v) => v,
                 Err(_) => continue,
             };
-            let Some(bin_rel_path) = extract_bin_path(&package_json, bin_name) else {
+            let Some(bin) = extract_binaries(&package_json, &node_modules_dir)
+                .into_iter()
+                .find(|bin| bin.name == *bin_name)
+            else {
                 continue;
             };
-            let source_path = node_modules_dir.join(&bin_rel_path);
+            let source_path = node_modules_dir.join(&bin.path);
             if source_path.as_path().exists() {
                 let _ = std::fs::remove_file(link_path.as_path());
                 #[cfg(windows)]
@@ -628,8 +657,8 @@ fn collect_bin_names_from_npm(
         let Ok(package_json) = serde_json::from_str::<serde_json::Value>(&content) else {
             continue;
         };
-        for bin_name in extract_bin_names(&package_json) {
-            all_bins.push((bin_name, package_name.clone(), package_dir.clone()));
+        for bin in extract_binaries(&package_json, &package_dir) {
+            all_bins.push((bin.name, package_name.clone(), package_dir.clone()));
         }
     }
 
@@ -681,11 +710,21 @@ async fn resolve_package_manager_tool(
     Ok(Some(bin_path))
 }
 
+/// Prepare the child PATH for a JS tool running on the selected Node.js.
+///
+/// `VP_ENV_FORBIDDEN=1` adds no directories: a resolved system directory may
+/// be a canonical path missing from PATH, and adding it would reorder the
+/// user's PATH. Children reach the system tools through the PATH entries
+/// before the shims, where the shims fail under `VP_ENV_FORBIDDEN=1`.
+/// Directories inherited from a parent stay as they are.
 async fn prepare_js_child_path(
     cwd: &AbsolutePath,
     node_bin_dir: &AbsolutePath,
     mut env: ToolPathEnv,
 ) -> Result<ToolPathEnv, Error> {
+    if vp_shared::EnvConfig::get().env_forbidden {
+        return Ok(env);
+    }
     env.prepend(node_bin_dir, &["node"], PrependOptions::default())?;
     if let Some(npm_path) = resolve_package_manager_tool(cwd, "npm").await? {
         if let Some(bin_dir) = npm_path.parent() {
@@ -705,6 +744,112 @@ async fn prepare_js_child_path(
         env.prepend(node_bin_dir, &tools, PrependOptions::default())?;
     }
     Ok(env)
+}
+
+/// Whether `VP_ENV_FORBIDDEN=1` restricts `tool` to the system.
+///
+/// It restricts every core tool: Node.js and every package-manager family.
+/// Package binaries are not restricted.
+pub(crate) fn is_env_forbidden_tool(tool: &str) -> bool {
+    vp_shared::EnvConfig::get().env_forbidden && is_core_shim_tool(tool)
+}
+
+/// Whether a managed executable selected by a parent process may be reused.
+/// Nothing managed is reused under `VP_ENV_FORBIDDEN=1`.
+fn reuses_inherited_tool(path: &AbsolutePath) -> bool {
+    vp_command::is_managed_install(path.as_path()) && !vp_shared::EnvConfig::get().env_forbidden
+}
+
+/// Node.js, the tool, and the child PATH selected for a core shim.
+struct CoreToolSelection {
+    node_path: AbsolutePathBuf,
+    tool_path: AbsolutePathBuf,
+    /// Managed version resolution; `None` when Node.js comes from the system.
+    resolution: Option<ResolveCacheEntry>,
+    child_env: ToolPathEnv,
+}
+
+/// Select Node.js and `tool` for a core shim and prepare the child PATH.
+///
+/// On failure, returns the user-facing messages, each printed with a `vp: `
+/// prefix. This function never executes the tool, so it can be tested directly.
+async fn select_core_tool(
+    tool: &str,
+    cwd: &AbsolutePathBuf,
+    env: ToolPathEnv,
+) -> Result<CoreToolSelection, Vec<String>> {
+    // Ensure Node.js is installed and locate its binary for PATH preparation.
+    // Package-manager shims can use their own declared version, but JS-based
+    // package managers still need the Node.js runtime selected by its mode.
+    // Under VP_ENV_FORBIDDEN=1, dispatch fails before reaching this function.
+    let inherited_node = (PackageManagerType::from_tool(tool).is_some() && env.contains("node"))
+        .then(|| find_system_tool("node"))
+        .flatten();
+    let node_is_inherited = inherited_node.is_some();
+    let system_node = if node_is_inherited {
+        inherited_node
+    } else if PackageManagerType::from_tool(tool).is_some() {
+        let config = config::load_config()
+            .await
+            .map_err(|error| vec![format!("Failed to load Node.js shim mode: {error}")])?;
+        (config.node_shim_mode == ShimMode::SystemFirst).then(|| find_system_tool("node")).flatten()
+    } else {
+        None
+    };
+    let resolution = if system_node.is_none() {
+        Some(resolve_with_cache(cwd).await.map_err(|error| {
+            vec![
+                format!("Failed to resolve Node version: {error}"),
+                "Run 'vp env doctor' for diagnostics".to_string(),
+            ]
+        })?)
+    } else {
+        None
+    };
+    let mut node_path = if let Some(system_node) = system_node {
+        system_node
+    } else {
+        let resolution = resolution.as_ref().expect("managed Node.js has no resolution");
+        ensure_installed(&resolution.version).await.map_err(|error| {
+            vec![format!("Failed to install Node {}: {error}", resolution.version)]
+        })?
+    };
+
+    // Package managers use a matching project pin or their family-specific
+    // fallback. Node and bundled npm tools come from the selected Node.js runtime.
+    let tool_path = match resolve_package_manager_tool(cwd, tool).await {
+        Ok(Some(path)) => path,
+        Ok(None) => {
+            let (runtime_path, tool_path) =
+                resolve_bundled_tool(node_path, tool, resolution.is_none())
+                    .map_err(|error| vec![format!("Tool '{tool}' not found: {error}")])?;
+            node_path = runtime_path;
+            tool_path
+        }
+        Err(e) => return Err(vec![format!("Failed to resolve package manager for '{tool}': {e}")]),
+    };
+
+    // Prepare environment for recursive invocations. Keep the project Node.js
+    // bin dir available for JS package-manager shims, and put a separately
+    // installed PM bin dir first so nested invocations see the same PM version.
+    let node_bin_dir = node_path.parent().expect("Node has no parent directory");
+    let mut child_env = if node_is_inherited {
+        // Adding a missing tool must retain the parent's Node and npm precedence.
+        env
+    } else {
+        prepare_js_child_path(cwd, node_bin_dir, env)
+            .await
+            .map_err(|error| vec![format!("Failed to prepare child process PATH: {error}")])?
+    };
+    if let Some(kind) = PackageManagerType::from_tool(tool)
+        && let Some(bin_dir) = tool_path.parent()
+    {
+        child_env
+            .prepend(bin_dir, kind.bin_names(), PrependOptions::default())
+            .map_err(|error| vec![format!("Failed to prepare package manager PATH: {error}")])?;
+    }
+
+    Ok(CoreToolSelection { node_path, tool_path, resolution, child_env })
 }
 
 /// Main shim dispatch entry point.
@@ -739,22 +884,20 @@ pub async fn dispatch(tool: &str, args: &[String], env: ToolPathEnv) -> i32 {
         return crate::commands::vpr::execute_vpr(args, &cwd).await;
     }
 
+    // Under VP_ENV_FORBIDDEN=1, a core shim neither searches PATH nor forwards,
+    // even under VP_BYPASS, so a system tool that forwards back to it cannot loop.
+    if let Some(error) = env_forbidden_shim_error(tool).await {
+        eprintln!("vp: {error}");
+        return 1;
+    }
+
     // Preserve an already selected managed executable, including direct calls to a shim from its children.
     // External manager shims must not be re-entered here: they may have fallen back to us.
     let inherited_tool =
         PackageManagerType::from_tool(tool).map_or(tool, |kind| kind.bin_name_for_tool(tool));
     if env.contains(inherited_tool)
         && let Some(path) = find_system_tool(inherited_tool)
-        && let Ok(target) = path.as_path().canonicalize()
-        && ["js_runtime", "package_manager"].iter().any(|directory| {
-            vp_shared::EnvConfig::get()
-                .dirs
-                .data
-                .join(directory)
-                .as_path()
-                .canonicalize()
-                .is_ok_and(|root| target.starts_with(root))
-        })
+        && reuses_inherited_tool(&path)
     {
         return exec::exec_tool(&path, args, env);
     }
@@ -780,101 +923,20 @@ pub async fn dispatch(tool: &str, args: &[String], env: ToolPathEnv) -> i32 {
         }
     };
 
-    // Ensure Node.js is installed and locate its binary for PATH preparation.
-    // Package-manager shims can use their own declared version, but JS-based
-    // package managers still need the Node.js runtime selected by its mode.
-    let inherited_node = (PackageManagerType::from_tool(tool).is_some() && env.contains("node"))
-        .then(|| find_system_tool("node"))
-        .flatten();
-    let node_is_inherited = inherited_node.is_some();
-    let system_node = if node_is_inherited {
-        inherited_node
-    } else if PackageManagerType::from_tool(tool).is_some() {
-        match config::load_config().await {
-            Ok(config) if config.node_shim_mode == ShimMode::SystemFirst => {
-                find_system_tool("node")
-            }
-            Ok(_) => None,
-            Err(error) => {
-                eprintln!("vp: Failed to load Node.js shim mode: {error}");
+    let CoreToolSelection { node_path, tool_path, resolution, child_env } =
+        match select_core_tool(tool, &cwd, env).await {
+            Ok(selection) => selection,
+            Err(messages) => {
+                for message in messages {
+                    eprintln!("vp: {message}");
+                }
                 return 1;
             }
-        }
-    } else {
-        None
-    };
-    let resolution = if system_node.is_none() {
-        match resolve_with_cache(&cwd).await {
-            Ok(resolution) => Some(resolution),
-            Err(error) => {
-                eprintln!("vp: Failed to resolve Node version: {error}");
-                eprintln!("vp: Run 'vp env doctor' for diagnostics");
-                return 1;
-            }
-        }
-    } else {
-        None
-    };
-    let mut node_path = if let Some(system_node) = system_node {
-        system_node
-    } else {
-        let resolution = resolution.as_ref().expect("managed Node.js has no resolution");
-        match ensure_installed(&resolution.version).await {
-            Ok(path) => path,
-            Err(error) => {
-                eprintln!("vp: Failed to install Node {}: {error}", resolution.version);
-                return 1;
-            }
-        }
-    };
-
-    // Package managers use a matching project pin or their family-specific
-    // fallback. Node and bundled npm tools come from the selected Node.js runtime.
-    let tool_path = match resolve_package_manager_tool(&cwd, tool).await {
-        Ok(Some(path)) => path,
-        Ok(None) => match resolve_bundled_tool(node_path, tool, resolution.is_none()) {
-            Ok((runtime_path, tool_path)) => {
-                node_path = runtime_path;
-                tool_path
-            }
-            Err(error) => {
-                eprintln!("vp: Tool '{tool}' not found: {error}");
-                return 1;
-            }
-        },
-        Err(e) => {
-            eprintln!("vp: Failed to resolve package manager for '{tool}': {e}");
-            return 1;
-        }
-    };
+        };
 
     // Save original PATH before we modify it - needed for npm global install check.
     // Only captured for npm to avoid unnecessary work on node/npx hot path.
     let original_path = if tool == "npm" { std::env::var_os("PATH") } else { None };
-
-    // Prepare environment for recursive invocations. Keep the project Node.js
-    // bin dir available for JS package-manager shims, and put a separately
-    // installed PM bin dir first so nested invocations see the same PM version.
-    let node_bin_dir = node_path.parent().expect("Node has no parent directory");
-    let mut child_env = if node_is_inherited {
-        // Adding a missing tool must retain the parent's Node and npm precedence.
-        env
-    } else {
-        match prepare_js_child_path(&cwd, node_bin_dir, env).await {
-            Ok(env) => env,
-            Err(error) => {
-                eprintln!("vp: Failed to prepare child process PATH: {error}");
-                return 1;
-            }
-        }
-    };
-    if let Some(kind) = PackageManagerType::from_tool(tool)
-        && let Some(bin_dir) = tool_path.parent()
-        && let Err(error) = child_env.prepend(bin_dir, kind.bin_names(), PrependOptions::default())
-    {
-        eprintln!("vp: Failed to prepare package manager PATH: {error}");
-        return 1;
-    }
 
     // Optional debug env vars
     if std::env::var(env_vars::VP_DEBUG_SHIM).is_ok() {
@@ -1000,9 +1062,12 @@ pub(crate) async fn package_binary_invocation(
     node_version: &str,
     mut env: ToolPathEnv,
 ) -> Result<(AbsolutePathBuf, Vec<String>, ToolPathEnv), String> {
-    let node_path = ensure_installed(node_version)
-        .await
-        .map_err(|e| format!("Failed to install Node {node_version}: {e}"))?;
+    let node_path = match resolve_env_forbidden_tool("node") {
+        Some(node) => node.map_err(|e| e.to_string())?,
+        None => ensure_installed(node_version)
+            .await
+            .map_err(|e| format!("Failed to install Node {node_version}: {e}"))?,
+    };
 
     // Locate the actual binary in the package directory
     let binary_path = locate_package_binary(metadata, tool)
@@ -1014,8 +1079,11 @@ pub(crate) async fn package_binary_invocation(
     let child_env = if let Ok(cwd) = current_dir() {
         prepare_js_child_path(&cwd, node_bin_dir, env).await.map_err(|error| error.to_string())?
     } else {
-        env.prepend(node_bin_dir, &["node"], PrependOptions::default())
-            .map_err(|error| error.to_string())?;
+        // As in `prepare_js_child_path`, VP_ENV_FORBIDDEN adds no directories.
+        if !vp_shared::EnvConfig::get().env_forbidden {
+            env.prepend(node_bin_dir, &["node"], PrependOptions::default())
+                .map_err(|error| error.to_string())?;
+        }
         env
     };
 
@@ -1067,29 +1135,11 @@ pub(crate) fn locate_package_binary(
     let package_json: serde_json::Value =
         serde_json::from_str(&content).map_err(|e| format!("Failed to parse package.json: {e}"))?;
 
-    let binary_path = match package_json.get("bin") {
-        Some(serde_json::Value::String(path)) => {
-            // Single binary - check if it matches the name
-            let pkg_name = package_json["name"].as_str().unwrap_or("");
-            let expected_name = pkg_name.split('/').last().unwrap_or(pkg_name);
-            if expected_name == binary_name {
-                node_modules_dir.join(path)
-            } else {
-                return Err(format!("Binary {} not found in package", binary_name));
-            }
-        }
-        Some(serde_json::Value::Object(map)) => {
-            // Multiple binaries - find the one we need
-            if let Some(serde_json::Value::String(path)) = map.get(binary_name) {
-                node_modules_dir.join(path)
-            } else {
-                return Err(format!("Binary {} not found in package", binary_name));
-            }
-        }
-        _ => {
-            return Err(format!("No bin field in package.json for {}", package_name));
-        }
-    };
+    let bin = extract_binaries(&package_json, &node_modules_dir)
+        .into_iter()
+        .find(|bin| bin.name == binary_name)
+        .ok_or_else(|| format!("Binary {} not found in package", binary_name))?;
+    let binary_path = node_modules_dir.join(&bin.path);
 
     if !binary_path.as_path().exists() {
         return Err(format!(
@@ -1111,6 +1161,29 @@ fn bypass_to_system(tool: &str, args: &[String], env: ToolPathEnv) -> i32 {
             1
         }
     }
+}
+
+/// The error for the shim of `tool` under `VP_ENV_FORBIDDEN=1`, which never
+/// searches PATH.
+///
+/// The shell's PATH lookup reached the shim, so no system tool comes before
+/// it. Managed `config.json` places the shims first on PATH, so `vp env off`
+/// moves them after the system tools. An unrestricted tool gets `None`.
+async fn env_forbidden_shim_error(tool: &str) -> Option<Error> {
+    if !is_env_forbidden_tool(tool) {
+        return None;
+    }
+    let kind = PackageManagerType::from_tool(tool);
+    let bin = kind.map_or(tool, |kind| kind.bin_name_for_tool(tool));
+    // An unreadable config.json cannot show that the shims come first.
+    let shims_first = config::load_config()
+        .await
+        .is_ok_and(|config| config.shim_mode_for_tool(tool) == config::ShimMode::Managed);
+    Some(if shims_first {
+        system_tool_behind_shim(bin)
+    } else {
+        Error::SystemToolNotFound { tool: bin.into() }
+    })
 }
 
 /// Resolve version with caching.
@@ -1222,7 +1295,11 @@ fn node_install_dir(version: &str) -> AbsolutePathBuf {
 }
 
 /// Ensure Node.js is installed.
+///
+/// Fails under `VP_ENV_FORBIDDEN=1`, even for a cached version. Callers that
+/// support it select the system Node.js before reaching this function.
 pub(crate) async fn ensure_installed(version: &str) -> Result<AbsolutePathBuf, String> {
+    vp_js_runtime::ensure_managed_node_allowed().map_err(|error| error.to_string())?;
     let home_dir = node_install_dir(version);
 
     #[cfg(windows)]
@@ -1295,109 +1372,183 @@ pub(crate) fn resolve_external_node_executable(
         .ok_or_else(|| format!("Invalid Node executable path: {}", executable.trim()))
 }
 
-/// Return the first PATH match only if it is external; a Vite+ shim selects managed resolution.
+/// Locate `tool` among the system tools on PATH, or return `None` to select
+/// managed resolution.
 ///
-/// Returns the absolute path to the tool if found, None otherwise.
+/// - Under `VP_ENV_FORBIDDEN=1`, a core tool is returned only when the first
+///   PATH match is a system tool, even under `VP_BYPASS`.
+/// - Otherwise `VP_BYPASS` searches past the Vite+ shims.
+/// - Otherwise the first PATH match is returned unless it is a Vite+ shim; a
+///   managed install there is a parent's selection, which system-first reuses.
 pub(crate) fn find_system_tool(tool: &str) -> Option<AbsolutePathBuf> {
     let cwd = current_dir().ok()?;
-    if std::env::var_os(env_vars::VP_BYPASS).is_some() {
-        return find_external_tool_in(tool, &cwd);
-    }
     find_system_tool_in(tool, &cwd)
 }
 
 /// `cwd` only resolves relative PATH entries; it is a parameter so tests can
 /// exercise them without mutating the process-wide working directory.
 fn find_system_tool_in(tool: &str, cwd: &AbsolutePath) -> Option<AbsolutePathBuf> {
-    let path = std::env::var_os("PATH")?;
-    let paths = std::env::split_paths(&path).map(|path| {
-        if path.is_absolute() || path.starts_with("~") { path } else { cwd.as_path().join(path) }
-    });
-    let path = std::env::join_paths(paths).ok()?;
-    let resolved = vp_command::resolve_bin(tool, Some(&path), cwd).ok()?;
-    let canonical = resolved.as_path().canonicalize().ok();
+    // Under VP_ENV_FORBIDDEN=1 a core tool is the first PATH match, which must
+    // be a system tool. Nothing managed is reused, and VP_BYPASS does not
+    // search past the shims either.
+    if is_env_forbidden_tool(tool) {
+        return match first_path_match(tool, cwd) {
+            FirstPathMatch::System(path) => Some(path),
+            FirstPathMatch::VpOwned(_) | FirstPathMatch::ViteShim(_) | FirstPathMatch::NotFound => {
+                None
+            }
+        };
+    }
+    if std::env::var_os(env_vars::VP_BYPASS).is_some() {
+        return find_external_tool_in(tool, cwd);
+    }
+    match first_path_match(tool, cwd) {
+        // A managed install first on PATH is a parent's selection, which system-first reuses.
+        FirstPathMatch::System(path) | FirstPathMatch::VpOwned(path) => Some(path),
+        FirstPathMatch::ViteShim(_) | FirstPathMatch::NotFound => None,
+    }
+}
+
+/// Classify the first match of `tool` on the process PATH.
+fn first_path_match(tool: &str, cwd: &AbsolutePath) -> FirstPathMatch {
+    let Some(path) = std::env::var_os("PATH") else {
+        return FirstPathMatch::NotFound;
+    };
+    first_path_match_in(tool, &path, cwd)
+}
+
+/// Classify the first match of `tool` on `path`.
+fn first_path_match_in(tool: &str, path: &std::ffi::OsStr, cwd: &AbsolutePath) -> FirstPathMatch {
     let self_real = std::env::current_exe().ok().and_then(|exe| exe.canonicalize().ok());
-    let is_unix_shim = cfg!(unix)
-        && canonical
-            .as_ref()
-            .is_some_and(|target| target.file_name().is_some_and(|name| name == "vp"));
-    if vp_shared::is_windows_trampoline(resolved.as_path())
-        || is_unix_shim
-        || (self_real.is_some() && canonical == self_real)
-    {
-        None
-    } else {
-        Some(resolved)
+    vp_command::classify_first_path_match(tool, path, self_real.as_deref(), cwd)
+}
+
+/// Under `VP_ENV_FORBIDDEN=1`, fail when the first `node` on the child PATH is
+/// a Vite+ managed install.
+///
+/// Checking the selected executable is not enough: a `#!/usr/bin/env node`
+/// shebang and the scripts a tool runs resolve `node` from the child PATH, so a
+/// system tool would still run on a managed runtime that a parent left first
+/// there. The check applies to native tools too, since their scripts can run
+/// `node`. PATH is not reordered. The shim of this installation there fails on
+/// its own under `VP_ENV_FORBIDDEN=1`, and without `node` nothing managed runs.
+/// Shims and managed installs of other installations are outside this guarantee.
+pub(crate) fn ensure_env_forbidden_child_node(env: &ToolPathEnv) -> Result<(), Error> {
+    if !vp_shared::EnvConfig::get().env_forbidden {
+        return Ok(());
+    }
+    let cwd = current_dir()?;
+    match first_path_match_in("node", env.path(), &cwd) {
+        FirstPathMatch::VpOwned(path) => Err(Error::SystemToolManagedInstall {
+            tool: "node".into(),
+            path: path.as_path().display().to_string().into(),
+        }),
+        FirstPathMatch::System(_) | FirstPathMatch::ViteShim(_) | FirstPathMatch::NotFound => {
+            Ok(())
+        }
+    }
+}
+
+/// Under `VP_ENV_FORBIDDEN=1`, fail when `path`, a tool found on PATH, lies in
+/// a Vite+ managed runtime or package manager, such as the `corepack` bundled
+/// with a managed Node.js that a parent left on PATH.
+pub(crate) fn ensure_env_forbidden_not_managed(
+    tool: &str,
+    path: &AbsolutePath,
+) -> Result<(), Error> {
+    if vp_shared::EnvConfig::get().env_forbidden && vp_command::is_managed_install(path.as_path()) {
+        return Err(Error::SystemToolManagedInstall {
+            tool: tool.into(),
+            path: path.as_path().display().to_string().into(),
+        });
+    }
+    Ok(())
+}
+
+/// Locate `tool` when `VP_ENV_FORBIDDEN=1` restricts it to the system, or
+/// return `None` when it is not restricted.
+///
+/// The tool is the first PATH match, which must be a system tool. A Vite+
+/// shim or managed install there fails instead of searching further. Short
+/// aliases (`pn`, `pnx`) map to the binaries the family installs.
+pub(crate) fn resolve_env_forbidden_tool(tool: &str) -> Option<Result<AbsolutePathBuf, Error>> {
+    if !is_env_forbidden_tool(tool) {
+        return None;
+    }
+    let tool =
+        PackageManagerType::from_tool(tool).map_or(tool, |kind| kind.bin_name_for_tool(tool));
+    let cwd = match current_dir() {
+        Ok(cwd) => cwd,
+        Err(error) => return Some(Err(error.into())),
+    };
+    Some(match first_path_match(tool, &cwd) {
+        FirstPathMatch::System(path) => Ok(path),
+        // The shims of this installation come first; `vp env off` moves them.
+        FirstPathMatch::ViteShim(shim)
+            if shim.parent().is_some_and(|dir| {
+                dir.as_path() == vp_shared::EnvConfig::get().dirs.bin.as_path()
+            }) =>
+        {
+            Err(system_tool_behind_shim(tool))
+        }
+        FirstPathMatch::ViteShim(_) | FirstPathMatch::NotFound => {
+            Err(Error::SystemToolNotFound { tool: tool.into() })
+        }
+        FirstPathMatch::VpOwned(path) => Err(Error::SystemToolManagedInstall {
+            tool: tool.into(),
+            path: path.as_path().display().to_string().into(),
+        }),
+    })
+}
+
+/// The error for restricted `tool` behind the shims of this installation;
+/// `tool` is the binary name, not an alias.
+fn system_tool_behind_shim(tool: &str) -> Error {
+    let component = PackageManagerType::from_tool(tool)
+        .map_or_else(|| "node".into(), |kind| kind.to_string().into());
+    Error::SystemToolBehindShim { tool: tool.into(), component }
+}
+
+/// Process-dependent inputs for [`vp_command::find_external_tool`].
+struct ExternalToolInputs {
+    path: std::ffi::OsString,
+    bypass: Vec<std::path::PathBuf>,
+    self_exe: Option<std::path::PathBuf>,
+}
+
+impl ExternalToolInputs {
+    /// Read PATH, `VP_BYPASS`, and the canonical `current_exe()`.
+    /// Returns `None` when PATH is unset.
+    fn from_process_env() -> Option<Self> {
+        let path = std::env::var_os("PATH")?;
+        // Parse VP_BYPASS as a PATH-style list of additional directories to skip.
+        // This prevents infinite loops when multiple vite-plus installations exist in PATH.
+        let bypass = std::env::var_os(env_vars::VP_BYPASS)
+            .map(|v| std::env::split_paths(&v).collect())
+            .unwrap_or_default();
+        let self_exe = std::env::current_exe().ok().and_then(|exe| exe.canonicalize().ok());
+        Some(Self { path, bypass, self_exe })
+    }
+
+    fn query(&self) -> vp_command::ExternalToolQuery<'_> {
+        vp_command::ExternalToolQuery {
+            path: &self.path,
+            bypass: &self.bypass,
+            self_exe: self.self_exe.as_deref(),
+        }
     }
 }
 
 /// Explicit bypass skips Vite+ installations and the directories listed by the caller.
 fn find_external_tool_in(tool: &str, cwd: &AbsolutePath) -> Option<AbsolutePathBuf> {
-    let bin_dir = config::get_bin_dir().ok();
-    let path_var = std::env::var_os("PATH")?;
-    tracing::debug!("path_var: {:?}", path_var);
-
-    // Parse VP_BYPASS as a PATH-style list of additional directories to skip.
-    // This prevents infinite loops when multiple vite-plus installations exist in PATH.
-    let bypass_paths: Vec<std::path::PathBuf> = std::env::var_os(env_vars::VP_BYPASS)
-        .map(|v| std::env::split_paths(&v).collect())
-        .unwrap_or_default();
-    tracing::debug!("bypass_paths: {:?}", bypass_paths);
-
-    // Filter PATH to exclude our bin directory and any bypass directories.
-    // Relative entries are resolved against cwd because `which` reports
-    // matches from them as relative paths, which `AbsolutePathBuf` rejects;
-    // `~`-prefixed entries are left to `which`'s own tilde expansion.
-    let mut filtered_paths: Vec<_> = std::env::split_paths(&path_var)
-        .filter(|p| {
-            if let Some(ref bin) = bin_dir {
-                if p == bin.as_path() {
-                    return false;
-                }
-            }
-            !bypass_paths.iter().any(|bp| p == bp)
-        })
-        .map(|p| if p.is_absolute() || p.starts_with("~") { p } else { cwd.as_path().join(p) })
-        .collect();
-
-    // Exclude our executable and shims from other installations, which would
-    // otherwise dispatch back into vp.
-    let self_real = std::env::current_exe().ok().and_then(|exe| exe.canonicalize().ok());
-    loop {
-        // Use vp_command::resolve_bin with filtered PATH - stops at first match
-        let search_path = std::env::join_paths(&filtered_paths).ok()?;
-        let resolved = vp_command::resolve_bin(tool, Some(&search_path), cwd).ok()?;
-        let canonical = resolved.as_path().canonicalize().ok();
-        // A sibling `vp` may itself be a shim sharing an external manager's executable.
-        let is_unix_shim = cfg!(unix)
-            && canonical
-                .as_ref()
-                .is_some_and(|target| target.file_name().is_some_and(|name| name == "vp"));
-        if !vp_shared::is_windows_trampoline(resolved.as_path())
-            && !is_unix_shim
-            && (self_real.is_none() || canonical != self_real)
-        {
-            return Some(resolved);
-        }
-        // Canonicalize both sides of the comparison so symlink-aliased PATH
-        // entries still match the resolved parent.
-        let self_dir = resolved.as_path().parent()?.to_path_buf();
-        let canonical_self_dir = self_dir.canonicalize().ok();
-        let len_before = filtered_paths.len();
-        filtered_paths.retain(|p| {
-            *p != self_dir
-                && (canonical_self_dir.is_none() || p.canonicalize().ok() != canonical_self_dir)
-        });
-        if filtered_paths.len() == len_before {
-            // Nothing left to drop; give up rather than loop forever.
-            return None;
-        }
-    }
+    let inputs = ExternalToolInputs::from_process_env()?;
+    vp_command::find_external_tool(tool, &inputs.query(), cwd)
 }
 
 #[cfg(test)]
 mod tests {
     use tempfile::TempDir;
+    use vp_shared::EnvConfig;
 
     use super::*;
 
@@ -1431,7 +1582,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_hash_pinned_modern_yarn_rechecks_cached_cli() {
+    async fn test_hash_pinned_modern_yarn_rejects_mismatched_download() {
+        use httpmock::prelude::*;
+
         let temp = TempDir::new().unwrap();
         let vp_home = AbsolutePathBuf::new(temp.path().join("vp-home")).unwrap();
         let cwd = AbsolutePathBuf::new(temp.path().join("project")).unwrap();
@@ -1444,17 +1597,23 @@ mod tests {
         )
         .unwrap();
 
-        // VP_HOME pins <DATA> to the root, so the cached install lands here.
-        let bin_dir =
-            vp_home.join("package_manager").join("yarn").join("4.17.1").join("yarn").join("bin");
-        std::fs::create_dir_all(&bin_dir).unwrap();
-        std::fs::write(bin_dir.join("yarn"), "shim").unwrap();
-        std::fs::write(bin_dir.join("yarn.cmd"), "shim").unwrap();
-        std::fs::write(bin_dir.join("yarn.ps1"), "shim").unwrap();
-        std::fs::write(bin_dir.join("yarn.js"), "corrupt").unwrap();
+        // A Yarn 2+ pin covers the CLI binary, verified when it is downloaded. Serve
+        // the `@yarnpkg/cli-dist` tarball from a local registry so the check runs
+        // offline; its CLI bytes cannot match the all-zeros pin, so the download must
+        // be rejected and the error must reach the shim caller.
+        let server = MockServer::start();
+        let tarball = cli_dist_tgz(b"console.log('yarn');\n");
+        server.mock(|when, then| {
+            when.method(GET).path("/@yarnpkg/cli-dist/-/cli-dist-4.17.1.tgz");
+            then.status(200).body(tarball);
+        });
+        let registry = server.base_url();
 
         vp_shared::EnvConfig::with_vars_async(
-            [(env_vars::VP_HOME, vp_home.as_path())],
+            [
+                (env_vars::VP_HOME, vp_home.as_path().as_os_str()),
+                ("NPM_CONFIG_REGISTRY", std::ffi::OsStr::new(&registry)),
+            ],
             |_| async {
                 let result = resolve_package_manager_tool(&cwd, "yarn").await;
                 assert!(
@@ -1462,11 +1621,32 @@ mod tests {
                         result,
                         Err(Error::Install(vp_error::Error::PackageManagerHashMismatch { .. }))
                     ),
-                    "the global Yarn shim must reject a corrupted pinned cache: {result:?}"
+                    "the global Yarn shim must reject a pinned download whose CLI fails the pin: {result:?}"
                 );
             },
         )
         .await;
+    }
+
+    /// Build an `@yarnpkg/cli-dist` style gzip tarball holding `package/bin/yarn.js`.
+    fn cli_dist_tgz(yarn_js: &[u8]) -> Vec<u8> {
+        let mut builder = tar::Builder::new(Vec::new());
+        let mut header = tar::Header::new_gnu();
+        header.set_size(yarn_js.len() as u64);
+        header.set_mode(0o755);
+        header.set_cksum();
+        builder
+            .append_data(&mut header, "package/bin/yarn.js", std::io::Cursor::new(yarn_js))
+            .unwrap();
+        let tar_data = builder.into_inner().unwrap();
+        let mut gz = Vec::new();
+        {
+            let mut encoder =
+                flate2::write::GzEncoder::new(&mut gz, flate2::Compression::default());
+            std::io::Write::write_all(&mut encoder, &tar_data).unwrap();
+            encoder.finish().unwrap();
+        }
+        gz
     }
 
     #[tokio::test]
@@ -1903,6 +2083,56 @@ mod tests {
     }
 
     #[test]
+    fn test_create_bin_link_rejects_invalid_binary_name() {
+        let temp = TempDir::new().unwrap();
+        vp_shared::EnvConfig::with_vars([(env_vars::VP_HOME, temp.path())], |_| {
+            let bin_dir = config::get_bin_dir().unwrap();
+            std::fs::create_dir_all(&bin_dir).unwrap();
+            let source = bin_dir.join("source.js");
+            std::fs::write(&source, "console.log('test');").unwrap();
+            create_bin_link(&bin_dir, "../outside", &source, "test-package", "22.18.0");
+            for name in ["outside", "outside.cmd", "outside.json"] {
+                assert!(std::fs::symlink_metadata(temp.path().join(name)).is_err());
+            }
+        });
+    }
+
+    #[test]
+    fn test_npm_link_rechecks_owner_after_prompt() {
+        let temp = TempDir::new().unwrap();
+        vp_shared::EnvConfig::with_vars([(env_vars::VP_HOME, temp.path())], |_| {
+            let bin_dir = config::get_bin_dir().unwrap();
+            std::fs::create_dir_all(&bin_dir).unwrap();
+            let source = bin_dir.join("source.js");
+            std::fs::write(&source, "console.log('test');").unwrap();
+            let candidates = vec![("test-cli".into(), source, "npm-package".into())];
+
+            // Another activation claims the name while npm's link prompt is open.
+            BinConfig::new(
+                "test-cli".into(),
+                "managed-package".into(),
+                "1.0.0".into(),
+                "22.18.0".into(),
+            )
+            .save_sync()
+            .unwrap();
+            link_missing_npm_bins(&bin_dir, &candidates, "22.18.0");
+            assert_eq!(
+                BinConfig::load_sync("test-cli").unwrap().unwrap().package,
+                "managed-package"
+            );
+            for name in ["test-cli", "test-cli.cmd", "test-cli.exe"] {
+                assert!(std::fs::symlink_metadata(bin_dir.join(name)).is_err());
+            }
+
+            BinConfig::delete_sync("test-cli").unwrap();
+            link_missing_npm_bins(&bin_dir, &candidates, "22.18.0");
+            assert_eq!(BinConfig::load_sync("test-cli").unwrap().unwrap().package, "npm-package");
+            assert!(bin_dir.join("test-cli").as_path().exists());
+        });
+    }
+
+    #[test]
     fn test_npm_uninstall_preserves_links_until_package_is_removed() {
         let temp = TempDir::new().unwrap();
         let npm_prefix = AbsolutePathBuf::new(temp.path().join("npm-prefix")).unwrap();
@@ -2126,37 +2356,66 @@ mod tests {
         assert_eq!(resolve_package_name("./nonexistent"), None);
     }
 
-    // --- extract_bin_names tests ---
-
     #[test]
-    fn test_extract_bin_names_single() {
-        let json: serde_json::Value =
-            serde_json::from_str(r#"{"name": "my-pkg", "bin": "./cli.js"}"#).unwrap();
-        assert_eq!(extract_bin_names(&json), vec!["my-pkg"]);
+    fn test_locate_package_binary_filters_unsafe_entries() {
+        let temp = TempDir::new().unwrap();
+        vp_shared::EnvConfig::with_vars([(env_vars::VP_HOME, temp.path())], |_| {
+            let metadata = PackageMetadata::new(
+                "my-pkg".to_string(),
+                "1.0.0".to_string(),
+                "22.18.0".to_string(),
+                None,
+                vec!["valid".to_string(), "outside".to_string()],
+                Default::default(),
+                "npm".to_string(),
+            );
+            let package_dir =
+                config::get_node_modules_dir(&metadata.installation_dir().unwrap(), &metadata.name);
+            std::fs::create_dir_all(&package_dir).unwrap();
+            std::fs::write(package_dir.join("cli.js"), "console.log('valid');").unwrap();
+            std::fs::write(package_dir.join("../outside.js"), "console.log('outside');").unwrap();
+            std::fs::write(
+                package_dir.join("package.json"),
+                serde_json::json!({"bin": {
+                    "@scope/valid": "cli.js", "outside": "../outside.js",
+                }})
+                .to_string(),
+            )
+            .unwrap();
+            assert_eq!(
+                locate_package_binary(&metadata, "valid").unwrap(),
+                package_dir.join("cli.js")
+            );
+            assert!(locate_package_binary(&metadata, "outside").is_err());
+        });
     }
 
     #[test]
-    fn test_extract_bin_names_scoped_single() {
-        let json: serde_json::Value =
-            serde_json::from_str(r#"{"name": "@scope/my-pkg", "bin": "./cli.js"}"#).unwrap();
-        assert_eq!(extract_bin_names(&json), vec!["my-pkg"]);
-    }
-
-    #[test]
-    fn test_extract_bin_names_object() {
-        let json: serde_json::Value = serde_json::from_str(
-            r#"{"name": "pkg", "bin": {"cli-a": "./a.js", "cli-b": "./b.js"}}"#,
-        )
-        .unwrap();
-        let mut names = extract_bin_names(&json);
-        names.sort();
-        assert_eq!(names, vec!["cli-a", "cli-b"]);
-    }
-
-    #[test]
-    fn test_extract_bin_names_no_bin() {
-        let json: serde_json::Value = serde_json::from_str(r#"{"name": "pkg"}"#).unwrap();
-        assert!(extract_bin_names(&json).is_empty());
+    fn test_npm_bin_collection_filters_unsafe_entries() {
+        let temp = TempDir::new().unwrap();
+        let prefix = AbsolutePathBuf::new(temp.path().to_path_buf()).unwrap();
+        let package_dir = config::get_node_modules_dir(&prefix, "my-pkg");
+        std::fs::create_dir_all(&package_dir).unwrap();
+        for (manifest, expected) in [
+            (serde_json::json!({"name": "my-pkg", "bin": "./cli.js"}), vec!["my-pkg"]),
+            (serde_json::json!({"name": "@scope/my-pkg", "bin": "./cli.js"}), vec!["my-pkg"]),
+            (
+                serde_json::json!({"bin": {
+                    "cli-a": "./a.js", "@scope/cli-b": "./b.js",
+                    "../victim": "./a.js", "outside": "../outside.js",
+                }}),
+                vec!["cli-a", "cli-b"],
+            ),
+            (serde_json::json!({"name": "my-pkg"}), vec![]),
+        ] {
+            std::fs::write(package_dir.join("package.json"), manifest.to_string()).unwrap();
+            let mut names: Vec<_> = collect_bin_names_from_npm(&s(&["my-pkg"]), &prefix, &prefix)
+                .into_iter()
+                .map(|(name, _, _)| name)
+                .collect();
+            names.sort();
+            assert_eq!(names, expected);
+        }
     }
 
     // --- is_local_path tests ---
@@ -2378,5 +2637,445 @@ mod tests {
         // ultimately return node_dir as the final fallback
         let result = resolve_npm_prefix(&parsed, &dummy_dir, &dummy_dir, &ToolPathEnv::from_env());
         assert!(!result.as_path().as_os_str().is_empty());
+    }
+
+    /// Directories for `VP_ENV_FORBIDDEN` shim tests: a managed Node.js cached
+    /// under `VP_HOME` and a separate system directory.
+    struct ForbiddenLayout {
+        _temp: TempDir,
+        home: std::path::PathBuf,
+        managed_bin: std::path::PathBuf,
+        system_bin: std::path::PathBuf,
+        cwd: AbsolutePathBuf,
+    }
+
+    impl ForbiddenLayout {
+        fn new() -> Self {
+            let temp = TempDir::new().unwrap();
+            let home = temp.path().join("home");
+            let managed_bin = node_install_dir_in(&home, "24.0.0");
+            let system_bin = temp.path().join("system-bin");
+            let cwd = AbsolutePathBuf::new(temp.path().join("project")).unwrap();
+            for dir in [&managed_bin, &system_bin, &cwd.as_path().to_path_buf()] {
+                std::fs::create_dir_all(dir).unwrap();
+            }
+            create_fake_executable(&managed_bin, "node");
+            create_fake_executable(&managed_bin, "npm");
+            Self { _temp: temp, home, managed_bin, system_bin, cwd }
+        }
+
+        /// PATH with the managed runtime first, as a parent shim leaves it.
+        fn path(&self) -> std::ffi::OsString {
+            std::env::join_paths([&self.managed_bin, &self.system_bin]).unwrap()
+        }
+    }
+
+    fn node_install_dir_in(home: &std::path::Path, version: &str) -> std::path::PathBuf {
+        let dir = home.join("js_runtime").join("node").join(version);
+        if cfg!(windows) { dir } else { dir.join("bin") }
+    }
+
+    /// Pins `VP_HOME`, PATH and `VP_ENV_FORBIDDEN`; everything else in `extra`
+    /// is set as given.
+    fn forbidden_vars(
+        layout: &ForbiddenLayout,
+        path: &std::ffi::OsStr,
+        forbidden: Option<&'static str>,
+        extra: &[(&'static str, std::ffi::OsString)],
+    ) -> Vec<(&'static str, Option<std::ffi::OsString>)> {
+        let mut vars = vec![
+            (env_vars::VP_HOME, Some(layout.home.clone().into_os_string())),
+            ("PATH", Some(path.to_os_string())),
+            (env_vars::VP_BYPASS, None),
+            (env_vars::VP_PATH_INJECTED_TOOLS, None),
+            (env_vars::VP_ENV_FORBIDDEN, forbidden.map(Into::into)),
+        ];
+        for (name, value) in extra {
+            vars.retain(|(var, _)| var != name);
+            vars.push((name, Some(value.clone())));
+        }
+        vars
+    }
+
+    /// Make `dir/<tool>` a Vite+ shim: a link to `vp` on Unix, a trampoline
+    /// with a shim pointer on Windows.
+    fn make_shim(
+        layout: &ForbiddenLayout,
+        dir: &std::path::Path,
+        tool: &str,
+    ) -> std::path::PathBuf {
+        std::fs::create_dir_all(dir).unwrap();
+        #[cfg(unix)]
+        {
+            let vp_dir = layout.home.join("current");
+            std::fs::create_dir_all(&vp_dir).unwrap();
+            let vp = create_fake_executable(&vp_dir, "vp");
+            let shim = dir.join(tool);
+            std::os::unix::fs::symlink(&vp, &shim).unwrap();
+            shim
+        }
+        #[cfg(windows)]
+        {
+            let shim = create_fake_executable(dir, tool);
+            EnvConfig::with_vars(forbidden_vars(layout, &layout.path(), None, &[]), |config| {
+                config.dirs.write_shim_pointer_beside(&shim).unwrap();
+            });
+            shim
+        }
+    }
+
+    fn exe(name: &str) -> String {
+        if cfg!(windows) { format!("{name}.exe") } else { name.to_owned() }
+    }
+
+    #[test]
+    fn test_find_system_tool_reuses_managed_installs_but_not_shims() {
+        let layout = ForbiddenLayout::new();
+        let managed_node = layout.managed_bin.join(exe("node"));
+        let system_node = create_fake_executable(&layout.system_bin, "node");
+        let empty = layout.home.join("empty");
+        std::fs::create_dir_all(&empty).unwrap();
+        let shim_dir = layout.home.join("bin");
+        make_shim(&layout, &shim_dir, "node");
+        let cases = [
+            (layout.path(), Some(managed_node)),
+            (std::env::join_paths([&layout.system_bin]).unwrap(), Some(system_node)),
+            (std::env::join_paths([&empty]).unwrap(), None),
+            (std::env::join_paths([&shim_dir, &layout.system_bin]).unwrap(), None),
+        ];
+        for (path, expected) in cases {
+            EnvConfig::with_vars(forbidden_vars(&layout, &path, None, &[]), |_| {
+                let found = find_system_tool_in("node", &layout.cwd);
+                assert_eq!(
+                    found.as_ref().map(|path| path.as_path()),
+                    expected.as_deref(),
+                    "{path:?}"
+                );
+            });
+        }
+    }
+
+    /// Under `VP_ENV_FORBIDDEN=1`, a core shim fails without searching PATH.
+    /// The message follows where `config.json` places the shims. Other values
+    /// of `VP_ENV_FORBIDDEN` leave the shims to their own mode.
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_env_forbidden_shim_error_follows_config_without_searching_path() {
+        let layout = ForbiddenLayout::new();
+        for tool in ["node", "npm", "pnpm"] {
+            create_fake_executable(&layout.system_bin, tool);
+        }
+        let path = std::env::join_paths([&layout.system_bin]).unwrap();
+        let shim_error = |forbidden: Option<&'static str>, tool: &'static str| {
+            let vars = forbidden_vars(&layout, &path, forbidden, &[]);
+            EnvConfig::with_vars_async(vars, move |_| async move {
+                env_forbidden_shim_error(tool).await.map(|error| error.to_string())
+            })
+        };
+        let forbidden = Some("1");
+        let behind_shim = |tool: &str, component: &str| {
+            Error::SystemToolBehindShim { tool: tool.into(), component: component.into() }
+                .to_string()
+        };
+
+        // Without config.json, the shims are managed and come first on PATH.
+        assert_eq!(shim_error(forbidden, "node").await, Some(behind_shim("node", "node")));
+        assert_eq!(shim_error(forbidden, "npm").await, Some(behind_shim("npm", "npm")));
+        assert_eq!(shim_error(forbidden, "npx").await, Some(behind_shim("npx", "npm")));
+        assert_eq!(shim_error(forbidden, "pnx").await, Some(behind_shim("pnpx", "pnpm")));
+        // Package binaries are not restricted.
+        assert_eq!(shim_error(forbidden, "tsc").await, None);
+        // Only the exact value `1` restricts the shims.
+        assert_eq!(shim_error(Some("true"), "pnpm").await, None);
+        assert_eq!(shim_error(None, "node").await, None);
+
+        // System-first shims come last on PATH, so no system tool came before them.
+        let vars = forbidden_vars(&layout, &path, forbidden, &[]);
+        EnvConfig::with_vars_async(vars, |_| async {
+            let config = config::Config {
+                node_shim_mode: config::ShimMode::SystemFirst,
+                ..Default::default()
+            };
+            config::save_config(&config).await.unwrap();
+        })
+        .await;
+        let not_found = Error::SystemToolNotFound { tool: "node".into() };
+        assert_eq!(shim_error(forbidden, "node").await, Some(not_found.to_string()));
+        // The pnpm shims stay managed.
+        assert_eq!(shim_error(forbidden, "pnpm").await, Some(behind_shim("pnpm", "pnpm")));
+
+        // An unreadable config.json cannot show that the shims come first.
+        let vars = forbidden_vars(&layout, &path, forbidden, &[]);
+        EnvConfig::with_vars_async(vars, |_| async {
+            std::fs::write(config::get_config_path().unwrap(), "{").unwrap();
+        })
+        .await;
+        assert_eq!(shim_error(forbidden, "node").await, Some(not_found.to_string()));
+    }
+
+    /// A lookup under `VP_ENV_FORBIDDEN=1` takes the first PATH match only: a
+    /// Vite+ shim or a managed install there fails instead of searching further.
+    #[test]
+    fn test_resolve_env_forbidden_tool_classifies_the_first_match() {
+        let layout = ForbiddenLayout::new();
+        let system_node = create_fake_executable(&layout.system_bin, "node");
+        let managed_node = layout.managed_bin.join(exe("node"));
+        let bin = layout.home.join("bin");
+        let fallback_bin = layout.home.join("fallback-bin");
+        make_shim(&layout, &bin, "node");
+        make_shim(&layout, &bin, "pnpm");
+        make_shim(&layout, &fallback_bin, "node");
+        let empty = layout.home.join("empty");
+        std::fs::create_dir_all(&empty).unwrap();
+        let resolve = |dirs: &[&std::path::Path], tool: &str| {
+            let path = std::env::join_paths(dirs).unwrap();
+            EnvConfig::with_vars(forbidden_vars(&layout, &path, Some("1"), &[]), |_| {
+                resolve_env_forbidden_tool(tool)
+                    .expect("the tool is restricted")
+                    .map_err(|error| error.to_string())
+            })
+        };
+        let not_found =
+            |tool: &str| Err(Error::SystemToolNotFound { tool: tool.into() }.to_string());
+
+        let system = resolve(&[&layout.system_bin, &layout.managed_bin], "node");
+        assert_eq!(system.unwrap().as_path(), system_node);
+        // A managed runtime first on PATH is reported, not skipped.
+        assert_eq!(
+            resolve(&[&layout.managed_bin, &layout.system_bin], "node"),
+            Err(Error::SystemToolManagedInstall {
+                tool: "node".into(),
+                path: managed_node.display().to_string().into(),
+            }
+            .to_string())
+        );
+        // The shims of this installation come first, so `vp env off` moves them.
+        let behind_shim = |tool: &str, component: &str| {
+            Err(Error::SystemToolBehindShim { tool: tool.into(), component: component.into() }
+                .to_string())
+        };
+        assert_eq!(resolve(&[&bin, &layout.system_bin], "node"), behind_shim("node", "node"));
+        assert_eq!(resolve(&[&bin, &layout.system_bin], "pnpm"), behind_shim("pnpm", "pnpm"));
+        // A short alias resolves the binary the family installs.
+        assert_eq!(resolve(&[&bin, &layout.system_bin], "pn"), behind_shim("pnpm", "pnpm"));
+        // Fallback shims come last, so no system tool comes before them.
+        assert_eq!(resolve(&[&fallback_bin, &layout.system_bin], "node"), not_found("node"));
+        assert_eq!(resolve(&[&empty], "node"), not_found("node"));
+
+        // Package binaries and other values of VP_ENV_FORBIDDEN are not restricted.
+        EnvConfig::with_vars(forbidden_vars(&layout, &layout.path(), Some("1"), &[]), |_| {
+            assert!(resolve_env_forbidden_tool("tsc").is_none());
+        });
+        EnvConfig::with_vars(forbidden_vars(&layout, &layout.path(), Some("true"), &[]), |_| {
+            assert!(resolve_env_forbidden_tool("node").is_none());
+            assert!(resolve_env_forbidden_tool("pnpm").is_none());
+        });
+    }
+
+    /// Under `VP_ENV_FORBIDDEN=1` a core tool is reused only when the first
+    /// PATH match is a system tool, even under `VP_BYPASS`. Package binaries
+    /// are not restricted, so `VP_BYPASS` still searches past their shims.
+    #[test]
+    fn test_find_system_tool_skips_managed_installs_when_env_forbidden() {
+        let layout = ForbiddenLayout::new();
+        let system_node = create_fake_executable(&layout.system_bin, "node");
+        let system_pnpm = create_fake_executable(&layout.system_bin, "pnpm");
+        let system_tsc = create_fake_executable(&layout.system_bin, "tsc");
+        let managed_pnpm_bin = layout.home.join("package_manager/pnpm/10.0.0/bin");
+        std::fs::create_dir_all(&managed_pnpm_bin).unwrap();
+        create_fake_executable(&managed_pnpm_bin, "pnpm");
+        let shim_dir = layout.home.join("bin");
+        make_shim(&layout, &shim_dir, "node");
+        make_shim(&layout, &shim_dir, "tsc");
+        let find = |dirs: &[&std::path::Path], tool: &str, bypass: bool| {
+            let path = std::env::join_paths(dirs).unwrap();
+            let extra: &[(&'static str, std::ffi::OsString)] =
+                if bypass { &[(env_vars::VP_BYPASS, std::ffi::OsString::new())] } else { &[] };
+            EnvConfig::with_vars(forbidden_vars(&layout, &path, Some("1"), extra), |_| {
+                find_system_tool_in(tool, &layout.cwd).map(|path| path.as_path().to_path_buf())
+            })
+        };
+
+        for bypass in [false, true] {
+            assert_eq!(find(&[&layout.managed_bin, &layout.system_bin], "node", bypass), None);
+            assert_eq!(find(&[&managed_pnpm_bin, &layout.system_bin], "pnpm", bypass), None);
+            assert_eq!(find(&[&shim_dir, &layout.system_bin], "node", bypass), None);
+            assert_eq!(
+                find(&[&layout.system_bin, &layout.managed_bin], "node", bypass),
+                Some(system_node.clone())
+            );
+            assert_eq!(
+                find(&[&layout.system_bin, &managed_pnpm_bin], "pnpm", bypass),
+                Some(system_pnpm.clone())
+            );
+        }
+        assert_eq!(find(&[&shim_dir, &layout.system_bin], "tsc", true), Some(system_tsc));
+    }
+
+    /// Under `VP_ENV_FORBIDDEN=1` a tool does not start when the first `node`
+    /// on the child PATH, not the process PATH, is a managed install. A shim
+    /// there fails on its own, and no `node` at all runs nothing managed.
+    #[test]
+    fn test_ensure_env_forbidden_child_node_rejects_a_managed_node_first_on_path() {
+        let layout = ForbiddenLayout::new();
+        create_fake_executable(&layout.system_bin, "node");
+        let managed_node = layout.managed_bin.join(exe("node"));
+        let shim_dir = layout.home.join("bin");
+        make_shim(&layout, &shim_dir, "node");
+        let empty = layout.home.join("empty");
+        std::fs::create_dir_all(&empty).unwrap();
+        // The process PATH has the system Node.js first; only the child PATH varies.
+        let process_path = std::env::join_paths([&layout.system_bin, &layout.managed_bin]).unwrap();
+        let check = |dirs: &[&std::path::Path], forbidden: &'static str| {
+            let child = ToolPathEnv::new(std::env::join_paths(dirs).unwrap(), "");
+            EnvConfig::with_vars(
+                forbidden_vars(&layout, &process_path, Some(forbidden), &[]),
+                |_| ensure_env_forbidden_child_node(&child).map_err(|error| error.to_string()),
+            )
+        };
+
+        assert_eq!(
+            check(&[&layout.managed_bin, &layout.system_bin], "1"),
+            Err(Error::SystemToolManagedInstall {
+                tool: "node".into(),
+                path: managed_node.display().to_string().into(),
+            }
+            .to_string())
+        );
+        assert_eq!(check(&[&layout.system_bin, &layout.managed_bin], "1"), Ok(()));
+        assert_eq!(check(&[&shim_dir, &layout.managed_bin], "1"), Ok(()));
+        assert_eq!(check(&[&empty], "1"), Ok(()));
+        // Other values of VP_ENV_FORBIDDEN check nothing.
+        assert_eq!(check(&[&layout.managed_bin, &layout.system_bin], "true"), Ok(()));
+    }
+
+    /// Under `VP_ENV_FORBIDDEN=1` a tool found on PATH fails when it lies in a
+    /// managed runtime, such as the corepack bundled with managed Node.js.
+    #[test]
+    fn test_ensure_env_forbidden_not_managed_rejects_managed_installs() {
+        let layout = ForbiddenLayout::new();
+        let managed =
+            AbsolutePathBuf::new(create_fake_executable(&layout.managed_bin, "corepack")).unwrap();
+        let system =
+            AbsolutePathBuf::new(create_fake_executable(&layout.system_bin, "corepack")).unwrap();
+        let check = |path: &AbsolutePathBuf, forbidden: &'static str| {
+            EnvConfig::with_vars(
+                forbidden_vars(&layout, &layout.path(), Some(forbidden), &[]),
+                |_| {
+                    ensure_env_forbidden_not_managed("corepack", path)
+                        .map_err(|error| error.to_string())
+                },
+            )
+        };
+
+        assert_eq!(
+            check(&managed, "1"),
+            Err(Error::SystemToolManagedInstall {
+                tool: "corepack".into(),
+                path: managed.as_path().display().to_string().into(),
+            }
+            .to_string())
+        );
+        assert_eq!(check(&system, "1"), Ok(()));
+        assert_eq!(check(&managed, "true"), Ok(()));
+    }
+
+    #[tokio::test]
+    async fn test_ensure_installed_rejects_cached_node_when_env_forbidden() {
+        let layout = ForbiddenLayout::new();
+        let path = layout.path();
+        EnvConfig::with_vars_async(forbidden_vars(&layout, &path, None, &[]), |_| async {
+            assert!(ensure_installed("24.0.0").await.is_ok());
+        })
+        .await;
+        EnvConfig::with_vars_async(forbidden_vars(&layout, &path, Some("1"), &[]), |_| async {
+            let error = ensure_installed("24.0.0").await.unwrap_err();
+            assert!(error.contains(&format!("{}=1", env_vars::VP_ENV_FORBIDDEN)), "{error}");
+        })
+        .await;
+    }
+
+    /// A managed executable selected by a parent is reused, but never under
+    /// `VP_ENV_FORBIDDEN=1`: neither a managed package manager, nor the managed
+    /// runtime and its bundled npm, nor a package binary bundled with it.
+    #[test]
+    fn test_reuses_inherited_managed_tools_unless_env_forbidden() {
+        let layout = ForbiddenLayout::new();
+        let pnpm_bin = layout
+            .home
+            .join("package_manager")
+            .join("pnpm")
+            .join("10.0.0")
+            .join("pnpm")
+            .join("bin");
+        std::fs::create_dir_all(&pnpm_bin).unwrap();
+        let pnpm = create_fake_executable(&pnpm_bin, "pnpm");
+        let npm = layout.managed_bin.join(exe("npm"));
+        let node = layout.managed_bin.join(exe("node"));
+        let corepack = create_fake_executable(&layout.managed_bin, "corepack");
+        let tools = [pnpm, npm, node, corepack].map(|path| AbsolutePathBuf::new(path).unwrap());
+        let path = layout.path();
+
+        for forbidden in [None, Some("true")] {
+            EnvConfig::with_vars(forbidden_vars(&layout, &path, forbidden, &[]), |_| {
+                for tool in &tools {
+                    assert!(reuses_inherited_tool(tool), "{forbidden:?} {tool:?}");
+                }
+            });
+        }
+        EnvConfig::with_vars(forbidden_vars(&layout, &path, Some("1"), &[]), |_| {
+            for tool in &tools {
+                assert!(!reuses_inherited_tool(tool), "{tool:?}");
+            }
+        });
+    }
+
+    /// Under `VP_ENV_FORBIDDEN=1` the child PATH gets no directory and records
+    /// no tool, so directories inherited from a parent stay in order. Otherwise
+    /// the runtime and its npm are added as before.
+    #[tokio::test]
+    async fn test_prepare_js_child_path_adds_nothing_when_env_forbidden() {
+        let layout = ForbiddenLayout::new();
+        let node_dir = node_install_dir_in(&layout.home, "22.0.0");
+        std::fs::create_dir_all(&node_dir).unwrap();
+        create_fake_executable(&node_dir, "node");
+        // The bundled npm is a `.cmd` script on Windows.
+        if cfg!(windows) {
+            std::fs::write(node_dir.join("npm.cmd"), "").unwrap();
+        } else {
+            create_fake_executable(&node_dir, "npm");
+        }
+        let node_dir = AbsolutePathBuf::new(node_dir).unwrap();
+        let other = layout.cwd.as_path().join("other-bin");
+        let path = std::env::join_paths([&layout.managed_bin, &other, &layout.system_bin]).unwrap();
+        let prepare = |forbidden: Option<&'static str>| {
+            let vars = forbidden_vars(&layout, &path, forbidden, &[]);
+            let (cwd, node_dir) = (layout.cwd.clone(), node_dir.clone());
+            EnvConfig::with_vars_async(vars, move |_| async move {
+                prepare_js_child_path(&cwd, &node_dir, ToolPathEnv::from_env())
+                    .await
+                    .unwrap()
+                    .into_envs()
+            })
+        };
+
+        let [(_, child_path), (_, child_tools)] = prepare(Some("1")).await;
+        assert_eq!(child_path, path);
+        assert_eq!(child_tools, "");
+
+        // Other values of VP_ENV_FORBIDDEN do not keep the runtime out.
+        for forbidden in [None, Some("true")] {
+            let [(_, child_path), (_, child_tools)] = prepare(forbidden).await;
+            assert_eq!(
+                std::env::split_paths(&child_path).collect::<Vec<_>>(),
+                [
+                    node_dir.as_path().to_path_buf(),
+                    layout.managed_bin.clone(),
+                    other.clone(),
+                    layout.system_bin.clone()
+                ],
+                "{forbidden:?}"
+            );
+            assert_eq!(child_tools, "node,npm", "{forbidden:?}");
+        }
     }
 }

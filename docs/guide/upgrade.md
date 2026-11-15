@@ -1,6 +1,6 @@
 # 升级 Vite+
 
-Use `vp upgrade` to update the global `vp` binary. To update the local `vite-plus` package in a project, see [Update Vite+](/guide/upgrade-project).
+使用 `vp upgrade` 更新全局 `vp` 二进制文件；如果由 [Homebrew](#homebrew) 管理，则使用 Homebrew 更新。要更新项目中的本地 `vite-plus` 软件包，请参见[更新 Vite+](/guide/upgrade-project)。
 
 ## 概述
 
@@ -22,7 +22,7 @@ vp toolchain vite rolldown oxc
 vp toolchain --json
 ```
 
-如果项目中存在本地 `vite-plus` 包，该命令会使用它。使用 `--global` 可显示全局 `vp` 命令对应的版本：
+如果项目中存在本地 `vite-plus` 包，该命令会使用它。使用 `--global` 或 `-g` 可显示全局 `vp` 命令对应的版本：
 
 ```bash
 vp toolchain --global
@@ -30,7 +30,7 @@ vp toolchain --global
 
 `vp why <package>` 会显示包管理器中的依赖关系图。它无法显示打包进 `@voidzero-dev/vite-plus-core` 的代码，也无法显示编译进 Vite+ 的引擎。使用 `vp toolchain` 可显示这些版本及其关系。
 
-## 全局 `vp`
+## 全局 `vp` {#global-vp}
 
 Update the global CLI with:
 
@@ -87,15 +87,19 @@ vp upgrade --rollback
 
 ### Homebrew
 
-Homebrew 管理其安装的二进制文件和 JavaScript 软件包。使用以下命令更新：
+官方 [Homebrew tap](/guide/homebrew) 管理其安装的二进制文件。使用以下命令更新：
 
 ```bash
-brew upgrade vite-plus
+brew upgrade voidzero-dev/vite-plus/vp
 ```
 
-`vp upgrade` 会检测 Homebrew 安装并引导你使用此命令，不会下载或安装其他版本。`--force`、指定版本和 `--rollback` 也遵循此规则。请使用 Homebrew 管理这些安装。
+`vp upgrade` 会检测已安装的 formula，并显示其 Homebrew 升级命令；它不会下载或安装其他版本。`--force`、指定版本和 `--rollback` 也遵循此规则。脚本安装器的回退和自动清理不适用于 Homebrew 安装。
 
-`vp upgrade --check` 会引导你运行 `brew outdated vite-plus`。Homebrew 安装会禁用自动 npm 更新检查和通知。
+通过 tap 升级后，请运行 `vp`，将新版本的依赖安装到用户数据目录。设置过程会保留你的管理偏好。
+
+对于 tap 安装，`vp upgrade --check` 会引导你运行 `brew outdated voidzero-dev/vite-plus/vp`。Homebrew 安装会禁用自动 npm 更新检查和通知。
+
+要切换到 tap，请按照[迁移步骤](/guide/homebrew#switch-an-existing-installation)操作。
 
 ## 预览构建
 
@@ -109,7 +113,9 @@ brew upgrade vite-plus
 
 预览构建通过拉取请求编号或提交 SHA 来指定。它们不是稳定的版本范围，除非维护者要求，否则你应避免将其保留在长期存在的分支中。
 
-### 全局 `vp` 预览版
+Homebrew 安装请参阅[tap 预览说明](/guide/homebrew#test-a-preview-build)。
+
+### 全局 `vp` 预览版 {#global-vp-preview}
 
 通过向安装器传递 `VP_PR_VERSION` 来安装全局 CLI 的预览构建。传入拉取请求编号或提交 SHA：
 

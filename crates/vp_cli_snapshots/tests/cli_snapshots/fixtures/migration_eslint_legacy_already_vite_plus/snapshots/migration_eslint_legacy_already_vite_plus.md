@@ -1,17 +1,44 @@
-# 将旧版 ESLint 迁移到 Vite Plus
+# migration_eslint_legacy_already_vite_plus
 
-## `vp migrate --no-interactive`
+## `vp migrate --full --no-interactive`
 
-应显示旧版配置警告，并提示已在使用 Vite+
+full migration of an existing Vite+ project should warn about the legacy ESLint config and skip ESLint migration
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+▲ Legacy ESLint configuration detected (.eslintrc). Automatic migration to Oxlint requires ESLint v9+ with flat config format (eslint.config.*). Please upgrade to ESLint v9 first: https://eslint.org/docs/latest/use/migrate-to-9.0.0
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
-    vite-plus  最新版 → <version>
+• Dependencies:
+    vite-plus  latest → <version>
     vite              → <version>
-• 已配置包管理器设置
-• 已跳过编辑器、钩子和 lint 设置。运行 `vp migrate --full` 以应用这些设置。
+• 2 config updates applied
+• Package manager settings configured
+```
+
+## `vpt print-file package.json`
+
+check eslint and its lint script are kept
+
+```
+{
+  "name": "migration-eslint-legacy-already-vite-plus",
+  "scripts": {
+    "lint": "eslint .",
+    "prepare": "vp config"
+  },
+  "devDependencies": {
+    "eslint": "^8.23.1",
+    "vite-plus": "catalog:"
+  }
+}
+```
+
+## `vpt stat-file .eslintrc --assert file`
+
+check legacy config is kept
+
+```
+.eslintrc: file
 ```

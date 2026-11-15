@@ -1,16 +1,16 @@
 # command_env_exec
 
-## `vp env exec --node 20.19 node -v`
+## `vp env exec --node 22.23 node -v`
 
-使用指定的主版本运行 node
+Run Node.js with a specific minor version
 
 ```
 <version>
 ```
 
-## `vp env exec --node 20.19 node -e 'console.log('\''Hello from Node '\'' + process.version)'`
+## `vp env exec --node 22.23 node -e 'console.log('\''Hello from Node '\'' + process.version)'`
 
-运行内联脚本
+Run inline script
 
 ```
 Hello from Node <version>

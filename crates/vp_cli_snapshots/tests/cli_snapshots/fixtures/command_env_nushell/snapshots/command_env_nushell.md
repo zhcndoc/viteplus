@@ -6,7 +6,7 @@
 ## `vpt cp assert.nu 'vp "home\with spaces"/assert.nu'`
 
 
-## `vpt write-file 'vp "home\with spaces"/.node-version' '22.18.0
+## `vpt write-file 'vp "home\with spaces"/.node-version' '22.23.4
 '`
 
 
@@ -15,7 +15,7 @@
 加载生成的 env.nu，并验证 setup、显式使用、取消设置和基于文件的使用
 
 ```
-Using Node.js <version> (resolved from 20.18.0)
+Using Node.js <version> (resolved from 20.20.2)
 Reverted selected components to project environment resolution
 Using Node.js <version> (resolved from .node-version)
 Nushell environment checks passed

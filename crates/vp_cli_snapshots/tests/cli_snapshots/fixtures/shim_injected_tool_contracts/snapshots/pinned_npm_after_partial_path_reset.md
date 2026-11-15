@@ -6,7 +6,7 @@
 ## `vp env on npm`
 
 
-## `vp env exec --node 22.18.0 node assert-unix-shim-path.cjs partial 10.5.0`
+## `vp env exec --node 22.23.4 node assert-unix-shim-path.cjs partial 10.5.0`
 
 项目的 npm 固定版本在 PATH 重置后仍然优先于捆绑的 npm
 

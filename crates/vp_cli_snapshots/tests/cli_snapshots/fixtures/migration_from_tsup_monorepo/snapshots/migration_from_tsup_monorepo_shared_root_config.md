@@ -121,6 +121,7 @@ package a 的共享配置构建仍可用
 ```
 ~/packages/a$ tsup --config ../../tsup.config.ts ⊘ cache disabled
 CLI Building entry: src/index.ts
+CLI Using tsconfig: ../../tsconfig.json
 CLI tsup <version>
 CLI Using tsup config: <workspace>/tsup.config.ts
 CLI Target: node16
@@ -148,6 +149,7 @@ package b 的共享配置构建仍可用
 ```
 ~/packages/b$ tsup --config ../../tsup.config.ts ⊘ cache disabled
 CLI Building entry: src/index.ts
+CLI Using tsconfig: ../../tsconfig.json
 CLI tsup <version>
 CLI Using tsup config: <workspace>/tsup.config.ts
 CLI Target: node16

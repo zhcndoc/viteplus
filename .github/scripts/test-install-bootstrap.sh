@@ -27,12 +27,16 @@ LEGACY
 cat > "$test_root/package/vp" <<'BINARY'
 #!/bin/bash
 if [ "$#" -eq 0 ]; then
+  test -f "$(dirname "$0")/vp-install-lock.yaml" || exit 96
   test -z "${VP_SELF_SETUP_SUPPORT_CHECK+x}" || exit 99
   touch "$test_root/binary-invoked"
   if [ "$scenario" = failure ]; then exit 42; fi
   test "${VP_SELF_SETUP_SHELL:-}" = sh || exit 98
   if [[ "$scenario" == *pr ]]; then
     test "$NPM_CONFIG_REGISTRY" = https://registry-bridge.viteplus.dev/ || exit 97
+  fi
+  if [[ "$scenario" == env-forbidden* ]]; then
+    test "${VP_ENV_FORBIDDEN:-}" = 1 || exit 95
   fi
   printf 'INSTALL_DIR=%q\n' "$test_root/data"
   printf 'SHIM_DIR=%q\n' "$test_root/installed bin"
@@ -41,14 +45,24 @@ if [ "$#" -eq 0 ]; then
   printf 'STATE_DIR=%q\n' "$test_root/state"
   exit 0
 fi
-test "${VP_SELF_SETUP_SUPPORT_CHECK:-}" = 1 || exit 99
+# Only VP_ENV_FORBIDDEN=1 asks for the second response line.
+case "$scenario:${VP_SELF_SETUP_SUPPORT_CHECK:-}" in
+  env-forbidden*:env-forbidden) ;;
+  *:1) ;;
+  *) exit 99 ;;
+esac
 touch "$test_root/binary-probed"
 case "$scenario" in
-  legacy|legacy-failure|piped-legacy|piped-legacy-failure|pr) printf 'Usage: vp [COMMAND]\n' ;;
-  *) printf 'vite-plus-self-setup-v1\n' ;;
+  legacy|legacy-failure|piped-legacy|piped-legacy-failure|pr|env-forbidden-legacy) printf 'Usage: vp [COMMAND]\n' ;;
+  *)
+    printf 'vite-plus-self-setup-v1\n'
+    if [ "$VP_SELF_SETUP_SUPPORT_CHECK" = env-forbidden ] && [ "$scenario" != env-forbidden-v1 ]; then
+      printf 'vite-plus-self-setup-env-forbidden\n'
+    fi ;;
 esac
 BINARY
 chmod +x "$test_root/package/vp"
+printf 'release dependency tree\n' > "$test_root/package/vp-install-lock.yaml"
 # Ensure the fixture digest contains + and / for the JSON escape cases.
 for attempt in {1..100}; do
   printf '\n# Integrity fixture %s\n' "$attempt" >> "$test_root/package/vp"
@@ -126,6 +140,7 @@ curl() {
 }
 
 for scenario in supported legacy legacy-failure piped-legacy piped-legacy-failure failure pr supported-pr \
+  env-forbidden env-forbidden-v1 env-forbidden-legacy forbidden-value-true \
   missing-hash-tools missing-hash-tools-pr \
   escaped-integrity escaped-integrity-pr escaped-integrity-all escaped-integrity-lower escaped-integrity-key escaped-integrity-slash \
   integrity-missing integrity-malformed integrity-unsupported integrity-noncanonical integrity-wrong-type \
@@ -154,6 +169,12 @@ for scenario in supported legacy legacy-failure piped-legacy piped-legacy-failur
     fi
     if [[ "$scenario" == *pr ]]; then PR_VERSION=2406; fi
     if [ "$scenario" = supported ]; then export VP_SELF_SETUP_SUPPORT_CHECK=original; fi
+    unset VP_ENV_FORBIDDEN VP_NODE_MANAGER VP_PM_MANAGER VP_NPM_MANAGER VP_PNPM_MANAGER VP_YARN_MANAGER VP_BUN_MANAGER
+    case "$scenario" in
+      env-forbidden*) export VP_ENV_FORBIDDEN=1 ;;
+      # Only the exact value 1 stops management.
+      forbidden-value-true) export VP_ENV_FORBIDDEN=true ;;
+    esac
     main
     test "$NPM_CONFIG_REGISTRY" = https://custom.example
     test "$INSTALL_DIR" = "$test_root/data"
@@ -184,13 +205,20 @@ for scenario in supported legacy legacy-failure piped-legacy piped-legacy-failur
     test "$status" -eq 42
   elif [[ "$scenario" == *legacy-failure ]]; then
     test "$status" -eq 43
+  elif [ "$scenario" = env-forbidden-v1 ] || [ "$scenario" = env-forbidden-legacy ]; then
+    test "$status" -ne 0
+    grep -q 'does not support VP_ENV_FORBIDDEN' "$test_root/output"
+    test -f "$test_root/binary-probed"
   elif [ "$status" -ne 0 ]; then
     cat "$test_root/output"
     exit 1
   fi
   case "$scenario" in
-    supported|supported-pr|failure|missing-hash-tools*|escaped-integrity*)
+    supported|supported-pr|failure|missing-hash-tools*|escaped-integrity*|env-forbidden|forbidden-value-true)
       test -f "$test_root/binary-invoked"
+      test ! -f "$test_root/legacy" ;;
+    env-forbidden-v1|env-forbidden-legacy)
+      test ! -f "$test_root/binary-invoked"
       test ! -f "$test_root/legacy" ;;
     legacy|legacy-failure|piped-legacy|piped-legacy-failure|pr)
       test -f "$test_root/legacy"

@@ -9,11 +9,13 @@
 mod ast_grep;
 mod eslint;
 mod file_walker;
+mod import_merge;
 mod import_rewriter;
 mod pack_config;
 mod package;
 mod prettier;
 mod script_rewrite;
+mod shell_command;
 mod source_analysis;
 mod task_cache;
 mod vite_config;
@@ -24,6 +26,7 @@ pub use import_rewriter::{
     rewrite_imports_in_directory_with_options,
 };
 pub use package::{rewrite_eslint, rewrite_prettier, rewrite_scripts};
+pub use shell_command::{LiteralCommandToken, parse_literal_commands};
 pub use source_analysis::analyze_migration_source;
 pub use task_cache::{TaskCacheMigrationResult, migrate_task_cache_config};
 pub use vite_config::{

@@ -11,7 +11,9 @@
 ```
 VITE+ - The Unified Toolchain for the Web
 
-No package manager pin found in current directory.
+No matching package-manager pin found. No changes made.
+  File: package.json
+  Checked fields: packageManager
 ```
 
 ## `vpt print-file package.json`

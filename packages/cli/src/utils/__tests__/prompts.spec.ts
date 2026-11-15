@@ -30,22 +30,31 @@ describe('downloadPackageManager', () => {
       name: 'pnpm',
       version: 'latest',
       cwd: '/target/workspace',
+      expectedHash: undefined,
     });
   });
 
-  it('keeps existing callers without a target directory compatible', async () => {
+  it('preserves the integrity hash from a package manager override', async () => {
     vi.mocked(downloadPackageManagerBinding).mockResolvedValueOnce({
       name: 'pnpm',
-      version: '11.24.0',
+      version: '10.6.1',
       installDir: '/cache/pnpm',
       binPrefix: '/cache/pnpm/bin',
       packageName: 'pnpm',
     });
-    await downloadPackageManager(PackageManager.pnpm, 'latest', false, true);
+    await downloadPackageManager(
+      PackageManager.pnpm,
+      '10.6.1',
+      false,
+      true,
+      '/target/workspace',
+      'sha512.0123456789abcdef',
+    );
     expect(downloadPackageManagerBinding).toHaveBeenLastCalledWith({
       name: 'pnpm',
-      version: 'latest',
-      cwd: undefined,
+      version: '10.6.1',
+      cwd: '/target/workspace',
+      expectedHash: 'sha512.0123456789abcdef',
     });
   });
 });

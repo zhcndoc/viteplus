@@ -1278,8 +1278,8 @@ export interface ModuleRunnerTransformResult {
    * This will be set if {@link TransformOptions#sourcemap} is `true`.
    */
   map?: SourceMap;
-  deps: Array<string>;
-  dynamicDeps: Array<string>;
+  deps: string[];
+  dynamicDeps: string[];
   /**
    * Parse and transformation errors.
    *
@@ -1669,6 +1669,73 @@ export interface TypeScriptOptions {
   rewriteImportExtensions?: 'rewrite' | 'remove' | boolean;
 }
 
+/**
+ * The selected tsconfig and its original source, sent to an asynchronous loader.
+ * `None` selects discovery explicitly, without consulting the receiving thread's env.
+ */
+export interface FrozenTsconfig {
+  path?: string;
+  source?: string;
+}
+
+export interface LoadContext {
+  /** Export conditions of the relevant `package.json` */
+  conditions?: Array<string>;
+  /**
+   * The format optionally supplied by the `resolve` hook chain. Node.js passes it as
+   * `undefined`, not `null`, when the chain reported none — a `.node` or `.wasm` file
+   * resolved without its flag, any extension Node.js does not know — and a required
+   * field would reject the whole context with "Missing field `format`" instead of
+   * letting Node.js raise its own `ERR_UNKNOWN_FILE_EXTENSION`.
+   */
+  format?: string | null;
+  /** An object whose key-value pairs represent the assertions for the module to import */
+  importAttributes: Record<string, string>;
+}
+
+export interface LoadFnOutput {
+  format: string;
+  source?: string | Uint8Array | Buffer | null;
+  responseURL?: string;
+}
+
+/** The code `transformModuleRunner` hands to `@oxc-node/core/importer`. */
+export interface ModuleRunnerOutput {
+  code: string;
+  /** The source map as a JSON string */
+  map?: string;
+  /**
+   * The file is an ES module. Its imports, exports and `import.meta` are calls into
+   * the runner (`__vite_ssr_import__` and friends); a CommonJS file keeps `require`,
+   * `module` and `exports`, and only its `import()` calls into the runner.
+   */
+  esm: boolean;
+  /**
+   * The ES module awaits at its top level, so `require()` of it is
+   * `ERR_REQUIRE_ASYNC_MODULE`.
+   */
+  topLevelAwait: boolean;
+}
+
+export interface OxcResolveOptions {
+  getCurrentDirectory?: () => string;
+}
+
+export interface ResolveContext {
+  /** Export conditions of the relevant `package.json` */
+  conditions: Array<string>;
+  /** An object whose key-value pairs represent the assertions for the module to import */
+  importAttributes: Record<string, string>;
+  parentURL?: string;
+}
+
+export interface ResolveFnOutput {
+  format?: string | null;
+  shortCircuit?: boolean;
+  url: string;
+  importAttributes?: Record<string, string> | null;
+}
+
 export declare class BindingBundleEndEventData {
   output: string;
   duration: number;
@@ -1951,6 +2018,12 @@ export declare class BindingOutputChunk {
   getImports(): Array<string>;
   getDynamicImports(): Array<string>;
   getCode(): string;
+  /**
+   * Identity of the shared chunk data behind this object. Two `BindingOutputChunk` objects with the same
+   * identity share the same data, so a JavaScript string made from `getCode()` of one is valid for the other.
+   * The identity is the address of that data. It stays unique while a `BindingOutputChunk` keeps the data alive.
+   */
+  getCodeIdentity(): number;
   getMap(): string | null;
   getSourcemapFileName(): string | null;
   getPreliminaryFileName(): string;
@@ -2000,6 +2073,8 @@ export declare class BindingRenderedChunkMeta {
 
 export declare class BindingRenderedModule {
   get code(): string | null;
+  /** `code.length` without materializing `code`. */
+  get renderedLength(): number;
   get renderedExports(): Array<string>;
 }
 
@@ -2256,6 +2331,12 @@ export interface BindingDevOptions {
 
 export interface BindingDevtoolsOptions {
   sessionId?: string;
+  /**
+   * `"full"` (default): write JSON-lines devtools logs. `"report"`: aggregate the same
+   * event stream in-memory and emit an agent-readable report (`metrics.json` + markdown)
+   * under `node_modules/.rolldown/report/<output dir>` instead.
+   */
+  mode?: 'full' | 'report';
 }
 
 export interface BindingDevWatchOptions {
@@ -3316,6 +3397,7 @@ export interface BindingViteResolvePluginConfig {
   tsconfig?: string;
   environmentConsumer: string;
   environmentName: string;
+  convertExternalRequire?: boolean;
   builtins: Array<BindingStringOrRegex>;
   external: true | string[];
   noExternal: true | Array<string | RegExp>;
@@ -3341,6 +3423,8 @@ export interface BindingViteResolvePluginConfig {
 
 export interface BindingViteResolvePluginResolveOptions {
   isBuild: boolean;
+  /** Defaults to `isBuild`. */
+  isBundled?: boolean;
   isProduction: boolean;
   asSrc: boolean;
   preferRelative: boolean;
@@ -3703,6 +3787,9 @@ export declare function ensureBlockingStdio(): void;
  */
 export declare function findMonorepoRoot(cwd: string): string | null;
 
+/** Read the same `VP_PACKAGE_MANAGER` override used by `vp install`. */
+export declare function getPackageManagerOverride(): PackageManagerOverride | null;
+
 /**
  * Resolved on-disk category roots from [`vp_shared::EnvConfig`].
  *
@@ -3739,6 +3826,13 @@ export interface JsCommandContext {
 export interface JsCommandResolvedResult {
   binPath: string;
   envs: Record<string, string>;
+}
+
+/** A literal argument with its original JavaScript UTF-16 source range. */
+export interface LiteralCommandToken {
+  value: string;
+  start: number;
+  end: number;
 }
 
 /**
@@ -3828,6 +3922,12 @@ export interface MigrateArgs {
  */
 export declare function migrateTaskCacheConfig(viteConfigPath: string): TaskCacheConfigResult;
 
+export interface PackageManagerOverride {
+  name: string;
+  version: string;
+  expectedHash?: string;
+}
+
 export declare function parseConfigArgs(argv: Array<string>): ParseConfigArgsOutcome;
 
 export type ParseConfigArgsOutcome =
@@ -3848,6 +3948,16 @@ export type ParseHooksArgsOutcome =
   | { status: 'ok'; value: HooksArgs }
   | { status: 'exit'; code: number }
   | { status: 'error'; error: CliParseError };
+
+/**
+ * Read simple literal commands, optionally separated by `&&`, `||`, or `;`.
+ * Returns null for unsupported syntax. Assignments and wrappers stay in argv;
+ * callers must decide whether a command is safe to rewrite.
+ */
+export declare function parseLiteralCommands(
+  source: string,
+  allowLists: boolean,
+): Array<Array<LiteralCommandToken>> | null;
 
 export declare function parseMigrateArgs(argv: Array<string>): ParseMigrateArgsOutcome;
 
@@ -4145,3 +4255,46 @@ export interface VpDirsJs {
  * `vite-plus` when needed.
  */
 export declare function wrapLazyPlugins(viteConfigPath: string): MergeJsonConfigResult;
+
+export declare namespace oxcNode {
+  export class OxcTransformer {
+    constructor(cwd?: string | undefined | null, helperModuleName?: string | undefined | null);
+    transform(path: string, source: string | Uint8Array): oxcNode.TransformOutput;
+  }
+  export function createResolve(
+    specifier: string,
+    context: ResolveContext,
+    nextResolve: (
+      arg0: string,
+      arg1?: ResolveContext | undefined | null,
+    ) => ResolveFnOutput | Promise<ResolveFnOutput>,
+  ): ResolveFnOutput | Promise<ResolveFnOutput>;
+  export function enableWatchReport(): void;
+  export function freezeTransformDeps(): string;
+  /** Freeze the effective config before registering the off-thread ESM hooks. */
+  export function freezeTsconfig(cwd: string): FrozenTsconfig;
+  /** Apply a frozen selection, including discovery without the receiving thread's env. */
+  export function initializeLoader(
+    path?: string | undefined | null,
+    source?: string | undefined | null,
+  ): void;
+  export function load(
+    url: string,
+    context: LoadContext,
+    nextLoad: (
+      arg0: string,
+      arg1?: LoadContext | undefined | null,
+    ) => LoadFnOutput | Promise<LoadFnOutput>,
+    helperModuleName?: string | undefined | null,
+  ): LoadFnOutput | Promise<LoadFnOutput>;
+  export function setTransformDeps(mode?: string | undefined | null): void;
+  export function setTsconfigPath(path?: string | undefined | null): void;
+  export function takeWatchDependencies(): Array<string>;
+  /** A file transformed for the CommonJS loader. */
+  export interface TransformOutput {
+    source: string;
+    /** The source map as a JSON string. */
+    sourceMap?: string;
+  }
+  export function transformsDep(path: string): boolean;
+}

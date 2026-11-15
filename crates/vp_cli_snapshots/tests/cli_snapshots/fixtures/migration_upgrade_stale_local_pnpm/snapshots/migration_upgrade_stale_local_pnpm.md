@@ -1,26 +1,27 @@
-# 迁移升级过时的本地 pnpm
+# migration_upgrade_stale_local_pnpm
 
 ## `node setup-local.mjs`
 
 
 ## `vp migrate --no-interactive`
 
-较新的全局 CLI 必须绕过已安装的过时本地 CLI
+newer global CLI must bypass the installed stale local CLI
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
+• Dependencies:
     vite-plus  0.1.24 → <version>
     vite              → <version>
-• 已配置包管理器设置
+• Package manager settings configured
+• Removed `vite` from pnpm peerDependencyRules: the core version now matches the bundled Vite
 ```
 
 ## `vpt print-file package.json`
 
-过时的包装器依赖和普通的 vite-plus 版本范围应被修复；空的 pnpm 字段应被移除
+stale wrapper deps and plain vite-plus range should be repaired; empty pnpm field should be removed
 
 ```
 {
@@ -41,16 +42,11 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-pnpm 设置应集中于此处
+pnpm settings should be consolidated here
 
 ```
 overrides:
   vite@*: 'catalog:'
-peerDependencyRules:
-  allowAny:
-    - vite
-  allowedVersions:
-    vite: '*'
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@<version>
   vite-plus: <version>

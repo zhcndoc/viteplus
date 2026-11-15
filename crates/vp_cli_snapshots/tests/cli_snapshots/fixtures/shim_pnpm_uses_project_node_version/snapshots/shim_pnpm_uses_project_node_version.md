@@ -26,7 +26,7 @@ pnpm 使用项目的 Node 版本
 pnpm child uses project Node version
 ```
 
-## `vp env exec --node 22.13 pnpm exec node -e 'if('\!'process.version.startsWith('\''v22.13.'\''))process.exit(1);console.log('\''explicit Node reaches pnpm child'\'')'`
+## `vp env exec --node 24.22 pnpm exec node -e 'if('\!'process.version.startsWith('\''v24.22.'\''))process.exit(1);console.log('\''explicit Node reaches pnpm child'\'')'`
 
 显式的 env exec 版本通过 pnpm shim 覆盖项目版本
 

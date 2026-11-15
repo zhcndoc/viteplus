@@ -1,11 +1,11 @@
-# 命令环境使用
+# command_env_use
 
 ## `vp env use --help`
 
-应显示帮助信息
+should show help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 Usage: vp env use [OPTIONS] [REQUESTS]...
 
@@ -14,32 +14,32 @@ Activate Node.js and package-manager versions for this shell session
 Arguments:
   [REQUESTS]...  Component selectors or explicit versions to activate
 
-选项：
-  --unset                移除会话覆盖（恢复基于文件的解析）
-  --no-install           如果版本不存在，则跳过自动安装
-  --silent-if-unchanged  如果版本已处于激活状态，则不显示输出
-  -h, --help             显示帮助（使用 “-h” 查看摘要）
+Options:
+  --unset                Remove session override (revert to file-based resolution)
+  --no-install           Skip auto-installation if version not present
+  --silent-if-unchanged  Suppress output if version is already active
+  -h, --help             Print help (see a summary with '-h')
 
 Examples:
   vp env use 22.19.0  # Override Node.js for this session
   vp env use pnpm@12  # Override the package manager
   vp env use --unset  # Clear both session overrides
 
-文档：https://viteplus.dev/guide/env
+Documentation: https://viteplus.dev/guide/env
 ```
 
-## `vp env use 20.18.0 --no-install`
+## `vp env use 20.20.2 --no-install`
 
-应将 export 命令输出到 stdout
+should output export command to stdout
 
 ```
-export VP_NODE_VERSION=20.18.0
-正在使用 Node.js <version>（由 20.18.0 解析）
+export VP_NODE_VERSION=20.20.2
+Using Node.js <version> (resolved from 20.20.2)
 ```
 
 ## `vp env use --unset`
 
-应将取消设置命令输出到标准输出
+should output unset command to stdout
 
 ```
 unset VP_NODE_VERSION
@@ -52,39 +52,39 @@ Reverted selected components to project environment resolution
 
 ## `vp env use d`
 
-应针对无效版本显示友好的错误信息
+should show friendly error for invalid version
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-错误：无效的 Node.js 版本：“d”
+error: Invalid Node.js version: "d"
 
-有效示例：
-  vp env use 20          # 最新的 Node.js 20.x
-  vp env use 20.18.0     # 精确版本
-  vp env use lts         # 最新的 LTS 版本
-  vp env use latest      # 最新版本
+Valid examples:
+  vp env use 20          # Latest Node.js 20.x
+  vp env use 20.18.0     # Exact version
+  vp env use lts         # Latest LTS version
+  vp env use latest      # Latest version
 ```
 
 ## `vp env use abc`
 
-对于无效版本应显示友好的错误信息
+should show friendly error for invalid version
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
-错误：无效的 Node.js 版本：“abc”
+error: Invalid Node.js version: "abc"
 
-有效示例：
-  vp env use 20          # 最新的 Node.js 20.x 版本
-  vp env use 20.18.0     # 精确版本
-  vp env use lts         # 最新的 LTS 版本
-  vp env use latest      # 最新版本
+Valid examples:
+  vp env use 20          # Latest Node.js 20.x
+  vp env use 20.18.0     # Exact version
+  vp env use lts         # Latest LTS version
+  vp env use latest      # Latest version
 ```
 
-## `VP_NODE_VERSION=20.18.0 VP_NPM_VERSION=10.9.4 vp env use --silent-if-unchanged --no-install`
+## `VP_NODE_VERSION=20.20.2 VP_NPM_VERSION=10.9.4 vp env use --silent-if-unchanged --no-install`
 
-未发生变化的项目环境不会输出 shell 变更
+an unchanged project environment emits no shell mutations
 
 ```
 ```

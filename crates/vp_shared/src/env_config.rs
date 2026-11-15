@@ -94,11 +94,37 @@ fn user_home_path() -> Option<AbsolutePathBuf> {
 /// Keep an explicit absolute `VP_HOME` because an arbitrary monolithic root
 /// cannot be resolved again. Do not write resolved `VP_*_DIR` or `XDG_*`
 /// values. Split layouts resolve them from each process environment.
+fn non_empty_var(name: &str) -> Option<String> {
+    std::env::var(name).ok().filter(|value| !value.is_empty())
+}
+
 fn persisted_dir_envs() -> HashMap<&'static str, String> {
     if let Some(home) = crate::dirs::vp_home_override() {
         return HashMap::from([(env_vars::VP_HOME, home.as_path().to_string_lossy().into_owned())]);
     }
     HashMap::default()
+}
+
+/// Management preference from a `VP_*_MANAGER` variable.
+///
+/// Only the exact values `yes` and `no` are recognized. Any other value,
+/// including a non-UTF-8 one, counts as unset.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ManagerPreference {
+    /// `yes`: Vite+ manages the tool.
+    Yes,
+    /// `no`: prefer the system tool.
+    No,
+}
+
+impl ManagerPreference {
+    fn from_var(name: &str) -> Option<Self> {
+        match std::env::var(name).as_deref() {
+            Ok("yes") => Some(Self::Yes),
+            Ok("no") => Some(Self::No),
+            _ => None,
+        }
+    }
 }
 
 /// Centralized configuration read from environment variables.
@@ -162,6 +188,9 @@ pub struct EnvConfig {
     /// Optional file for returning the resolved project Node version.
     pub setup_node_version_file: Option<String>,
 
+    /// Emergency bypass of the global CLI installation lockfile, enabled only by `1`.
+    pub setup_skip_install_lockfile: bool,
+
     /// Override package manager and version.
     ///
     /// Env: `VP_PACKAGE_MANAGER`
@@ -172,6 +201,32 @@ pub struct EnvConfig {
     pub pnpm_version: Option<String>,
     pub yarn_version: Option<String>,
     pub bun_version: Option<String>,
+
+    /// Node.js management preference.
+    ///
+    /// Env: `VP_NODE_MANAGER`
+    pub node_manager: Option<ManagerPreference>,
+
+    /// Package-manager management preference shared by every family.
+    ///
+    /// Env: `VP_PM_MANAGER`
+    pub pm_manager: Option<ManagerPreference>,
+
+    /// Family-specific package-manager management preferences. Each one takes
+    /// precedence over [`Self::pm_manager`].
+    ///
+    /// Env: `VP_NPM_MANAGER`, `VP_PNPM_MANAGER`, `VP_YARN_MANAGER`, `VP_BUN_MANAGER`
+    pub npm_manager: Option<ManagerPreference>,
+    pub pnpm_manager: Option<ManagerPreference>,
+    pub yarn_manager: Option<ManagerPreference>,
+    pub bun_manager: Option<ManagerPreference>,
+
+    /// Whether Vite+ manages no Node.js or package manager, enabled only by
+    /// `1`. At run time it takes precedence over `config.json` and every
+    /// `VP_*_MANAGER` variable.
+    ///
+    /// Env: `VP_ENV_FORBIDDEN`
+    pub env_forbidden: bool,
 
     /// User home directory.
     ///
@@ -185,6 +240,11 @@ pub struct EnvConfig {
     ///
     /// Env: `VP_SHELL`
     pub vp_shell: Option<String>,
+
+    /// Nushell version for `vp env setup`, used instead of running `nu`.
+    ///
+    /// Env: `VP_NU_VERSION`
+    pub nu_version: Option<String>,
 }
 
 impl EnvConfig {
@@ -207,26 +267,37 @@ impl EnvConfig {
         Arc::new(Self {
             dir_envs: persisted_dir_envs(),
             dirs,
-            npm_registry: std::env::var(env_vars::NPM_CONFIG_REGISTRY)
-                .or_else(|_| std::env::var(env_vars::NPM_CONFIG_REGISTRY_UPPER))
-                .unwrap_or_else(|_| "https://registry.npmjs.org".into())
+            npm_registry: non_empty_var(env_vars::NPM_CONFIG_REGISTRY)
+                .or_else(|| non_empty_var(env_vars::NPM_CONFIG_REGISTRY_UPPER))
+                .unwrap_or_else(|| "https://registry.npmjs.org".into())
                 .trim_end_matches('/')
                 .to_string(),
-            node_dist_mirror: std::env::var(env_vars::VP_NODE_DIST_MIRROR).ok(),
-            node_skip_signature_verify: std::env::var(env_vars::VP_NODE_SKIP_SIGNATURE_VERIFY)
-                .is_ok(),
+            node_dist_mirror: non_empty_var(env_vars::VP_NODE_DIST_MIRROR),
+            node_skip_signature_verify: non_empty_var(env_vars::VP_NODE_SKIP_SIGNATURE_VERIFY)
+                .is_some(),
             is_ci: std::env::var("CI").is_ok(),
             env_use_eval_enable: std::env::var(env_vars::VP_ENV_USE_EVAL_ENABLE).is_ok(),
             node_version: std::env::var(env_vars::VP_NODE_VERSION).ok(),
             setup_node_version: std::env::var(env_vars::VP_SETUP_NODE_VERSION).ok(),
             setup_node_version_file: std::env::var(env_vars::VP_SETUP_NODE_VERSION_FILE).ok(),
+            setup_skip_install_lockfile: std::env::var(env_vars::VP_SETUP_SKIP_INSTALL_LOCKFILE)
+                .as_deref()
+                == Ok("1"),
             package_manager: std::env::var(env_vars::VP_PACKAGE_MANAGER).ok(),
             npm_version: std::env::var(env_vars::VP_NPM_VERSION).ok(),
             pnpm_version: std::env::var(env_vars::VP_PNPM_VERSION).ok(),
             yarn_version: std::env::var(env_vars::VP_YARN_VERSION).ok(),
             bun_version: std::env::var(env_vars::VP_BUN_VERSION).ok(),
+            node_manager: ManagerPreference::from_var(env_vars::VP_NODE_MANAGER),
+            pm_manager: ManagerPreference::from_var(env_vars::VP_PM_MANAGER),
+            npm_manager: ManagerPreference::from_var(env_vars::VP_NPM_MANAGER),
+            pnpm_manager: ManagerPreference::from_var(env_vars::VP_PNPM_MANAGER),
+            yarn_manager: ManagerPreference::from_var(env_vars::VP_YARN_MANAGER),
+            bun_manager: ManagerPreference::from_var(env_vars::VP_BUN_MANAGER),
+            env_forbidden: std::env::var(env_vars::VP_ENV_FORBIDDEN).as_deref() == Ok("1"),
             user_home,
             vp_shell: std::env::var(env_vars::VP_SHELL).ok(),
+            nu_version: std::env::var(env_vars::VP_NU_VERSION).ok(),
         })
     }
 
@@ -405,6 +476,80 @@ impl EnvConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn env_forbidden_requires_exact_one() {
+        for value in [None, Some(""), Some("0"), Some("true"), Some("yes"), Some(" 1"), Some("1")] {
+            EnvConfig::with_vars([(env_vars::VP_ENV_FORBIDDEN, value)], |config| {
+                assert_eq!(config.env_forbidden, value == Some("1"), "{value:?}");
+            });
+        }
+    }
+
+    /// `system-only`, a removed run-time value, is unrecognized like any other
+    /// value and does not stop management either.
+    #[test]
+    fn manager_preference_accepts_only_yes_and_no() {
+        for (value, expected) in [
+            ("yes", Some(ManagerPreference::Yes)),
+            ("no", Some(ManagerPreference::No)),
+            ("Yes", None),
+            ("system-only", None),
+        ] {
+            let vars = [
+                (env_vars::VP_NODE_MANAGER, Some(value)),
+                (env_vars::VP_PM_MANAGER, Some(value)),
+                (env_vars::VP_ENV_FORBIDDEN, None),
+            ];
+            EnvConfig::with_vars(vars, |config| {
+                assert_eq!(config.node_manager, expected, "{value}");
+                assert_eq!(config.pm_manager, expected, "{value}");
+                assert!(!config.env_forbidden, "{value}");
+            });
+        }
+    }
+
+    #[test]
+    fn empty_node_download_vars_are_unset() {
+        for value in [None, Some(""), Some("1")] {
+            let vars = [
+                (env_vars::VP_NODE_DIST_MIRROR, value),
+                (env_vars::VP_NODE_SKIP_SIGNATURE_VERIFY, value),
+            ];
+            EnvConfig::with_vars(vars, |config| {
+                assert_eq!(config.node_dist_mirror.as_deref(), value.filter(|v| !v.is_empty()));
+                assert_eq!(config.node_skip_signature_verify, value == Some("1"), "{value:?}");
+            });
+        }
+    }
+
+    #[test]
+    fn empty_npm_registry_vars_are_unset() {
+        for (lower, upper, expected) in [
+            (None, None, "https://registry.npmjs.org"),
+            (Some(""), None, "https://registry.npmjs.org"),
+            (Some(""), Some(""), "https://registry.npmjs.org"),
+            (Some(""), Some("https://upper.test/"), "https://upper.test"),
+        ] {
+            let vars = [
+                (env_vars::NPM_CONFIG_REGISTRY, lower),
+                (env_vars::NPM_CONFIG_REGISTRY_UPPER, upper),
+            ];
+            EnvConfig::with_vars(vars, |config| {
+                assert_eq!(config.npm_registry, expected, "{lower:?} {upper:?}");
+            });
+        }
+    }
+
+    #[test]
+    fn installation_lockfile_bypass_requires_explicit_opt_in() {
+        for value in [None, Some(""), Some("0"), Some("true"), Some("1")] {
+            EnvConfig::with_vars([(env_vars::VP_SETUP_SKIP_INSTALL_LOCKFILE, value)], |config| {
+                assert_eq!(config.setup_skip_install_lockfile, value == Some("1"));
+                assert!(!config.dir_envs.contains_key(env_vars::VP_SETUP_SKIP_INSTALL_LOCKFILE));
+            });
+        }
+    }
 
     /// `VP_HOME` pins every category to the single-root mapping.
     #[test]

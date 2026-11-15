@@ -2,50 +2,52 @@
 
 ## `vpr -h`
 
-应显示 vp run 帮助信息
+should show vp run help
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-用法：vp run [选项] [任务指定符] [附加参数]...
+Usage: vp run [OPTIONS] [TASK_SPECIFIER] [ADDITIONAL_ARGS]...
 
-运行任务。
+Run tasks.
 
-参数：
-  [TASK_SPECIFIER]      `packageName#taskName` 或 `taskName`。如果省略，则显示任务选择器
-  [ADDITIONAL_ARGS]...  要传递给任务的附加参数
+Arguments:
+  [TASK_SPECIFIER]      `packageName#taskName` or `taskName`. If omitted, shows the task selector
+  [ADDITIONAL_ARGS]...  Additional arguments to pass to the task
 
-选项：
-  -r, --recursive          选择工作区中的所有包
-  -t, --transitive         选择当前包及其传递依赖
-  -w, --workspace-root     选择工作区根包
-  -F, --filter <FILTERS>   按名称、目录或 glob 模式匹配包
-  --fail-if-no-match       如果筛选器未匹配到任何包，则以非零状态退出
-  --ignore-depends-on      不运行 `dependsOn` 字段中指定的依赖
-  -v, --verbose            执行后显示完整的详细摘要
-  --cache                  强制为所有任务和脚本启用缓存
-  --no-cache               强制为所有任务和脚本禁用缓存
-  --log <MODE>             设置输出模式：交错（默认）、带标签或分组
-  --concurrency-limit <N>  同时运行的最大任务数（默认：4）
-  --parallel               在不考虑依赖顺序的情况下运行任务；除非指定 `--concurrency-limit`，否则并发数不受限制
-  --last-details           显示上次运行的详细摘要
-  -h, --help               打印帮助信息
+Options:
+  -r, --recursive          Select all packages in the workspace
+  -t, --transitive         Select the current package and its transitive dependencies
+  -w, --workspace-root     Select the workspace root package
+  -F, --filter <FILTERS>   Match packages by name, directory, or glob pattern
+  --fail-if-no-match       Exit with a non-zero status if a filter matches no packages
+  --ignore-depends-on      Do not run dependencies specified in `dependsOn` fields
+  -v, --verbose            Show the full detailed summary after execution; `-vv` also lists the inputs and outputs of each cached run
+  --cache                  Force caching on for all tasks and scripts
+  --no-cache               Force caching off for all tasks and scripts
+  --log <MODE>             Set output mode: interleaved (default), labeled, or grouped
+  --concurrency-limit <N>  Maximum number of tasks to run concurrently (default: 4)
+  --parallel               Run tasks without dependency ordering; concurrency is unlimited unless `--concurrency-limit` is specified
+  --dry-run                Show what the run would do and whether each command would hit the cache, without running anything
+  --json                   Print JSON: every package and task without a task, or the run plan with `--dry-run`
+  --last-details           Display the detailed summary of the last run
+  -h, --help               Print help
 
-筛选模式：
-  --filter <pattern>        按包名称选择（例如 foo、@scope/*）
-  --filter ./<dir>          选择目录下的包
-  --filter {<dir>}          与 ./<dir> 相同，但允许使用遍历后缀
-  --filter <pattern>...     选择包及其依赖
-  --filter ...<pattern>     选择包及其依赖者
-  --filter <pattern>^...    仅选择依赖（排除包自身）
-  --filter !<pattern>       排除匹配该模式的包
+Filter Patterns:
+  --filter <pattern>        Select by package name (e.g. foo, @scope/*)
+  --filter ./<dir>          Select packages under a directory
+  --filter {<dir>}          Same as ./<dir>, but allows traversal suffixes
+  --filter <pattern>...     Select package and its dependencies
+  --filter ...<pattern>     Select package and its dependents
+  --filter <pattern>^...    Select only the dependencies (exclude the package itself)
+  --filter !<pattern>       Exclude packages matching the pattern
 
-文档：https://viteplus.dev/guide/run
+Documentation: https://viteplus.dev/guide/run
 ```
 
 ## `vpr hello`
 
-应通过 vpr 简写运行脚本
+should run script via vpr shorthand
 
 ```
 $ node args.mjs hello from script ⊘ cache disabled
@@ -56,7 +58,7 @@ script
 
 ## `vpr greet --arg1 value1`
 
-应传递额外参数
+should pass through additional args
 
 ```
 $ node args.mjs greet --arg1 value1 ⊘ cache disabled
@@ -67,9 +69,9 @@ value1
 
 ## `vpr nonexistent`
 
-应显示 pnpm 缺少脚本错误
+should show pnpm missing script error
 
-**退出代码：** 1
+**Exit code:** 1
 
 ```
 Task "nonexistent" not found.

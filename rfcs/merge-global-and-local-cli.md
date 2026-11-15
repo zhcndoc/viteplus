@@ -70,8 +70,10 @@ packages/cli/
 ├── current -> <version>/             # 指向活动版本的符号链接
 ├── <version>/
 │   ├── bin/
-│   │   └── vp                        # Rust 二进制（来自 CLI 平台包）
-│   ├── package.json                  # Wrapper: { "dependencies": { "vite-plus": "<version>" } }
+│   │   ├── vp                        # Rust 二进制（来自 CLI 平台包）
+│   │   └── vp-install-lock.yaml      # 发布时附带的安装锁文件
+│   ├── package.json                  # Wrapper：{ "dependencies": { "vite-plus": "<version>" } }
+│   ├── pnpm-lock.yaml                # 从 bin/vp-install-lock.yaml 恢复的工作副本
 │   └── node_modules/
 │       ├── vite-plus/                # 作为 npm 依赖安装
 │       │   ├── dist/bin.js           # JS 入口点（由 Rust 二进制找到）
@@ -90,18 +92,33 @@ packages/cli/
 **安装流程：**
 
 - **生产环境**（`curl -fsSL https://vite.plus | bash`）：
-  从 `@voidzero-dev/vite-plus-cli-{platform}` 下载 CLI 平台 tarball（只提取 `vp` 二进制），
-  生成 wrapper `package.json`，运行 `vp install --silent`，由此通过 npm 安装 `vite-plus` + 所有传递依赖。
+  从 `@voidzero-dev/vite-plus-cli-{platform}` 下载 CLI 平台归档，并提取二进制及其内置的 `vp-install-lock.yaml`。安装脚本将后续步骤交给二进制的自设置流程：生成 wrapper `package.json`、恢复 `pnpm-lock.yaml`，再使用受管 pnpm 和 `--frozen-lockfile` 安装依赖。Windows 上的 `install.ps1` 采用相同流程。
 
 - **升级**（`vp upgrade`）：
-  从 `@voidzero-dev/vite-plus-cli-{platform}` 下载 CLI 平台 tarball（仅二进制），
-  生成 wrapper `package.json`，运行 `vp install --silent`。无需下载主 tarball。
+  从 `@voidzero-dev/vite-plus-cli-{platform}` 下载包含二进制和锁文件的 CLI 平台归档，生成 wrapper `package.json`，并在冻结安装依赖前恢复内置锁文件。pnpm 根据该锁文件记录的版本和完整性值下载 `vite-plus` 及其依赖。目标平台包的元数据通过 `vpNodeVersion` 提供 Node.js 版本固定值；缺少此字段的旧包使用当前运行二进制的安装默认值。校验和激活行为参见[升级流程](./upgrade-command.md#step-4-extract-and-install)。
 
 - **本地开发**（`pnpm bootstrap-cli`）：
   复制 `vp` 二进制，生成 wrapper `package.json`，将 `node_modules/vite-plus` 符号链接到 `packages/cli/` 源码，同时将 `packages/cli/node_modules/` 中的传递依赖进行符号链接。
 
 - **CI**（`pnpm bootstrap-cli:ci --tgz <path>`）：
   复制 `vp` 二进制，生成带有指向 tgz 文件的 `file:` 协议引用的 wrapper `package.json`，运行 `npm install`。
+
+### 全局安装锁文件 {#global-installation-lockfile}
+
+每个 `@voidzero-dev/vite-plus-cli-{platform}` 包都会在 `vp` 或 `vp.exe` 旁附带 `vp-install-lock.yaml`。正式发布和 commit preview 构建都采用此布局，独立发布归档也包含该配套文件。该锁文件描述全局 wrapper 对 `vite-plus` 的依赖及其传递依赖，包括所有受支持平台的可选包。CLI 二进制包不属于此依赖图，因此将锁文件加入这些包不会改变锁文件中记录的完整性值。
+
+正式发布会先以 `staging` 标签发布本地 CLI，再使用安装器固定的 pnpm 版本，根据该发布版本生成标准锁文件。全局包就绪后，工作流会将本地 CLI 提升为 `latest`。Preview 构建也会先发布本地 CLI，再从 registry 生成锁文件，随后发布全局包并更新 PR 标签。重试发布时会复用已准备好的构建产物。发布顺序和生成器入口参见[全局安装锁文件](../packages/cli/BUNDLING.md#global-installation-lockfile)。
+
+平台包清单通过 `vpInstallLockfile: true` 声明存在配套锁文件。如果清单声明了锁文件但归档中缺少该文件，提取步骤会失败。独立可执行文件或较旧的升级客户端可能没有带上配套锁文件；此时自设置流程会从准确的平台包中恢复文件，并校验该归档的完整性。写入配套文件时会先写入临时文件，再通过原子重命名替换，因此中断后可以重试。冻结安装成功后，会将配套锁文件的 SHA-256 摘要记录到 `node_modules/.vp-install-complete`。升级或后续设置失败后，自设置流程可以复用这次安装。即使 `node_modules` 已存在，若缺少收据或锁文件已变化，也必须重新执行冻结安装。每次安装尝试开始前都会清除收据。没有配套锁文件的旧包继续沿用现有安装行为。本地开发和已经内置依赖的外部安装继续使用各自原有的设置路径。
+
+安装目录中的 `.npmrc` 保留 `minimum-release-age=0`，以便新发布的版本可以立即安装；这不会改变安装锁文件记录的版本。生成锁文件和执行冻结安装时，会固定 pnpm 在 `lockfile.settings` 中校验的以下五项设置：
+`auto-install-peers=true`、`peers-suffix-max-length=1000`、
+`exclude-links-from-lockfile=false`、`dedupe-peers=false` 和
+`inject-workspace-packages=false`。布尔值通过命令行标志固定。由于 pnpm 会将 `--config` 中的数字解析为字符串，数字型的 peer 后缀长度限制通过子进程环境变量覆盖。上述设置都会覆盖用户配置文件和继承的环境变量。Registry、身份验证及代理设置仍从环境中继承。冻结安装还会设置 `--lockfile=true`，防止用户配置禁用已发布的锁文件。
+
+`VP_SETUP_SKIP_INSTALL_LOCKFILE=1` 是设置和升级流程的显式紧急覆盖选项。启用后会跳过配套锁文件的提取、恢复和还原，并使用 `--no-frozen-lockfile --lockfile=false` 运行 pnpm。安装器会警告依赖将重新解析；wrapper 仍会固定请求的 CLI 版本。冻结安装失败后不会自动回退到非冻结安装。
+
+成功绕过锁文件时，流程会将 `unlocked` 而不是锁文件摘要写入 `node_modules/.vp-install-complete`。只要覆盖选项仍启用，升级交接便可据此完成，而无需重复安装依赖。之后若未启用此选项，则不能将该收据视为冻结安装并复用。与冻结安装相同，失败尝试会在运行 pnpm 前清除收据。
 
 ### 命令路由
 
@@ -220,7 +237,7 @@ if (command === 'create') {
    - `.node` NAPI 二进制通过 npm `optionalDependencies` 安装（不再手动复制）
    - 移除了 `extract_main_package()`、`strip_dev_dependencies()`、`MAIN_PACKAGE_ENTRIES`
    - 为升级命令新增了 `generate_wrapper_package_json()`
-   - 简化安装脚本：只解压 `vp` 二进制并生成包装器
+   - 安装脚本提取 `vp` 及其配套锁文件，然后将正式安装交给自设置流程
    - 简化 `install-global-cli.ts`：本地开发使用符号链接，CI 使用包装器
 
 5. **已更新构建系统**：
@@ -246,7 +263,7 @@ if (command === 'create') {
 
 10. **已将 `vp` 二进制拆分为专用的 CLI 平台包**：
     - `@voidzero-dev/vite-plus-{platform}` 包现在只包含 `.node` NAPI 绑定（约 20MB）
-    - `@voidzero-dev/vite-plus-cli-{platform}` 包现在只包含 `vp` Rust 二进制（约 5MB）
+    - `@voidzero-dev/vite-plus-cli-{platform}` 包含 `vp` Rust 二进制及其安装锁文件；Windows 包还包含 `vp-shim.exe`
     - `publish-native-addons.ts` 分别创建并发布 NAPI 和 CLI 两类包
     - 安装脚本（`install.sh`、`install.ps1`）直接构造 CLI 包后缀，而不是查询 `optionalDependencies`
     - 升级注册表（`registry.rs`）直接查询 CLI 包，而不是查找 `optionalDependencies`

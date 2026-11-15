@@ -31,7 +31,7 @@ VITE+ - The Unified Toolchain for the Web
 system-node
 ```
 
-## `PATH=${VP_HOME}/bin${PATH_SEPARATOR}${workspace}/system-dispatch-bin${PATH_SEPARATOR}${PATH} NPM_CONFIG_REGISTRY=http://127.0.0.1:9 vp env exec --node 20.18.0 pnpm --version`
+## `PATH=${VP_HOME}/bin${PATH_SEPARATOR}${workspace}/system-dispatch-bin${PATH_SEPARATOR}${PATH} NPM_CONFIG_REGISTRY=http://127.0.0.1:9 vp env exec --node 20.20.2 pnpm --version`
 
 显式 Node 执行会在解析其声明的版本范围之前检查系统管理器
 

@@ -9,6 +9,7 @@ mod documentation;
 mod env_config;
 pub mod env_vars;
 mod error;
+pub mod file_lock;
 pub mod header;
 mod http;
 mod interactivity;
@@ -28,10 +29,10 @@ pub use dirs::{
     VpDirsLayout, is_windows_trampoline, shim_pointer_file_name, validate_vp_dir_env,
 };
 pub use documentation::documentation_url;
-pub use env_config::EnvConfig;
+pub use env_config::{EnvConfig, ManagerPreference};
 pub use error::format_error_chain;
 pub use http::{
-    HttpClientError, download_timeout, request_timeout, shared_http_client,
+    HttpClientError, download_timeout, request_timeout, set_user_agent_version, shared_http_client,
     shared_http_client_without_redirects,
 };
 pub use interactivity::{

@@ -304,15 +304,18 @@ argv[0] = "npx"       → Shim mode: resolve version, exec npx
 │  └──────────────┬───────────────┘                                           │
 │                 │                                                           │
 │                 ▼                                                           │
-│  ┌──────────────────────────────┐     ┌─────────────────────────────┐       │
-│  │  版本解析                    │────▶│  优先级顺序：               │       │
-│  │  (向上遍历目录树)            │     │  0. VP_NODE_VERSION  │       │
-│  └──────────────┬───────────────┘     │  1. .session-node-version   │       │
-│                 │                     │  2. .node-version           │       │
-│                 │                     │  3. package.json#devEngines │       │
-│                 ▼                     │  4. package.json#engines    │       │
-│  ┌──────────────────────────────┐     │  5. 用户默认值（配置）       │       │
-│  │  确保已安装 Node.js          │     └─────────────────────────────┘       │
+│  ┌──────────────────────────────┐     ┌───────────────────────────────┐     │
+│  │  版本解析                    │────▶│  优先级顺序：                  │     │
+│  │  (向上遍历目录树)            │     │  0. VP_NODE_VERSION           │     │
+│  └──────────────┬───────────────┘     │  1. .session-node-version     │     │
+│                 │                     │  从 cwd 向上遍历到根目录：     │     │
+│                 │                     │    2. .node-version            │     │
+│                 │                     │    3. package.json#devEngines  │     │
+│                 │                     │    4. package.json#engines     │     │
+│                 │                     │    5. .nvmrc                   │     │
+│                 ▼                     │  6. 用户默认值（配置）         │     │
+│  ┌──────────────────────────────┐     │  7. 最新 LTS                  │     │
+│  │  确保已安装 Node.js          │     └───────────────────────────────┘     │
 │  │  （必要时下载）              │                                           │
 │  └──────────────┬───────────────┘                                           │
 │                 │                                                           │
@@ -554,7 +557,7 @@ lts/-2       → 18.20.5 (第三高的 LTS)
 
 ### 版本解析优先级
 
-在解析应使用哪个 Node.js 版本时，vite-plus 会按以下顺序检查来源：
+在解析应使用哪个 Node.js 版本时，vite-plus 会按以下顺序检查来源。第 2–5 项会从当前目录逐级向上检查到文件系统根目录，并使用第一个包含任一声明的目录；只有都未找到时才会使用第 6–7 项：
 
 0. **`VP_NODE_VERSION` 环境变量** (会话覆盖，最高优先级)
    - 由 `vp env use` 通过 shell wrapper eval 设置
@@ -566,21 +569,21 @@ lts/-2       → 18.20.5 (第三高的 LTS)
    - 通过 `vp env use --unset` 删除
 
 2. **`.node-version`** 文件
-   - 先检查当前目录，再检查父目录
    - 简单格式：每个文件一行一个版本
 
 3. **`package.json#devEngines.runtime`**
-   - 在当前目录检查，然后检查父目录
    - 开发环境需求字段（见 [RFC: devEngines 支持](./dev-engines.md)）
 
 4. **`package.json#engines.node`**
-   - 在当前目录检查，然后检查父目录
    - 面向消费者的 npm 约束字段
 
-5. **用户默认值**（`~/.vite-plus/config.json`）
+5. **`.nvmrc`** 文件
+   - 兼容 nvm 的版本文件
+
+6. **用户默认值**（`~/.vite-plus/config.json`）
    - 通过 `vp env default <version>` 设置
 
-6. **系统默认值**（最新 LTS）
+7. **系统默认值**（最新 LTS）
    - 当找不到任何版本来源时作为回退
 
 ### 缓存行为
@@ -777,13 +780,14 @@ $ node -v
 v22.13.0  # 回退到最新 LTS
 ```
 
-解析顺序如下：
+解析顺序如下。第 2–5 项会从当前目录逐级向上检查到文件系统根目录，并使用第一个包含任一声明的目录；只有都未找到时才会使用第 6–7 项：
 
-1. `VP_NODE_VERSION` 环境变量（会话覆盖）
-2. `.session-node-version` 文件（会话覆盖）
-3. 当前目录或父目录中的 `.node-version`
-4. 当前目录或父目录中 `package.json#devEngines.runtime`
-5. 当前目录或父目录中 `package.json#engines.node`
+0. `VP_NODE_VERSION` 环境变量（会话覆盖）
+1. `.session-node-version` 文件（会话覆盖）
+2. `.node-version`
+3. `package.json#devEngines.runtime`
+4. `package.json#engines.node`
+5. `.nvmrc`
 6. **用户默认值**：通过 `vp env default <version>` 配置（存储在 `~/.vite-plus/config.json` 中）
 7. **系统默认值**：最新 LTS 版本
 
@@ -828,7 +832,7 @@ PATH
 
 ...
 
-✗ 发现一些问题。请运行建议的命令进行修复。
+✗ Some issues found.
 ```
 
 ## 用户体验
@@ -946,7 +950,10 @@ Configuration
                       Written by 'vp env use'. Run 'vp env use --unset' to remove.
 
 ...
+⚠ Some warnings found.
 ```
+
+警告描述仍可正常工作的设置，因此退出码仍为 0。错误优先级更高：同时出现警告和错误时，摘要为 `✗ Some issues found.`，退出码为 1。
 
 **系统优先模式下的 Doctor 输出：**
 
@@ -1034,7 +1041,7 @@ IDE 设置
         . "$HOME/.vite-plus/env"
       然后重启 IDE 以应用更改。
 
-✗ 发现一些问题。运行建议的命令来修复它们。
+✗ Some issues found.
 ```
 
 ## Shell 配置参考
@@ -1367,7 +1374,7 @@ Run 'vp install -g typescript' to reinstall.
 
 ## Pin 命令
 
-`vp env pin` 命令提供按目录的 Node.js 版本固定功能。写入目标遵循来自 [RFC: devEngines 支持](./dev-engines.md) 的兼容性优先规则：如果已存在 `.node-version`，则继续更新它；否则会将固定写入 `package.json#devEngines.runtime`（当缺少时会创建 `node` 条目，并设置 `onFail: "download"`）；只有当目录没有 `package.json` 时，才会创建 `.node-version`。显式的 `--target node-version` / `--target dev-engines` 标志会覆盖默认选择。
+`vp env pin` 命令提供按目录固定 Node.js 版本的功能。写入目标遵循来自 [RFC: devEngines 支持](./dev-engines.md) 的兼容性优先规则：如果已存在 `.node-version`，就继续更新它；如果当前目录中的 `.nvmrc` 是生效的 Node.js 来源，也会更新该文件；否则会将固定版本写入 `package.json#devEngines.runtime`（缺少时会创建 `node` 条目并设置 `onFail: "download"`）；只有当目录没有 `package.json` 时，才会创建 `.node-version`。显式的 `--target node-version`、`--target nvmrc` 或 `--target dev-engines` 标志会覆盖默认选择。
 
 ### 行为
 
@@ -1378,6 +1385,7 @@ $ vp env pin 20.18.0
 ✓ 已将 Node.js 版本固定为 20.18.0
   在 /Users/user/projects/my-app 中创建了 .node-version
 ✓ Node.js 20.18.0 已安装
+  Updated .node-version in /Users/user/projects/my-app
 ```
 
 **使用别名固定：**
@@ -1430,7 +1438,7 @@ $ vp env unpin
 ✓ 已从 /Users/user/projects/my-app 移除 .node-version
 ```
 
-`vp env unpin` 会从 `vp env pin` 原本会写入的同一来源中移除固定：如果存在 `.node-version` 就删除它，否则会从 `package.json#devEngines.runtime` 中移除 `node` 条目。
+`vp env unpin` 会从 `vp env pin` 原本会写入的同一来源中移除固定：如果存在 `.node-version` 就删除它；否则，如果当前目录中的 `.nvmrc` 是生效来源，就删除 `.nvmrc`；否则会从 `package.json#devEngines.runtime` 中移除 `node` 条目。
 
 ### 版本格式支持
 
@@ -1449,10 +1457,10 @@ $ vp env unpin
 
 | 标志                                   | 描述                                                                             |
 | -------------------------------------- | -------------------------------------------------------------------------------- |
-| `--unpin`                              | 从其当前来源移除固定（`.node-version` 或 `devEngines.runtime`）                  |
+| `--unpin`                              | 从其当前来源移除固定（`.node-version`、`.nvmrc` 或 `devEngines.runtime`）        |
 | `--no-install`                         | 跳过预下载已固定的版本                                                            |
 | `--force`                              | 无需确认即可覆盖现有固定                                                            |
-| `--target <node-version\|dev-engines>` | 显式选择写入目标（覆盖默认选择）                                                   |
+| `--target <node-version\|nvmrc\|dev-engines>` | 显式选择写入目标（覆盖默认选择）                                           |
 
 ### 预下载行为
 
@@ -1481,6 +1489,7 @@ $ vp env pin 22.13.0
 ```bash
 $ vp env pin 22.13.0 --force
 ✓ 已将 Node.js 版本固定为 22.13.0
+  Updated .node-version in /Users/user/projects/my-app
 ```
 
 当目标已经固定为相同版本时，命令不会执行任何操作（无论是否带 `--force`）：

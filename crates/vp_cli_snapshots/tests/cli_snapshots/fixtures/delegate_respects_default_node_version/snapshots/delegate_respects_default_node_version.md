@@ -1,18 +1,18 @@
-# 委托遵循默认节点版本
+# delegate_respects_default_node_version
 
-## `vp env default 22.18.0`
+## `vp env default 22.23.4`
 
-将全局默认版本设置为 22.18.0
+Set global default to 22.23.4
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-✓ 默认 Node.js 版本已设置为 22.18.0
+✓ Default Node.js version set to 22.23.4
 ```
 
 ## `vp run check-node`
 
-还应使用 22.18.0
+Should also use 22.23.4
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -23,7 +23,7 @@ $ node -e "console.log(process.version)" ⊘ cache disabled
 
 ## `vp exec node -e console.log(process.version)`
 
-也应使用 22.18.0
+Should also use 22.23.4
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -33,12 +33,12 @@ VITE+ - The Unified Toolchain for the Web
 
 ## `vp env which node`
 
-应显示来自“默认”来源的 22.18.0
+Should show 22.23.4 from 'default' source
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 <home>/.vite-plus/js_runtime/node/<version>/bin/node
-  版本：    22.18.0
-  来源：    <home>/.vite-plus/config.json
+  Version:    22.23.4
+  Source:     <home>/.vite-plus/config.json
 ```

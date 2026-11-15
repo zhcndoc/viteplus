@@ -22,8 +22,9 @@ Vite+ 通过 bash 安装脚本（`curl -fsSL https://vite.plus | bash`）作为�
 ├── current → 0.1.0/                 # 指向活动版本的符号链接
 ├── 0.1.0/                           # 版本目录
 │   ├── bin/vp                       # 实际二进制文件
-│   ├── dist/                        # JS bundles + .node 文件
-│   ├── package.json
+│   ├── bin/vp-install-lock.yaml     # 发布时附带的安装锁文件
+│   ├── package.json                 # 包含精确 vite-plus 依赖的 wrapper
+│   ├── pnpm-lock.yaml               # 从发布时附带的锁文件恢复
 │   └── node_modules/
 ├── 0.0.9/                           # 上一个版本（保留用于回滚）
 ├── env                              # POSIX shell 环境（由 shell 配置加载）
@@ -147,22 +148,22 @@ Options:
 
 ### 架构
 
-升级命令完全使用 Rust 在 `vp_global_cli` crate 中实现，其逻辑与 `install.sh` 保持一致，但以原生子进程工作流运行。
+升级命令使用 `vp_global_cli` 和共享的 `vp_setup` 库实现。它安装的二进制及其内置锁文件与脚本安装器相同。
 
 ```
-┌─────────────────────────────────────────────────┐
-│                vp upgrade                   │
-├─────────────────────────────────────────────────┤
-│  1. Resolve version (npm registry query)        │
-│  2. Check if already installed                  │
-│  3. Download platform binary (.tgz)             │
-│  4. Download main JS bundle (.tgz)              │
-│  5. Extract to ~/.vite-plus/{version}/          │
-│  6. Install production dependencies             │
-│  7. Atomic swap: current → {version}            │
-│  8. Refresh shims (non-fatal)                   │
-│  9. Cleanup old versions (non-fatal, keep 3)    │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                       vp upgrade                     │
+├──────────────────────────────────────────────────────┤
+│  1. 解析版本（查询 registry）                         │
+│  2. 检查是否已安装                                   │
+│  3. 下载并校验平台归档                               │
+│  4. 提取二进制和 vp-install-lock.yaml                │
+│  5. 生成 wrapper 并恢复 pnpm-lock.yaml               │
+│  6. 使用 --frozen-lockfile 安装依赖                  │
+│  7. 切换 current → {version}                         │
+│  8. 刷新 shims（非致命）                             │
+│  9. 清理旧版本（非致命，保留 3 个）                  │
+└──────────────────────────────────────────────────────┘
 ```
 
 ### 实现流程
@@ -172,17 +173,14 @@ Options:
 向 npm registry 查询目标版本：
 
 ```
-GET {registry}/vite-plus-cli/{version_or_tag}
+GET {registry}/vite-plus/{version_or_tag}
 ```
 
 - 如果提供了 `VERSION` 参数，则直接使用它
 - 如果提供了 `--tag`，则解析该 dist-tag（例如 `latest`、`test`）
 - 默认使用 `latest`
 
-解析 JSON 响应以提取：
-
-- `version`：解析后的 semver 版本
-- `optionalDependencies`：用于查找平台特定包名
+从响应中读取 `version`。
 
 #### 步骤 2：版本比较
 
@@ -193,19 +191,18 @@ GET {registry}/vite-plus-cli/{version_or_tag}
 
 #### 步骤 3：下载与校验
 
-从 npm registry 下载两个 tarball：
+检测平台后缀，并查询 `@voidzero-dev/vite-plus-cli-{platform_suffix}` 的准确目标版本。下载该包 registry 元数据中的 `dist.tarball` 地址。归档包含 `vp` 或 `vp.exe`、内置的 `vp-install-lock.yaml`，以及 Windows 上的 `vp-shim.exe`。包清单通过 `vpInstallLockfile: true` 声明存在配套锁文件。正式发布包和 commit preview 包均采用此布局；preview 元数据会提供内容寻址的 URL。
 
-1. **平台二进制**：`{registry}/@voidzero-dev/vite-plus-cli-{platform_suffix}/-/vite-plus-cli-{suffix}-{version}.tgz`
-   - 包含：`vp` 二进制 + `.node` NAPI 文件
-2. **主包**：`{registry}/vite-plus-cli/-/vite-plus-cli-{version}.tgz`
-   - 包含 `dist/`（JS bundles）、`package.json`、`templates/`、`rules/`、`AGENTS.md`
+平台包清单还会发布 `vpNodeVersion`，即发布检出版本 `.node-version` 中指定的精确 Node.js 版本。二进制构建时也会内嵌相同的版本固定值，用于安装依赖。现有的精确版本元数据请求即可提供该字段；升级时不会读取当前仓库的版本固定文件，也不会再解析其他 `latest` 标签。
+
+升级命令本身不会提取主 JavaScript 包。之后 pnpm 会根据内置锁文件下载 `vite-plus`、NAPI 包和传递依赖。
 
 **完整性校验**：每个 tarball 都会使用 npm registry 元数据中的 `integrity` 字段进行校验。npm registry 以 [Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/) 格式提供 SHA-512 哈希：
 
 ```json
 {
   "dist": {
-    "tarball": "https://registry.npmjs.org/vite-plus-cli/-/vite-plus-cli-0.0.0-xxx.tgz",
+    "tarball": "https://registry.npmjs.org/@voidzero-dev/vite-plus-cli-darwin-arm64/-/vite-plus-cli-darwin-arm64-1.4.0.tgz",
     "integrity": "sha512-Z3se9k/NTRf8s5eSmuSoMOFFB/TUGBHIoeWDU5VoHV...",
     "shasum": "3399579218148ae410011bde8934e12209743ef3"
   }
@@ -242,10 +239,7 @@ fn verify_integrity(data: &[u8], expected: &str) -> Result<(), Error> {
 }
 ```
 
-要获取平台包的 `integrity` 字段，需要单独查询其元数据：
-
-- 主包元数据：`{registry}/vite-plus-cli/{version}` → 包含 `dist.integrity`
-- 平台包元数据：`{registry}/@voidzero-dev/vite-plus-cli-{suffix}/{version}` → 包含 `dist.integrity`
+平台包元数据 `{registry}/@voidzero-dev/vite-plus-cli-{suffix}/{version}` 提供归档的 `dist.integrity`。内置锁文件则提供 pnpm 将要安装的 JavaScript 包的完整性值。
 
 平台检测复用 `vp_js_runtime` 中的现有逻辑，或采用 bash 脚本中的方法：
 
@@ -253,14 +247,18 @@ fn verify_integrity(data: &[u8], expected: &str) -> Result<(), Error> {
 - `uname -m` → arch（x64、arm64）
 - Linux：检测 gnu 与 musl libc
 
-#### 步骤 4：解压并安装
+#### 步骤 4：解压并安装 {#step-4-extract-and-install}
 
-1. 创建 `~/.vite-plus/{version}/`，包含 `bin/` 和 `dist/` 子目录
-2. 将平台二进制解压到 `{version}/bin/vp`，并设置可执行权限
-3. 将 `.node` 文件解压到 `{version}/dist/`
-4. 将 JS bundle、templates、rules、package.json 解压到 `{version}/`
-5. 从 package.json 中移除 `devDependencies` 和 `optionalDependencies`
-6. 在版本目录中运行 `vp install --silent` 以安装生产依赖
+1. 在 `VpDirs` 解析出的数据根目录下创建版本目录，并创建 `bin/` 子目录。
+2. 将二进制和 `vp-install-lock.yaml` 解压到 `bin/`；Windows 上还需解压 `vp-shim.exe`。
+3. 生成 wrapper `package.json`，其中包含精确的 `vite-plus` 依赖及安装器固定的 pnpm 版本。
+4. 将 `bin/vp-install-lock.yaml` 还原为版本目录中的 `pnpm-lock.yaml`。
+5. 写入安装目录的 `.npmrc`，设置 `minimum-release-age=0`，以便新版本可以立即安装。
+6. 在版本目录中使用 `vpNodeVersion`（来自目标平台包元数据）运行受管 pnpm：`install --ignore-workspace --frozen-lockfile`。只有安装成功后才会激活该版本。
+
+若清单声明了锁文件但文件缺失，或完整性校验失败，安装会停止。没有配套锁文件的旧包继续使用原有依赖安装行为。旧版升级客户端若丢失配套文件，新二进制的自设置流程会从经过校验的平台归档中恢复文件，再完成冻结安装。生成方式、重试及兼容性说明见[全局安装锁文件](./merge-global-and-local-cli.md#global-installation-lockfile)。
+
+如果没有 `vpNodeVersion`，当前运行的二进制会使用其 Node.js 安装默认版本。若存在该字段，其值必须是精确的稳定版本。无效元数据、不兼容的 pnpm 运行时或依赖安装失败，都会在更改 `current` 或回滚记录之前终止升级。与初次安装时可选的 `VP_SETUP_NODE_VERSION` 覆盖不同，此发布版本固定值不会静默回退到当前运行二进制的安装默认版本。当前运行的二进制仍负责选择 pnpm 并执行安装逻辑。支持该元数据之前发布的客户端继续保持现有行为。
 
 #### 步骤 5：版本切换
 

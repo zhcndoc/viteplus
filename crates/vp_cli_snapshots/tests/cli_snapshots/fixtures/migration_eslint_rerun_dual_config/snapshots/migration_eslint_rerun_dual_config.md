@@ -1,33 +1,34 @@
-# 迁移 ESLint 重新运行双重配置
+# migration_eslint_rerun_dual_config
 
-## `vp migrate --no-interactive`
+## `vp migrate --full --no-interactive`
 
-应检测 vite-plus + eslint 并自动迁移 eslint
+should detect vite-plus + eslint and auto-migrate eslint
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
+• Dependencies:
     vite-plus  latest → <version>
     vite              → <version>
-• 已配置包管理器设置
-• 已跳过编辑器、钩子和 lint 设置。运行 `vp migrate --full` 以应用这些设置。
+• 5 config updates applied
+• ESLint rules migrated to Oxlint
+• Package manager settings configured
 ```
 
 ## `vpt print-file package.json`
 
-检查 eslint 已移除，脚本已重写
+check eslint removed and scripts rewritten
 
 ```
 {
   "name": "migration-eslint-rerun-dual-config",
   "scripts": {
-    "lint": "eslint ."
+    "lint": "vp lint .",
+    "prepare": "vp config"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
     "vite-plus": "catalog:"
   }
 }
@@ -35,33 +36,57 @@ VITE+ - Web 的统一工具链
 
 ## `vpt stat-file eslint.config.mjs --assert-not file`
 
-检查扁平配置是否已移除
-
-**退出代码：** 1
+check flat config is removed
 
 ```
-eslint.config.mjs: file
-stat-file assertion failed
+eslint.config.mjs: missing
 ```
 
 ## `vpt stat-file .eslintrc --assert-not file`
 
-检查旧版配置是否也已移除
-
-**退出代码：** 1
+check legacy config is also removed
 
 ```
-.eslintrc：文件
-stat-file 断言失败
+.eslintrc: missing
 ```
 
 ## `vpt print-file vite.config.ts`
 
-检查 oxlint 配置是否已合并到 vite.config.ts 中
-
-**退出代码：** 1
+check oxlint config merged into vite.config.ts
 
 ```
-vite.config.ts: not found
-missing file
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  staged: {
+    "*": "vp check --fix"
+  },
+  lint: {
+    "plugins": [
+      "oxc",
+      "typescript",
+      "unicorn"
+    ],
+    "categories": {
+      "correctness": "warn"
+    },
+    "env": {
+      "builtin": true
+    },
+    "rules": {
+      "no-unused-vars": "error",
+      "vite-plus/prefer-vite-plus-imports": "error"
+    },
+    "options": {
+      "typeAware": true,
+      "typeCheck": true
+    },
+    "jsPlugins": [
+      {
+        "name": "vite-plus",
+        "specifier": "vite-plus/oxlint-plugin"
+      }
+    ]
+  },
+});
 ```

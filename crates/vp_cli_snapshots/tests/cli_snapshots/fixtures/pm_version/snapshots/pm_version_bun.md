@@ -36,6 +36,6 @@ Invalid argument: `--json` is not supported by Bun `version`.
   "version": "1.0.2-beta.0",
   "private": true,
   "license": "MIT",
-  "packageManager": "bun@1.3.14"
+  "packageManager": "bun@1.3.11"
 }
 ```

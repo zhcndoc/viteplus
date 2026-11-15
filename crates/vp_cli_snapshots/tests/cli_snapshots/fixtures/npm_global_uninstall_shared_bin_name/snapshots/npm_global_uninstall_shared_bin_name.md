@@ -1,13 +1,13 @@
-# npm_全局_卸载_共享_bin_名称
+# npm_global_uninstall_shared_bin_name
 
-## `npm install -g ./pkg-a`
+## `npm install -g --ignore-scripts ./pkg-a`
 
-安装 pkg-a（为 npm-global-shared-cli 创建链接）
+Install pkg-a (creates link for npm-global-shared-cli)
 
 ```
 
-已添加 1 个包，耗时 <duration>
-已将“npm-global-shared-cli”链接到 <home>/.vite-plus/bin/npm-global-shared-cli
+added 1 package in <duration>
+Linked 'npm-global-shared-cli' to <home>/.vite-plus/bin/npm-global-shared-cli
 ```
 
 ## `vpt stat-file $VP_HOME/bin/npm-global-shared-cli --assert symlink`
@@ -18,7 +18,7 @@
 
 ## `vpt print-file $VP_HOME/bins/npm-global-shared-cli.json`
 
-BinConfig 应指向 pkg-a
+BinConfig should point to pkg-a
 
 ```
 {
@@ -30,9 +30,9 @@ BinConfig 应指向 pkg-a
 }
 ```
 
-## `npm install -g --force ./pkg-b`
+## `npm install -g --ignore-scripts --force ./pkg-b`
 
-强制安装 pkg-b（覆盖 npm-global-shared-cli）
+Install pkg-b with force so npm selects the last normalized target
 
 ```
 
@@ -49,7 +49,7 @@ Linked 'npm-global-shared-cli' to <home>/.vite-plus/bin/npm-global-shared-cli
 
 ## `vpt print-file $VP_HOME/bins/npm-global-shared-cli.json`
 
-BinConfig 现在应指向 pkg-b
+BinConfig should now point to pkg-b
 
 ```
 {
@@ -63,15 +63,15 @@ BinConfig 现在应指向 pkg-b
 
 ## `npm-global-shared-cli`
 
-应打印 pkg-b 消息（已安装的最新版本）
+Should print pkg-b message (latest installed)
 
 ```
 shared-cli from pkg-b
 ```
 
-## `npm uninstall -g npm-global-shared-pkg-a`
+## `npm uninstall -g --ignore-scripts npm-global-shared-pkg-a`
 
-卸载 pkg-a，不应移除链接（现在由 pkg-b 拥有）
+Uninstall pkg-a, should NOT remove the link (owned by pkg-b now)
 
 ```
 
@@ -81,33 +81,33 @@ Linked 'npm-global-shared-cli' to <home>/.vite-plus/bin/npm-global-shared-cli
 
 ## `vpt stat-file $VP_HOME/bin/npm-global-shared-cli`
 
-链接仍应存在
+link should still exist
 
 ```
-<home>/.vite-plus/bin/npm-global-shared-cli: 符号链接
+<home>/.vite-plus/bin/npm-global-shared-cli: symlink
 ```
 
 ## `npm-global-shared-cli`
 
-应该仍然有效（由 pkg-b 所有）
+Repair must keep pkg-b's last normalized target
 
 ```
 shared-cli from pkg-b
 ```
 
-## `npm uninstall -g npm-global-shared-pkg-b`
+## `npm uninstall -g --ignore-scripts npm-global-shared-pkg-b`
 
-卸载 pkg-b，现在应移除链接
+Uninstall pkg-b, NOW should remove the link
 
 ```
 
-已移除 <duration> 内的 1 个包
-已从 <home>/.vite-plus/bin/npm-global-shared-cli 移除链接“npm-global-shared-cli”
+removed 1 package in <duration>
+Removed link 'npm-global-shared-cli' from <home>/.vite-plus/bin/npm-global-shared-cli
 ```
 
 ## `vpt stat-file $VP_HOME/bin/npm-global-shared-cli`
 
-应移除链接
+link should be removed
 
 ```
 <home>/.vite-plus/bin/npm-global-shared-cli: missing

@@ -15,3 +15,14 @@ Yarn Classic 会发出警告并成功退出，因为不支持 patch-commit
 ```
 warn: yarn classic does not have a 'patch-commit' command.
 ```
+
+## `vpt json-edit package.json packageManager yarn@2.4.2`
+
+
+## `vp pm patch-commit placeholder`
+
+Yarn 2 cannot save patches with --save, so warn and skip execution.
+
+```
+warn: yarn patch-commit --save requires yarn >= 3.0.0. Skipping.
+```

@@ -2,7 +2,7 @@
 
 ## `vp add --help`
 
-应显示帮助
+should show help
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -43,14 +43,14 @@ Options:
   --concurrency <CONCURRENCY>         Number of global package installs to run in parallel (only with -g)
   -h, --help                          Print help
 
-Documentation: https://viteplus.dev/guide/package-management
+Documentation: https://viteplus.dev/guide/package-management/
 ```
 
 ## `vp add`
 
-由于未指定软件包，应报错
+should error because no packages specified
 
-**退出代码：** 2
+**Exit code:** 2
 
 ```
 error: the following required arguments were not provided:
@@ -61,32 +61,13 @@ Usage: vp add <PACKAGES>... [-- <PASS_THROUGH_ARGS>...]
 For more information, try '--help'.
 ```
 
-## `vp add testnpm2 -D -- --loglevel=verbose --verbose`
+## `vp add testnpm2 -D`
 
-应将软件包添加为开发依赖项
-
-**退出代码：** 2
-
-```
-error: unexpected argument '--loglevel' found
-
-  tip: to pass '--loglevel' as a value, use '-- --loglevel'
-
-Usage: pnpm add --save-dev <PACKAGE_NAMES>...
-
-For more information, try '--help'.
-```
-
-*（跳过 1 个步骤到下一个行边界：步骤失败）*
-
-## `vp add testnpm2 test-vite-plus-install --allow-build=test-vite-plus-install`
-
-应将软件包添加到依赖项中
+should add package as dev dependencies
 
 ```
 
-dependencies:
- test-vite-plus-install 1.0.0
+devDependencies:
  testnpm2 1.0.1
 
 Done in <duration> using pnpm <version>
@@ -99,26 +80,23 @@ Done in <duration> using pnpm <version>
   "name": "command-add-pnpm12",
   "version": "1.0.0",
   "packageManager": "pnpm@12.0.0-beta.0",
-  "dependencies": {
-    "test-vite-plus-install": "^1.0.0",
+  "devDependencies": {
     "testnpm2": "^1.0.1"
   }
 }
 ```
 
-## `vp install test-vite-plus-package@1.0.0 --save-peer`
+## `vp add testnpm2 test-vite-plus-install --allow-build=test-vite-plus-install`
 
-应为 add 安装软件包别名
+should add packages to dependencies
 
 ```
-VITE+ - Web 的统一工具链
+✓ Lockfile passes supply-chain policies (verified <duration> ago)
 
-✓ 锁文件通过供应链策略检查（已于 <duration> 前验证）
+dependencies:
+ test-vite-plus-install 1.0.0
 
-开发依赖项:
- test-vite-plus-package 1.0.0
-
-完成，用时 <duration>，使用 pnpm <version>
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json`
@@ -128,12 +106,43 @@ VITE+ - Web 的统一工具链
   "name": "command-add-pnpm12",
   "version": "1.0.0",
   "packageManager": "pnpm@12.0.0-beta.0",
-  "dependencies": {
-    "test-vite-plus-install": "^1.0.0",
+  "devDependencies": {
     "testnpm2": "^1.0.1"
   },
+  "dependencies": {
+    "test-vite-plus-install": "^1.0.0"
+  }
+}
+```
+
+## `vp install test-vite-plus-package@1.0.0 --save-peer`
+
+should install package alias for add
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+✓ Lockfile passes supply-chain policies (verified <duration> ago)
+
+devDependencies:
+ test-vite-plus-package 1.0.0
+
+Done in <duration> using pnpm <version>
+```
+
+## `vpt print-file package.json`
+
+```
+{
+  "name": "command-add-pnpm12",
+  "version": "1.0.0",
+  "packageManager": "pnpm@12.0.0-beta.0",
   "devDependencies": {
-    "test-vite-plus-package": "1.0.0"
+    "test-vite-plus-package": "1.0.0",
+    "testnpm2": "^1.0.1"
+  },
+  "dependencies": {
+    "test-vite-plus-install": "^1.0.0"
   },
   "peerDependencies": {
     "test-vite-plus-package": "1.0.0"
@@ -143,15 +152,15 @@ VITE+ - Web 的统一工具链
 
 ## `vp add test-vite-plus-package-optional -O`
 
-应将软件包添加为可选依赖
+should add package as optional dependencies
 
 ```
-✓ 锁文件通过供应链策略检查（<duration> 前已验证）
+✓ Lockfile passes supply-chain policies (verified <duration> ago)
 
 optionalDependencies:
  test-vite-plus-package-optional 1.0.0
 
-已完成，用时 <duration>，使用 pnpm <version>
+Done in <duration> using pnpm <version>
 ```
 
 ## `vpt print-file package.json`
@@ -161,12 +170,12 @@ optionalDependencies:
   "name": "command-add-pnpm12",
   "version": "1.0.0",
   "packageManager": "pnpm@12.0.0-beta.0",
-  "dependencies": {
-    "test-vite-plus-install": "^1.0.0",
+  "devDependencies": {
+    "test-vite-plus-package": "1.0.0",
     "testnpm2": "^1.0.1"
   },
-  "devDependencies": {
-    "test-vite-plus-package": "1.0.0"
+  "dependencies": {
+    "test-vite-plus-install": "^1.0.0"
   },
   "peerDependencies": {
     "test-vite-plus-package": "1.0.0"
@@ -177,20 +186,39 @@ optionalDependencies:
 }
 ```
 
-## `vp add test-vite-plus-package-optional -- --loglevel=warn`
+## `vp add is-number -- --save-exact`
 
-支持传递参数
-
-**退出代码：** 2
+support pass through arguments: pnpm saves the exact version without `^`
 
 ```
-error: unexpected argument '--loglevel' found
+✓ Lockfile passes supply-chain policies (verified <duration> ago)
 
-  tip: to pass '--loglevel' as a value, use '-- --loglevel'
+dependencies:
+ is-number 7.0.0
 
-Usage: pnpm add [OPTIONS] <PACKAGE_NAMES>...
-
-For more information, try '--help'.
+Done in <duration> using pnpm <version>
 ```
 
-*（跳过 1 个步骤到下一个行边界：步骤失败）*
+## `vpt print-file package.json`
+
+```
+{
+  "name": "command-add-pnpm12",
+  "version": "1.0.0",
+  "packageManager": "pnpm@12.0.0-beta.0",
+  "devDependencies": {
+    "test-vite-plus-package": "1.0.0",
+    "testnpm2": "^1.0.1"
+  },
+  "dependencies": {
+    "is-number": "7.0.0",
+    "test-vite-plus-install": "^1.0.0"
+  },
+  "peerDependencies": {
+    "test-vite-plus-package": "1.0.0"
+  },
+  "optionalDependencies": {
+    "test-vite-plus-package-optional": "^1.0.0"
+  }
+}
+```

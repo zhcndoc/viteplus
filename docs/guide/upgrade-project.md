@@ -18,7 +18,18 @@ vp migrate
 
 ## 手动更新
 
-同时更新 `vite-plus` 和指向 `@voidzero-dev/vite-plus-core` 的 `vite` 别名，并确保核心版本与 `vite-plus` 保持一致。在工作区中声明这些内容的所有位置进行更新，包括 overrides 或 catalogs，然后安装依赖项以刷新 lockfile。此外，还要[更新 Vitest 固定版本](#更新-vitest-固定版本)，使其与捆绑的版本一致。
+同时更新 `vite-plus` 和指向 `@voidzero-dev/vite-plus-core` 的 `vite` 别名。两个包的版本不同：核心版本编码了捆绑的 Vite 版本，例如 `8.3.5000` 对应 Vite `8.3.5`。安装前，请先查看该 `vite-plus` 版本所使用的别名：
+
+```bash
+npm view vite-plus@<version> dependencies.vite
+# npm:@voidzero-dev/vite-plus-core@<core-version>
+```
+
+将 `vite` 别名设为该值。在工作区中声明这些内容的所有位置进行更新，包括 overrides 或 catalogs，然后安装依赖项以刷新 lockfile。此外，还要[更新 Vitest 固定版本](#更新-vitest-固定版本)，使其与捆绑的版本一致。安装后，`vp toolchain vite-plus-core` 会显示相同的核心版本。
+
+### 依赖机器人
+
+Dependabot 和 Renovate 会将 `vite-plus` 与 `vite` 别名视为两个版本不同的独立依赖。机器人可能只更新其中一个。此时 Vite+ 会在运行 Vite 命令前停止，并要求运行 `vp migrate`。合并机器人更新前，请检查 `vite` 别名是否与 `npm view vite-plus@<version> dependencies.vite` 的输出一致。如果不一致，请在机器人的分支上运行 `vp migrate`。迁移会固定匹配的别名、overrides 和 Vitest 版本。
 
 如果没有全局 CLI，请通过包管理器运行本页中的 `vp` 命令，例如 `pnpm exec vp toolchain vitest`。
 

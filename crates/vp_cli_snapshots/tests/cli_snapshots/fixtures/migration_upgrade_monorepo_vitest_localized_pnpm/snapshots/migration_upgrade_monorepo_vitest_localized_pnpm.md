@@ -1,23 +1,24 @@
-# 迁移_升级_单仓库_vitest_本地化_pnpm
+# migration_upgrade_monorepo_vitest_localized_pnpm
 
 ## `vp migrate --no-interactive`
 
-现有的 Vite+ 工作区包应进行协调
+existing Vite+ workspace packages should be reconciled
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 更新为 Vite+ <version>
+◇ Updated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 依赖：
-    vite-plus  最新版本 → <version>
+• Dependencies:
+    vite-plus  latest → <version>
     vite              → <version>
-• 已配置包管理器设置
+• Package manager settings configured
+• Removed `vite` from pnpm peerDependencyRules: the core version now matches the bundled Vite
 ```
 
 ## `vpt print-file package.json`
 
-根目录不应直接获得 vitest 依赖
+root should not gain a direct vitest
 
 ```
 {
@@ -38,7 +39,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file packages/app/package.json`
 
-只有对等消费者应获得本地 vitest
+only the peer consumer should gain local vitest
 
 ```
 {
@@ -53,7 +54,7 @@ VITE+ - 面向 Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-使用该配置的包中应存在共享的 Vitest 配置
+shared vitest config should exist for the consuming package
 
 ```
 packages:
@@ -68,9 +69,7 @@ overrides:
   vitest@*: 'catalog:'
 peerDependencyRules:
   allowAny:
-    - vite
     - vitest
   allowedVersions:
-    vite: '*'
     vitest: '*'
 ```

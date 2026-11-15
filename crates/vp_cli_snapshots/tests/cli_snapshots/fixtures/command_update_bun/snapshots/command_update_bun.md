@@ -32,7 +32,7 @@ Options:
   --workspace                  Only update if package exists in workspace (pnpm-specific)
   -h, --help                   Print help
 
-Documentation: https://viteplus.dev/guide/package-management
+Documentation: https://viteplus.dev/guide/package-management/
 ```
 
 ## `vp update testnpm2 --workspace-root`
@@ -97,9 +97,6 @@ installed testnpm2@1.0.1
   "packageManager": "bun@1.3.11"
 }
 ```
-
-## `vpt json-edit package.json packageManager bun@1.3.14`
-
 
 ## `vp update --prod`
 

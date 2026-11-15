@@ -6,9 +6,9 @@
 ## `vp env on npm`
 
 
-## `vp env exec --node 22.18.0 node assert-unix-shims-path.cjs partial`
+## `vp env exec --node 22.23.4 node assert-unix-shim-path.cjs partial`
 
-保留的 Node 符号链接提供用于恢复捆绑的 npm 和 npx 的安装。
+A retained Node symlink provides the installation for restoring bundled npm and npx
 
 ```
 Node and its tools survive partial PATH

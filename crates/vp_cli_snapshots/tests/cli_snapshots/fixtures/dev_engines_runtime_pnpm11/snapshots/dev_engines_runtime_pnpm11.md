@@ -2,7 +2,7 @@
 
 ## `vp dlx -s print-current-version`
 
-应从 devEngines.runtime 打印 Node.js 版本 22.18.0
+should print Node.js version 22.23.4 from devEngines.runtime
 
 ```
 <version>

@@ -1,6 +1,6 @@
 # run_yarn_corepack_hash_mismatch
 
-## `vpt rm -rf $VP_HOME/package_manager/yarn/4.17.1 $VP_HOME/package_manager/yarn/4.17.1.lock`
+## `vpt rm -rf $VP_HOME/package_manager/yarn/4.17.1 $VP_HOME/package_manager/yarn/.verified-v1/4.17.1 $VP_HOME/package_manager/yarn/4.17.1.lock`
 
 确保 Corepack 固定的 Yarn 版本未被缓存
 

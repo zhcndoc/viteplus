@@ -1,8 +1,15 @@
 # command_env_off_on
 
-## `vp run assert-managed`
+`vp env off` switches project scripts from the managed engines.node runtime to the system Node.js on PATH; `vp env on` switches back.
 
-托管模式：应使用项目的 engines.node 22.18.0
+## `node src/setup-system-node.cjs`
+
+Provide a system Node.js after the Vite+ bin on PATH, as in a user's shell.
+
+
+## `PATH=${VP_HOME}/bin${PATH_SEPARATOR}${workspace}/system-bin${PATH_SEPARATOR}${PATH} vp run assert-managed`
+
+Managed mode: should use project's engines.node 22.23.4
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -13,10 +20,10 @@ OK: <version>
 
 ## `vp env off`
 
-切换到系统优先模式
+Switch to system-first mode
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 ✓ Node.js and package-manager management set to system-first.
 
@@ -25,25 +32,23 @@ Selected commands and shims will now prefer system tools, falling back to manage
 Run `vp env on` to always use Vite+ managed tools.
 ```
 
-## `vp run assert-not-managed`
+## `PATH=${VP_HOME}/bin${PATH_SEPARATOR}${workspace}/system-bin${PATH_SEPARATOR}${PATH} vp run assert-not-managed`
 
-系统优先模式：不得使用 22.18.0
-
-**退出代码：** 1
+System-first mode: must use Node.js from system-bin
 
 ```
-VITE+ - Web 统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-$ node src/assert-not-managed.mjs ⊘ 缓存已禁用
-应使用系统 Node.js，但获取到的是托管版本 <version>
+$ node src/assert-not-managed.mjs ⊘ cache disabled
+OK: system <version>
 ```
 
 ## `vp env on`
 
-切换回托管模式
+Switch back to managed mode
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 ✓ Node.js and package-manager management set to managed.
 
@@ -52,9 +57,9 @@ Selected commands and shims will now use Vite+ managed tools.
 Run `vp env off` to prefer system tools instead.
 ```
 
-## `vp run assert-managed`
+## `PATH=${VP_HOME}/bin${PATH_SEPARATOR}${workspace}/system-bin${PATH_SEPARATOR}${PATH} vp run assert-managed`
 
-托管模式已恢复：应该再次使用 22.18.0
+Managed mode restored: should use 22.23.4 again
 
 ```
 VITE+ - The Unified Toolchain for the Web

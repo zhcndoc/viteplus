@@ -20,12 +20,24 @@
 ```bash
 vp check
 vp check --fix              # Format and run autofixers.
+vp check --fix-dangerously  # Format and apply lint fixes, including dangerous fixes and suggestions.
+vp check --continue-on-error # Report all enabled checks, even if formatting fails.
 vp check --quiet            # Hide lint warnings; still report and fail on errors.
 vp check --deny-warnings    # Treat lint warnings as errors.
 vp check --no-fmt           # Skip format; run lint (and type-check if enabled).
 vp check --no-lint          # Skip lint rules; keep type-check when enabled.
 vp check --no-fmt --no-lint # Type-check only (requires both `typeAware` and `typeCheck` enabled).
 ```
+
+如果格式化失败，`vp check` 会停止，不再运行 lint 和类型检查。要修复格式问题并应用可用的 lint 修复，请运行 `vp check --fix`。此命令会修改文件。要跳过格式化并运行其余已启用的检查，请运行 `vp check --no-fmt`。
+
+使用 `vp check --fix-dangerously` 还会应用有风险的 lint 修复和建议。此选项会启用格式化修复，无需同时指定 `--fix`。有风险的 lint 修复可能改变程序行为，提交前请先检查变更。两个标志同时传入时，`--fix-dangerously` 对 lint 修复优先。和 `--fix` 一样，它也支持 `--no-fmt` 与 `--continue-on-error`；通过 `--no-lint` 或 `check.lint: false` 禁用 lint 规则时会跳过 lint 修复。类型诊断不会自动修复。
+
+使用 `vp check --continue-on-error` 可在一次调用中运行所有已启用的检查，并报告格式化、lint 和类型错误，且不会修改文件。类型检查仍要求已启用 `lint.options.typeAware` 和 `lint.options.typeCheck`。只要任一检查失败，命令就会返回非零状态，即使后续检查通过也是如此。不使用 `--continue-on-error` 时，仍保持原有的快速失败行为。
+
+`--continue-on-error` 也可与 `--fix` 一起使用：某个工具报告失败后仍会继续检查，并在 lint 修复后再次运行格式化。命令会保留首次失败的退出状态。`--no-fmt`、`--no-lint`、`--quiet` 和 `--deny-warnings` 等选项仍按原有方式生效。配置加载或命令启动错误仍会中止命令。
+
+请将 `vp check` 标志放在文件路径之前。例如，使用 `vp check --fix src/index.ts`。第一个路径之后的参数会传给格式化和 lint 工具，而不是 `vp check`。
 
 ## 配置
 

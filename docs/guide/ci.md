@@ -14,11 +14,11 @@
 
 ## 安装期间使用的 Node.js
 
-Vite+ 安装器默认使用最新的 Node.js LTS 版本。对于支持 [`VP_SETUP_NODE_VERSION`](/guide/global-cli#vp-setup-node-version) 的版本，`setup-vp` 也可以在安装期间使用项目声明的版本。如果该版本同时满足全局 CLI 和固定版本 `pnpm` 的要求，就无需再次下载 Node.js。
+Vite+ 安装器默认使用仓库 [`.node-version`](https://github.com/voidzero-dev/vite-plus/blob/main/.node-version) 中固定的 Node.js 版本。每个 Vite+ 版本都会在构建时嵌入该版本。依赖升级工作流会持续更新这个固定版本。对于支持 [`VP_SETUP_NODE_VERSION`](/guide/global-cli#vp-setup-node-version) 的版本，`setup-vp` 也可以在安装期间使用项目声明的版本。如果该版本同时满足全局 CLI 和固定版本 `pnpm` 的要求，就无需再次下载 Node.js。
 
 `setup-vp` 会在启动安装器前选择版本。显式指定的 Node.js 版本优先于版本文件输入。如果两者都未指定，它会依据[项目声明的优先顺序](/guide/env#node-js-selection)检查当前工作目录及其父目录。集成会通过 `VP_SETUP_NODE_VERSION` 传递所选版本；安装器本身不会读取项目声明。
 
-未指定版本、禁用了 Node.js 管理，或所选版本不兼容时，安装过程会使用 LTS。旧版安装器会保留原有行为。自动发现项目版本不会创建会话覆盖，因此后续命令仍会按目录正常选择版本。
+未指定版本、禁用了 Node.js 管理，或所选版本不兼容时，安装过程会使用嵌入的默认版本。旧版安装器会保留原有行为。自动发现项目版本不会创建会话覆盖，因此后续命令仍会按目录正常选择版本。
 
 集成会自动处理这些安装器变量。在 GitHub Actions 和 GitLab CI/CD 中配置 `node-version` 或 `node-version-file`；在 Azure Pipelines 中配置 `nodeVersion` 或 `nodeVersionFile`。完整输入列表请参阅 [`setup-vp` 文档](https://github.com/voidzero-dev/setup-vp#inputs)。
 

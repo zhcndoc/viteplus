@@ -5,7 +5,7 @@
 激活未选择包管理器的项目会清除之前的覆盖设置
 
 ```
-export VP_NODE_VERSION=20.18.0
+export VP_NODE_VERSION=20.20.2
 unset VP_NPM_VERSION
 unset VP_PNPM_VERSION
 unset VP_YARN_VERSION

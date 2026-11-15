@@ -2,7 +2,7 @@
 
 ## `vp env exec node --version`
 
-请先确保已安装 Node.js
+Ensure Node.js is installed first
 
 ```
 <version>
@@ -10,12 +10,12 @@
 
 ## `vp env which node`
 
-核心工具 - 显示从 .nvmrc 解析出的 Node.js 二进制文件路径
+Core tool - shows resolved Node.js binary path from .nvmrc
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
 <home>/.vite-plus/js_runtime/node/<version>/bin/node
-  版本:      20.18.0
-  来源:      <workspace>/.nvmrc
+  Version:    20.20.2
+  Source:     <workspace>/.nvmrc
 ```

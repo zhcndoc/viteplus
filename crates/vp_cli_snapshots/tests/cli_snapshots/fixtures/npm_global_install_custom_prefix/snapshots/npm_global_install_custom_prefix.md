@@ -1,4 +1,4 @@
-# npm 全局安装自定义前缀
+# npm_global_install_custom_prefix
 
 ## `vpt mkdir -p custom-prefix`
 
@@ -7,7 +7,7 @@
 
 ## `NPM_CONFIG_PREFIX=./custom-prefix npm install -g ./npm-global-custom-prefix-pkg`
 
-应安装到自定义前缀并创建链接
+Should install to custom prefix and create link
 
 ```
 
@@ -15,20 +15,17 @@ added 1 package in <duration>
 Linked 'npm-global-custom-prefix-cli' to <home>/.vite-plus/bin/npm-global-custom-prefix-cli
 ```
 
-## `vpt stat-file custom-prefix/bin/npm-global-custom-prefix-cli --assert file`
+## `vpt stat-file custom-prefix/bin/npm-global-custom-prefix-cli --assert symlink`
 
-验证已安装到自定义前缀
-
-**退出代码：** 1
+Verify installed to custom prefix (npm links the bin into <prefix>/bin)
 
 ```
 custom-prefix/bin/npm-global-custom-prefix-cli: symlink
-stat-file assertion failed
 ```
 
 ## `vpt stat-file $VP_HOME/bin/npm-global-custom-prefix-cli --assert symlink`
 
-链接应存在
+Link should exist
 
 ```
 <home>/.vite-plus/bin/npm-global-custom-prefix-cli: symlink
@@ -36,7 +33,7 @@ stat-file assertion failed
 
 ## `npm-global-custom-prefix-cli`
 
-应可通过该链接调用
+Should be callable via the link
 
 ```
 npm-global-custom-prefix-cli works
@@ -44,14 +41,14 @@ npm-global-custom-prefix-cli works
 
 ## `vpt rm -f $VP_HOME/bin/npm-global-custom-prefix-cli`
 
-清理链接
+Cleanup link
 
 ```
 ```
 
 ## `NPM_CONFIG_PREFIX=./custom-prefix npm uninstall -g npm-global-custom-prefix-pkg`
 
-清理
+Cleanup
 
 ```
 

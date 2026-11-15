@@ -24,12 +24,16 @@ skip-platforms = ["windows"]
 steps = [{ argv = ["node", "download.mjs", "known"], envs = [["CI", "1"]] }]
 
 [[case]]
+name = "download_user_agent"
+vp = "global"
+skip-platforms = ["windows"]
+steps = [{ argv = ["node", "user-agent.mjs"], tty = false }]
+
+[[case]]
 name = "installation_progress_interactive"
 vp = "global"
 skip-platforms = ["windows"]
 steps = [{ argv = ["node", "install.mjs", "interactive"], interactions = [
-  { expect-milestone = "install:download:ready" },
-  { write-key = "enter" },
   { expect-milestone = "install:prepare:ready" },
   { write-key = "enter" },
   { expect-milestone = "install:dependencies:ready" },
@@ -41,8 +45,6 @@ name = "installation_progress_failure"
 vp = "global"
 skip-platforms = ["windows"]
 steps = [{ argv = ["node", "install.mjs", "interactive", "failure"], interactions = [
-  { expect-milestone = "install:download:ready" },
-  { write-key = "enter" },
   { expect-milestone = "install:prepare:ready" },
   { write-key = "enter" },
   { expect-milestone = "install:dependencies:ready" },
@@ -54,6 +56,50 @@ name = "installation_resolution_retry"
 vp = "global"
 skip-platforms = ["windows"]
 steps = [{ argv = ["node", "install.mjs", "resolution-retry"], tty = false }]
+
+[[case]]
+name = "installation_dependency_retry"
+vp = "global"
+skip-platforms = ["windows"]
+steps = [{ argv = ["node", "install.mjs", "dependency-retry"], tty = false }]
+
+[[case]]
+name = "installation_upgrade_handoff"
+vp = "global"
+skip-platforms = ["windows"]
+steps = [{ argv = ["node", "install.mjs", "upgrade-handoff"], tty = false }]
+
+[[case]]
+name = "upgrade_node_metadata"
+vp = "global"
+steps = [{ argv = ["node", "upgrade-node.mjs", "metadata"], tty = false }]
+
+[[case]]
+name = "upgrade_node_metadata_legacy"
+vp = "global"
+steps = [{ argv = ["node", "upgrade-node.mjs", "legacy"], tty = false }]
+
+[[case]]
+name = "upgrade_node_metadata_failure"
+vp = "global"
+steps = [{ argv = ["node", "upgrade-node.mjs", "failure"], tty = false }]
+
+[[case]]
+name = "upgrade_node_metadata_incompatible"
+vp = "global"
+steps = [{ argv = ["node", "upgrade-node.mjs", "incompatible"], tty = false }]
+
+[[case]]
+name = "installation_peer_config"
+vp = "global"
+skip-platforms = ["windows"]
+steps = [{ argv = ["node", "peer-config.mjs"], tty = false }]
+
+[[case]]
+name = "installation_lockfile_bypass"
+vp = "global"
+skip-platforms = ["windows"]
+steps = [{ argv = ["node", "peer-config.mjs", "bypass"], tty = false }]
 
 [[case]]
 name = "installation_progress_non_tty"

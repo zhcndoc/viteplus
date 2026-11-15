@@ -100,9 +100,9 @@ Vite+ 覆盖了完整的前端开发周期，从启动项目，到开发、检�
 
 - [`vp create`](/guide/create) 创建新的应用、包和 monorepo。
 - [`vp migrate`](/guide/migrate) 将现有项目迁移到 Vite+。
-- [`vp install`](/guide/package-management) 使用正确的包管理器安装依赖。
-- [`vp add`](/guide/package-management)、[`vp remove`](/guide/package-management)、[`vp update`](/guide/package-management)、[`vp dedupe`](/guide/package-management)、[`vp outdated`](/guide/package-management)、[`vp list`](/guide/package-management)、[`vp why`](/guide/package-management) 和 [`vp info`](/guide/package-management) 覆盖其余的包管理工作流。
-- [`vp link`](/guide/package-management)、[`vp unlink`](/guide/package-management)、[`vp rebuild`](/guide/package-management) 和 [`vp pm <command>`](/guide/package-management) 提供更底层的包管理器操作。
+- [`vp install`](/guide/package-management/install) 使用正确的包管理器安装依赖。
+- [`vp add`](/guide/package-management/add)、[`vp remove`](/guide/package-management/remove)、[`vp update`](/guide/package-management/update)、[`vp dedupe`](/guide/package-management/dedupe)、[`vp outdated`](/guide/package-management/outdated)、[`vp list`](/guide/package-management/list)、[`vp why`](/guide/package-management/why) 和 [`vp info`](/guide/package-management/info) 覆盖其余的包管理工作流。
+- [`vp link`](/guide/package-management/link)、[`vp unlink`](/guide/package-management/unlink)、[`vp rebuild`](/guide/package-management/rebuild) 和 [`vp pm <command>`](/guide/package-management/) 提供更底层的包管理器操作。
 
 ### 项目工具链
 
@@ -115,7 +115,7 @@ Vite+ 覆盖了完整的前端开发周期，从启动项目，到开发、检�
 - [`vp toolchain`](/guide/upgrade#show-the-toolchain) 显示当前使用的项目工具链；使用 `--global` 可改为检查全局安装。
 - [`vp run`](/guide/run) 在工作区中运行带缓存的任务。
 - [`vp cache clean`](/guide/cache) 清除任务缓存条目。
-- [`vp exec`](/guide/vpx) 运行本地项目二进制文件，而 [`vp dlx`](/guide/vpx) 和 [`vpx`](/guide/vpx) 下载并运行包二进制文件。
+- [`vp exec`](/guide/vpx) 运行本地项目二进制文件，而 [`vp dlx`](/guide/package-management/dlx) 和 [`vpx`](/guide/vpx) 下载并运行包二进制文件。
 - [`vp config`](/guide/commit-hooks) 安装 Git hook 分发器并配置 agent 集成。
 - [`vp hooks`](/guide/commit-hooks) 管理 Git hook 分发器，而 [`vp staged`](/guide/commit-hooks) 在暂存文件上运行检查。
 - [Monorepo 指南](/guide/monorepo) 介绍多包项目的结构和命令。

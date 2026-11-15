@@ -2,7 +2,7 @@
 
 每个环境入口点都必须保留并验证相同的 Corepack 完整性后缀，同时避免在不同情况下重复执行开销高昂的缓存设置
 
-## `vpt rm -rf $VP_HOME/package_manager/yarn/4.17.1 $VP_HOME/package_manager/yarn/4.17.1.lock`
+## `vpt rm -rf $VP_HOME/package_manager/yarn/4.17.1 $VP_HOME/package_manager/yarn/.verified-v1/4.17.1 $VP_HOME/package_manager/yarn/4.17.1.lock`
 
 确保 Corepack 固定的 Yarn 版本未被缓存
 

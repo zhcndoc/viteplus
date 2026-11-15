@@ -1,20 +1,21 @@
 # install_yarn_corepack_hash
 
-## `vpt rm -rf $VP_HOME/package_manager/yarn/4.17.1 $VP_HOME/package_manager/yarn/4.17.1.lock`
+## `vpt rm -rf $VP_HOME/package_manager/yarn/4.17.1 $VP_HOME/package_manager/yarn/.verified-v1/4.17.1 $VP_HOME/package_manager/yarn/4.17.1.lock`
 
-确保 Corepack 固定的 Yarn 版本未被缓存
+Ensure the Corepack-pinned Yarn version is not cached
 
-## `vpt stat-file $VP_HOME/package_manager/yarn/4.17.1 --assert missing`
 
-Yarn 4.17.1 不在缓存中
+## `vpt stat-file $VP_HOME/package_manager/yarn/.verified-v1/4.17.1 --assert missing`
+
+Yarn 4.17.1 is not in the cache
 
 ```
-<home>/.vite-plus/package_manager/yarn/<version>: missing
+<home>/.vite-plus/package_manager/yarn/.verified-v1/<version>: missing
 ```
 
 ## `vp install`
 
-首次安装接受 Corepack 写入的哈希值
+A first install accepts the hash that Corepack wrote
 
 ```
 VITE+ - The Unified Toolchain for the Web
@@ -29,10 +30,10 @@ VITE+ - The Unified Toolchain for the Web
 ➤ YN0000: · Done in <duration>
 ```
 
-## `vpt stat-file $VP_HOME/package_manager/yarn/4.17.1/yarn/bin/yarn.js --assert file`
+## `vpt stat-file $VP_HOME/package_manager/yarn/.verified-v1/4.17.1/3156b767c366db0f2c765c40a66f4ace/yarn/bin/yarn.js --assert file`
 
-缓存中保存的是经过 vp 验证的 Yarn CLI
+The cache holds the Yarn CLI that vp verified, under the content key of the pinned hash (short_fingerprint of the packageManager hash)
 
 ```
-<home>/.vite-plus/package_manager/yarn/<version>/yarn/bin/yarn.js: file
+<home>/.vite-plus/package_manager/yarn/.verified-v1/<version>/<key>/yarn/bin/yarn.js: file
 ```

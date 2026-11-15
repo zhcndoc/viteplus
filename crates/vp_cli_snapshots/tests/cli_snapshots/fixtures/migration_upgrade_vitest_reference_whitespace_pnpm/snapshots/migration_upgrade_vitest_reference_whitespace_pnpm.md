@@ -1,20 +1,21 @@
-# 迁移_升级_vitest_参考_空白_pnpm
+# migration_upgrade_vitest_reference_whitespace_pnpm
 
 ## `vp migrate --no-interactive`
 
-Vitest 类型指令中的 TypeScript 空白字符有效
+TypeScript whitespace in a Vitest type directive is valid
 
 ```
-VITE+ - Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-◇ 已将 . 迁移到 Vite+ <version>
+◇ Migrated . to Vite+ <version>
 • Node <version>  pnpm <version>
-• 已应用 2 项配置更新，1 个文件的导入已重写
+• 2 config updates applied, 1 file had imports rewritten
+• Removed `vite` from pnpm peerDependencyRules: the core version now matches the bundled Vite
 ```
 
 ## `vpt print-file package.json`
 
-重写后的指令不会保留冗余的 Vitest 依赖
+rewritten directive does not retain a redundant Vitest dependency
 
 ```
 {
@@ -38,7 +39,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file env.d.ts`
 
-指令被重写为 Vite+ 公共类型接口
+directive is rewritten to the Vite+ public type surface
 
 ```
 /// <reference types = "vite-plus/test" />
@@ -46,7 +47,7 @@ VITE+ - Web 的统一工具链
 
 ## `vpt print-file pnpm-workspace.yaml`
 
-重写后的指令未保留共享的 Vitest 管理
+rewritten directive does not retain shared Vitest management
 
 ```
 catalog:
@@ -54,19 +55,14 @@ catalog:
   vite-plus: <version>
 overrides:
   vite@*: 'catalog:'
-peerDependencyRules:
-  allowAny:
-    - vite
-  allowedVersions:
-    vite: '*'
 ```
 
 ## `vp migrate --no-interactive`
 
-指令重写在重新运行时保持稳定
+directive rewriting is stable on rerun
 
 ```
-VITE+ - 面向 Web 的统一工具链
+VITE+ - The Unified Toolchain for the Web
 
-此项目已经在使用 Vite+！祝编码愉快！
+This project is already using Vite+! Happy coding!
 ```

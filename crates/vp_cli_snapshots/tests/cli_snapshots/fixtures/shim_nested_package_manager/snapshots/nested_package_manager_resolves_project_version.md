@@ -24,7 +24,7 @@ npm 生命周期脚本可以调用项目 pnpm
 10.19.0
 ```
 
-## `npx --offline --call 'pnpm exec node assert-injected-tools.cjs pnpm 10.19.0 20.18.0'`
+## `npx --offline --call 'pnpm exec node assert-injected-tools.cjs pnpm 10.19.0 20.20.2'`
 
 注入的工具会累积，显式的 shim 调用会复用它们
 
@@ -40,7 +40,7 @@ Injected pnpm resolves to 10.19.0 on Node <version>
 10.19.0
 ```
 
-## `npx --offline --call 'pnpm exec node -e "require('\''node:assert/strict'\'').equal(process.version,'\''v20.18.0'\'');console.log('\''project Node version preserved'\'')"'`
+## `npx --offline --call 'pnpm exec node -e "require('\''node:assert/strict'\'').equal(process.version,'\''v20.20.2'\'');console.log('\''project Node version preserved'\'')"'`
 
 嵌套包管理器会保留选定的 Node.js 运行时
 

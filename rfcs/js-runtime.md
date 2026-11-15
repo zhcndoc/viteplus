@@ -20,7 +20,7 @@
 
 ## 非目标（初始版本）
 
-- ~~配置自动检测（不读取 package.json、.nvmrc 等）~~ **现已通过 `.node-version`、`devEngines.runtime` 和 `engines.node` 支持**
+- ~~配置自动检测（不读取 package.json、.nvmrc 等）~~ **现已通过 `.node-version`、`devEngines.runtime`、`engines.node` 和 `.nvmrc` 支持**
 - 同时管理多个运行时版本
 - 提供版本管理器 CLI（如 nvm/fnm）
 - 支持自定义/非官方的 Node.js 构建。

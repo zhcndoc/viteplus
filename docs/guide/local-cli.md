@@ -61,30 +61,51 @@ bun add -D vite-plus
 
 :::
 
-你需要向包管理器添加 overrides，使其他包解析到 Vite+ 的版本：将 `vite` 别名指向 `@voidzero-dev/vite-plus-core`，将 `<vite-plus-version>` 设置为已安装的 `vite-plus` 版本，并将 `vitest` 固定为 `<vitest-version>`。请使用 `vp toolchain vitest` 显示的捆绑版本，这样整个项目就能与 `vp test` 共享单一的 Vitest 副本。如果不固定 `vitest`，依赖或工作区包可能会拉取与捆绑运行器不同的 Vitest，从而拆分 Vitest 的内部组件（mocks、`expect`、运行器状态）：
+你需要向包管理器添加 overrides，使其他包解析到 Vite+ 的版本：将 `vite` 别名指向 `@voidzero-dev/vite-plus-core`，将 `<core-version>` 设置为已安装的 `vite-plus` 所用核心版本（可通过 `vp toolchain vite-plus-core` 查看），并将 `vitest` 固定为 `<vitest-version>`。请使用 `vp toolchain vitest` 显示的捆绑版本，这样整个项目就能与 `vp test` 共享单一的 Vitest 副本。如果不固定 `vitest`，依赖或工作区包可能会拉取与捆绑运行器不同的 Vitest，从而拆分 Vitest 的内部组件（mocks、`expect`、运行器状态）：
 
 ::: code-group
 
 ```yaml [pnpm-workspace.yaml]
 overrides:
-  vite@*: npm:@voidzero-dev/vite-plus-core@<vite-plus-version> # Match the installed vite-plus version
+  vite@*: npm:@voidzero-dev/vite-plus-core@<core-version> # Match the version from vp toolchain vite-plus-core
   vitest@*: <vitest-version> # Match the version from vp toolchain vitest
 ```
 
 ```json [npm / Bun package.json]
 "overrides": {
-  "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>",
+  "vite": "npm:@voidzero-dev/vite-plus-core@<core-version>",
   "vitest": "<vitest-version>"
 }
 ```
 
 ```json [Yarn package.json]
 "resolutions": {
-  "vite": "npm:@voidzero-dev/vite-plus-core@<vite-plus-version>",
+  "vite": "npm:@voidzero-dev/vite-plus-core@<core-version>",
   "vitest": "<vitest-version>"
 }
 ```
 
+:::
+
+::: warning 现有 npm 直接依赖
+如果 npm 项目已在 `dependencies` 或 `devDependencies` 中列出 `vite`，请将该条目改成与 `overrides.vite` 相同的别名。npm 要求直接依赖与其 override 使用[相同的依赖规格](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#overrides)，否则 `npm install` 会以 `EOVERRIDE` 失败。
+
+例如，按如下方式更新现有的 `vite` 开发依赖。保留清单中的其他依赖：
+
+```json [package.json]
+{
+  "devDependencies": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@<core-version>",
+    "vite-plus": "<vite-plus-version>"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@<core-version>",
+    "vitest": "<vitest-version>"
+  }
+}
+```
+
+如果你也直接声明了 `vitest`，请将其依赖条目设为 `overrides.vitest` 中的精确版本。完成这些更改后运行 `npm install`，以更新 lockfile 和已安装的依赖。
 :::
 
 ::: details 为什么需要这些设置？
@@ -92,9 +113,10 @@ overrides:
 依赖和插件可以直接导入 `vite` 或 `vitest`，即使你自己的代码是从 `vite-plus` 导入的。这些 overrides 会使它们的依赖与 Vite+ 使用的工具链保持一致：
 
 - `vite` 别名会将这些导入指向 Vite+ 的核心包。不同的 Vite 实例可能会破坏运行时身份检查：[issue #1391](https://github.com/voidzero-dev/vite-plus/issues/1391) 报告了 TanStack Start 返回 404 的问题，原因是 `instanceof` 检查跨越了两个副本。[PR #2617](https://github.com/voidzero-dev/vite-plus/pull/2617) 通过使用相同的别名共享 Vite，从 CLI 侧解决了这一问题
+- 核心版本编码了捆绑的 Vite 版本：主、次版本号与 Vite 一致，补丁版本号等于 Vite 补丁版本乘以 1000 再加发布序号。例如，核心版本 `8.3.5000` 捆绑了 Vite `8.3.5`。包管理器会将此版本与插件的 `vite` peer 范围进行比较，因此支持捆绑 Vite 的插件会通过检查。使用 pnpm 和 Yarn 时，不支持该版本的插件仍会产生 peer 警告。npm 也会将 `overrides.vite` 应用于 peer 依赖，因此不会报告不兼容的 `vite` peer；Bun 也不会报告 peer 问题。[Issue #2806](https://github.com/voidzero-dev/vite-plus/issues/2806) 说明了早期 `1.x` 版本会导致所有检查失败的问题。
 - 精确固定 `vitest` 可以让依赖和 `vp test` 使用相同的 Vitest 版本，避免出现不同的 mocks、`expect` 实例和运行器状态。[PR #2365](https://github.com/voidzero-dev/vite-plus/pull/2365) 记录了手动安装时的这一要求
 
-升级时，请让核心别名与你安装的 `vite-plus` 版本保持一致，并更新 Vitest 固定版本，使其与打包的版本匹配。[Issue #2356](https://github.com/voidzero-dev/vite-plus/issues/2356) 介绍了依赖机器人可能独立更新这些包，导致不兼容的版本被同时安装的情况
+升级时，请让核心别名与你安装的 `vite-plus` 所用核心版本保持一致，并更新 Vitest 固定版本，使其与打包的版本匹配。[Issue #2356](https://github.com/voidzero-dev/vite-plus/issues/2356) 介绍了依赖机器人可能独立更新这些包，导致不兼容的版本被同时安装的情况
 
 :::
 
@@ -127,7 +149,7 @@ overrides:
 - 使用 tsdown 执行 [`vp pack`](/guide/pack)
 - 使用 [`vp toolchain`](/guide/upgrade#show-the-toolchain) 检查项目本地包中捆绑的版本
 - 使用 [`vp run`](/guide/run) 并在工作区之间缓存任务
-- 使用当前已在 shell 中激活的 Node.js 运行时执行[包管理器命令](/guide/package-management)
+- 使用当前已在 shell 中激活的 Node.js 运行时执行[包管理器命令](/guide/package-management/)
 - 执行 [`vp create`](/guide/create)、[`vp migrate`](/guide/migrate) 和项目配置命令
 
 本地包无法管理机器级别的 Vite+ 安装。`vp env`、`vp upgrade` 和 `vp implode` 命令需要[全局 CLI](/guide/global-cli)。请通过包管理器升级或移除仅本地安装。
